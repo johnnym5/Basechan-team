@@ -57,38 +57,39 @@ export function PerformanceCard({ userProfile }: PerformanceCardProps) {
 
 
     return (
-        <Card className="bg-primary/90 text-primary-foreground h-full flex flex-col justify-between">
+        <Card className="bg-primary/90 text-primary-foreground h-[220px] flex flex-col justify-between">
             <div>
-                <CardHeader>
+                <CardHeader className="p-4">
                     <div className="flex items-center justify-between">
                         <CardTitle className="text-sm font-semibold tracking-wider uppercase">Performance Overview</CardTitle>
                         <TrendingUp className="h-5 w-5 text-primary-foreground/70" />
                     </div>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="p-4 pt-0">
                     <div className="flex items-end justify-between">
                         {isProgressLoading ? (
                             <div className="space-y-2">
-                                <Skeleton className="h-12 w-24 bg-white/20" />
-                                <Skeleton className="h-5 w-48 bg-white/20" />
+                                <Skeleton className="h-10 w-20 bg-white/20" />
+                                <Skeleton className="h-4 w-40 bg-white/20" />
                             </div>
                         ) : (
                             <div>
-                                <p className="text-5xl font-bold font-headline">{monthlyProgress}%</p>
-                                <p className="text-primary-foreground/80">Monthly Target Progress</p>
+                                <p className="text-4xl font-bold font-headline">{monthlyProgress}%</p>
+                                <p className="text-sm text-primary-foreground/80">Monthly Target</p>
                             </div>
                         )}
                         <Button 
+                            size="sm"
                             variant="secondary" 
                             className="bg-primary-foreground/20 text-primary-foreground hover:bg-primary-foreground/30"
                             onClick={() => uiEmitter.emit('open-reports-dialog')}
                         >
-                            View Details
+                            Details
                         </Button>
                     </div>
                 </CardContent>
             </div>
-            <CardFooter className="pt-0">
+            <CardFooter className="p-4 pt-0">
                  {isProgressLoading ? (
                      <Skeleton className="h-2 w-full bg-white/20" />
                  ) : (

@@ -29,7 +29,7 @@ import { PerformanceCard } from '@/components/dashboard/PerformanceCard';
 
 const ClockInCard = ({ userProfile, permissions, systemConfig }: { userProfile: UserProfile | null; permissions: Permissions; systemConfig: SystemConfig | null }) => {
   return (
-    <div className="h-full">
+    <div className="h-[220px]">
        <ClockControl 
         userProfile={userProfile} 
         permissions={permissions} 
@@ -57,18 +57,18 @@ const LatestAnnouncementCard = ({ userProfile, authUser }: { userProfile: UserPr
   const latestAnnouncement = announcements?.[0];
 
   return (
-    <Card className="h-full flex flex-col bg-primary/90 text-primary-foreground">
-      <CardHeader>
+    <Card className="h-[220px] flex flex-col bg-primary/90 text-primary-foreground">
+      <CardHeader className="p-4">
         <div className="flex items-center justify-between">
             <CardTitle className="text-sm font-semibold tracking-wider uppercase">Latest Announcement</CardTitle>
             <Megaphone className="h-5 w-5 text-primary-foreground/70" />
         </div>
       </CardHeader>
-      <CardContent className="flex-grow flex items-center justify-center text-center">
+      <CardContent className="flex-grow flex items-center justify-center text-center p-4 pt-0">
         {isLoading ? <Skeleton className="w-full h-24 bg-white/20" /> : latestAnnouncement ? (
           <div>
-            <h3 className="text-3xl font-bold font-headline">{latestAnnouncement.title}</h3>
-            <p className="text-primary-foreground/80 line-clamp-2 mt-2">{latestAnnouncement.content}</p>
+            <h3 className="text-2xl font-bold font-headline">{latestAnnouncement.title}</h3>
+            <p className="text-primary-foreground/80 line-clamp-2 mt-1">{latestAnnouncement.content}</p>
           </div>
         ) : (
           <p className="text-primary-foreground/80">No announcements right now.</p>
@@ -80,29 +80,29 @@ const LatestAnnouncementCard = ({ userProfile, authUser }: { userProfile: UserPr
 
 const QuickActionsCard = ({ permissions }: { permissions: Permissions }) => {
   return (
-    <Card className="bg-primary/90 text-primary-foreground h-full flex flex-col">
-      <CardHeader>
+    <Card className="bg-primary/90 text-primary-foreground h-[220px] flex flex-col">
+      <CardHeader className="p-4">
         <CardTitle>Quick Actions</CardTitle>
-        <CardDescription className="text-primary-foreground/80">Your most common tasks, just a click away.</CardDescription>
+        <CardDescription className="text-primary-foreground/80 line-clamp-1">Your most common tasks.</CardDescription>
       </CardHeader>
-      <CardContent className="flex-grow grid grid-cols-2 sm:grid-cols-2 gap-4 items-center">
+      <CardContent className="flex-grow grid grid-cols-2 gap-2 items-center p-4 pt-0">
         {permissions.canManageStaff && (
-             <Button variant="secondary" size="lg" className="flex-col h-auto py-4 w-full bg-primary-foreground/20 text-primary-foreground hover:bg-primary-foreground/30" onClick={() => uiEmitter.emit('open-invite-user-dialog')}>
-                <UserPlus className="h-6 w-6 mb-2" />
+             <Button variant="secondary" className="flex-col h-full py-2 w-full bg-primary-foreground/20 text-primary-foreground hover:bg-primary-foreground/30 text-xs" onClick={() => uiEmitter.emit('open-invite-user-dialog')}>
+                <UserPlus className="h-5 w-5 mb-1" />
                 <span className="font-semibold">Add Member</span>
             </Button>
         )}
-        <Button variant="secondary" size="lg" className="flex-col h-auto py-4 w-full bg-primary-foreground/20 text-primary-foreground hover:bg-primary-foreground/30" onClick={() => uiEmitter.emit('open-assign-task-dialog')}>
-          <ListTodo className="h-6 w-6 mb-2" />
-          <span className="font-semibold">Add a Task</span>
+        <Button variant="secondary" className="flex-col h-full py-2 w-full bg-primary-foreground/20 text-primary-foreground hover:bg-primary-foreground/30 text-xs" onClick={() => uiEmitter.emit('open-assign-task-dialog')}>
+          <ListTodo className="h-5 w-5 mb-1" />
+          <span className="font-semibold">Add Task</span>
         </Button>
-        <Button variant="secondary" size="lg" className="flex-col h-auto py-4 w-full bg-primary-foreground/20 text-primary-foreground hover:bg-primary-foreground/30" onClick={() => uiEmitter.emit('open-new-workbook-dialog')}>
-          <BookOpenCheck className="h-6 w-6 mb-2" />
+        <Button variant="secondary" className="flex-col h-full py-2 w-full bg-primary-foreground/20 text-primary-foreground hover:bg-primary-foreground/30 text-xs" onClick={() => uiEmitter.emit('open-new-workbook-dialog')}>
+          <BookOpenCheck className="h-5 w-5 mb-1" />
           <span className="font-semibold">New Workbook</span>
         </Button>
         {permissions.canAccessRequisitions && (
-          <Button variant="secondary" size="lg" className="flex-col h-auto py-4 w-full bg-primary-foreground/20 text-primary-foreground hover:bg-primary-foreground/30" onClick={() => uiEmitter.emit('open-new-requisition-dialog')}>
-            <FilePlus2 className="h-6 w-6 mb-2" />
+          <Button variant="secondary" className="flex-col h-full py-2 w-full bg-primary-foreground/20 text-primary-foreground hover:bg-primary-foreground/30 text-xs" onClick={() => uiEmitter.emit('open-new-requisition-dialog')}>
+            <FilePlus2 className="h-5 w-5 mb-1" />
             <span className="font-semibold">New Requisition</span>
           </Button>
         )}
@@ -158,7 +158,7 @@ function DashboardContent() {
     return (
         <div className="flex flex-col gap-8">
              {isLoading ? (
-                <Skeleton className="h-[218px] w-full" />
+                <Skeleton className="h-[220px] w-full" />
              ) : (
                 <Carousel setApi={setApi} className="w-full" opts={{ loop: true }}>
                     <CarouselContent className="-ml-4">

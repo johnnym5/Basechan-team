@@ -415,19 +415,19 @@ export function ClockControl({
 
   return (
     <Card className={cn(className)}>
-      <CardHeader className="text-center p-4 pb-2">
+      <CardHeader className="text-center p-3 pb-1">
         <CardTitle>Time Clock</CardTitle>
         <CardDescription>
           {dateDisplay || <Skeleton className="h-5 w-32 mx-auto" />}
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-3 text-center p-4 pt-0">
+      <CardContent className="space-y-3 text-center p-3 pt-0">
         {isClockedIn ? (
           <>
             <div className="grid grid-cols-2 gap-2">
                  <Button
                   variant={onBreak ? 'default' : 'outline'}
-                  className="w-full h-12 text-base flex-col gap-1"
+                  className="w-full h-10 text-sm flex-col gap-1"
                   disabled={isSubmitting || !isApproved}
                   onClick={onBreak ? handleEndBreak : handleStartBreak}
                 >
@@ -438,7 +438,7 @@ export function ClockControl({
                 </Button>
                 <Button
                   variant="destructive"
-                  className="w-full h-12 text-base flex-col gap-1"
+                  className="w-full h-10 text-sm flex-col gap-1"
                   disabled={isSubmitting || onBreak}
                   onClick={handleClockOut}
                 >
@@ -451,7 +451,7 @@ export function ClockControl({
             {isApproved && (
               <div className="space-y-2 pt-2">
                 <div className="text-center">
-                    <p className="font-mono text-lg tracking-widest">{shiftDuration}</p>
+                    <p className="font-mono text-base tracking-widest">{shiftDuration}</p>
                     <p className="text-xs text-muted-foreground">TIME ELAPSED</p>
                 </div>
                 {timeRemaining !== null && (
@@ -497,7 +497,7 @@ export function ClockControl({
               </Label>
             </RadioGroup>
             <Button
-              className="w-full h-12 text-base bg-emerald-600 hover:bg-emerald-700"
+              className="w-full h-10 text-sm bg-emerald-600 hover:bg-emerald-700"
               disabled={isSubmitting}
               onClick={handleClockIn}
             >
