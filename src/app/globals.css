@@ -33,13 +33,13 @@
   }
 
   .dark {
-    --background: 224 71.4% 4.1%;
+    --background: 218.2 37.5% 9.8%;
     --foreground: 210 40% 98%;
     --card: 224 71.4% 10.2%;
     --card-foreground: 210 40% 98%;
     --popover: 224 71.4% 4.1%;
     --popover-foreground: 210 40% 98%;
-    --primary: 217.2 91.2% 59.8%;
+    --primary: 220.3 85.9% 53.3%;
     --primary-foreground: 210 40% 98%;
     --secondary: 217.2 32.6% 17.5%;
     --secondary-foreground: 210 40% 98%;
@@ -64,4 +64,18 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
+}
+
+@layer utilities {
+    .glass {
+        background: rgba(255, 255, 255, 0.03);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .glass-dark {
+        background: rgba(16, 22, 34, 0.6);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+    }
 }

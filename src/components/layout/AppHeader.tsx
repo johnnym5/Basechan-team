@@ -1,41 +1,23 @@
 'use client';
 import { UserNav } from "@/components/layout/UserNav";
 import { Button } from "@/components/ui/button";
-import { Clock, Bell, CheckCheck } from "lucide-react";
-import { usePathname, useRouter } from 'next/navigation';
+import { Bell } from "lucide-react";
+import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
-import { format, formatDistanceToNow } from 'date-fns';
-import { useUser, useDoc, useFirestore, useMemoFirebase, useCollection, updateDocumentNonBlocking } from '@/firebase';
+import { useUser, useFirestore, useMemoFirebase, useCollection, updateDocumentNonBlocking } from '@/firebase';
 import { doc, collection, query, where, orderBy, writeBatch } from 'firebase/firestore';
 import type { UserProfile, Notification } from '@/lib/types';
 import { UniversalSearch } from './UniversalSearch';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { cn } from "@/lib/utils";
 import { showBrowserNotification } from '@/lib/notifications';
+import { Avatar, AvatarFallback } from '../ui/avatar';
 
 
-export default function AppHeader() {
-  const pathname = usePathname();
+export default function AppHeader({ userProfile } : { userProfile: UserProfile | null }) {
   const router = useRouter();
   const { user } = useUser();
   const firestore = useFirestore();
-  const [currentTime, setCurrentTime] = useState<Date | null>(null);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [shownNotificationIds, setShownNotificationIds] = useState<Set<string>>(new Set());
-
-  // Get user profile and permissions
-  const userProfileRef = useMemoFirebase(() => 
-    firestore && user ? doc(firestore, 'users', user.uid) : null
-  , [firestore, user]);
-  const { data: userProfile } = useDoc<UserProfile>(userProfileRef);
-
-  useEffect(() => {
-    setCurrentTime(new Date());
-    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
-    return () => clearInterval(timer);
-  }, []);
 
   // --- Start of logic from Notifications ---
   const notificationsQuery = useMemoFirebase(() => {
@@ -47,10 +29,10 @@ export default function AppHeader() {
     );
   }, [firestore, user]);
 
-  const { data: notifications, isLoading: areNotificationsLoading } = useCollection<Notification>(notificationsQuery);
+  const { data: notifications } = useCollection<Notification>(notificationsQuery);
 
   useEffect(() => {
-    if (areNotificationsLoading || !notifications || typeof window === 'undefined' || !('Notification' in window) || Notification.permission !== 'granted') {
+    if (!notifications || typeof window === 'undefined' || !('Notification' in window) || Notification.permission !== 'granted') {
       return;
     }
     
@@ -79,7 +61,7 @@ export default function AppHeader() {
         return newSet;
       });
     }
-  }, [notifications, areNotificationsLoading, shownNotificationIds]);
+  }, [notifications, shownNotificationIds]);
 
   const unreadCount = notifications?.filter(n => !n.isRead).length || 0;
 
@@ -107,71 +89,36 @@ export default function AppHeader() {
   // --- End of logic from Notifications ---
 
   return (
-    <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background/80 px-4 backdrop-blur sm:h-16 sm:px-6">
-      <div className="flex-1">
-        {userProfile && <UniversalSearch userProfile={userProfile} />}
+    <header className="sticky top-0 z-40 glass-dark px-6 py-4 flex items-center justify-between">
+      <div className="flex items-center gap-3">
+        {userProfile ? (
+          <>
+            <Avatar className="size-10 rounded-full bg-primary/20 flex items-center justify-center border border-primary/30 overflow-hidden">
+                <AvatarFallback>{userProfile.fullName.split(' ').map(n=>n[0]).join('')}</AvatarFallback>
+            </Avatar>
+            <div>
+              <p className="text-xs text-slate-400 font-medium">Good Morning</p>
+              <h2 className="text-sm font-bold">{userProfile.fullName}</h2>
+            </div>
+          </>
+        ) : null}
       </div>
       <div className='flex items-center gap-2'>
-        <div className='hidden sm:flex items-center gap-2 text-muted-foreground'>
-            <Clock className='h-4 w-4' />
-            {currentTime ? (
-              <p className="text-sm">{format(currentTime, 'PPP, p')}</p>
-            ) : (
-              <Skeleton className="h-4 w-40" />
-            )}
+        {userProfile && (
+            <div className="hidden md:block">
+                <UniversalSearch userProfile={userProfile} />
+            </div>
+        )}
+        <Button variant="ghost" size="icon" className="size-10 rounded-full flex items-center justify-center bg-slate-800/50 border border-slate-700 relative">
+            <span className="material-symbols-outlined text-xl">search</span>
+        </Button>
+        <Button variant="ghost" size="icon" className="size-10 rounded-full flex items-center justify-center bg-slate-800/50 border border-slate-700 relative">
+            <Bell className="text-xl text-slate-300" />
+            {unreadCount > 0 && <span className="absolute top-2.5 right-2.5 size-2 bg-primary rounded-full border-2 border-background"></span>}
+        </Button>
+        <div className="hidden">
+            <UserNav userProfile={userProfile} />
         </div>
-        <Popover open={isNotificationsOpen} onOpenChange={setIsNotificationsOpen}>
-            <PopoverTrigger asChild>
-              <Button variant="ghost" size="icon" className="relative">
-                  <Bell className="h-5 w-5" />
-                  {unreadCount > 0 && (
-                      <span className="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground">
-                          {unreadCount}
-                      </span>
-                  )}
-                  <span className="sr-only">Toggle notifications</span>
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-80 p-0" align="end">
-                <div className="flex items-center justify-between p-4 border-b">
-                    <h3 className="font-semibold">Notifications</h3>
-                    <Button variant="ghost" size="sm" onClick={handleMarkAllAsRead} disabled={unreadCount === 0}>
-                        <CheckCheck className="mr-2 h-4 w-4" />
-                        Mark all as read
-                    </Button>
-                </div>
-                <ScrollArea className="h-96">
-                    <div className="p-2">
-                        {areNotificationsLoading && <div className="p-4"><Skeleton className="h-20 w-full" /></div>}
-                        {!areNotificationsLoading && (!notifications || notifications.length === 0) && (
-                            <p className="text-center text-sm text-muted-foreground py-16">No notifications yet.</p>
-                        )}
-                        {!areNotificationsLoading && notifications?.map(notif => (
-                            <div 
-                                key={notif.id}
-                                onClick={() => handleNotificationClick(notif)}
-                                className={cn(
-                                    "p-3 rounded-lg hover:bg-secondary cursor-pointer",
-                                    !notif.isRead && "bg-secondary/50"
-                                )}
-                            >
-                                <div className="flex items-start gap-3">
-                                    {!notif.isRead && <div className="mt-1.5 h-2 w-2 rounded-full bg-primary" />}
-                                    <div className={cn("flex-1", notif.isRead ? "" : "pl-1")}>
-                                        <p className="font-semibold text-sm">{notif.title}</p>
-                                        <p className="text-sm text-muted-foreground">{notif.description}</p>
-                                        <p className="text-xs text-muted-foreground/80 mt-1">
-                                            {formatDistanceToNow(new Date(notif.createdAt), { addSuffix: true })}
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                </ScrollArea>
-            </PopoverContent>
-          </Popover>
-        <UserNav userProfile={userProfile} />
       </div>
     </header>
   );

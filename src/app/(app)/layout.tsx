@@ -2,7 +2,7 @@
 import { useUser, useDoc, useFirestore, useMemoFirebase } from '@/firebase';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { Loader2, ListTodo, FileText, CalendarPlus, BookOpenCheck, Plus, UserPlus, Eye, MessageSquare, Megaphone } from 'lucide-react';
+import { Loader2, ListTodo, FileText, CalendarPlus, BookOpenCheck, Plus, UserPlus, Eye, MessageSquare, Megaphone, Home, CalendarDays, User } from 'lucide-react';
 import { doc } from 'firebase/firestore';
 import type { UserProfile } from '@/lib/types';
 import { useSystemConfig } from '@/hooks/useSystemConfig';
@@ -56,6 +56,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [isInviteUserOpen, setIsInviteUserOpen] = useState(false);
   const [isNewAnnouncementOpen, setIsNewAnnouncementOpen] = useState(false);
   const { isImpersonating } = useImpersonation();
+  const [isFabMenuOpen, setIsFabMenuOpen] = useState(false);
 
   const isAnyDialogOpen =
     isWorkbookOpen ||
@@ -89,7 +90,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const root = document.documentElement;
-    const defaultPrimary = '217.2 91.2% 59.8%';
+    const defaultPrimary = '220.3 85.9% 53.3%';
     const defaultAccent = '217.2 32.6% 17.5%';
     
     if (config?.branding_color) {
@@ -183,18 +184,18 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <>
-      <div className="flex min-h-screen w-full bg-muted/40">
+      <div className="flex min-h-screen w-full bg-muted/40 md:bg-background">
           <AppSidebar />
            <div className={cn(
               "flex flex-1 flex-col bg-background transition-all duration-300 ease-in-out origin-center",
-              isAnyDialogOpen ? "scale-[0.97] rounded-2xl overflow-hidden shadow-2xl" : "scale-100 rounded-none"
+              isAnyDialogOpen ? "md:scale-[0.97] md:rounded-2xl md:overflow-hidden md:shadow-2xl" : "md:scale-100 rounded-none"
           )}>
-              <AppHeader />
-              <main className="flex-1 overflow-y-auto p-4 sm:p-6 pb-24 md:pb-6">
+              <AppHeader userProfile={userProfile} />
+              <main className="flex-1 overflow-y-auto md:p-6 pb-28 md:pb-6">
                   {children}
               </main>
           </div>
-          <BottomNavBar />
+          <BottomNavBar onFabClick={() => setIsFabMenuOpen(true)} />
       </div>
 
        {/* Impersonation Banner */}
@@ -206,12 +207,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       )}
 
 
-       {/* FAB for Desktop and Mobile */}
-       <div className="block">
+       {/* FAB for Desktop */}
+       <div className="hidden md:block">
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
-                <Button className="fixed bottom-24 right-4 h-14 w-14 rounded-full shadow-lg z-40 md:bottom-8 md:right-8 md:h-16 md:w-16">
-                    <Plus className="h-7 w-7 md:h-8 md:w-8" />
+                <Button className="fixed bottom-8 right-8 h-16 w-16 rounded-full shadow-lg z-40">
+                    <Plus className="h-8 w-8" />
                 </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent className="w-56 mb-2" align="end">
@@ -254,6 +255,49 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             </DropdownMenuContent>
         </DropdownMenu>
       </div>
+
+       {/* FAB Menu for Mobile */}
+      <DropdownMenu open={isFabMenuOpen} onOpenChange={setIsFabMenuOpen}>
+        <DropdownMenuContent className="w-56 mb-20 md:hidden" align="end">
+           {permissions.canManageStaff && (
+                <DropdownMenuItem onSelect={() => setIsInviteUserOpen(true)}>
+                    <UserPlus className="mr-2 h-4 w-4" />
+                    <span>Add Team Member</span>
+                </DropdownMenuItem>
+            )}
+            <DropdownMenuItem onSelect={() => setIsAssignTaskOpen(true)}>
+                <ListTodo className="mr-2 h-4 w-4" />
+                <span>New Task</span>
+            </DropdownMenuItem>
+            {permissions.canAccessRequisitions && (
+                <DropdownMenuItem onSelect={() => setIsNewRequisitionOpen(true)}>
+                    <FileText className="mr-2 h-4 w-4" />
+                    <span>New Requisition</span>
+                </DropdownMenuItem>
+            )}
+            <DropdownMenuItem onSelect={() => setIsRequestLeaveOpen(true)}>
+                <CalendarPlus className="mr-2 h-4 w-4" />
+                <span>Request Leave</span>
+            </DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => setIsNewWorkbookOpen(true)}>
+                <BookOpenCheck className="mr-2 h-4 w-4" />
+                <span>New Workbook</span>
+            </DropdownMenuItem>
+            {permissions.canManageAnnouncements && (
+                <DropdownMenuItem onSelect={() => setIsNewAnnouncementOpen(true)}>
+                    <Megaphone className="mr-2 h-4 w-4" />
+                    <span>New Announcement</span>
+                </DropdownMenuItem>
+            )}
+            {permissions.canAccessChat && (
+                <DropdownMenuItem onSelect={() => setIsChatOpen(true)}>
+                    <MessageSquare className="mr-2 h-4 w-4" />
+                    <span>New Chat</span>
+                </DropdownMenuItem>
+            )}
+        </DropdownMenuContent>
+      </DropdownMenu>
+
 
       {/* Main Feature Dialogs */}
       <WorkbookDialog
