@@ -17,13 +17,13 @@ export function BottomNavBar({ onFabClick }: BottomNavBarProps) {
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 px-4 pb-6 pt-2 md:hidden">
       <div className="max-w-md mx-auto glass-dark rounded-full px-2 py-2 flex items-center justify-between shadow-2xl shadow-black/50 border border-white/10">
-        <button onClick={() => uiEmitter.emit('open-requisitions-dialog')} className="flex-1 flex flex-col items-center gap-1 py-2 text-slate-500">
-            <span className="material-symbols-outlined text-2xl">receipt_long</span>
-            <span className="text-[10px] font-bold uppercase tracking-wider">Requisitions</span>
+        <button onClick={() => uiEmitter.emit('open-requisitions-dialog')} className="flex-1 flex flex-col items-center gap-1 py-2 text-primary">
+            <span className="material-symbols-outlined text-2xl fill-1">home</span>
+            <span className="text-[10px] font-bold uppercase tracking-wider">Home</span>
         </button>
-        <button onClick={() => uiEmitter.emit('open-tasks-dialog')} className="flex-1 flex flex-col items-center gap-1 py-2 text-slate-500">
-            <span className="material-symbols-outlined text-2xl">format_list_bulleted</span>
-            <span className="text-[10px] font-bold uppercase tracking-wider">Tasks</span>
+        <button onClick={() => uiEmitter.emit('open-attendance-dialog')} className="flex-1 flex flex-col items-center gap-1 py-2 text-slate-500">
+            <span className="material-symbols-outlined text-2xl">calendar_today</span>
+            <span className="text-[10px] font-bold uppercase tracking-wider">Attendance</span>
         </button>
 
         <div className="px-2">
@@ -32,12 +32,12 @@ export function BottomNavBar({ onFabClick }: BottomNavBarProps) {
             </button>
         </div>
 
-        <button onClick={() => uiEmitter.emit('open-attendance-dialog')} className="flex-1 flex flex-col items-center gap-1 py-2 text-slate-500">
-            <span className="material-symbols-outlined text-2xl">calendar_today</span>
-            <span className="text-[10px] font-bold uppercase tracking-wider">Attendance</span>
+        <button onClick={() => uiEmitter.emit('open-tasks-dialog')} className="flex-1 flex flex-col items-center gap-1 py-2 text-slate-500">
+            <span className="material-symbols-outlined text-2xl">format_list_bulleted</span>
+            <span className="text-[10px] font-bold uppercase tracking-wider">Tasks</span>
         </button>
         <button onClick={() => uiEmitter.emit('open-workbooks-dialog')} className="flex-1 flex flex-col items-center gap-1 py-2 text-slate-500">
-            <span className="material-symbols-outlined text-2xl">auto_stories</span>
+             <span className="material-symbols-outlined text-2xl">auto_stories</span>
             <span className="text-[10px] font-bold uppercase tracking-wider">Workbooks</span>
         </button>
       </div>

@@ -43,11 +43,11 @@ export function ActiveTasks() {
 
   return (
     <>
-        <div className="space-y-2">
+        <div className="space-y-4">
             <div className="flex items-center justify-between">
-                <h2 className="text-xl font-bold font-headline">Today's Tasks</h2>
+                <h2 className="text-xl font-bold font-headline md:text-lg">Today's Tasks</h2>
                 <Link href="/tasks" passHref>
-                <Button variant="link" size="sm">
+                <Button variant="link" size="sm" className="text-primary">
                     View All
                 </Button>
                 </Link>

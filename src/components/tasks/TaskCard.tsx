@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils';
 import { Badge } from '../ui/badge';
 import { ListTodo, Users, Archive } from 'lucide-react';
 import { TaskPriorityBadge } from './TaskPriorityBadge';
+import { Checkbox } from '../ui/checkbox';
 
 interface TaskCardProps {
     task: Task;
@@ -17,9 +18,10 @@ interface TaskCardProps {
 
 const getIconForTask = (title: string) => {
     const lowerTitle = title.toLowerCase();
-    if (lowerTitle.includes('inventory')) return <Archive />;
-    if (lowerTitle.includes('staff') || lowerTitle.includes('team')) return <Users />;
-    return <ListTodo />;
+    if (lowerTitle.includes('inventory')) return 'inventory_2';
+    if (lowerTitle.includes('staff') || lowerTitle.includes('team')) return 'groups';
+    if (lowerTitle.includes('audit')) return 'fact_check';
+    return 'task';
 }
 
 const getStatusBadge = (status: Task['status']) => {
@@ -45,14 +47,14 @@ export function TaskCard({ task, userProfile, permissions, onSelect }: TaskCardP
         <div className="md:hidden glass p-4 rounded-xl flex items-center gap-4 group cursor-pointer border border-white/5 hover:border-primary/30 transition-colors" onClick={() => onSelect(task)}>
             <div className="size-12 rounded-full bg-slate-800/50 flex items-center justify-center group-hover:bg-primary/10 transition-colors">
                 <span className="material-symbols-outlined text-slate-400 group-hover:text-primary">
-                    {task.title.toLowerCase().includes('inventory') ? 'inventory_2' : task.title.toLowerCase().includes('staff') ? 'groups' : 'task'}
+                    {getIconForTask(task.title)}
                 </span>
             </div>
             <div className="flex-1">
                 <h4 className="font-bold text-sm">{task.title}</h4>
-                <p className="text-xs text-slate-500">Assigned to {task.assignedToName}</p>
+                <p className="text-xs text-muted-foreground truncate">{task.description || `Assigned to ${task.assignedToName}`}</p>
             </div>
-            {getStatusBadge(task.status)}
+            <Checkbox className="mr-2" />
         </div>
 
         {/* Desktop View */}

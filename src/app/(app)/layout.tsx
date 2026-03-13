@@ -92,7 +92,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const root = document.documentElement;
-    const defaultPrimary = '220.3 85.9% 53.3%';
+    const defaultPrimary = '222 83% 53%';
     const defaultAccent = '217.2 32.6% 17.5%';
     
     if (config?.branding_color) {

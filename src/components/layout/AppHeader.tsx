@@ -8,7 +8,7 @@ import { doc, collection, query, where, orderBy, writeBatch } from 'firebase/fir
 import type { UserProfile, Notification } from '@/lib/types';
 import { UniversalSearch } from './UniversalSearch';
 import { showBrowserNotification } from '@/lib/notifications';
-import { Avatar, AvatarFallback } from '../ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 
 
 export default function AppHeader({ userProfile, onMenuClick } : { userProfile: UserProfile | null, onMenuClick: () => void }) {
@@ -91,11 +91,12 @@ export default function AppHeader({ userProfile, onMenuClick } : { userProfile: 
             <span className="material-symbols-outlined text-xl">menu</span>
         </Button>
         {userProfile ? (
-          <div className="hidden sm:flex items-center gap-3">
+          <div className="flex items-center gap-3">
             <Avatar className="size-10 rounded-full bg-primary/20 flex items-center justify-center border border-primary/30 overflow-hidden">
+                <AvatarImage src={user?.photoURL || ''} alt={userProfile.fullName} />
                 <AvatarFallback>{userProfile.fullName.split(' ').map(n=>n[0]).join('')}</AvatarFallback>
             </Avatar>
-            <div>
+            <div className="hidden sm:block">
               <p className="text-xs text-slate-400 font-medium">Good Morning</p>
               <h2 className="text-sm font-bold">{userProfile.fullName}</h2>
             </div>

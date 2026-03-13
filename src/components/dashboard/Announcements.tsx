@@ -23,7 +23,7 @@ const RecentActivity = ({ announcements }: { announcements: Announcement[] | nul
             <div className="relative pl-4 border-l border-slate-800 space-y-8 py-2">
             {announcements.map((ann, index) => (
                  <div key={ann.id} className="relative">
-                    <div className={`absolute -left-[21px] top-0 size-3 rounded-full border-2 border-background ${index === 0 ? 'bg-primary' : 'bg-slate-600'}`}></div>
+                    <div className={`absolute -left-[10px] top-1 size-3 rounded-full border-2 border-background ${index === 0 ? 'bg-primary' : 'bg-slate-600'}`}></div>
                     <div className="space-y-1">
                         <p className="text-sm font-medium"><span className="font-bold">{ann.title}</span> by {ann.authorName}</p>
                         <p className="text-xs text-slate-500">{formatDistanceToNow(new Date(ann.createdAt), { addSuffix: true })}</p>
