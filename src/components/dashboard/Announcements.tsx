@@ -15,26 +15,6 @@ import { EditAnnouncementDialog } from "./EditAnnouncementDialog";
 import { useToast } from "@/hooks/use-toast";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 
-const RecentActivity = ({ announcements }: { announcements: Announcement[] | null }) => {
-    if (!announcements) return null;
-    return (
-        <section className="space-y-4">
-            <h3 className="text-lg font-bold">Recent Activity</h3>
-            <div className="relative pl-4 border-l border-slate-800 space-y-8 py-2">
-            {announcements.map((ann, index) => (
-                 <div key={ann.id} className="relative">
-                    <div className={`absolute -left-[10px] top-1 size-3 rounded-full border-2 border-background ${index === 0 ? 'bg-primary' : 'bg-slate-600'}`}></div>
-                    <div className="space-y-1">
-                        <p className="text-sm font-medium"><span className="font-bold">{ann.title}</span> by {ann.authorName}</p>
-                        <p className="text-xs text-slate-500">{formatDistanceToNow(new Date(ann.createdAt), { addSuffix: true })}</p>
-                    </div>
-                </div>
-            ))}
-            </div>
-      </section>
-    );
-};
-
 
 export function Announcements() {
     const { user: authUser } = useUser();
@@ -102,93 +82,85 @@ export function Announcements() {
 
     return (
         <>
-        {/* Mobile View */}
-        <div className="block md:hidden">
-            <RecentActivity announcements={sortedAnnouncements} />
-        </div>
-
-        {/* Desktop View */}
-        <div className="hidden md:block">
-            <Card>
-                <CardHeader>
-                    <CardTitle>Announcements</CardTitle>
-                    <CardDescription>The latest broadcasts for your organization.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <div className="flow-root">
-                        <ul role="list" className="-my-6 divide-y divide-border">
-                            {isLoading && Array.from({length: 2}).map((_, i) => (
-                                <li key={i} className="py-6">
-                                    <div className="flex gap-3">
-                                        <Skeleton className="h-5 w-5 mt-1 shrink-0" />
-                                        <div className="flex-1 space-y-2">
-                                            <Skeleton className="h-4 w-3/4" />
-                                            <Skeleton className="h-3 w-1/2" />
-                                        </div>
+        <Card>
+            <CardHeader>
+                <CardTitle>Announcements</CardTitle>
+                <CardDescription>The latest broadcasts for your organization.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <div className="flow-root">
+                    <ul role="list" className="-my-6 divide-y divide-border">
+                        {isLoading && Array.from({length: 2}).map((_, i) => (
+                            <li key={i} className="py-6">
+                                <div className="flex gap-3">
+                                    <Skeleton className="h-5 w-5 mt-1 shrink-0" />
+                                    <div className="flex-1 space-y-2">
+                                        <Skeleton className="h-4 w-3/4" />
+                                        <Skeleton className="h-3 w-1/2" />
                                     </div>
-                                </li>
-                            ))}
-                            {!isLoading && sortedAnnouncements.length === 0 && (
-                                <li className="py-6">
-                                    <p className="text-sm text-muted-foreground text-center py-8">No announcements have been posted yet.</p>
-                                </li>
-                            )}
-                            {!isLoading && sortedAnnouncements.map(announcement => {
-                                return (
-                                <li key={announcement.id} className="py-6">
-                                    <div className="flex items-start gap-4">
-                                        <Avatar className="h-8 w-8">
-                                            <AvatarFallback>{announcement.authorName.split(' ').map(n=>n[0]).join('')}</AvatarFallback>
-                                        </Avatar>
-                                        <div className="flex-1">
-                                            <div className="flex items-center justify-between">
-                                                <p className="font-semibold text-sm">{announcement.title}</p>
-                                                {announcement.isPinned && <Pin className="h-4 w-4 text-primary" />}
-                                            </div>
-                                            <p className="text-sm text-muted-foreground">{announcement.content}</p>
-                                            <div className="text-xs text-muted-foreground/70 mt-2 flex items-center justify-between">
-                                                <span>
-                                                    {announcement.authorName} - {formatDistanceToNow(new Date(announcement.createdAt), { addSuffix: true })}
+                                </div>
+                            </li>
+                        ))}
+                        {!isLoading && sortedAnnouncements.length === 0 && (
+                            <li className="py-6">
+                                <p className="text-sm text-muted-foreground text-center py-8">No announcements have been posted yet.</p>
+                            </li>
+                        )}
+                        {!isLoading && sortedAnnouncements.map(announcement => {
+                            return (
+                            <li key={announcement.id} className="py-6">
+                                <div className="flex items-start gap-4">
+                                    <Avatar className="h-8 w-8">
+                                        <AvatarFallback>{announcement.authorName.split(' ').map(n=>n[0]).join('')}</AvatarFallback>
+                                    </Avatar>
+                                    <div className="flex-1">
+                                        <div className="flex items-center justify-between">
+                                            <p className="font-semibold text-sm">{announcement.title}</p>
+                                            {announcement.isPinned && <Pin className="h-4 w-4 text-primary" />}
+                                        </div>
+                                        <p className="text-sm text-muted-foreground">{announcement.content}</p>
+                                        <div className="text-xs text-muted-foreground/70 mt-2 flex items-center justify-between">
+                                            <span>
+                                                {announcement.authorName} - {formatDistanceToNow(new Date(announcement.createdAt), { addSuffix: true })}
+                                            </span>
+                                            {announcement.isPinned && permissions.canManageAnnouncements && (
+                                                <span className="flex items-center gap-1 text-primary/80">
+                                                    <Eye className="h-3 w-3" />
+                                                    {announcement.viewedBy?.length || 0}
                                                 </span>
-                                                {announcement.isPinned && permissions.canManageAnnouncements && (
-                                                    <span className="flex items-center gap-1 text-primary/80">
-                                                        <Eye className="h-3 w-3" />
-                                                        {announcement.viewedBy?.length || 0}
-                                                    </span>
-                                                )}
-                                            </div>
+                                            )}
                                         </div>
-                                        {permissions.canManageAnnouncements && (
-                                            <DropdownMenu>
-                                                <DropdownMenuTrigger asChild>
-                                                    <Button variant="ghost" size="icon" className="h-8 w-8 -mr-2">
-                                                        <MoreVertical className="h-4 w-4" />
-                                                    </Button>
-                                                </DropdownMenuTrigger>
-                                                <DropdownMenuContent>
-                                                    <DropdownMenuItem onSelect={() => handlePinToggle(announcement)}>
-                                                        <Pin className="mr-2 h-4 w-4" />
-                                                        {announcement.isPinned ? 'Unpin' : 'Pin'}
-                                                    </DropdownMenuItem>
-                                                    <DropdownMenuItem onSelect={() => setAnnToEdit(announcement)}>
-                                                        <Edit className="mr-2 h-4 w-4" />
-                                                        Edit
-                                                    </DropdownMenuItem>
-                                                    <DropdownMenuItem className="text-destructive focus:text-destructive" onSelect={() => setAnnToDelete(announcement)}>
-                                                        <Trash2 className="mr-2 h-4 w-4" />
-                                                        Delete
-                                                    </DropdownMenuItem>
-                                                </DropdownMenuContent>
-                                            </DropdownMenu>
-                                        )}
                                     </div>
-                                </li>
-                            )})}
-                        </ul>
-                    </div>
-                </CardContent>
-            </Card>
-        </div>
+                                    {permissions.canManageAnnouncements && (
+                                        <DropdownMenu>
+                                            <DropdownMenuTrigger asChild>
+                                                <Button variant="ghost" size="icon" className="h-8 w-8 -mr-2">
+                                                    <MoreVertical className="h-4 w-4" />
+                                                </Button>
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent>
+                                                <DropdownMenuItem onSelect={() => handlePinToggle(announcement)}>
+                                                    <Pin className="mr-2 h-4 w-4" />
+                                                    {announcement.isPinned ? 'Unpin' : 'Pin'}
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem onSelect={() => setAnnToEdit(announcement)}>
+                                                    <Edit className="mr-2 h-4 w-4" />
+                                                    Edit
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem className="text-destructive focus:text-destructive" onSelect={() => setAnnToDelete(announcement)}>
+                                                    <Trash2 className="mr-2 h-4 w-4" />
+                                                    Delete
+                                                </DropdownMenuItem>
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
+                                    )}
+                                </div>
+                            </li>
+                        )})}
+                    </ul>
+                </div>
+            </CardContent>
+        </Card>
         
         {annToEdit && (
             <EditAnnouncementDialog 

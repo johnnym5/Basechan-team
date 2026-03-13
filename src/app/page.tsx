@@ -15,62 +15,20 @@ import type { UserProfile, Requisition, Announcement, SystemConfig } from "@/lib
 import type { User } from 'firebase/auth';
 import { Skeleton } from "@/components/ui/skeleton";
 import { Announcements } from "@/components/dashboard/Announcements";
-import { usePermissions, type Permissions } from "@/hooks/usePermissions";
-import { Carousel, CarouselContent, CarouselItem, type CarouselApi } from "@/components/ui/carousel";
-import { Card, CardHeader, CardTitle, CardContent, CardFooter, CardDescription } from "@/components/ui/card";
+import { usePermissions } from "@/hooks/usePermissions";
 import { ClockControl } from "@/components/attendance/ClockControl";
 import { useSystemConfig } from "@/hooks/useSystemConfig";
-import { uiEmitter } from '@/lib/ui-emitter';
 import { PerformanceCard } from '@/components/dashboard/PerformanceCard';
 import { StatCard } from "@/components/dashboard/StatCard";
-import { CheckCircle, Megaphone, BookOpenCheck, FilePlus2, ListTodo, UserPlus } from "lucide-react";
-import { formatDistanceToNow } from 'date-fns';
+import { CheckCircle } from "lucide-react";
+import { QuickActions } from '@/components/dashboard/QuickActions';
+import { RecentReports } from '@/components/dashboard/RecentReports';
+import { RecentConversations } from '@/components/dashboard/RecentConversations';
 
 
-function MobileDashboard({ userProfile, authUser }: { userProfile: UserProfile | null, authUser: User | null }) {
-    const { config: systemConfig } = useSystemConfig(userProfile?.orgId);
-    const permissions = usePermissions(userProfile);
-    const [shiftStartTime, setShiftStartTime] = useState<Date | null>(null);
-
-    const firestore = useFirestore();
-    const attendanceQuery = useMemoFirebase(() => {
-        if (!userProfile) return null;
-        const today = new Date();
-        const todayDateString = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-        return query(
-          collection(firestore, 'attendance'),
-          where('userId', '==', userProfile.id),
-          where('date', '==', todayDateString),
-          limit(1)
-        );
-      }, [firestore, userProfile]);
-
-    const { data: attendanceData } = useCollection(attendanceQuery);
-
-    useEffect(() => {
-        if (attendanceData && attendanceData.length > 0) {
-            setShiftStartTime(new Date(attendanceData[0].clockIn));
-        }
-    }, [attendanceData]);
-
-    return (
-        <main className="max-w-md mx-auto px-6 pt-8 space-y-8">
-            <section className="space-y-1">
-                <h1 className="text-3xl font-extrabold tracking-tight">Dashboard</h1>
-                {shiftStartTime && <p className="text-slate-500 dark:text-slate-400">Shift started {formatDistanceToNow(shiftStartTime, { addSuffix: true })}</p>}
-            </section>
-            
-            <ClockControl userProfile={userProfile} permissions={permissions} systemConfig={systemConfig} />
-            <ActiveTasks />
-            <Announcements />
-        </main>
-    )
-}
-
-function DesktopDashboard() {
+function DashboardGrid() {
     const { user: authUser } = useUser();
     const firestore = useFirestore();
-    const [api, setApi] = useState<CarouselApi>()
 
     const userProfileRef = useMemoFirebase(() => 
         firestore && authUser ? doc(firestore, 'users', authUser.uid) : null, 
@@ -97,57 +55,54 @@ function DesktopDashboard() {
     }, [firestore, userProfile, permissions]);
     const { data: pendingReqs, isLoading: reqsLoading } = useCollection<Requisition>(reqsQuery);
     
-     useEffect(() => {
-        if (!api) { return }
-        const interval = setInterval(() => {
-            if (api.canScrollNext()) {
-                api.scrollNext()
-            } else {
-                api.scrollTo(0)
-            }
-        }, 30000);
-        return () => clearInterval(interval);
-      }, [api]);
-
     const isLoading = isProfileLoading || reqsLoading || isConfigLoading;
 
-    return (
-        <div className="flex flex-col gap-8">
-             {isLoading ? (
-                <Skeleton className="h-[220px] w-full" />
-             ) : (
-                <Carousel setApi={setApi} className="w-full" opts={{ loop: true }}>
-                    <CarouselContent className="-ml-4">
-                        <CarouselItem className="pl-4 basis-1/3">
-                           <div className="h-full">
-                                <ClockControl userProfile={userProfile} permissions={permissions} systemConfig={systemConfig} className="h-full" />
-                           </div>
-                        </CarouselItem>
-                         {userProfile && (
-                          <CarouselItem className="pl-4 basis-1/3">
-                            <div className="h-full">
-                                <PerformanceCard userProfile={userProfile} />
-                            </div>
-                          </CarouselItem>
-                        )}
-                        <CarouselItem className="pl-4 basis-1/3">
-                            <StatCard 
-                                title="Pending Approvals" 
-                                value={pendingReqs?.length || 0} 
-                                icon={CheckCircle}
-                                href="/requisitions"
-                                color="bg-emerald-500/20 text-emerald-400"
-                            />
-                        </CarouselItem>
-                    </CarouselContent>
-                </Carousel>
-             )}
+    if (isLoading) {
+        return (
+             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className="lg:col-span-2 space-y-6">
+                    <Skeleton className="h-48 w-full" />
+                    <Skeleton className="h-64 w-full" />
+                    <Skeleton className="h-64 w-full" />
+                </div>
+                <div className="lg:col-span-1 space-y-6">
+                    <Skeleton className="h-48 w-full" />
+                    <Skeleton className="h-64 w-full" />
+                    <Skeleton className="h-64 w-full" />
+                </div>
+            </div>
+        )
+    }
 
-            <ActiveTasks />
-            <Announcements />
+    return (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Main Column */}
+            <div className="lg:col-span-2 space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <ClockControl userProfile={userProfile} permissions={permissions} systemConfig={systemConfig} />
+                    {userProfile && <PerformanceCard userProfile={userProfile} />}
+                </div>
+                <ActiveTasks />
+                <Announcements />
+            </div>
+
+            {/* Side Column */}
+            <div className="lg:col-span-1 space-y-6">
+                <StatCard 
+                    title="Pending Approvals" 
+                    value={pendingReqs?.length || 0} 
+                    icon={CheckCircle}
+                    href="/requisitions"
+                    color="bg-emerald-500/20 text-emerald-400"
+                />
+                <QuickActions />
+                <RecentReports />
+                <RecentConversations />
+            </div>
         </div>
     );
 }
+
 
 // --- End of Dashboard Content ---
 
@@ -207,12 +162,7 @@ export default function RootPage() {
   if (user && !isSuperAdmin && userProfile) {
     return (
       <AppLayout>
-        <div className="md:hidden">
-            <MobileDashboard userProfile={userProfile} authUser={user} />
-        </div>
-        <div className="hidden md:block">
-            <DesktopDashboard />
-        </div>
+        <DashboardGrid />
       </AppLayout>
     );
   }

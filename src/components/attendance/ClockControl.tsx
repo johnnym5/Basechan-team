@@ -389,37 +389,6 @@ export function ClockControl({
     }
   };
 
-  const MobileClockedInView = () => (
-    <section className="relative group">
-        <div className="absolute -inset-0.5 bg-gradient-to-r from-primary to-blue-400 rounded-xl blur opacity-20"></div>
-        <div className="relative glass p-6 rounded-xl flex flex-col gap-6">
-            <div className="flex justify-between items-start">
-                <div className="space-y-1">
-                    <span className="text-[10px] font-bold uppercase tracking-widest text-primary">Active Session</span>
-                    <h3 className="text-4xl font-black tracking-tighter">{shiftDuration}</h3>
-                </div>
-                <Badge variant="outline" className="bg-primary/20 border-primary/50 text-primary">ON CLOCK</Badge>
-            </div>
-            <div className="space-y-4">
-                <div className="text-sm space-y-1">
-                    <div className="flex justify-between">
-                        <span className="text-muted-foreground">Shift Start</span>
-                        <span className="font-medium">{attendanceRecord ? format(new Date(attendanceRecord.clockIn), 'p') : '-'}</span>
-                    </div>
-                    {systemConfig?.work_hours?.end && (
-                         <div className="flex justify-between">
-                            <span className="text-muted-foreground">Scheduled End</span>
-                            <span className="font-medium">{format(new Date().setHours(...systemConfig.work_hours.end.split(':').map(Number) as [number, number]), 'p')}</span>
-                        </div>
-                    )}
-                </div>
-                <Button onClick={handleClockOut} className="w-full py-4 bg-primary hover:bg-primary/90 text-white font-bold rounded-xl transition-all shadow-xl shadow-primary/20 flex items-center justify-center gap-2">
-                    {isSubmitting ? <Loader2 className="animate-spin" /> : <><span>Clock Out</span> <span className="material-symbols-outlined text-sm">logout</span></>}
-                </Button>
-            </div>
-        </div>
-    </section>
-  )
 
   if (isLoading) {
     return (
@@ -447,40 +416,7 @@ export function ClockControl({
   }
 
   return (
-    <>
-    {/* Mobile View */}
-    <div className="md:hidden">
-        {isClockedIn ? (
-            <MobileClockedInView />
-        ) : (
-             <Card className={cn(className)}>
-                 <CardHeader className="text-center p-3 pb-1">
-                    <CardTitle>Time Clock</CardTitle>
-                    <CardDescription>
-                    {dateDisplay || <Skeleton className="h-5 w-32 mx-auto" />}
-                    </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-3 text-center p-3 pt-0">
-                    <RadioGroup defaultValue="OFFICE" onValueChange={(value: AttendanceLocation) => setLocation(value)} className="grid grid-cols-2 gap-4 mb-4">
-                        <Label htmlFor="office-mobile" className="flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-3 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer">
-                            <RadioGroupItem value="OFFICE" id="office-mobile" className="sr-only" />
-                            <Building className="mb-2 h-5 w-5" /> In Office
-                        </Label>
-                        <Label htmlFor="remote-mobile" className="flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-3 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer">
-                            <RadioGroupItem value="REMOTE" id="remote-mobile" className="sr-only" />
-                            <Briefcase className="mb-2 h-5 w-5" /> Remote
-                        </Label>
-                    </RadioGroup>
-                    <Button className="w-full h-10 text-sm bg-emerald-600 hover:bg-emerald-700" disabled={isSubmitting} onClick={handleClockIn}>
-                        {isSubmitting ? <Loader2 className="animate-spin" /> : <LogIn />} Clock In
-                    </Button>
-                </CardContent>
-             </Card>
-        )}
-    </div>
-
-    {/* Desktop View */}
-    <Card className={cn(className, 'hidden md:block')}>
+    <Card className={cn(className)}>
       <CardHeader className="text-center p-3 pb-1">
         <CardTitle>Time Clock</CardTitle>
         <CardDescription>
@@ -574,6 +510,5 @@ export function ClockControl({
         )}
       </CardContent>
     </Card>
-    </>
   );
 }
