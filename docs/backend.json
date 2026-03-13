@@ -41,6 +41,11 @@
             "type": "string",
             "description": "User's phone number."
         },
+        "avatarUrl": {
+            "type": "string",
+            "format": "uri",
+            "description": "URL of the user's avatar image."
+        },
         "departmentId": {
           "type": "string",
           "description": "The ID of the department the user belongs to."

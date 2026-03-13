@@ -99,6 +99,7 @@ export function RegisterForm() {
         position: "Organization Administrator",
         joinedDate: new Date().toISOString(),
         status: 'OFFLINE',
+        avatarUrl: null,
       };
       
       await updateProfile(newUser, { 

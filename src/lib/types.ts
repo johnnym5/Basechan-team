@@ -44,6 +44,7 @@ export interface UserProfile {
   username: string;
   fullName: string;
   phoneNumber?: string | null;
+  avatarUrl?: string | null;
   position: UserPosition;
   departmentId?: string;
   departmentName?: string;

@@ -13,7 +13,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Bell, BellOff, BellRing, Loader2 } from "lucide-react";
+import { Bell, BellOff, BellRing, Loader2, Pencil } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useFirestore, updateDocumentNonBlocking, useUser, useAuth } from "@/firebase";
 import { doc } from "firebase/firestore";
@@ -29,6 +29,9 @@ import {
 import { sanitizeInput } from "@/lib/utils";
 import { Separator } from "@/components/ui/separator";
 import { sendPasswordResetEmail } from "firebase/auth";
+import { useFileUpload } from "@/hooks/useFileUpload";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Progress } from "@/components/ui/progress";
 
 const formSchema = z.object({
   fullName: z.string().min(1, { message: "Full name is required." }),
@@ -49,6 +52,12 @@ export function ProfileDialog({ open, onOpenChange, userProfile }: ProfileDialog
   const { toast } = useToast();
   const { user } = useUser();
   const auth = useAuth();
+  const { isUploading, uploadProgress, uploadFile } = useFileUpload();
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  
+  const isBusy = isSubmitting || isUploading;
+
   const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>(
     typeof window !== 'undefined' && 'Notification' in window ? Notification.permission : 'default'
   );
@@ -76,6 +85,19 @@ export function ProfileDialog({ open, onOpenChange, userProfile }: ProfileDialog
     }
   }, [userProfile, form]);
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+        setAvatarFile(file);
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            setAvatarPreview(reader.result as string);
+        };
+        reader.readAsDataURL(file);
+    }
+  };
+
+
   async function onSubmit(values: FormData) {
     if (!firestore || !user) {
       toast({ variant: 'destructive', title: 'Error', description: 'User not found.' });
@@ -84,10 +106,17 @@ export function ProfileDialog({ open, onOpenChange, userProfile }: ProfileDialog
     setIsSubmitting(true);
 
     try {
+      let newAvatarUrl = userProfile.avatarUrl;
+      if (avatarFile) {
+        const filePath = `avatars/${user.uid}/${Date.now()}_${avatarFile.name}`;
+        newAvatarUrl = await uploadFile(avatarFile, filePath);
+      }
+
       const userRef = doc(firestore, 'users', user.uid);
       await updateDocumentNonBlocking(userRef, {
         fullName: sanitizeInput(values.fullName),
         phoneNumber: sanitizeInput(values.phoneNumber) || null,
+        avatarUrl: newAvatarUrl,
       });
 
       toast({
@@ -182,6 +211,19 @@ export function ProfileDialog({ open, onOpenChange, userProfile }: ProfileDialog
             View and update your personal information.
           </DialogDescription>
         </DialogHeader>
+        
+        <div className="relative mx-auto w-24 h-24 my-6">
+            <Avatar className="w-24 h-24 border-2 border-primary/20">
+                <AvatarImage src={avatarPreview || userProfile.avatarUrl || user?.photoURL || ''} alt={userProfile.fullName} />
+                <AvatarFallback className="text-3xl">{userProfile.fullName.split(' ').map(n=>n[0]).join('')}</AvatarFallback>
+            </Avatar>
+            <label htmlFor="avatar-upload" className="absolute -bottom-2 -right-2 bg-primary text-primary-foreground rounded-full p-2 cursor-pointer hover:bg-primary/90 transition-colors">
+                <Pencil className="h-4 w-4" />
+                <Input id="avatar-upload" type="file" className="hidden" accept="image/*" onChange={handleFileChange} />
+            </label>
+        </div>
+        {isUploading && <Progress value={uploadProgress} className="w-full" />}
+        
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pt-4">
             <FormField
@@ -228,9 +270,8 @@ export function ProfileDialog({ open, onOpenChange, userProfile }: ProfileDialog
                     <Input value={userProfile.position} disabled />
                 </FormControl>
              </FormItem>
-            <Button type="submit" className="w-full" disabled={isSubmitting}>
-              {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Save Changes
+            <Button type="submit" className="w-full" disabled={isBusy}>
+              {isBusy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Save Changes"}
             </Button>
           </form>
         </Form>

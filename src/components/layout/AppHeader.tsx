@@ -93,7 +93,7 @@ export default function AppHeader({ userProfile, onMenuClick } : { userProfile: 
         {userProfile ? (
           <div className="flex items-center gap-3">
             <Avatar className="size-10 rounded-full bg-primary/20 flex items-center justify-center border border-primary/30 overflow-hidden">
-                <AvatarImage src={user?.photoURL || ''} alt={userProfile.fullName} />
+                <AvatarImage src={userProfile.avatarUrl || user?.photoURL || ''} alt={userProfile.fullName} />
                 <AvatarFallback>{userProfile.fullName.split(' ').map(n=>n[0]).join('')}</AvatarFallback>
             </Avatar>
             <div className="hidden sm:block">
