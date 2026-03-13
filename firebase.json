@@ -1,6 +1,5 @@
 {
   "hosting": {
-    "source": ".",
     "ignore": [
       "firebase.json",
       "**/.*",
