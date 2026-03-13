@@ -3,12 +3,12 @@ import { useUser, useFirestore, useCollection, useMemoFirebase, useDoc } from "@
 import { collection, query, where, orderBy, limit, doc } from "firebase/firestore";
 import type { Task } from "@/lib/types";
 import { Skeleton } from "../ui/skeleton";
-import Link from "next/link";
 import { Button } from "../ui/button";
 import { useState } from "react";
 import { TaskCard } from "../tasks/TaskCard";
 import { TaskDetailDialog } from "../tasks/TaskDetailDialog";
 import { usePermissions } from "@/hooks/usePermissions";
+import { uiEmitter } from "@/lib/ui-emitter";
 
 export function ActiveTasks() {
     const { user: authUser } = useUser();
@@ -46,11 +46,9 @@ export function ActiveTasks() {
         <div className="space-y-4">
             <div className="flex items-center justify-between">
                 <h2 className="text-xl font-bold font-headline md:text-lg">Today's Tasks</h2>
-                <Link href="/tasks" passHref>
-                <Button variant="link" size="sm" className="text-primary">
+                <Button variant="link" size="sm" className="text-primary" onClick={() => uiEmitter.emit('open-tasks-dialog')}>
                     View All
                 </Button>
-                </Link>
             </div>
             <div className="space-y-3">
                 {isLoading && Array.from({length: 3}).map((_, i) => <Skeleton key={i} className="h-20 w-full" />)}
