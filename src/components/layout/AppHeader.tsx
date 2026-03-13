@@ -125,7 +125,7 @@ export default function AppHeader({ userProfile, onMenuClick } : { userProfile: 
                     </Button>
                 </div>
                 <ScrollArea className="h-96">
-                    {notifications?.length === 0 ? (
+                    {!notifications || notifications.length === 0 ? (
                         <p className="text-center text-sm text-muted-foreground py-16">No new notifications</p>
                     ) : (
                         <div className="divide-y divide-border">
