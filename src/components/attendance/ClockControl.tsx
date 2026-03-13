@@ -415,20 +415,19 @@ export function ClockControl({
 
   return (
     <Card className={cn(className)}>
-      <CardHeader className="text-center">
+      <CardHeader className="text-center p-4 pb-2">
         <CardTitle>Time Clock</CardTitle>
         <CardDescription>
           {dateDisplay || <Skeleton className="h-5 w-32 mx-auto" />}
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-4 text-center">
+      <CardContent className="space-y-3 text-center p-4 pt-0">
         {isClockedIn ? (
           <>
             <div className="grid grid-cols-2 gap-2">
                  <Button
-                  size="lg"
                   variant={onBreak ? 'default' : 'outline'}
-                  className="w-full h-16 text-lg flex-col gap-1"
+                  className="w-full h-12 text-base flex-col gap-1"
                   disabled={isSubmitting || !isApproved}
                   onClick={onBreak ? handleEndBreak : handleStartBreak}
                 >
@@ -438,9 +437,8 @@ export function ClockControl({
                   </div>
                 </Button>
                 <Button
-                  size="lg"
                   variant="destructive"
-                  className="w-full h-16 text-lg flex-col gap-1"
+                  className="w-full h-12 text-base flex-col gap-1"
                   disabled={isSubmitting || onBreak}
                   onClick={handleClockOut}
                 >
@@ -451,9 +449,9 @@ export function ClockControl({
                 </Button>
             </div>
             {isApproved && (
-              <div className="space-y-3 pt-2">
+              <div className="space-y-2 pt-2">
                 <div className="text-center">
-                    <p className="font-mono text-xl tracking-widest">{shiftDuration}</p>
+                    <p className="font-mono text-lg tracking-widest">{shiftDuration}</p>
                     <p className="text-xs text-muted-foreground">TIME ELAPSED</p>
                 </div>
                 {timeRemaining !== null && (
@@ -483,24 +481,23 @@ export function ClockControl({
             >
               <Label
                 htmlFor="office"
-                className="flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer"
+                className="flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-3 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer"
               >
                 <RadioGroupItem value="OFFICE" id="office" className="sr-only" />
-                <Building className="mb-3 h-6 w-6" />
+                <Building className="mb-2 h-5 w-5" />
                 In Office
               </Label>
               <Label
                 htmlFor="remote"
-                className="flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer"
+                className="flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-3 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer"
               >
                 <RadioGroupItem value="REMOTE" id="remote" className="sr-only" />
-                <Briefcase className="mb-3 h-6 w-6" />
+                <Briefcase className="mb-2 h-5 w-5" />
                 Remote
               </Label>
             </RadioGroup>
             <Button
-              size="lg"
-              className="w-full h-16 text-lg bg-emerald-600 hover:bg-emerald-700"
+              className="w-full h-12 text-base bg-emerald-600 hover:bg-emerald-700"
               disabled={isSubmitting}
               onClick={handleClockIn}
             >
