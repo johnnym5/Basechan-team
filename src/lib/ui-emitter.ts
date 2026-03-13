@@ -1,3 +1,4 @@
+
 'use client';
 
 type AppEvents = {
@@ -14,6 +15,7 @@ type AppEvents = {
   'open-new-requisition-dialog': void;
   'open-new-workbook-dialog': void;
   'open-invite-user-dialog': void;
+  'open-new-announcement-dialog': void;
 };
 
 type Callback<T> = (data: T) => void;
@@ -47,3 +49,5 @@ function createEventEmitter<T extends Record<string, any>>() {
 
 
 export const uiEmitter = createEventEmitter<AppEvents>();
+
+    

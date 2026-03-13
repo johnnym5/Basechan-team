@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -43,6 +44,7 @@ import { getDistanceInMeters } from '@/lib/utils';
 import { cn } from '@/lib/utils';
 import { Progress } from '../ui/progress';
 import { Badge } from '../ui/badge';
+import { showBrowserNotification } from '@/lib/notifications';
 
 interface ClockControlProps {
   userProfile: UserProfile | null;
@@ -157,6 +159,45 @@ export function ClockControl({
     }
     return () => clearInterval(timer);
   }, [isApproved, attendanceRecord, systemConfig]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const checkReminders = () => {
+      if (!systemConfig?.work_hours) return;
+
+      const now = new Date();
+      const todayStr = format(now, 'yyyy-MM-dd');
+      
+      const { start, end } = systemConfig.work_hours;
+      const [startHour, startMinute] = start.split(':').map(Number);
+      const officeStartTime = new Date();
+      officeStartTime.setHours(startHour, startMinute, 0, 0);
+
+      const [endHour, endMinute] = end.split(':').map(Number);
+      const officeEndTime = new Date();
+      officeEndTime.setHours(endHour, endMinute, 0, 0);
+
+      const lateReminderKey = `late-reminder-sent-${todayStr}`;
+      const clockOutReminderKey = `clock-out-reminder-sent-${todayStr}`;
+
+      // Running late reminder
+      if (!attendanceRecord && now > new Date(officeStartTime.getTime() + 30 * 60000) && !localStorage.getItem(lateReminderKey)) {
+        showBrowserNotification('Running Late?', { body: "Don't forget to clock in for your shift." }, 'late-reminder');
+        localStorage.setItem(lateReminderKey, 'true');
+      }
+
+      // Clock out reminder
+      if (isApproved && now > new Date(officeEndTime.getTime() - 15 * 60000) && now < officeEndTime && !localStorage.getItem(clockOutReminderKey)) {
+        showBrowserNotification('End of Day', { body: 'Your shift is ending soon. Remember to clock out!' }, 'clock-out-reminder');
+        localStorage.setItem(clockOutReminderKey, 'true');
+      }
+    };
+
+    const intervalId = setInterval(checkReminders, 60000); // Check every minute
+
+    return () => clearInterval(intervalId);
+  }, [attendanceRecord, isApproved, systemConfig]);
 
 
   const handleClockIn = async () => {
@@ -512,3 +553,5 @@ export function ClockControl({
     </Card>
   );
 }
+
+    

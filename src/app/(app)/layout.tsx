@@ -1,3 +1,4 @@
+
 'use client';
 import { useUser, useDoc, useFirestore, useMemoFirebase } from '@/firebase';
 import { useRouter } from 'next/navigation';
@@ -31,7 +32,8 @@ import { ChatDialog } from '@/components/chat/ChatDialog';
 import { InviteUserDialog } from '@/components/settings/InviteUserDialog';
 import { useImpersonation } from '@/context/ImpersonationProvider';
 import { NewAnnouncementDialog } from '@/components/dashboard/NewAnnouncementDialog';
-import { Sheet, SheetContent } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
+import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
 
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
@@ -188,6 +190,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     <>
       <Sheet open={isMobileSidebarOpen} onOpenChange={setIsMobileSidebarOpen}>
         <SheetContent side="left" className="p-0 w-72 md:hidden">
+            <VisuallyHidden>
+              <SheetHeader>
+                <SheetTitle>Main Menu</SheetTitle>
+                <SheetDescription>Navigation links for the application.</SheetDescription>
+              </SheetHeader>
+            </VisuallyHidden>
             <AppSidebar isMobile={true} />
         </SheetContent>
       </Sheet>
@@ -360,3 +368,5 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     </>
   );
 }
+
+    
