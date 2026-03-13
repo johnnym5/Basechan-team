@@ -1,7 +1,6 @@
 'use client';
 import { UserNav } from "@/components/layout/UserNav";
 import { Button } from "@/components/ui/button";
-import { Bell } from "lucide-react";
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { useUser, useFirestore, useMemoFirebase, useCollection, updateDocumentNonBlocking } from '@/firebase';
@@ -12,7 +11,7 @@ import { showBrowserNotification } from '@/lib/notifications';
 import { Avatar, AvatarFallback } from '../ui/avatar';
 
 
-export default function AppHeader({ userProfile } : { userProfile: UserProfile | null }) {
+export default function AppHeader({ userProfile, onMenuClick } : { userProfile: UserProfile | null, onMenuClick: () => void }) {
   const router = useRouter();
   const { user } = useUser();
   const firestore = useFirestore();
@@ -36,25 +35,22 @@ export default function AppHeader({ userProfile } : { userProfile: UserProfile |
       return;
     }
     
-    // Filter for notifications that are new and unread
     const newUnreadNotifications = notifications.filter(
       n => !n.isRead && !shownNotificationIds.has(n.id)
     );
   
     if (newUnreadNotifications.length > 0) {
-      // Show notification for the most recent new one
       const latestNotification = newUnreadNotifications[0];
       
       showBrowserNotification(
         latestNotification.title,
         {
           body: latestNotification.description,
-          tag: latestNotification.id, // Using tag to prevent multiple popups for the same notification
+          tag: latestNotification.id,
         },
         latestNotification.id
       );
 
-      // Add all new notifications to the shown set
       setShownNotificationIds(prev => {
         const newSet = new Set(prev);
         newUnreadNotifications.forEach(n => newSet.add(n.id));
@@ -89,10 +85,13 @@ export default function AppHeader({ userProfile } : { userProfile: UserProfile |
   // --- End of logic from Notifications ---
 
   return (
-    <header className="sticky top-0 z-40 glass-dark px-6 py-4 flex items-center justify-between">
+    <header className="sticky top-0 z-40 glass-dark px-4 sm:px-6 py-4 flex items-center justify-between">
       <div className="flex items-center gap-3">
+        <Button variant="ghost" size="icon" className="md:hidden size-10 rounded-full flex items-center justify-center bg-slate-800/50 border border-slate-700" onClick={onMenuClick}>
+            <span className="material-symbols-outlined text-xl">menu</span>
+        </Button>
         {userProfile ? (
-          <>
+          <div className="hidden sm:flex items-center gap-3">
             <Avatar className="size-10 rounded-full bg-primary/20 flex items-center justify-center border border-primary/30 overflow-hidden">
                 <AvatarFallback>{userProfile.fullName.split(' ').map(n=>n[0]).join('')}</AvatarFallback>
             </Avatar>
@@ -100,7 +99,7 @@ export default function AppHeader({ userProfile } : { userProfile: UserProfile |
               <p className="text-xs text-slate-400 font-medium">Good Morning</p>
               <h2 className="text-sm font-bold">{userProfile.fullName}</h2>
             </div>
-          </>
+          </div>
         ) : null}
       </div>
       <div className='flex items-center gap-2'>
@@ -109,14 +108,14 @@ export default function AppHeader({ userProfile } : { userProfile: UserProfile |
                 <UniversalSearch userProfile={userProfile} />
             </div>
         )}
-        <Button variant="ghost" size="icon" className="size-10 rounded-full flex items-center justify-center bg-slate-800/50 border border-slate-700 relative">
+        <Button variant="ghost" size="icon" className="size-10 rounded-full flex items-center justify-center bg-slate-800/50 border border-slate-700 relative md:hidden">
             <span className="material-symbols-outlined text-xl">search</span>
         </Button>
         <Button variant="ghost" size="icon" className="size-10 rounded-full flex items-center justify-center bg-slate-800/50 border border-slate-700 relative">
-            <Bell className="text-xl text-slate-300" />
+            <span className="material-symbols-outlined text-xl text-slate-300">notifications</span>
             {unreadCount > 0 && <span className="absolute top-2.5 right-2.5 size-2 bg-primary rounded-full border-2 border-background"></span>}
         </Button>
-        <div className="hidden">
+        <div className="hidden md:block">
             <UserNav userProfile={userProfile} />
         </div>
       </div>

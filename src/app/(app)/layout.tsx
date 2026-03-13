@@ -31,6 +31,7 @@ import { ChatDialog } from '@/components/chat/ChatDialog';
 import { InviteUserDialog } from '@/components/settings/InviteUserDialog';
 import { useImpersonation } from '@/context/ImpersonationProvider';
 import { NewAnnouncementDialog } from '@/components/dashboard/NewAnnouncementDialog';
+import { Sheet, SheetContent } from '@/components/ui/sheet';
 
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
@@ -57,6 +58,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [isNewAnnouncementOpen, setIsNewAnnouncementOpen] = useState(false);
   const { isImpersonating } = useImpersonation();
   const [isFabMenuOpen, setIsFabMenuOpen] = useState(false);
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
   const isAnyDialogOpen =
     isWorkbookOpen ||
@@ -184,13 +186,19 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <>
+      <Sheet open={isMobileSidebarOpen} onOpenChange={setIsMobileSidebarOpen}>
+        <SheetContent side="left" className="p-0 w-72 md:hidden">
+            <AppSidebar isMobile={true} />
+        </SheetContent>
+      </Sheet>
+
       <div className="flex min-h-screen w-full bg-muted/40 md:bg-background">
           <AppSidebar />
            <div className={cn(
               "flex flex-1 flex-col bg-background transition-all duration-300 ease-in-out origin-center",
               isAnyDialogOpen ? "md:scale-[0.97] md:rounded-2xl md:overflow-hidden md:shadow-2xl" : "md:scale-100 rounded-none"
           )}>
-              <AppHeader userProfile={userProfile} />
+              <AppHeader userProfile={userProfile} onMenuClick={() => setIsMobileSidebarOpen(true)} />
               <main className="flex-1 overflow-y-auto md:p-6 pb-28 md:pb-6">
                   {children}
               </main>
