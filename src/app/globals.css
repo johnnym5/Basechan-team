@@ -31,7 +31,7 @@
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
     --ring: 222 83% 53%;
-    --radius: 0.75rem;
+    --radius: 1.25rem;
 
     --chart-1: 222 83% 53%;
     --chart-2: 173 58% 39%;
@@ -76,15 +76,15 @@
 
 @layer utilities {
     .glass {
-        background: rgba(255, 255, 255, 0.03);
-        backdrop-filter: blur(12px);
-        -webkit-backdrop-filter: blur(12px);
-        border: 1px solid rgba(255, 255, 255, 0.08);
+        background: rgba(255, 255, 255, 0.05);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
     }
     .glass-dark {
-        background: rgba(16, 22, 34, 0.6);
-        backdrop-filter: blur(20px);
-        -webkit-backdrop-filter: blur(20px);
-        border: 1px solid rgba(255, 255, 255, 0.05);
+        background: rgba(26, 32, 44, 0.4);
+        backdrop-filter: blur(32px);
+        -webkit-backdrop-filter: blur(32px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
     }
 }

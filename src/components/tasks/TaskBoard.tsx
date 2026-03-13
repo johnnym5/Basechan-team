@@ -72,7 +72,7 @@ export function TaskBoard({ userProfile, permissions, onTaskSelect }: TaskBoardP
     return (
         <div className="flex-1 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 items-start">
             {statusColumns.map(status => (
-                <div key={status} className="bg-secondary/30 rounded-xl h-full flex flex-col">
+                <div key={status} className="bg-secondary/30 rounded-lg h-full flex flex-col">
                     <div className="p-4 border-b border-border">
                         <h3 className="font-semibold text-foreground">
                            {status.replace('_', ' ')}
