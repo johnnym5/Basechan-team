@@ -1,13 +1,11 @@
-
 'use client';
 import { UserNav } from "@/components/layout/UserNav";
 import { Button } from "@/components/ui/button";
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { useUser, useFirestore, useMemoFirebase, useCollection, updateDocumentNonBlocking } from '@/firebase';
-import { doc, collection, query, where, orderBy, writeBatch } from 'firebase/firestore';
+import { doc, collection, query, where, orderBy, writeBatch, limit } from 'firebase/firestore';
 import type { UserProfile, Notification } from '@/lib/types';
-import { UniversalSearch } from './UniversalSearch';
 import { showBrowserNotification } from '@/lib/notifications';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
@@ -112,15 +110,6 @@ export default function AppHeader({ userProfile, onMenuClick } : { userProfile: 
         ) : null}
       </div>
       <div className='flex items-center gap-2'>
-        {userProfile && (
-            <div className="hidden md:block">
-                <UniversalSearch userProfile={userProfile} />
-            </div>
-        )}
-        <Button variant="ghost" size="icon" className="size-10 rounded-full flex items-center justify-center bg-slate-800/50 border border-slate-700 relative md:hidden">
-            <span className="material-symbols-outlined text-xl">search</span>
-        </Button>
-        
         <Popover open={isNotificationsOpen} onOpenChange={setIsNotificationsOpen}>
             <PopoverTrigger asChild>
                 <Button variant="ghost" size="icon" className="size-10 rounded-full flex items-center justify-center bg-slate-800/50 border border-slate-700 relative">
@@ -167,5 +156,3 @@ export default function AppHeader({ userProfile, onMenuClick } : { userProfile: 
     </header>
   );
 }
-
-    

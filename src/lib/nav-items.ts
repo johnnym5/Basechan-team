@@ -8,10 +8,12 @@ import {
   BookOpenCheck,
   MessageSquare,
   Settings,
+  User,
 } from "lucide-react";
 
 export const mainNavItems = [
   { href: "/", icon: LayoutDashboard, label: "Overview" },
+  { dialog: "profile", icon: User, label: "My Profile" },
   { isSeparator: true },
   { dialog: "attendance", icon: CalendarCheck2, label: "Attendance" },
   { dialog: "leave", icon: CalendarPlus, label: "Leave" },

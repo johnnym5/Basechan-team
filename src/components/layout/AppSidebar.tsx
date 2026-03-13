@@ -65,6 +65,9 @@ export default function AppSidebar({ isMobile = false }: { isMobile?: boolean })
       case 'reports':
         uiEmitter.emit('open-reports-dialog');
         break;
+      case 'profile':
+        uiEmitter.emit('open-profile-dialog');
+        break;
     }
   };
   
