@@ -1,14 +1,14 @@
 'use client';
 
-import { useUser, useDoc, useCollection, useMemoFirebase, useFirestore } from '@/firebase';
-import { useRouter } from 'next/navigation';
 import { useEffect, useState, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 import { useSuperAdmin } from '@/hooks/useSuperAdmin';
 import { Button } from '@/components/ui/button';
 import { Logo } from '@/components/Logo';
 import { AuthDialog } from '@/components/auth/AuthDialog';
 import AppLayout from './(app)/layout';
+import { useUser, useFirestore, useDoc, useCollection, useMemoFirebase } from '@/firebase';
 
 // --- Start of Dashboard Content ---
 import { StatCard } from "@/components/dashboard/StatCard";
@@ -57,7 +57,7 @@ const LatestAnnouncementCard = ({ userProfile, authUser }: { userProfile: UserPr
   const latestAnnouncement = announcements?.[0];
 
   return (
-    <Card className="h-[220px] flex flex-col bg-primary/90 text-primary-foreground">
+    <Card className="h-full flex flex-col bg-primary/90 text-primary-foreground">
       <CardHeader className="p-4">
         <div className="flex items-center justify-between">
             <CardTitle className="text-sm font-semibold tracking-wider uppercase">Latest Announcement</CardTitle>
@@ -80,7 +80,7 @@ const LatestAnnouncementCard = ({ userProfile, authUser }: { userProfile: UserPr
 
 const QuickActionsCard = ({ permissions }: { permissions: Permissions }) => {
   return (
-    <Card className="bg-primary/90 text-primary-foreground h-[220px] flex flex-col">
+    <Card className="bg-primary/90 text-primary-foreground h-full flex flex-col">
       <CardHeader className="p-4">
         <CardTitle>Quick Actions</CardTitle>
         <CardDescription className="text-primary-foreground/80 line-clamp-1">Your most common tasks.</CardDescription>
@@ -167,14 +167,20 @@ function DashboardContent() {
                         </CarouselItem>
                          {userProfile && (
                           <CarouselItem className="pl-4">
-                            <PerformanceCard userProfile={userProfile} />
+                            <div className="h-[220px]">
+                                <PerformanceCard userProfile={userProfile} />
+                            </div>
                           </CarouselItem>
                         )}
                          <CarouselItem className="pl-4">
+                           <div className="h-[220px]">
                             <LatestAnnouncementCard userProfile={userProfile} authUser={authUser} />
+                           </div>
                         </CarouselItem>
                         <CarouselItem className="pl-4">
+                           <div className="h-[220px]">
                             <QuickActionsCard permissions={permissions} />
+                           </div>
                         </CarouselItem>
                     </CarouselContent>
                 </Carousel>

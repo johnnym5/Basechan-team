@@ -57,7 +57,7 @@ export function PerformanceCard({ userProfile }: PerformanceCardProps) {
 
 
     return (
-        <Card className="bg-primary/90 text-primary-foreground h-[220px] flex flex-col justify-between">
+        <Card className="bg-primary/90 text-primary-foreground h-full flex flex-col justify-between">
             <div>
                 <CardHeader className="p-4">
                     <div className="flex items-center justify-between">
