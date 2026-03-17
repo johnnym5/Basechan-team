@@ -34,6 +34,7 @@ import { NewAnnouncementDialog } from '@/components/dashboard/NewAnnouncementDia
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
 import { AuthDialog } from '@/components/auth/AuthDialog';
+import { SuperAdminDialog } from '@/components/superadmin/SuperAdminDialog';
 
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
@@ -63,6 +64,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [isFabMenuOpen, setIsFabMenuOpen] = useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isAuthDialogOpen, setIsAuthDialogOpen] = useState(false);
+  const [isSuperAdminOpen, setIsSuperAdminOpen] = useState(false);
 
   const isLoggedIn = !!user;
 
@@ -89,7 +91,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         isSettingsOpen ||
         isChatOpen ||
         isInviteUserOpen ||
-        isNewAnnouncementOpen
+        isNewAnnouncementOpen ||
+        isSuperAdminOpen
     );
 
   const isAnyDialogOpen = isAnyMainDialogOpen || isAuthDialogOpen;
@@ -151,6 +154,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     const openNewWorkbook = () => setIsNewWorkbookOpen(true);
     const openInviteUser = () => setIsInviteUserOpen(true);
     const openNewAnnouncement = () => setIsNewAnnouncementOpen(true);
+    const openSuperAdmin = () => setIsSuperAdminOpen(true);
 
 
     uiEmitter.on('open-profile-dialog', openProfile);
@@ -167,6 +171,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     uiEmitter.on('open-new-workbook-dialog', openNewWorkbook);
     uiEmitter.on('open-invite-user-dialog', openInviteUser);
     uiEmitter.on('open-new-announcement-dialog', openNewAnnouncement);
+    uiEmitter.on('open-superadmin-dialog', openSuperAdmin);
     
     return () => {
       uiEmitter.off('open-profile-dialog', openProfile);
@@ -183,6 +188,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       uiEmitter.off('open-new-workbook-dialog', openNewWorkbook);
       uiEmitter.off('open-invite-user-dialog', openInviteUser);
       uiEmitter.off('open-new-announcement-dialog', openNewAnnouncement);
+      uiEmitter.off('open-superadmin-dialog', openSuperAdmin);
     };
   }, []);
 
@@ -350,6 +356,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             <AttendanceDialog open={isAttendanceOpen} onOpenChange={setIsAttendanceOpen} />
             <LeaveDialog open={isLeaveOpen} onOpenChange={setIsLeaveOpen} />
             <ReportsDialog open={isReportsOpen} onOpenChange={setIsReportsOpen} />
+            <SuperAdminDialog open={isSuperAdminOpen} onOpenChange={setIsSuperAdminOpen} />
             {userProfile && <ProfileDialog open={isProfileOpen} onOpenChange={setIsProfileOpen} userProfile={userProfile} />}
             {userProfile && <SettingsDialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen} userProfile={userProfile} />}
             {userProfile && (

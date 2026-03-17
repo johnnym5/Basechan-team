@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { Loader2, BookCopy } from 'lucide-react';
+import { Loader2, BookCopy, Shield } from 'lucide-react';
 import AppLayout from './(app)/layout';
 import { useUser, useFirestore, useDoc, useCollection, useMemoFirebase } from '@/firebase';
 import { ActiveTasks } from "@/components/dashboard/ActiveTasks";
@@ -20,11 +20,15 @@ import { QuickActions } from '@/components/dashboard/QuickActions';
 import { RecentReports } from '@/components/dashboard/RecentReports';
 import { RecentConversations } from '@/components/dashboard/RecentConversations';
 import { useSuperAdmin } from '@/hooks/useSuperAdmin';
+import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { uiEmitter } from '@/lib/ui-emitter';
 
 
 function DashboardGrid() {
     const { user: authUser, isUserLoading: isAuthLoading } = useUser();
     const firestore = useFirestore();
+    const { isSuperAdmin } = useSuperAdmin();
 
     const userProfileRef = useMemoFirebase(() => 
         firestore && authUser ? doc(firestore, 'users', authUser.uid) : null, 
@@ -83,6 +87,20 @@ function DashboardGrid() {
 
     return (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+             {isSuperAdmin && (
+                <Card className="lg:col-span-3 bg-primary/10 border-primary/20">
+                    <CardHeader className="flex-row items-center justify-between">
+                        <div>
+                            <CardTitle>Super Admin Console</CardTitle>
+                            <CardDescription>You have administrative privileges.</CardDescription>
+                        </div>
+                        <Button onClick={() => uiEmitter.emit('open-superadmin-dialog')}>
+                            <Shield className="mr-2" /> Open Console
+                        </Button>
+                    </CardHeader>
+                </Card>
+            )}
+
             {/* Main Column */}
             <div className="lg:col-span-2 space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -111,20 +129,9 @@ function DashboardGrid() {
 }
 
 export default function RootPage() {
-  const { user, isUserLoading } = useUser();
-  const { isSuperAdmin } = useSuperAdmin();
-  const router = useRouter();
+  const { isUserLoading } = useUser();
 
-  useEffect(() => {
-    // Only redirect if a user is logged in AND is a superadmin.
-    if (user && isSuperAdmin) {
-      router.replace('/superadmin');
-    }
-  }, [user, isSuperAdmin, router]);
-
-  // The loader is only for the superadmin redirect case.
-  // Otherwise, the page renders immediately in its logged-in or logged-out state.
-  if (isUserLoading || (user && isSuperAdmin)) {
+  if (isUserLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <Loader2 className="animate-spin text-primary w-12 h-12" />

@@ -16,7 +16,6 @@ import { usePermissions } from "@/hooks/usePermissions";
 import type { UserProfile, UserPosition } from "@/lib/types";
 import { useImpersonation } from "@/context/ImpersonationProvider";
 import { useSuperAdmin } from "@/hooks/useSuperAdmin";
-import Link from "next/link";
 
 const getBaseRoleForPermissions = (position: UserPosition): 'Staff' | 'HR Manager' | 'Finance Manager' | 'Managing Director' | 'Organization Administrator' => {
     switch (position) {
@@ -90,11 +89,9 @@ export function UserNav({ userProfile }: { userProfile: UserProfile | null }) {
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           {isSuperAdmin && (
-            <DropdownMenuItem asChild>
-                <Link href="/superadmin">
-                    <Shield className="mr-2 h-4 w-4" />
-                    <span>Super Admin</span>
-                </Link>
+            <DropdownMenuItem onSelect={() => uiEmitter.emit('open-superadmin-dialog')}>
+                <Shield className="mr-2 h-4 w-4" />
+                <span>Super Admin</span>
             </DropdownMenuItem>
           )}
           {canActuallyManageStaff && (

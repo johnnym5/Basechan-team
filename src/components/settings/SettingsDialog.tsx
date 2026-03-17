@@ -8,9 +8,9 @@ import { SystemPane } from './SystemPane';
 import { usePermissions } from '@/hooks/usePermissions';
 import { ShieldAlert, Shield } from 'lucide-react';
 import { Button } from '../ui/button';
-import { useRouter } from 'next/navigation';
 import { useSuperAdmin } from '@/hooks/useSuperAdmin';
 import { cn } from '@/lib/utils';
+import { uiEmitter } from '@/lib/ui-emitter';
 
 interface SettingsDialogProps {
   open: boolean;
@@ -20,7 +20,6 @@ interface SettingsDialogProps {
 
 export function SettingsDialog({ open, onOpenChange, userProfile }: SettingsDialogProps) {
   const permissions = usePermissions(userProfile);
-  const router = useRouter();
   const { isSuperAdmin } = useSuperAdmin();
 
   if (!userProfile) {
@@ -46,6 +45,11 @@ export function SettingsDialog({ open, onOpenChange, userProfile }: SettingsDial
             </DialogContent>
         </Dialog>
     )
+  }
+
+  const handleOpenSuperAdmin = () => {
+    onOpenChange(false); // Close current dialog
+    uiEmitter.emit('open-superadmin-dialog');
   }
 
   return (
@@ -77,7 +81,7 @@ export function SettingsDialog({ open, onOpenChange, userProfile }: SettingsDial
                     <Shield className="w-16 h-16 text-primary mb-4" />
                     <h2 className="text-xl font-bold">Super Admin Access</h2>
                     <p className="text-muted-foreground mt-2 max-w-sm">You have super administrative privileges. Access the main console for advanced data management and system oversight.</p>
-                    <Button onClick={() => router.push('/superadmin')} className="mt-6">
+                    <Button onClick={handleOpenSuperAdmin} className="mt-6">
                         Go to Super Admin Console
                     </Button>
                 </div>

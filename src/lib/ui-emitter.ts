@@ -16,6 +16,7 @@ type AppEvents = {
   'open-new-workbook-dialog': void;
   'open-invite-user-dialog': void;
   'open-new-announcement-dialog': void;
+  'open-superadmin-dialog': void;
 };
 
 type Callback<T> = (data: T) => void;
