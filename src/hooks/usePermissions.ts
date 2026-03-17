@@ -88,7 +88,8 @@ export function usePermissions(userProfile: UserProfile | null): Permissions {
   const { isImpersonating } = useImpersonation();
 
   const permissions = useMemo(() => {
-    if (isSuperAdmin) {
+    // If user is super admin AND not impersonating, they get all permissions.
+    if (isSuperAdmin && !isImpersonating) {
       return { 
           canApproveHR: true,
           canApproveFinance: true,
@@ -105,19 +106,21 @@ export function usePermissions(userProfile: UserProfile | null): Permissions {
           canManageAnnouncements: true,
       };
     }
-
+    
+    // For all other cases (normal users, or an impersonating super admin), calculate permissions dynamically.
     if (!userProfile) {
       return defaultPermissions;
     }
     
-    const actualBaseRole = getBaseRoleForPermissions(userProfile.position);
-    const canActuallyManage = !!positionPermissions[actualBaseRole]?.canManageStaff || actualBaseRole === 'Organization Administrator';
-    
-    const isCurrentlyImpersonating = canActuallyManage && isImpersonating;
-    const effectiveBaseRole = isCurrentlyImpersonating ? 'Staff' : actualBaseRole;
+    const isSuperAdminImpersonating = isSuperAdmin && isImpersonating;
+
+    // If super admin is impersonating, force their role to 'Staff'. Otherwise, use their actual role.
+    const effectiveBaseRole = isSuperAdminImpersonating
+        ? 'Staff'
+        : getBaseRoleForPermissions(userProfile.position);
 
     const rolePerms = positionPermissions[effectiveBaseRole] || {};
-    const customPerms = userProfile.customPermissions || {};
+    const customPerms = isSuperAdminImpersonating ? {} : (userProfile.customPermissions || {});
 
     const perms: Permissions = {
         ...defaultPermissions,
@@ -125,7 +128,6 @@ export function usePermissions(userProfile: UserProfile | null): Permissions {
     };
 
     // 1. Base module access is gated by the org-wide SystemConfig
-    // Staff should have access to create requisitions if module is on
     perms.canAccessRequisitions = systemConfig?.finance_access ?? false;
     perms.canAccessChat = systemConfig?.chat_enabled ?? false;
 
@@ -133,8 +135,7 @@ export function usePermissions(userProfile: UserProfile | null): Permissions {
     perms.canAccessAllTasks = !!rolePerms.canManageStaff;
     perms.canAccessAllWorkbooks = !!rolePerms.canManageStaff;
 
-    // 3. Apply user-specific custom permissions as overrides
-    // A custom permission cannot grant access if the global switch is off.
+    // 3. Apply user-specific custom permissions as overrides (but not during impersonation)
     if (typeof customPerms.canAccessRequisitions === 'boolean') {
         perms.canAccessRequisitions = customPerms.canAccessRequisitions && (systemConfig?.finance_access ?? true);
     }
@@ -152,7 +153,7 @@ export function usePermissions(userProfile: UserProfile | null): Permissions {
     }
     
     // 4. Special cases
-    perms.canEditOwnProfile = userProfile.position !== 'Staff' || (systemConfig?.allow_self_edit ?? true);
+    perms.canEditOwnProfile = effectiveBaseRole !== 'Staff' || (systemConfig?.allow_self_edit ?? true);
 
     return perms;
   }, [isSuperAdmin, userProfile, systemConfig, isImpersonating]);

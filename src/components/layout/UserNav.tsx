@@ -12,38 +12,16 @@ import { useUser, useAuth } from "@/firebase";
 import { LogOut, User as UserIcon, Settings, Eye, EyeOff, Shield } from "lucide-react";
 import { signOut } from "firebase/auth";
 import { uiEmitter } from "@/lib/ui-emitter";
-import { usePermissions } from "@/hooks/usePermissions";
-import type { UserProfile, UserPosition } from "@/lib/types";
+import type { UserProfile } from "@/lib/types";
 import { useImpersonation } from "@/context/ImpersonationProvider";
 import { useSuperAdmin } from "@/hooks/useSuperAdmin";
-
-const getBaseRoleForPermissions = (position: UserPosition): 'Staff' | 'HR Manager' | 'Finance Manager' | 'Managing Director' | 'Organization Administrator' => {
-    switch (position) {
-        case "CEO / Managing Director":
-            return "Managing Director";
-        case "Chief Financial Officer (CFO) / Finance Manager":
-            return "Finance Manager";
-        case "HR Manager / Director":
-        case "Office Manager / Admin Lead":
-            return "HR Manager";
-        case "Organization Administrator":
-            return "Organization Administrator";
-        default:
-            return "Staff";
-    }
-}
 
 
 export function UserNav({ userProfile }: { userProfile: UserProfile | null }) {
   const { user } = useUser();
   const auth = useAuth();
-  const permissions = usePermissions(userProfile);
   const { isImpersonating, setIsImpersonating } = useImpersonation();
   const { isSuperAdmin } = useSuperAdmin();
-
-  // Determine if the *actual* user (not the impersonated one) has management rights.
-  const actualBaseRole = userProfile ? getBaseRoleForPermissions(userProfile.position) : 'Staff';
-  const canActuallyManageStaff = actualBaseRole === 'Organization Administrator' || actualBaseRole === 'HR Manager' || actualBaseRole === 'Managing Director';
 
   if (!user) {
     return null;
@@ -90,16 +68,16 @@ export function UserNav({ userProfile }: { userProfile: UserProfile | null }) {
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           {isSuperAdmin && (
-            <DropdownMenuItem onSelect={() => uiEmitter.emit('open-superadmin-dialog')}>
-                <Shield className="mr-2 h-4 w-4" />
-                <span>Super Admin</span>
-            </DropdownMenuItem>
-          )}
-          {canActuallyManageStaff && (
-            <DropdownMenuItem onSelect={handleToggleImpersonation}>
-              {isImpersonating ? <EyeOff className="mr-2 h-4 w-4" /> : <Eye className="mr-2 h-4 w-4" />}
-              <span>{isImpersonating ? "Return to Admin View" : "View as Staff"}</span>
-            </DropdownMenuItem>
+            <>
+              <DropdownMenuItem onSelect={() => uiEmitter.emit('open-superadmin-dialog')}>
+                  <Shield className="mr-2 h-4 w-4" />
+                  <span>Super Admin</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onSelect={handleToggleImpersonation}>
+                {isImpersonating ? <EyeOff className="mr-2 h-4 w-4" /> : <Eye className="mr-2 h-4 w-4" />}
+                <span>{isImpersonating ? "Return to Super Admin" : "View as Staff"}</span>
+              </DropdownMenuItem>
+            </>
           )}
           <DropdownMenuItem onClick={handleLogout}>
             <LogOut className="mr-2 h-4 w-4" />
