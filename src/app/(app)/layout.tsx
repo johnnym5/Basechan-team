@@ -223,8 +223,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               onSignInClick={() => setIsAuthDialogOpen(true)}
             />
              <div className={cn(
-                "flex flex-1 flex-col bg-background transition-all duration-300 ease-in-out origin-center",
-                isAnyDialogOpen ? "md:scale-[0.97] md:rounded-2xl md:overflow-hidden md:shadow-2xl" : "md:scale-100 rounded-none"
+                "flex flex-1 flex-col bg-background transition-all duration-500 ease-in-out",
+                isAnyDialogOpen ? "md:scale-[0.97] md:rounded-2xl md:overflow-hidden md:shadow-2xl" : "md:scale-100 rounded-none",
+                isMobileSidebarOpen && "scale-90 translate-x-8 rounded-2xl overflow-hidden shadow-2xl"
             )}>
                 <AppHeader userProfile={userProfile} onMenuClick={() => setIsMobileSidebarOpen(true)} isLoggedIn={isLoggedIn}/>
                 <main className="flex-1 overflow-y-auto md:p-6 pb-28 md:pb-6">
