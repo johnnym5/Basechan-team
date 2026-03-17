@@ -88,6 +88,8 @@ export default function AppSidebar({ isMobile = false }: { isMobile?: boolean })
             if ('isSeparator' in item) {
                 return <Separator key={`sep-${index}`} className="my-2" />;
             }
+            
+            const animationStyle = { animationDelay: `${index * 75}ms`, animationFillMode: 'forwards' as const };
 
             if ('href' in item) {
                 return (
@@ -95,10 +97,11 @@ export default function AppSidebar({ isMobile = false }: { isMobile?: boolean })
                         key={item.href}
                         href={item.href}
                         className={cn(
-                        "flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary",
+                        "flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary opacity-0 animate-fade-in-down",
                         pathname === item.href && "bg-secondary text-primary",
                         isMobile && "text-lg"
                         )}
+                        style={animationStyle}
                     >
                         <item.icon className="h-4 w-4" />
                         {item.label}
@@ -115,9 +118,10 @@ export default function AppSidebar({ isMobile = false }: { isMobile?: boolean })
                     key={item.dialog}
                     onClick={() => handleDialogClick(item.dialog)}
                     className={cn(
-                        "flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary text-left w-full",
+                        "flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary text-left w-full opacity-0 animate-fade-in-down",
                         isMobile && "text-lg"
                     )}
+                    style={animationStyle}
                 >
                     <item.icon className="h-4 w-4" />
                     {item.label}
