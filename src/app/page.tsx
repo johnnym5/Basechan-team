@@ -119,7 +119,7 @@ function DashboardGrid() {
                     title="Pending Approvals" 
                     value={pendingReqs?.length || 0} 
                     icon={CheckCircle}
-                    href="/requisitions"
+                    onClick={() => uiEmitter.emit('open-requisitions-dialog')}
                     color="bg-emerald-500/20 text-emerald-400"
                 />
                 <QuickActions />
