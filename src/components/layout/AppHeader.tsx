@@ -61,46 +61,49 @@ export default function AppHeader({
     const updateGreeting = () => {
         const now = new Date();
         const hour = now.getHours();
-
-        let currentGreeting = "Good Evening";
-        if (hour < 12) {
-            currentGreeting = "Good Morning";
-        } else if (hour < 18) {
-            currentGreeting = "Good Afternoon";
-        }
-
         const isClockedInAndWorking = !!(attendanceRecord && !attendanceRecord.clockOut);
+        let newGreeting = "";
 
         if (systemConfig?.work_hours?.start && systemConfig.work_hours.end) {
             const [startHour, startMinute] = systemConfig.work_hours.start.split(':').map(Number);
-            const [endHour, endMinute] = systemConfig.work_hours.end.split(':').map(Number);
-            
             const officeStartTime = new Date();
             officeStartTime.setHours(startHour, startMinute, 0, 0);
-            
+
+            const [endHour, endMinute] = systemConfig.work_hours.end.split(':').map(Number);
             const officeEndTime = new Date();
             officeEndTime.setHours(endHour, endMinute, 0, 0);
 
-            const clockInReminderStart = new Date(officeStartTime.getTime() - 15 * 60000); // e.g., 8:45 for 9:00 start
-            const clockInGraceEnd = new Date(officeStartTime.getTime() + 15 * 60000); // e.g., 9:15 for 9:00 start
-            
-            const clockOutReminderStart = new Date(officeEndTime.getTime() - 15 * 60000); // e.g., 4:45 for 5:00 end
+            const clockInReminderStart = new Date(officeStartTime.getTime() - 15 * 60000);
+            const clockInGraceEnd = new Date(officeStartTime.getTime() + 15 * 60000);
+            const clockOutReminderStart = new Date(officeEndTime.getTime() - 15 * 60000);
 
-            if (!isClockedInAndWorking) {
-                if (now >= clockInReminderStart && now <= clockInGraceEnd) {
-                    currentGreeting = "Time to clock in!";
-                } else if (now > clockInGraceEnd && now < officeEndTime) {
-                    currentGreeting = "Running late...";
+            if (isClockedInAndWorking) {
+                if (now > officeEndTime) {
+                    newGreeting = "Time to clock out!";
+                } else if (now >= clockOutReminderStart) {
+                    newGreeting = "Winding down?";
                 }
-            } else {
-                if (now >= clockOutReminderStart && now <= officeEndTime) {
-                    currentGreeting = "Winding down?";
-                } else if (now > officeEndTime) {
-                    currentGreeting = "Time to clock out!";
+            } else { // Not clocked in or already clocked out
+                if (now >= clockInReminderStart && now <= clockInGraceEnd) {
+                    newGreeting = "Time to clock in!";
+                } else if (now > clockInGraceEnd && now < officeEndTime) {
+                    newGreeting = "Running late...";
                 }
             }
         }
-        setGreeting(currentGreeting);
+
+        // Fallback to generic greeting if no specific message was set
+        if (!newGreeting) {
+            if (hour < 12) {
+                newGreeting = "Good Morning";
+            } else if (hour < 17) { // 5 PM
+                newGreeting = "Good Afternoon";
+            } else {
+                newGreeting = "Good Evening";
+            }
+        }
+
+        setGreeting(newGreeting);
     };
 
     updateGreeting();
