@@ -11,7 +11,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { Bell, CheckCheck } from 'lucide-react';
 import { ScrollArea } from '../ui/scroll-area';
-import { formatDistanceToNow } from 'date-fns';
+import { format, formatDistanceToNow } from 'date-fns';
 import { Separator } from '../ui/separator';
 import { cn } from '@/lib/utils';
 
@@ -35,6 +35,27 @@ export default function AppHeader({
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [shownNotificationIds, setShownNotificationIds] = useState<Set<string>>(new Set());
   const [greeting, setGreeting] = useState("Good Morning");
+  const [currentTime, setCurrentTime] = useState('');
+  const [currentDate, setCurrentDate] = useState('');
+  const [animateGreeting, setAnimateGreeting] = useState(false);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+        const now = new Date();
+        setCurrentTime(format(now, 'h:mm:ss a'));
+        setCurrentDate(format(now, 'EEEE, MMMM d'));
+    }, 1000);
+
+    const animationTimer = setInterval(() => {
+        setAnimateGreeting(true);
+        setTimeout(() => setAnimateGreeting(false), 1000); 
+    }, 30000);
+
+    return () => {
+        clearInterval(timer);
+        clearInterval(animationTimer);
+    };
+  }, []);
 
   useEffect(() => {
     const updateGreeting = () => {
@@ -169,8 +190,11 @@ export default function AppHeader({
                 <AvatarFallback>{userProfile.fullName.split(' ').map(n=>n[0]).join('')}</AvatarFallback>
             </Avatar>
             <div className="hidden sm:block">
-              <p className="text-xs text-slate-400 font-medium">{greeting}</p>
-              <h2 className="text-sm font-bold">{userProfile.fullName}</h2>
+                <div className="flex items-baseline gap-2">
+                    <h2 className={cn("text-base font-bold transition-all duration-300", animateGreeting && "text-primary scale-105")}>{greeting}</h2>
+                    <span className="text-xs text-muted-foreground font-mono">{currentTime}</span>
+                </div>
+                <p className="text-sm text-muted-foreground">{userProfile.fullName} | {currentDate}</p>
             </div>
           </div>
         ) : null}
