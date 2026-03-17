@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { Loader2 } from 'lucide-react';
+import { Loader2, BookCopy } from 'lucide-react';
 import AppLayout from './(app)/layout';
 import { useUser, useFirestore, useDoc, useCollection, useMemoFirebase } from '@/firebase';
 import { ActiveTasks } from "@/components/dashboard/ActiveTasks";
@@ -50,6 +50,17 @@ function DashboardGrid() {
         );
     }, [firestore, userProfile, permissions]);
     const { data: pendingReqs, isLoading: reqsLoading } = useCollection<Requisition>(reqsQuery);
+    
+    // Show welcome message if not logged in
+    if (!authUser && !isAuthLoading) {
+      return (
+        <div className="flex flex-col items-center justify-center h-[60vh] text-center">
+            <BookCopy className="h-16 w-16 text-primary" />
+            <h1 className="mt-4 text-3xl font-bold font-headline">Welcome to Palilious</h1>
+            <p className="mt-2 text-lg text-muted-foreground">The all-in-one internal management tool.</p>
+        </div>
+      );
+    }
     
     const isLoading = isProfileLoading || isAuthLoading || reqsLoading || isConfigLoading;
 
@@ -105,23 +116,15 @@ export default function RootPage() {
   const router = useRouter();
 
   useEffect(() => {
-    // This is the primary gatekeeper.
-    // It will not run until the initial user loading is complete.
-    if (isUserLoading) {
-      return; // Do nothing while loading
-    }
-
-    if (!user) {
-      router.replace('/login');
-    } else if (isSuperAdmin) {
+    // Only redirect if a user is logged in AND is a superadmin.
+    if (user && isSuperAdmin) {
       router.replace('/superadmin');
     }
-    // If a regular user is logged in, we do nothing and allow the page to render.
-  }, [user, isUserLoading, isSuperAdmin, router]);
+  }, [user, isSuperAdmin, router]);
 
-  // Show a loader while the auth state is resolving, or if we are about to redirect.
-  // This prevents rendering the dashboard for a split second before redirecting away.
-  if (isUserLoading || !user || (user && isSuperAdmin)) {
+  // The loader is only for the superadmin redirect case.
+  // Otherwise, the page renders immediately in its logged-in or logged-out state.
+  if (isUserLoading || (user && isSuperAdmin)) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <Loader2 className="animate-spin text-primary w-12 h-12" />
@@ -129,8 +132,8 @@ export default function RootPage() {
     );
   }
 
-  // If we reach this point, it means the user is loaded, is not a superadmin,
-  // and is authenticated. We can safely render the dashboard.
+  // The main layout contains the logic for auth popups.
+  // This page just renders the content inside.
   return (
     <AppLayout>
       <DashboardGrid />

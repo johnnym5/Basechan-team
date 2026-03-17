@@ -16,7 +16,7 @@ import { Separator } from '../ui/separator';
 import { cn } from '@/lib/utils';
 
 
-export default function AppHeader({ userProfile, onMenuClick } : { userProfile: UserProfile | null, onMenuClick: () => void }) {
+export default function AppHeader({ userProfile, onMenuClick, isLoggedIn } : { userProfile: UserProfile | null, onMenuClick: () => void, isLoggedIn: boolean }) {
   const router = useRouter();
   const { user } = useUser();
   const firestore = useFirestore();
@@ -96,7 +96,7 @@ export default function AppHeader({ userProfile, onMenuClick } : { userProfile: 
         <Button variant="ghost" size="icon" className="md:hidden size-10 rounded-full flex items-center justify-center bg-slate-800/50 border border-slate-700" onClick={onMenuClick}>
             <span className="material-symbols-outlined text-xl">menu</span>
         </Button>
-        {userProfile ? (
+        {isLoggedIn && userProfile ? (
           <div className="flex items-center gap-3">
             <Avatar className="size-10 rounded-full bg-primary/20 flex items-center justify-center border border-primary/30 overflow-hidden">
                 <AvatarImage src={userProfile.avatarUrl || user?.photoURL || ''} alt={userProfile.fullName} />
@@ -109,50 +109,52 @@ export default function AppHeader({ userProfile, onMenuClick } : { userProfile: 
           </div>
         ) : null}
       </div>
-      <div className='flex items-center gap-2'>
-        <Popover open={isNotificationsOpen} onOpenChange={setIsNotificationsOpen}>
-            <PopoverTrigger asChild>
-                <Button variant="ghost" size="icon" className="size-10 rounded-full flex items-center justify-center bg-slate-800/50 border border-slate-700 relative">
-                    <Bell className="h-5 w-5" />
-                    {unreadCount > 0 && <span className="absolute top-2.5 right-2.5 size-2 bg-primary rounded-full border-2 border-background"></span>}
-                </Button>
-            </PopoverTrigger>
-            <PopoverContent align="end" className="w-80 p-0">
-                <div className="p-3 flex items-center justify-between border-b">
-                    <h3 className="font-semibold text-sm">Notifications</h3>
-                    <Button variant="link" size="sm" onClick={handleMarkAllAsRead} disabled={unreadCount === 0} className="text-xs h-auto p-0">
-                        <CheckCheck className="mr-1 h-3 w-3" /> Mark all as read
+      {isLoggedIn && (
+        <div className='flex items-center gap-2'>
+            <Popover open={isNotificationsOpen} onOpenChange={setIsNotificationsOpen}>
+                <PopoverTrigger asChild>
+                    <Button variant="ghost" size="icon" className="size-10 rounded-full flex items-center justify-center bg-slate-800/50 border border-slate-700 relative">
+                        <Bell className="h-5 w-5" />
+                        {unreadCount > 0 && <span className="absolute top-2.5 right-2.5 size-2 bg-primary rounded-full border-2 border-background"></span>}
                     </Button>
-                </div>
-                <ScrollArea className="h-96">
-                    {!notifications || notifications.length === 0 ? (
-                        <p className="text-center text-sm text-muted-foreground py-16">No new notifications</p>
-                    ) : (
-                        <div className="divide-y divide-border">
-                            {notifications.map(n => (
-                                <div key={n.id} onClick={() => handleNotificationClick(n)} 
-                                    className={cn("p-3 flex items-start gap-3 hover:bg-accent cursor-pointer", !n.isRead && "bg-primary/5 hover:bg-primary/10")}
-                                >
-                                    {!n.isRead && <div className="mt-1 h-2 w-2 rounded-full bg-primary flex-shrink-0"></div>}
-                                    <div className={cn("flex-1", n.isRead && "pl-5")}>
-                                        <p className="text-sm font-semibold">{n.title}</p>
-                                        <p className="text-sm text-muted-foreground">{n.description}</p>
-                                        <p className="text-xs text-muted-foreground/70 mt-1">
-                                            {formatDistanceToNow(new Date(n.createdAt), { addSuffix: true })}
-                                        </p>
+                </PopoverTrigger>
+                <PopoverContent align="end" className="w-80 p-0">
+                    <div className="p-3 flex items-center justify-between border-b">
+                        <h3 className="font-semibold text-sm">Notifications</h3>
+                        <Button variant="link" size="sm" onClick={handleMarkAllAsRead} disabled={unreadCount === 0} className="text-xs h-auto p-0">
+                            <CheckCheck className="mr-1 h-3 w-3" /> Mark all as read
+                        </Button>
+                    </div>
+                    <ScrollArea className="h-96">
+                        {!notifications || notifications.length === 0 ? (
+                            <p className="text-center text-sm text-muted-foreground py-16">No new notifications</p>
+                        ) : (
+                            <div className="divide-y divide-border">
+                                {notifications.map(n => (
+                                    <div key={n.id} onClick={() => handleNotificationClick(n)} 
+                                        className={cn("p-3 flex items-start gap-3 hover:bg-accent cursor-pointer", !n.isRead && "bg-primary/5 hover:bg-primary/10")}
+                                    >
+                                        {!n.isRead && <div className="mt-1 h-2 w-2 rounded-full bg-primary flex-shrink-0"></div>}
+                                        <div className={cn("flex-1", n.isRead && "pl-5")}>
+                                            <p className="text-sm font-semibold">{n.title}</p>
+                                            <p className="text-sm text-muted-foreground">{n.description}</p>
+                                            <p className="text-xs text-muted-foreground/70 mt-1">
+                                                {formatDistanceToNow(new Date(n.createdAt), { addSuffix: true })}
+                                            </p>
+                                        </div>
                                     </div>
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                </ScrollArea>
-            </PopoverContent>
-        </Popover>
+                                ))}
+                            </div>
+                        )}
+                    </ScrollArea>
+                </PopoverContent>
+            </Popover>
 
-        <div className="hidden md:block">
-            <UserNav userProfile={userProfile} />
+            <div className="hidden md:block">
+                <UserNav userProfile={userProfile} />
+            </div>
         </div>
-      </div>
+      )}
     </header>
   );
 }

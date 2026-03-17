@@ -4,15 +4,18 @@ import { uiEmitter } from "@/lib/ui-emitter";
 import { Plus } from 'lucide-react';
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { useUser } from "@/firebase";
 
 interface BottomNavBarProps {
     onFabClick: () => void;
 }
 
 export function BottomNavBar({ onFabClick }: BottomNavBarProps) {
-  const pathname = usePathname();
-
-  const isHomePage = pathname === '/';
+  const { user } = useUser();
+  
+  if (!user) {
+    return null;
+  }
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 px-4 pb-6 pt-2 md:hidden">

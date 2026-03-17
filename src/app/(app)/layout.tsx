@@ -34,6 +34,7 @@ import { useImpersonation } from '@/context/ImpersonationProvider';
 import { NewAnnouncementDialog } from '@/components/dashboard/NewAnnouncementDialog';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
+import { AuthDialog } from '@/components/auth/AuthDialog';
 
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
@@ -62,23 +63,37 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { isImpersonating } = useImpersonation();
   const [isFabMenuOpen, setIsFabMenuOpen] = useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const [isAuthDialogOpen, setIsAuthDialogOpen] = useState(false);
 
-  const isAnyDialogOpen =
-    isWorkbookOpen ||
-    isRequisitionsOpen ||
-    isTasksOpen ||
-    isAttendanceOpen ||
-    isLeaveOpen ||
-    isReportsOpen ||
-    isAssignTaskOpen ||
-    isNewRequisitionOpen ||
-    isRequestLeaveOpen ||
-    isNewWorkbookOpen ||
-    isProfileOpen ||
-    isSettingsOpen ||
-    isChatOpen ||
-    isInviteUserOpen ||
-    isNewAnnouncementOpen;
+  const isLoggedIn = !!user;
+
+  // When user logs in successfully, close the auth dialog.
+  useEffect(() => {
+    if (isLoggedIn) {
+        setIsAuthDialogOpen(false);
+    }
+  }, [isLoggedIn]);
+
+  const isAnyMainDialogOpen =
+    isLoggedIn && (
+        isWorkbookOpen ||
+        isRequisitionsOpen ||
+        isTasksOpen ||
+        isAttendanceOpen ||
+        isLeaveOpen ||
+        isReportsOpen ||
+        isAssignTaskOpen ||
+        isNewRequisitionOpen ||
+        isRequestLeaveOpen ||
+        isNewWorkbookOpen ||
+        isProfileOpen ||
+        isSettingsOpen ||
+        isChatOpen ||
+        isInviteUserOpen ||
+        isNewAnnouncementOpen
+    );
+
+  const isAnyDialogOpen = isAnyMainDialogOpen || isAuthDialogOpen;
 
   const userProfileRef = useMemoFirebase(() => 
     firestore && user ? doc(firestore, 'users', user.uid) : null
@@ -87,12 +102,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const permissions = usePermissions(userProfile);
   const { config, isLoading: isConfigLoading } = useSystemConfig(userProfile?.orgId);
   
-  useEffect(() => {
-    if (!isUserLoading && !user) {
-      router.replace('/login');
-    }
-  }, [isUserLoading, user, router]);
-
   useEffect(() => {
     const root = document.documentElement;
     const defaultPrimary = '222 83% 53%';
@@ -178,17 +187,13 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-
-  if (isUserLoading || (user && isProfileLoading)) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Loader2 className="animate-spin text-primary w-12 h-12" />
-      </div>
-    );
-  }
-
   return (
     <>
+      <AuthDialog open={isAuthDialogOpen} onOpenChange={setIsAuthDialogOpen}>
+          {/* This is a controlled dialog, trigger is external. Empty fragment is fine. */}
+          <></>
+      </AuthDialog>
+
       <Sheet open={isMobileSidebarOpen} onOpenChange={setIsMobileSidebarOpen}>
         <SheetContent side="left" className="p-0 w-72 md:hidden">
             <VisuallyHidden>
@@ -197,26 +202,38 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 <SheetDescription>Navigation links for the application.</SheetDescription>
               </SheetHeader>
             </VisuallyHidden>
-            <AppSidebar isMobile={true} isCollapsed={false} onToggleCollapse={() => {}} />
+            <AppSidebar 
+              isMobile={true} 
+              isCollapsed={false} 
+              onToggleCollapse={() => {}} 
+              isLoggedIn={isLoggedIn}
+              isAuthLoading={isUserLoading}
+              onSignInClick={() => setIsAuthDialogOpen(true)}
+            />
         </SheetContent>
       </Sheet>
 
       <div className="group/sidebar flex min-h-screen w-full bg-muted/40 md:bg-background">
-          <AppSidebar isCollapsed={isSidebarCollapsed} onToggleCollapse={() => setIsSidebarCollapsed(prev => !prev)} />
+          <AppSidebar 
+            isCollapsed={isSidebarCollapsed} 
+            onToggleCollapse={() => setIsSidebarCollapsed(prev => !prev)}
+            isLoggedIn={isLoggedIn}
+            isAuthLoading={isUserLoading}
+            onSignInClick={() => setIsAuthDialogOpen(true)}
+          />
            <div className={cn(
               "flex flex-1 flex-col bg-background transition-all duration-300 ease-in-out origin-center",
               isAnyDialogOpen ? "md:scale-[0.97] md:rounded-2xl md:overflow-hidden md:shadow-2xl" : "md:scale-100 rounded-none"
           )}>
-              <AppHeader userProfile={userProfile} onMenuClick={() => setIsMobileSidebarOpen(true)} />
+              <AppHeader userProfile={userProfile} onMenuClick={() => setIsMobileSidebarOpen(true)} isLoggedIn={isLoggedIn}/>
               <main className="flex-1 overflow-y-auto md:p-6 pb-28 md:pb-6">
                   {children}
               </main>
           </div>
-          <BottomNavBar onFabClick={() => setIsFabMenuOpen(true)} />
+          {isLoggedIn && <BottomNavBar onFabClick={() => setIsFabMenuOpen(true)} />}
       </div>
 
-       {/* Impersonation Banner */}
-       {isImpersonating && (
+       {isLoggedIn && isImpersonating && (
         <div className="fixed bottom-16 md:bottom-0 left-0 right-0 bg-amber-500 text-black p-2 text-center text-sm font-semibold z-50 flex items-center justify-center gap-2"
           style={{ left: isSidebarCollapsed ? '80px' : '288px' }}
         >
@@ -226,152 +243,152 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       )}
 
 
-       {/* FAB for Desktop */}
-       <div className="hidden md:block">
-        <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-                <Button className="fixed bottom-8 right-8 h-16 w-16 rounded-full shadow-lg z-40">
-                    <Plus className="h-8 w-8" />
-                </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-56 mb-2" align="end">
-                {permissions.canManageStaff && (
-                    <DropdownMenuItem onSelect={() => setIsInviteUserOpen(true)}>
-                        <UserPlus className="mr-2 h-4 w-4" />
-                        <span>Add Team Member</span>
-                    </DropdownMenuItem>
-                )}
-                <DropdownMenuItem onSelect={() => setIsAssignTaskOpen(true)}>
-                    <ListTodo className="mr-2 h-4 w-4" />
-                    <span>New Task</span>
-                </DropdownMenuItem>
-                {permissions.canAccessRequisitions && (
-                    <DropdownMenuItem onSelect={() => setIsNewRequisitionOpen(true)}>
-                        <FileText className="mr-2 h-4 w-4" />
-                        <span>New Requisition</span>
-                    </DropdownMenuItem>
-                )}
-                 <DropdownMenuItem onSelect={() => setIsRequestLeaveOpen(true)}>
-                    <CalendarPlus className="mr-2 h-4 w-4" />
-                    <span>Request Leave</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem onSelect={() => setIsNewWorkbookOpen(true)}>
-                    <BookOpenCheck className="mr-2 h-4 w-4" />
-                    <span>New Workbook</span>
-                </DropdownMenuItem>
-                {permissions.canManageAnnouncements && (
-                    <DropdownMenuItem onSelect={() => setIsNewAnnouncementOpen(true)}>
-                        <Megaphone className="mr-2 h-4 w-4" />
-                        <span>New Announcement</span>
-                    </DropdownMenuItem>
-                )}
-                {permissions.canAccessChat && (
-                    <DropdownMenuItem onSelect={() => setIsChatOpen(true)}>
-                        <MessageSquare className="mr-2 h-4 w-4" />
-                        <span>New Chat</span>
-                    </DropdownMenuItem>
-                )}
-            </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
-
-       {/* FAB Menu for Mobile */}
-      <DropdownMenu open={isFabMenuOpen} onOpenChange={setIsFabMenuOpen}>
-        <DropdownMenuContent className="w-56 mb-20 md:hidden" align="end">
-           {permissions.canManageStaff && (
-                <DropdownMenuItem onSelect={() => setIsInviteUserOpen(true)}>
-                    <UserPlus className="mr-2 h-4 w-4" />
-                    <span>Add Team Member</span>
-                </DropdownMenuItem>
-            )}
-            <DropdownMenuItem onSelect={() => setIsAssignTaskOpen(true)}>
-                <ListTodo className="mr-2 h-4 w-4" />
-                <span>New Task</span>
-            </DropdownMenuItem>
-            {permissions.canAccessRequisitions && (
-                <DropdownMenuItem onSelect={() => setIsNewRequisitionOpen(true)}>
-                    <FileText className="mr-2 h-4 w-4" />
-                    <span>New Requisition</span>
-                </DropdownMenuItem>
-            )}
-            <DropdownMenuItem onSelect={() => setIsRequestLeaveOpen(true)}>
-                <CalendarPlus className="mr-2 h-4 w-4" />
-                <span>Request Leave</span>
-            </DropdownMenuItem>
-            <DropdownMenuItem onSelect={() => setIsNewWorkbookOpen(true)}>
-                <BookOpenCheck className="mr-2 h-4 w-4" />
-                <span>New Workbook</span>
-            </DropdownMenuItem>
-            {permissions.canManageAnnouncements && (
-                <DropdownMenuItem onSelect={() => setIsNewAnnouncementOpen(true)}>
-                    <Megaphone className="mr-2 h-4 w-4" />
-                    <span>New Announcement</span>
-                </DropdownMenuItem>
-            )}
-            {permissions.canAccessChat && (
-                <DropdownMenuItem onSelect={() => setIsChatOpen(true)}>
-                    <MessageSquare className="mr-2 h-4 w-4" />
-                    <span>New Chat</span>
-                </DropdownMenuItem>
-            )}
-        </DropdownMenuContent>
-      </DropdownMenu>
-
-
-      {/* Main Feature Dialogs */}
-      <WorkbookDialog
-        open={isWorkbookOpen}
-        onOpenChange={(isOpen) => {
-          setIsWorkbookOpen(isOpen);
-          if (!isOpen) {
-            setInitialWorkbookPayload(undefined); // Clear payload on close
-          }
-        }}
-        initialPayload={initialWorkbookPayload}
-      />
-      <RequisitionsDialog open={isRequisitionsOpen} onOpenChange={setIsRequisitionsOpen} />
-      <TasksDialog open={isTasksOpen} onOpenChange={setIsTasksOpen} />
-      <AttendanceDialog open={isAttendanceOpen} onOpenChange={setIsAttendanceOpen} />
-      <LeaveDialog open={isLeaveOpen} onOpenChange={setIsLeaveOpen} />
-      <ReportsDialog open={isReportsOpen} onOpenChange={setIsReportsOpen} />
-      {userProfile && <ProfileDialog open={isProfileOpen} onOpenChange={setIsProfileOpen} userProfile={userProfile} />}
-      {userProfile && <SettingsDialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen} userProfile={userProfile} />}
-      {userProfile && (
-        <ChatDialog
-          open={isChatOpen}
-          onOpenChange={(isOpen) => {
-            setIsChatOpen(isOpen);
-            if (!isOpen) {
-              setInitialChatPayload(undefined); // Clear payload on close
-            }
-          }}
-          currentUserProfile={userProfile}
-          permissions={permissions}
-          initialPayload={initialChatPayload}
-        />
-      )}
-
-      {/* Creation Dialogs */}
-      {userProfile && (
+       {isLoggedIn && (
         <>
-            <AssignTaskDialog open={isAssignTaskOpen} onOpenChange={setIsAssignTaskOpen} currentUserProfile={userProfile} permissions={permissions} initialData={null} />
-            <NewRequisitionDialog open={isNewRequisitionOpen} onOpenChange={setIsNewRequisitionOpen} userProfile={userProfile} />
-            <RequestLeaveDialog open={isRequestLeaveOpen} onOpenChange={setIsRequestLeaveOpen} userProfile={userProfile} />
-            <NewWorkbookDialog open={isNewWorkbookOpen} onOpenChange={setIsNewWorkbookOpen} userProfile={userProfile} />
-            <InviteUserDialog open={isInviteUserOpen} onOpenChange={setIsInviteUserOpen} currentUserProfile={userProfile} />
-            {permissions.canManageAnnouncements && (
-                <NewAnnouncementDialog 
-                    open={isNewAnnouncementOpen}
-                    onOpenChange={setIsNewAnnouncementOpen}
-                    userProfile={userProfile}
+            {/* FAB for Desktop */}
+            <div className="hidden md:block">
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button className="fixed bottom-8 right-8 h-16 w-16 rounded-full shadow-lg z-40">
+                            <Plus className="h-8 w-8" />
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="w-56 mb-2" align="end">
+                        {permissions.canManageStaff && (
+                            <DropdownMenuItem onSelect={() => setIsInviteUserOpen(true)}>
+                                <UserPlus className="mr-2 h-4 w-4" />
+                                <span>Add Team Member</span>
+                            </DropdownMenuItem>
+                        )}
+                        <DropdownMenuItem onSelect={() => setIsAssignTaskOpen(true)}>
+                            <ListTodo className="mr-2 h-4 w-4" />
+                            <span>New Task</span>
+                        </DropdownMenuItem>
+                        {permissions.canAccessRequisitions && (
+                            <DropdownMenuItem onSelect={() => setIsNewRequisitionOpen(true)}>
+                                <FileText className="mr-2 h-4 w-4" />
+                                <span>New Requisition</span>
+                            </DropdownMenuItem>
+                        )}
+                        <DropdownMenuItem onSelect={() => setIsRequestLeaveOpen(true)}>
+                            <CalendarPlus className="mr-2 h-4 w-4" />
+                            <span>Request Leave</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onSelect={() => setIsNewWorkbookOpen(true)}>
+                            <BookOpenCheck className="mr-2 h-4 w-4" />
+                            <span>New Workbook</span>
+                        </DropdownMenuItem>
+                        {permissions.canManageAnnouncements && (
+                            <DropdownMenuItem onSelect={() => setIsNewAnnouncementOpen(true)}>
+                                <Megaphone className="mr-2 h-4 w-4" />
+                                <span>New Announcement</span>
+                            </DropdownMenuItem>
+                        )}
+                        {permissions.canAccessChat && (
+                            <DropdownMenuItem onSelect={() => setIsChatOpen(true)}>
+                                <MessageSquare className="mr-2 h-4 w-4" />
+                                <span>New Chat</span>
+                            </DropdownMenuItem>
+                        )}
+                    </DropdownMenuContent>
+                </DropdownMenu>
+            </div>
+
+            {/* FAB Menu for Mobile */}
+            <DropdownMenu open={isFabMenuOpen} onOpenChange={setIsFabMenuOpen}>
+                <DropdownMenuContent className="w-56 mb-20 md:hidden" align="end">
+                {permissions.canManageStaff && (
+                        <DropdownMenuItem onSelect={() => setIsInviteUserOpen(true)}>
+                            <UserPlus className="mr-2 h-4 w-4" />
+                            <span>Add Team Member</span>
+                        </DropdownMenuItem>
+                    )}
+                    <DropdownMenuItem onSelect={() => setIsAssignTaskOpen(true)}>
+                        <ListTodo className="mr-2 h-4 w-4" />
+                        <span>New Task</span>
+                    </DropdownMenuItem>
+                    {permissions.canAccessRequisitions && (
+                        <DropdownMenuItem onSelect={() => setIsNewRequisitionOpen(true)}>
+                            <FileText className="mr-2 h-4 w-4" />
+                            <span>New Requisition</span>
+                        </DropdownMenuItem>
+                    )}
+                    <DropdownMenuItem onSelect={() => setIsRequestLeaveOpen(true)}>
+                        <CalendarPlus className="mr-2 h-4 w-4" />
+                        <span>Request Leave</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onSelect={() => setIsNewWorkbookOpen(true)}>
+                        <BookOpenCheck className="mr-2 h-4 w-4" />
+                        <span>New Workbook</span>
+                    </DropdownMenuItem>
+                    {permissions.canManageAnnouncements && (
+                        <DropdownMenuItem onSelect={() => setIsNewAnnouncementOpen(true)}>
+                            <Megaphone className="mr-2 h-4 w-4" />
+                            <span>New Announcement</span>
+                        </DropdownMenuItem>
+                    )}
+                    {permissions.canAccessChat && (
+                        <DropdownMenuItem onSelect={() => setIsChatOpen(true)}>
+                            <MessageSquare className="mr-2 h-4 w-4" />
+                            <span>New Chat</span>
+                        </DropdownMenuItem>
+                    )}
+                </DropdownMenuContent>
+            </DropdownMenu>
+
+
+            {/* Main Feature Dialogs */}
+            <WorkbookDialog
+                open={isWorkbookOpen}
+                onOpenChange={(isOpen) => {
+                setIsWorkbookOpen(isOpen);
+                if (!isOpen) {
+                    setInitialWorkbookPayload(undefined); // Clear payload on close
+                }
+                }}
+                initialPayload={initialWorkbookPayload}
+            />
+            <RequisitionsDialog open={isRequisitionsOpen} onOpenChange={setIsRequisitionsOpen} />
+            <TasksDialog open={isTasksOpen} onOpenChange={setIsTasksOpen} />
+            <AttendanceDialog open={isAttendanceOpen} onOpenChange={setIsAttendanceOpen} />
+            <LeaveDialog open={isLeaveOpen} onOpenChange={setIsLeaveOpen} />
+            <ReportsDialog open={isReportsOpen} onOpenChange={setIsReportsOpen} />
+            {userProfile && <ProfileDialog open={isProfileOpen} onOpenChange={setIsProfileOpen} userProfile={userProfile} />}
+            {userProfile && <SettingsDialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen} userProfile={userProfile} />}
+            {userProfile && (
+                <ChatDialog
+                open={isChatOpen}
+                onOpenChange={(isOpen) => {
+                    setIsChatOpen(isOpen);
+                    if (!isOpen) {
+                    setInitialChatPayload(undefined); // Clear payload on close
+                    }
+                }}
+                currentUserProfile={userProfile}
+                permissions={permissions}
+                initialPayload={initialChatPayload}
                 />
+            )}
+
+            {/* Creation Dialogs */}
+            {userProfile && (
+                <>
+                    <AssignTaskDialog open={isAssignTaskOpen} onOpenChange={setIsAssignTaskOpen} currentUserProfile={userProfile} permissions={permissions} initialData={null} />
+                    <NewRequisitionDialog open={isNewRequisitionOpen} onOpenChange={setIsNewRequisitionOpen} userProfile={userProfile} />
+                    <RequestLeaveDialog open={isRequestLeaveOpen} onOpenChange={setIsRequestLeaveOpen} userProfile={userProfile} />
+                    <NewWorkbookDialog open={isNewWorkbookOpen} onOpenChange={setIsNewWorkbookOpen} userProfile={userProfile} />
+                    <InviteUserDialog open={isInviteUserOpen} onOpenChange={setIsInviteUserOpen} currentUserProfile={userProfile} />
+                    {permissions.canManageAnnouncements && (
+                        <NewAnnouncementDialog 
+                            open={isNewAnnouncementOpen}
+                            onOpenChange={setIsNewAnnouncementOpen}
+                            userProfile={userProfile}
+                        />
+                    )}
+                </>
             )}
         </>
       )}
     </>
   );
 }
-
-    
-
-    

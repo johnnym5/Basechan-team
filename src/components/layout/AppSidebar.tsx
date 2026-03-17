@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LogOut, BookCopy, Pin, PinOff } from "lucide-react";
+import { LogOut, BookCopy, Pin, PinOff, LogIn } from "lucide-react";
 import { mainNavItems } from "@/lib/nav-items";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback } from "../ui/avatar";
@@ -20,7 +20,21 @@ import { ORG_NAME } from "@/lib/config";
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { Button } from "../ui/button";
 
-export default function AppSidebar({ isMobile = false, isCollapsed, onToggleCollapse }: { isMobile?: boolean, isCollapsed: boolean, onToggleCollapse: () => void }) {
+export default function AppSidebar({ 
+    isMobile = false, 
+    isCollapsed, 
+    onToggleCollapse,
+    isLoggedIn,
+    isAuthLoading,
+    onSignInClick
+}: { 
+    isMobile?: boolean, 
+    isCollapsed: boolean, 
+    onToggleCollapse: () => void,
+    isLoggedIn: boolean,
+    isAuthLoading: boolean,
+    onSignInClick: () => void
+}) {
   const pathname = usePathname();
   const auth = useAuth();
   const { user: authUser } = useUser();
@@ -37,6 +51,10 @@ export default function AppSidebar({ isMobile = false, isCollapsed, onToggleColl
   };
 
   const handleDialogClick = (dialog: string) => {
+    if (!isLoggedIn) {
+        onSignInClick();
+        return;
+    }
     switch(dialog) {
       case 'chat':
         uiEmitter.emit('open-chat-dialog');
@@ -67,8 +85,6 @@ export default function AppSidebar({ isMobile = false, isCollapsed, onToggleColl
         break;
     }
   };
-  
-  if (!authUser && !isMobile) return null;
 
   return (
     <aside className={cn(
@@ -118,8 +134,12 @@ export default function AppSidebar({ isMobile = false, isCollapsed, onToggleColl
               const action = 'href' in item ? { href: item.href } : { onClick: () => handleDialogClick(item.dialog!) };
               const Component = 'href' in item ? Link : 'button';
 
-              if ('permission' in item && !permissions[item.permission as keyof typeof permissions]) {
+              if ('permission' in item && isLoggedIn && !permissions[item.permission as keyof typeof permissions]) {
                 return null;
+              }
+              
+              if ('permission' in item && !isLoggedIn && item.permission === 'canManageStaff') {
+                return null; // Don't show settings to guests
               }
 
               return (
@@ -137,31 +157,47 @@ export default function AppSidebar({ isMobile = false, isCollapsed, onToggleColl
         </TooltipProvider>
 
         <div className="mt-auto border-t p-4">
-            <div className={cn("flex items-center gap-3 transition-all", isCollapsed && "justify-center group-hover/sidebar:justify-start")}>
-                {isProfileLoading ? (
-                  <Skeleton className="h-10 w-10 rounded-full" />
-                ) : (
-                  <Avatar className="h-10 w-10">
-                      <AvatarFallback>{userProfile?.fullName?.split(' ').map(n => n[0]).join('')}</AvatarFallback>
-                  </Avatar>
-                )}
-                <div className={cn("flex-1 truncate transition-opacity", isCollapsed && "opacity-0 invisible w-0 group-hover/sidebar:visible group-hover/sidebar:opacity-100 group-hover/sidebar:w-auto group-hover/sidebar:delay-200")}>
-                    <p className="font-semibold">{userProfile?.fullName}</p>
-                    <Badge variant="secondary" className="text-xs">{userProfile?.position}</Badge>
+            {isAuthLoading ? (
+                <Skeleton className="h-10 w-full" />
+            ) : isLoggedIn && userProfile ? (
+                <div className={cn("flex items-center gap-3 transition-all", isCollapsed && "justify-center group-hover/sidebar:justify-start")}>
+                    {isProfileLoading ? (
+                      <Skeleton className="h-10 w-10 rounded-full" />
+                    ) : (
+                      <Avatar className="h-10 w-10">
+                          <AvatarFallback>{userProfile?.fullName?.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                      </Avatar>
+                    )}
+                    <div className={cn("flex-1 truncate transition-opacity", isCollapsed && "opacity-0 invisible w-0 group-hover/sidebar:visible group-hover/sidebar:opacity-100 group-hover/sidebar:w-auto group-hover/sidebar:delay-200")}>
+                        <p className="font-semibold">{userProfile?.fullName}</p>
+                        <Badge variant="secondary" className="text-xs">{userProfile?.position}</Badge>
+                    </div>
+                    <TooltipProvider delayDuration={0}>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-10 w-10 shrink-0" onClick={onToggleCollapse}>
+                            <Pin className={cn("h-5 w-5 transition-transform", isCollapsed && "rotate-90")} />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent side={isCollapsed ? "right" : "top"} align="center">
+                            {isCollapsed ? "Pin sidebar open" : "Collapse sidebar"}
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                 </div>
+            ) : (
                 <TooltipProvider delayDuration={0}>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-10 w-10 shrink-0" onClick={onToggleCollapse}>
-                        <Pin className={cn("h-5 w-5 transition-transform", isCollapsed && "rotate-90")} />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent side={isCollapsed ? "right" : "top"} align="center">
-                        {isCollapsed ? "Pin sidebar open" : "Collapse sidebar"}
-                    </TooltipContent>
-                  </Tooltip>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Button variant="outline" onClick={onSignInClick} className={cn("w-full", isCollapsed && "group-hover/sidebar:w-full w-10 justify-center group-hover/sidebar:justify-start")}>
+                                <LogIn className={cn("h-5 w-5", !isCollapsed && "mr-2", isCollapsed && "group-hover/sidebar:mr-2")}/>
+                                <span className={cn("transition-opacity", isCollapsed && "opacity-0 w-0 group-hover/sidebar:opacity-100 group-hover/sidebar:w-auto")}>Sign In</span>
+                            </Button>
+                        </TooltipTrigger>
+                        {isCollapsed && <TooltipContent side="right">Sign In</TooltipContent>}
+                    </Tooltip>
                 </TooltipProvider>
-            </div>
+            )}
         </div>
       </div>
     </aside>
