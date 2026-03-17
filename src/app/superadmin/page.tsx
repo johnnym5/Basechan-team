@@ -39,18 +39,13 @@ export default function SuperAdminPage() {
     }, [isUserLoading, isSuperAdmin, router]);
 
     const handleLogout = () => {
-        // Clear ghost mode if it's active
-        if (localStorage.getItem('ghost_mode') === 'true') {
-            localStorage.removeItem('ghost_mode');
-            window.location.href = '/login';
-        } else if (user) {
-            // Normal sign out
+        if (user) {
             signOut(auth);
         }
     };
 
 
-    if (isUserLoading && !isSuperAdmin) {
+    if (isUserLoading || !isSuperAdmin) {
         return (
             <div className="min-h-screen bg-background flex items-center justify-center">
                 <Loader2 className="animate-spin text-primary w-12 h-12" />

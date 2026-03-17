@@ -47,14 +47,6 @@ export function LoginForm() {
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsSubmitting(true);
     
-    // GHOST ACCESS: If both fields are empty, enable ghost mode
-    if (!values.username && !values.password) {
-        localStorage.setItem('ghost_mode', 'true');
-        window.location.href = '/superadmin';
-        return; // Stop further execution
-    }
-
-    // Normal login logic
     if (!values.username || !values.password) {
         toast({
             variant: 'destructive',

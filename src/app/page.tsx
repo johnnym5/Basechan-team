@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useEffect, useMemo } from 'react';
@@ -106,12 +105,14 @@ export default function RootPage() {
   const router = useRouter();
 
   useEffect(() => {
-      if (!isUserLoading && user && isSuperAdmin) {
-          router.replace('/superadmin');
-      }
+    if (!isUserLoading && !user) {
+      router.replace('/login');
+    } else if (!isUserLoading && user && isSuperAdmin) {
+      router.replace('/superadmin');
+    }
   }, [user, isUserLoading, isSuperAdmin, router]);
 
-  if (isUserLoading) {
+  if (isUserLoading || (user && isSuperAdmin) || !user) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <Loader2 className="animate-spin text-primary w-12 h-12" />
@@ -119,21 +120,9 @@ export default function RootPage() {
     );
   }
 
-  // If user is a superadmin, they will be redirected. Show a loader until then.
-  if (user && isSuperAdmin) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Loader2 className="animate-spin text-primary w-12 h-12" />
-      </div>
-    );
-  }
-
-  // For all other cases, show the dashboard. AppLayout and DashboardGrid have their own loaders.
   return (
     <AppLayout>
       <DashboardGrid />
     </AppLayout>
   );
 }
-
-    

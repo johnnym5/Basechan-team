@@ -6,9 +6,11 @@ import { UserProfile } from '@/lib/types';
 import { TeamPane } from './TeamPane';
 import { SystemPane } from './SystemPane';
 import { usePermissions } from '@/hooks/usePermissions';
-import { ShieldAlert } from 'lucide-react';
+import { ShieldAlert, Shield } from 'lucide-react';
 import { Button } from '../ui/button';
 import { useRouter } from 'next/navigation';
+import { useSuperAdmin } from '@/hooks/useSuperAdmin';
+import { cn } from '@/lib/utils';
 
 interface SettingsDialogProps {
   open: boolean;
@@ -19,6 +21,7 @@ interface SettingsDialogProps {
 export function SettingsDialog({ open, onOpenChange, userProfile }: SettingsDialogProps) {
   const permissions = usePermissions(userProfile);
   const router = useRouter();
+  const { isSuperAdmin } = useSuperAdmin();
 
   if (!userProfile) {
     return null;
@@ -56,9 +59,10 @@ export function SettingsDialog({ open, onOpenChange, userProfile }: SettingsDial
         </DialogHeader>
         <Tabs defaultValue="team" className="w-full flex-1 flex flex-col overflow-hidden">
           <div className="px-6">
-            <TabsList className="grid w-full grid-cols-2">
+            <TabsList className={cn("grid w-full", isSuperAdmin ? "grid-cols-3" : "grid-cols-2")}>
                 <TabsTrigger value="team">Team</TabsTrigger>
                 <TabsTrigger value="system">System</TabsTrigger>
+                {isSuperAdmin && <TabsTrigger value="superadmin">Super Admin</TabsTrigger>}
             </TabsList>
           </div>
           <TabsContent value="team" className="flex-1 overflow-y-auto mt-4 px-6 pb-6">
@@ -67,6 +71,18 @@ export function SettingsDialog({ open, onOpenChange, userProfile }: SettingsDial
           <TabsContent value="system" className="flex-1 overflow-y-auto mt-4 px-6 pb-6">
             <SystemPane currentUserProfile={userProfile} />
           </TabsContent>
+          {isSuperAdmin && (
+             <TabsContent value="superadmin" className="flex-1 overflow-y-auto mt-4 px-6 pb-6">
+                <div className="flex flex-col items-center justify-center h-full text-center p-8 border-2 border-dashed rounded-lg">
+                    <Shield className="w-16 h-16 text-primary mb-4" />
+                    <h2 className="text-xl font-bold">Super Admin Access</h2>
+                    <p className="text-muted-foreground mt-2 max-w-sm">You have super administrative privileges. Access the main console for advanced data management and system oversight.</p>
+                    <Button onClick={() => router.push('/superadmin')} className="mt-6">
+                        Go to Super Admin Console
+                    </Button>
+                </div>
+            </TabsContent>
+          )}
         </Tabs>
       </DialogContent>
     </Dialog>

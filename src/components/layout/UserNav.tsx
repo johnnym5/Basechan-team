@@ -9,12 +9,14 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useUser, useAuth } from "@/firebase";
-import { LogOut, User as UserIcon, Settings, Eye, EyeOff } from "lucide-react";
+import { LogOut, User as UserIcon, Settings, Eye, EyeOff, Shield } from "lucide-react";
 import { signOut } from "firebase/auth";
 import { uiEmitter } from "@/lib/ui-emitter";
 import { usePermissions } from "@/hooks/usePermissions";
 import type { UserProfile, UserPosition } from "@/lib/types";
 import { useImpersonation } from "@/context/ImpersonationProvider";
+import { useSuperAdmin } from "@/hooks/useSuperAdmin";
+import Link from "next/link";
 
 const getBaseRoleForPermissions = (position: UserPosition): 'Staff' | 'HR Manager' | 'Finance Manager' | 'Managing Director' | 'Organization Administrator' => {
     switch (position) {
@@ -37,6 +39,7 @@ export function UserNav({ userProfile }: { userProfile: UserProfile | null }) {
   const auth = useAuth();
   const permissions = usePermissions(userProfile);
   const { isImpersonating, setIsImpersonating } = useImpersonation();
+  const { isSuperAdmin } = useSuperAdmin();
 
   // Determine if the *actual* user (not the impersonated one) has management rights.
   const actualBaseRole = userProfile ? getBaseRoleForPermissions(userProfile.position) : 'Staff';
@@ -86,6 +89,14 @@ export function UserNav({ userProfile }: { userProfile: UserProfile | null }) {
             <span>Settings</span>
           </DropdownMenuItem>
           <DropdownMenuSeparator />
+          {isSuperAdmin && (
+            <DropdownMenuItem asChild>
+                <Link href="/superadmin">
+                    <Shield className="mr-2 h-4 w-4" />
+                    <span>Super Admin</span>
+                </Link>
+            </DropdownMenuItem>
+          )}
           {canActuallyManageStaff && (
             <DropdownMenuItem onSelect={handleToggleImpersonation}>
               {isImpersonating ? <EyeOff className="mr-2 h-4 w-4" /> : <Eye className="mr-2 h-4 w-4" />}
