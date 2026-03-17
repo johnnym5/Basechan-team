@@ -105,7 +105,7 @@ export default function AppSidebar({
       <div className="flex flex-1 flex-col justify-between overflow-y-auto overflow-x-hidden">
         <TooltipProvider delayDuration={0}>
           <nav className="grid items-start gap-1 p-2 text-sm font-medium">
-            {mainNavItems.map((item, index) => {
+            {isLoggedIn && mainNavItems.map((item, index) => {
               if ('isSeparator' in item) {
                   return <Separator key={`sep-${index}`} className="my-2" />;
               }
@@ -171,6 +171,16 @@ export default function AppSidebar({
                         <p className="font-semibold">{userProfile?.fullName}</p>
                         <Badge variant="secondary" className="text-xs">{userProfile?.position}</Badge>
                     </div>
+                     <TooltipProvider delayDuration={0}>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button variant="ghost" size="icon" onClick={handleLogout} className="h-9 w-9 text-muted-foreground hover:text-destructive flex-shrink-0">
+                                    <LogOut className="h-4 w-4" />
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent side="right">Log Out</TooltipContent>
+                        </Tooltip>
+                    </TooltipProvider>
                 </div>
             ) : (
                 <TooltipProvider delayDuration={0}>
