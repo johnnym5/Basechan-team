@@ -86,11 +86,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const permissions = usePermissions(userProfile);
   const { config, isLoading: isConfigLoading } = useSystemConfig(userProfile?.orgId);
   
-  useEffect(() => {
-    if (!isUserLoading && !user) {
-      router.replace('/login');
-    }
-  }, [isUserLoading, user, router]);
+  // useEffect(() => {
+  //   if (!isUserLoading && !user) {
+  //     router.replace('/login');
+  //   }
+  // }, [isUserLoading, user, router]);
 
   useEffect(() => {
     const root = document.documentElement;
@@ -178,7 +178,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   }, []);
 
 
-  if (isUserLoading || !user || isProfileLoading) {
+  if (isUserLoading || (user && isProfileLoading)) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <Loader2 className="animate-spin text-primary w-12 h-12" />
@@ -368,5 +368,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     </>
   );
 }
+
+    
 
     

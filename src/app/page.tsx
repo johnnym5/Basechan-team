@@ -1,18 +1,13 @@
 'use client';
 
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
-import { useSuperAdmin } from '@/hooks/useSuperAdmin';
-import { Button } from '@/components/ui/button';
-import { Logo } from '@/components/Logo';
-import { AuthDialog } from '@/components/auth/AuthDialog';
 import AppLayout from './(app)/layout';
 import { useUser, useFirestore, useDoc, useCollection, useMemoFirebase } from '@/firebase';
 import { ActiveTasks } from "@/components/dashboard/ActiveTasks";
-import { doc, collection, query, where, orderBy, limit } from "firebase/firestore";
-import type { UserProfile, Requisition, Announcement, SystemConfig } from "@/lib/types";
-import type { User } from 'firebase/auth';
+import { doc, collection, query, where } from "firebase/firestore";
+import type { UserProfile, Requisition } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Announcements } from "@/components/dashboard/Announcements";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -24,10 +19,11 @@ import { CheckCircle } from "lucide-react";
 import { QuickActions } from '@/components/dashboard/QuickActions';
 import { RecentReports } from '@/components/dashboard/RecentReports';
 import { RecentConversations } from '@/components/dashboard/RecentConversations';
+import { useSuperAdmin } from '@/hooks/useSuperAdmin';
 
 
 function DashboardGrid() {
-    const { user: authUser } = useUser();
+    const { user: authUser, isUserLoading: isAuthLoading } = useUser();
     const firestore = useFirestore();
 
     const userProfileRef = useMemoFirebase(() => 
@@ -55,7 +51,18 @@ function DashboardGrid() {
     }, [firestore, userProfile, permissions]);
     const { data: pendingReqs, isLoading: reqsLoading } = useCollection<Requisition>(reqsQuery);
     
-    const isLoading = isProfileLoading || reqsLoading || isConfigLoading;
+    const isLoading = isProfileLoading || isAuthLoading || reqsLoading || isConfigLoading;
+
+    if (!authUser && !isAuthLoading) {
+        return (
+            <div className="flex items-center justify-center h-[60vh] text-center">
+                <div>
+                    <h1 className="text-2xl font-bold">Welcome to Palilious</h1>
+                    <p className="text-muted-foreground mt-2">Login is currently disabled.</p>
+                </div>
+            </div>
+        );
+    }
 
     if (isLoading) {
         return (
@@ -103,55 +110,18 @@ function DashboardGrid() {
     );
 }
 
-
-// --- End of Dashboard Content ---
-
-function PublicLandingPage({ onLoginClick }: { onLoginClick: () => void }) {
-  return (
-    <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4 text-center">
-        <div className="space-y-8 max-w-2xl">
-            <Logo />
-            <h1 className="text-4xl md:text-6xl font-bold font-headline">
-                Streamline Your Internal Operations.
-            </h1>
-            <p className="text-lg text-muted-foreground">
-                Palilious is the all-in-one platform for staff management, financial requisitions, task automation, and more. 
-                Everything your organization needs, in one place.
-            </p>
-            <Button size="lg" onClick={onLoginClick}>
-                Get Started
-            </Button>
-        </div>
-    </div>
-  );
-}
-
-
 export default function RootPage() {
   const { user, isUserLoading } = useUser();
   const { isSuperAdmin } = useSuperAdmin();
   const router = useRouter();
-  const [isAuthDialogOpen, setIsAuthDialogOpen] = useState(false);
-  
-  const firestore = useFirestore();
-  const userProfileRef = useMemoFirebase(() => 
-      firestore && user ? doc(firestore, 'users', user.uid) : null, 
-  [firestore, user]);
-  const { data: userProfile, isLoading: isProfileLoading } = useDoc<UserProfile>(userProfileRef);
 
-  useEffect(() => {
-    if (user && isAuthDialogOpen) {
-      setIsAuthDialogOpen(false);
-    }
-  }, [user, isAuthDialogOpen]);
-  
   useEffect(() => {
       if (!isUserLoading && user && isSuperAdmin) {
           router.replace('/superadmin');
       }
   }, [user, isUserLoading, isSuperAdmin, router]);
 
-  if (isUserLoading || isProfileLoading) {
+  if (isUserLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <Loader2 className="animate-spin text-primary w-12 h-12" />
@@ -159,20 +129,21 @@ export default function RootPage() {
     );
   }
 
-  if (user && !isSuperAdmin && userProfile) {
+  // If user is a superadmin, they will be redirected. Show a loader until then.
+  if (user && isSuperAdmin) {
     return (
-      <AppLayout>
-        <DashboardGrid />
-      </AppLayout>
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="animate-spin text-primary w-12 h-12" />
+      </div>
     );
   }
-  
+
+  // For all other cases, show the dashboard. AppLayout and DashboardGrid have their own loaders.
   return (
-    <>
-        <PublicLandingPage onLoginClick={() => setIsAuthDialogOpen(true)} />
-        <AuthDialog open={isAuthDialogOpen} onOpenChange={setIsAuthDialogOpen}>
-            {/* The trigger is part of PublicLandingPage, so this is just for the content */}
-        </AuthDialog>
-    </>
+    <AppLayout>
+      <DashboardGrid />
+    </AppLayout>
   );
 }
+
+    
