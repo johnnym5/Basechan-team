@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LogOut } from "lucide-react";
+import { LogOut, BookCopy, Pin, PinOff } from "lucide-react";
 import { mainNavItems } from "@/lib/nav-items";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback } from "../ui/avatar";
@@ -17,8 +17,10 @@ import { Badge } from "../ui/badge";
 import { Separator } from "../ui/separator";
 import { uiEmitter } from "@/lib/ui-emitter";
 import { ORG_NAME } from "@/lib/config";
+import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
+import { Button } from "../ui/button";
 
-export default function AppSidebar({ isMobile = false }: { isMobile?: boolean }) {
+export default function AppSidebar({ isMobile = false, isCollapsed, onToggleCollapse }: { isMobile?: boolean, isCollapsed: boolean, onToggleCollapse: () => void }) {
   const pathname = usePathname();
   const auth = useAuth();
   const { user: authUser } = useUser();
@@ -66,63 +68,76 @@ export default function AppSidebar({ isMobile = false }: { isMobile?: boolean })
     }
   };
   
-  if (!authUser) return null;
+  if (!authUser && !isMobile) return null;
 
   return (
-    <aside className={cn("flex-col border-r bg-background", isMobile ? "flex w-full" : "hidden md:flex md:w-72")}>
-      <div className="flex h-16 items-center border-b px-6">
-          <h2 className="truncate font-bold text-xl text-foreground">{ORG_NAME}</h2>
+    <aside className={cn(
+      "flex-col border-r bg-background transition-all duration-300 ease-in-out", 
+      isMobile ? "flex w-full" : "hidden md:flex",
+      isCollapsed ? "w-20" : "w-72",
+      isCollapsed && "group-hover/sidebar:w-72 group-hover/sidebar:shadow-2xl group-hover/sidebar:z-50"
+    )}>
+      <div className={cn(
+          "flex h-16 items-center border-b px-6 transition-all",
+          isCollapsed && "px-0 justify-center group-hover/sidebar:px-6 group-hover/sidebar:justify-start"
+      )}>
+          <h2 className={cn(
+              "truncate font-bold text-xl text-foreground transition-all",
+              isCollapsed && "w-0 group-hover/sidebar:w-auto"
+          )}>{ORG_NAME}</h2>
+          <BookCopy className={cn("h-6 w-6 text-primary transition-all", !isCollapsed && "w-0", isCollapsed && "group-hover/sidebar:w-0")} />
       </div>
-      <div className="flex flex-1 flex-col justify-between">
-        <nav className="grid items-start gap-1 p-4 text-sm font-medium">
-          {mainNavItems.map((item, index) => {
-            if ('isSeparator' in item) {
-                return <Separator key={`sep-${index}`} className="my-2" />;
-            }
-            
-            const animationStyle = { animationDelay: `${index * 75}ms`, animationFillMode: 'forwards' as const };
+      <div className="flex flex-1 flex-col justify-between overflow-y-auto overflow-x-hidden">
+        <TooltipProvider delayDuration={0}>
+          <nav className="grid items-start gap-1 p-2 text-sm font-medium">
+            {mainNavItems.map((item, index) => {
+              if ('isSeparator' in item) {
+                  return <Separator key={`sep-${index}`} className="my-2" />;
+              }
+              
+              const animationStyle = { animationDelay: `${index * 50}ms`, animationFillMode: 'forwards' as const };
 
-            if ('href' in item) {
-                return (
-                    <Link
-                        key={item.href}
-                        href={item.href}
-                        className={cn(
-                        "flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary opacity-0 animate-fade-in-down",
-                        pathname === item.href && "bg-secondary text-primary",
-                        isMobile && "text-lg"
-                        )}
-                        style={animationStyle}
-                    >
-                        <item.icon className="h-4 w-4" />
-                        {item.label}
-                    </Link>
-                );
-            }
-            
-            if ('permission' in item && !permissions[item.permission as keyof typeof permissions]) {
-                return null;
-            }
-
-            return (
-                <button
-                    key={item.dialog}
-                    onClick={() => handleDialogClick(item.dialog)}
-                    className={cn(
-                        "flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary text-left w-full opacity-0 animate-fade-in-down",
-                        isMobile && "text-lg"
-                    )}
-                    style={animationStyle}
-                >
-                    <item.icon className="h-4 w-4" />
+              const navContent = (
+                <>
+                  <item.icon className="h-5 w-5 shrink-0" />
+                  <span className={cn(
+                      "transition-opacity duration-200", 
+                      isCollapsed && "opacity-0 invisible w-0 group-hover/sidebar:visible group-hover/sidebar:opacity-100 group-hover/sidebar:delay-200 group-hover/sidebar:w-auto"
+                  )}>
                     {item.label}
-                </button>
-            )
-          })}
-        </nav>
+                  </span>
+                </>
+              );
+
+              const linkClasses = cn(
+                "flex items-center gap-4 rounded-lg px-3 py-2.5 text-muted-foreground transition-all hover:text-primary",
+                isCollapsed && "justify-center group-hover/sidebar:justify-start group-hover/sidebar:gap-3",
+                !isCollapsed && "opacity-0 animate-fade-in-down"
+              );
+
+              const action = 'href' in item ? { href: item.href } : { onClick: () => handleDialogClick(item.dialog!) };
+              const Component = 'href' in item ? Link : 'button';
+
+              if ('permission' in item && !permissions[item.permission as keyof typeof permissions]) {
+                return null;
+              }
+
+              return (
+                <Tooltip key={item.label}>
+                  <TooltipTrigger asChild>
+                    <Component {...action} className={cn(linkClasses, pathname === ('href' in item && item.href) && "bg-secondary text-primary")} style={animationStyle}>
+                      {navContent}
+                    </Component>
+                  </TooltipTrigger>
+                  {isCollapsed && <TooltipContent side="right">{item.label}</TooltipContent>}
+                </Tooltip>
+              );
+            })}
+          </nav>
+        </TooltipProvider>
 
         <div className="mt-auto border-t p-4">
-            <div className="flex items-center gap-3 rounded-lg">
+            <div className={cn("flex items-center gap-3 transition-all", isCollapsed && "justify-center group-hover/sidebar:justify-start")}>
                 {isProfileLoading ? (
                   <Skeleton className="h-10 w-10 rounded-full" />
                 ) : (
@@ -130,13 +145,22 @@ export default function AppSidebar({ isMobile = false }: { isMobile?: boolean })
                       <AvatarFallback>{userProfile?.fullName?.split(' ').map(n => n[0]).join('')}</AvatarFallback>
                   </Avatar>
                 )}
-                <div className="flex-1 truncate">
+                <div className={cn("flex-1 truncate transition-opacity", isCollapsed && "opacity-0 invisible w-0 group-hover/sidebar:visible group-hover/sidebar:opacity-100 group-hover/sidebar:w-auto group-hover/sidebar:delay-200")}>
                     <p className="font-semibold">{userProfile?.fullName}</p>
                     <Badge variant="secondary" className="text-xs">{userProfile?.position}</Badge>
                 </div>
-                <button onClick={handleLogout} className="ml-auto">
-                    <LogOut className="h-5 w-5 text-muted-foreground hover:text-primary transition-colors"/>
-                </button>
+                <TooltipProvider delayDuration={0}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-10 w-10 shrink-0" onClick={onToggleCollapse}>
+                        <Pin className={cn("h-5 w-5 transition-transform", isCollapsed && "rotate-90")} />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side={isCollapsed ? "right" : "top"} align="center">
+                        {isCollapsed ? "Pin sidebar open" : "Collapse sidebar"}
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
             </div>
         </div>
       </div>

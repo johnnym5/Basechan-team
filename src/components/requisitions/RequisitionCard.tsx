@@ -18,7 +18,7 @@ export function RequisitionCard({ requisition, onSelect }: RequisitionCardProps)
 
     return (
         <Card 
-            className="bg-card/50 backdrop-blur-xl hover:bg-card transition-colors cursor-pointer"
+            className="bg-card/50 backdrop-blur-xl hover:bg-card hover:shadow-lg hover:-translate-y-1 transition-all cursor-pointer"
             onClick={() => onSelect(requisition)}
         >
             <CardHeader className="pb-2">

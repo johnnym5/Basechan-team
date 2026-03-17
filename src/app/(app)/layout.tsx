@@ -41,6 +41,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const firestore = useFirestore();
   const router = useRouter();
   const { theme } = useTheme();
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isWorkbookOpen, setIsWorkbookOpen] = useState(false);
   const [initialWorkbookPayload, setInitialWorkbookPayload] = useState<{ workbookId?: string; sheetId?: string | null } | undefined>();
   const [isRequisitionsOpen, setIsRequisitionsOpen] = useState(false);
@@ -196,12 +197,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 <SheetDescription>Navigation links for the application.</SheetDescription>
               </SheetHeader>
             </VisuallyHidden>
-            <AppSidebar isMobile={true} />
+            <AppSidebar isMobile={true} isCollapsed={false} onToggleCollapse={() => {}} />
         </SheetContent>
       </Sheet>
 
-      <div className="flex min-h-screen w-full bg-muted/40 md:bg-background">
-          <AppSidebar />
+      <div className="group/sidebar flex min-h-screen w-full bg-muted/40 md:bg-background">
+          <AppSidebar isCollapsed={isSidebarCollapsed} onToggleCollapse={() => setIsSidebarCollapsed(prev => !prev)} />
            <div className={cn(
               "flex flex-1 flex-col bg-background transition-all duration-300 ease-in-out origin-center",
               isAnyDialogOpen ? "md:scale-[0.97] md:rounded-2xl md:overflow-hidden md:shadow-2xl" : "md:scale-100 rounded-none"
@@ -216,7 +217,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
        {/* Impersonation Banner */}
        {isImpersonating && (
-        <div className="fixed bottom-16 md:bottom-0 left-0 right-0 md:left-72 bg-amber-500 text-black p-2 text-center text-sm font-semibold z-50 flex items-center justify-center gap-2">
+        <div className="fixed bottom-16 md:bottom-0 left-0 right-0 bg-amber-500 text-black p-2 text-center text-sm font-semibold z-50 flex items-center justify-center gap-2"
+          style={{ left: isSidebarCollapsed ? '80px' : '288px' }}
+        >
             <Eye className="h-4 w-4" />
             Viewing as Staff. Some actions are restricted.
         </div>
