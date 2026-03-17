@@ -41,7 +41,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const firestore = useFirestore();
   const router = useRouter();
   const { theme } = useTheme();
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true);
+  // Sidebar is always in hover-to-expand mode, so local state for pinning is removed.
   const [isWorkbookOpen, setIsWorkbookOpen] = useState(false);
   const [initialWorkbookPayload, setInitialWorkbookPayload] = useState<{ workbookId?: string; sheetId?: string | null } | undefined>();
   const [isRequisitionsOpen, setIsRequisitionsOpen] = useState(false);
@@ -201,7 +201,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             <AppSidebar 
               isMobile={true} 
               isCollapsed={false} 
-              onToggleCollapse={() => {}} 
               isLoggedIn={isLoggedIn}
               isAuthLoading={isUserLoading}
               onSignInClick={() => setIsAuthDialogOpen(true)}
@@ -212,8 +211,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       <div className="group/sidebar relative">
         <div className="flex min-h-screen w-full bg-muted/40 md:bg-background">
             <AppSidebar 
-              isCollapsed={isSidebarCollapsed} 
-              onToggleCollapse={() => setIsSidebarCollapsed(prev => !prev)}
+              isCollapsed={true}
               isLoggedIn={isLoggedIn}
               isAuthLoading={isUserLoading}
               onSignInClick={() => setIsAuthDialogOpen(true)}
@@ -232,7 +230,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         {isLoggedIn && isImpersonating && (
           <div className={cn(
               "fixed bottom-16 md:bottom-0 right-0 bg-amber-500 text-black p-2 text-center text-sm font-semibold z-50 flex items-center justify-center gap-2 transition-all duration-300 ease-in-out",
-              isSidebarCollapsed ? 'md:left-20 group-hover/sidebar:md:left-72' : 'md:left-72'
+              'md:left-20 group-hover/sidebar:md:left-72'
             )}
           >
               <Eye className="h-4 w-4" />

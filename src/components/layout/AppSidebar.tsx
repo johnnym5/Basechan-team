@@ -3,7 +3,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LogOut, BookCopy, Pin, PinOff, LogIn } from "lucide-react";
+import { LogOut, BookCopy, LogIn } from "lucide-react";
 import { mainNavItems } from "@/lib/nav-items";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback } from "../ui/avatar";
@@ -24,14 +24,12 @@ import { Button } from "../ui/button";
 export default function AppSidebar({ 
     isMobile = false, 
     isCollapsed, 
-    onToggleCollapse,
     isLoggedIn,
     isAuthLoading,
     onSignInClick
 }: { 
     isMobile?: boolean, 
     isCollapsed: boolean, 
-    onToggleCollapse: () => void,
     isLoggedIn: boolean,
     isAuthLoading: boolean,
     onSignInClick: () => void
@@ -173,18 +171,6 @@ export default function AppSidebar({
                         <p className="font-semibold">{userProfile?.fullName}</p>
                         <Badge variant="secondary" className="text-xs">{userProfile?.position}</Badge>
                     </div>
-                    <TooltipProvider delayDuration={0}>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-10 w-10 shrink-0" onClick={onToggleCollapse}>
-                            {isCollapsed ? <Pin className="h-5 w-5" /> : <PinOff className="h-5 w-5" />}
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent side={isCollapsed ? "right" : "top"} align="center">
-                            {isCollapsed ? "Pin sidebar open" : "Unpin sidebar"}
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
                 </div>
             ) : (
                 <TooltipProvider delayDuration={0}>
