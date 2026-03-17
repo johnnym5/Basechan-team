@@ -1,18 +1,17 @@
 'use client';
 
 import { useState } from 'react';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { LoginForm } from './LoginForm';
 import { SupportDialog } from './SupportDialog';
 import { Button } from '../ui/button';
 
 interface AuthDialogProps {
-    children: React.ReactNode;
     open: boolean;
     onOpenChange: (open: boolean) => void;
 }
 
-export function AuthDialog({ children, open, onOpenChange }: AuthDialogProps) {
+export function AuthDialog({ open, onOpenChange }: AuthDialogProps) {
     const [isSupportOpen, setIsSupportOpen] = useState(false);
 
     // When the main auth dialog closes, also close the support one if it's open.
@@ -26,7 +25,6 @@ export function AuthDialog({ children, open, onOpenChange }: AuthDialogProps) {
     return (
         <>
             <Dialog open={open} onOpenChange={handleMainOpenChange}>
-                <DialogTrigger asChild>{children}</DialogTrigger>
                 <DialogContent className="sm:max-w-md">
                      <DialogHeader>
                         <DialogTitle>Welcome Back</DialogTitle>

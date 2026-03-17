@@ -1,4 +1,3 @@
-
 'use client';
 import { useUser, useDoc, useFirestore, useMemoFirebase } from '@/firebase';
 import { useRouter } from 'next/navigation';
@@ -189,10 +188,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <>
-      <AuthDialog open={isAuthDialogOpen} onOpenChange={setIsAuthDialogOpen}>
-          {/* This is a controlled dialog, trigger is external. Empty fragment is fine. */}
-          <></>
-      </AuthDialog>
+      <AuthDialog open={isAuthDialogOpen} onOpenChange={setIsAuthDialogOpen} />
 
       <Sheet open={isMobileSidebarOpen} onOpenChange={setIsMobileSidebarOpen}>
         <SheetContent side="left" className="p-0 w-72 md:hidden">
