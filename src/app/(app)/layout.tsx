@@ -1,10 +1,10 @@
 'use client';
-import { useUser, useDoc, useFirestore, useMemoFirebase } from '@/firebase';
+import { useUser, useDoc, useFirestore, useMemoFirebase, useCollection } from '@/firebase';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Loader2, ListTodo, FileText, CalendarPlus, BookOpenCheck, Plus, UserPlus, Eye, MessageSquare, Megaphone, Home, CalendarDays, User } from 'lucide-react';
-import { doc } from 'firebase/firestore';
-import type { UserProfile } from '@/lib/types';
+import { doc, collection, query, where, limit } from 'firebase/firestore';
+import type { UserProfile, Attendance } from '@/lib/types';
 import { useSystemConfig } from '@/hooks/useSystemConfig';
 import { hexToHslString, cn } from '@/lib/utils';
 import { useTheme } from 'next-themes';
@@ -35,6 +35,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '
 import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
 import { AuthDialog } from '@/components/auth/AuthDialog';
 import { SuperAdminDialog } from '@/components/superadmin/SuperAdminDialog';
+import { format } from 'date-fns';
 
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
@@ -66,6 +67,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [isAuthDialogOpen, setIsAuthDialogOpen] = useState(false);
   const [isSuperAdminOpen, setIsSuperAdminOpen] = useState(false);
 
+  const [today, setToday] = useState('');
+
   const isLoggedIn = !!user;
 
   // When user logs in successfully, close the auth dialog.
@@ -74,6 +77,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         setIsAuthDialogOpen(false);
     }
   }, [isLoggedIn]);
+
+  useEffect(() => {
+      setToday(format(new Date(), 'yyyy-MM-dd'));
+  }, []);
 
   const isAnyMainDialogOpen =
     isLoggedIn && (
@@ -101,6 +108,19 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     firestore && user ? doc(firestore, 'users', user.uid) : null
   , [firestore, user]);
   const { data: userProfile, isLoading: isProfileLoading } = useDoc<UserProfile>(userProfileRef);
+  
+  const attendanceQuery = useMemoFirebase(() => {
+    if (!user || !firestore || !today) return null;
+    return query(
+      collection(firestore, 'attendance'),
+      where('userId', '==', user.uid),
+      where('date', '==', today),
+      limit(1)
+    );
+  }, [user, firestore, today]);
+  const { data: attendanceData } = useCollection<Attendance>(attendanceQuery);
+  const attendanceRecord = attendanceData?.[0] || null;
+
   const permissions = usePermissions(userProfile);
   const { config, isLoading: isConfigLoading } = useSystemConfig(userProfile?.orgId);
   
@@ -227,7 +247,13 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 isAnyDialogOpen ? "md:scale-[0.97] md:rounded-2xl md:overflow-hidden md:shadow-2xl" : "md:scale-100 rounded-none",
                 isMobileSidebarOpen && "scale-90 translate-x-8 rounded-2xl overflow-hidden shadow-2xl"
             )}>
-                <AppHeader userProfile={userProfile} onMenuClick={() => setIsMobileSidebarOpen(true)} isLoggedIn={isLoggedIn}/>
+                <AppHeader
+                    userProfile={userProfile}
+                    onMenuClick={() => setIsMobileSidebarOpen(true)}
+                    isLoggedIn={isLoggedIn}
+                    attendanceRecord={attendanceRecord}
+                    systemConfig={config}
+                />
                 <main className="flex-1 overflow-y-auto md:p-6 pb-28 md:pb-6">
                     {children}
                 </main>

@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { useUser, useFirestore, useMemoFirebase, useCollection, updateDocumentNonBlocking } from '@/firebase';
 import { doc, collection, query, where, orderBy, writeBatch, limit } from 'firebase/firestore';
-import type { UserProfile, Notification } from '@/lib/types';
+import type { UserProfile, Notification, Attendance, SystemConfig } from '@/lib/types';
 import { showBrowserNotification } from '@/lib/notifications';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
@@ -16,12 +16,78 @@ import { Separator } from '../ui/separator';
 import { cn } from '@/lib/utils';
 
 
-export default function AppHeader({ userProfile, onMenuClick, isLoggedIn } : { userProfile: UserProfile | null, onMenuClick: () => void, isLoggedIn: boolean }) {
+export default function AppHeader({ 
+  userProfile, 
+  onMenuClick, 
+  isLoggedIn,
+  attendanceRecord,
+  systemConfig
+} : { 
+  userProfile: UserProfile | null, 
+  onMenuClick: () => void, 
+  isLoggedIn: boolean,
+  attendanceRecord: Attendance | null,
+  systemConfig: SystemConfig | null
+}) {
   const router = useRouter();
   const { user } = useUser();
   const firestore = useFirestore();
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [shownNotificationIds, setShownNotificationIds] = useState<Set<string>>(new Set());
+  const [greeting, setGreeting] = useState("Good Morning");
+
+  useEffect(() => {
+    const updateGreeting = () => {
+        const now = new Date();
+        const hour = now.getHours();
+
+        let currentGreeting = "Good Evening";
+        if (hour < 12) {
+            currentGreeting = "Good Morning";
+        } else if (hour < 18) {
+            currentGreeting = "Good Afternoon";
+        }
+
+        const isClockedInAndWorking = !!(attendanceRecord && !attendanceRecord.clockOut);
+
+        if (systemConfig?.work_hours?.start && systemConfig.work_hours.end) {
+            const [startHour, startMinute] = systemConfig.work_hours.start.split(':').map(Number);
+            const [endHour, endMinute] = systemConfig.work_hours.end.split(':').map(Number);
+            
+            const officeStartTime = new Date();
+            officeStartTime.setHours(startHour, startMinute, 0, 0);
+            
+            const officeEndTime = new Date();
+            officeEndTime.setHours(endHour, endMinute, 0, 0);
+
+            const clockInReminderStart = new Date(officeStartTime.getTime() - 15 * 60000); // e.g., 8:45 for 9:00 start
+            const clockInGraceEnd = new Date(officeStartTime.getTime() + 15 * 60000); // e.g., 9:15 for 9:00 start
+            
+            const clockOutReminderStart = new Date(officeEndTime.getTime() - 15 * 60000); // e.g., 4:45 for 5:00 end
+
+            if (!isClockedInAndWorking) {
+                if (now >= clockInReminderStart && now <= clockInGraceEnd) {
+                    currentGreeting = "Time to clock in!";
+                } else if (now > clockInGraceEnd && now < officeEndTime) {
+                    currentGreeting = "Running late...";
+                }
+            } else {
+                if (now >= clockOutReminderStart && now <= officeEndTime) {
+                    currentGreeting = "Winding down?";
+                } else if (now > officeEndTime) {
+                    currentGreeting = "Time to clock out!";
+                }
+            }
+        }
+        setGreeting(currentGreeting);
+    };
+
+    updateGreeting();
+    const intervalId = setInterval(updateGreeting, 60000); // Update every minute
+
+    return () => clearInterval(intervalId);
+  }, [attendanceRecord, systemConfig]);
+
 
   // --- Start of logic from Notifications ---
   const notificationsQuery = useMemoFirebase(() => {
@@ -103,7 +169,7 @@ export default function AppHeader({ userProfile, onMenuClick, isLoggedIn } : { u
                 <AvatarFallback>{userProfile.fullName.split(' ').map(n=>n[0]).join('')}</AvatarFallback>
             </Avatar>
             <div className="hidden sm:block">
-              <p className="text-xs text-slate-400 font-medium">Good Morning</p>
+              <p className="text-xs text-slate-400 font-medium">{greeting}</p>
               <h2 className="text-sm font-bold">{userProfile.fullName}</h2>
             </div>
           </div>
