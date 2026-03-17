@@ -30,17 +30,25 @@ export default function SuperAdminPage() {
     }, [firestore]);
     const { data: newFeedback } = useCollection<Feedback>(newFeedbackQuery);
 
-    // Temporarily disabled auth checks for setup.
-    // useEffect(() => {
-    //     if (!isUserLoading && user && !isSuperAdmin) {
-    //         router.replace('/');
-    //     }
-    //      if (!isUserLoading && !user) {
-    //         router.replace('/login');
-    //     }
-    // }, [user, isUserLoading, isSuperAdmin, router]);
+    useEffect(() => {
+        if (!isUserLoading && !isSuperAdmin) {
+            router.replace('/login');
+        }
+    }, [isUserLoading, isSuperAdmin, router]);
 
-    if (isUserLoading) { // Temporarily removed !isSuperAdmin check
+    const handleLogout = () => {
+        // Clear ghost mode if it's active
+        if (localStorage.getItem('ghost_mode') === 'true') {
+            localStorage.removeItem('ghost_mode');
+            window.location.href = '/login';
+        } else if (user) {
+            // Normal sign out
+            signOut(auth);
+        }
+    };
+
+
+    if (isUserLoading && !isSuperAdmin) {
         return (
             <div className="min-h-screen bg-background flex items-center justify-center">
                 <Loader2 className="animate-spin text-primary w-12 h-12" />
@@ -66,7 +74,7 @@ export default function SuperAdminPage() {
                             </span>
                         )}
                     </Button>
-                    <Button variant="ghost" onClick={() => user && signOut(auth)} className="px-2 md:px-4">
+                    <Button variant="ghost" onClick={handleLogout} className="px-2 md:px-4">
                         <LogOut className="h-5 w-5 md:mr-2"/>
                         <span className="hidden md:inline">Logout</span>
                     </Button>
