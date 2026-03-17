@@ -42,7 +42,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const firestore = useFirestore();
   const router = useRouter();
   const { theme } = useTheme();
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true);
   const [isWorkbookOpen, setIsWorkbookOpen] = useState(false);
   const [initialWorkbookPayload, setInitialWorkbookPayload] = useState<{ workbookId?: string; sheetId?: string | null } | undefined>();
   const [isRequisitionsOpen, setIsRequisitionsOpen] = useState(false);
@@ -213,34 +213,37 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         </SheetContent>
       </Sheet>
 
-      <div className="group/sidebar flex min-h-screen w-full bg-muted/40 md:bg-background">
-          <AppSidebar 
-            isCollapsed={isSidebarCollapsed} 
-            onToggleCollapse={() => setIsSidebarCollapsed(prev => !prev)}
-            isLoggedIn={isLoggedIn}
-            isAuthLoading={isUserLoading}
-            onSignInClick={() => setIsAuthDialogOpen(true)}
-          />
-           <div className={cn(
-              "flex flex-1 flex-col bg-background transition-all duration-300 ease-in-out origin-center",
-              isAnyDialogOpen ? "md:scale-[0.97] md:rounded-2xl md:overflow-hidden md:shadow-2xl" : "md:scale-100 rounded-none"
-          )}>
-              <AppHeader userProfile={userProfile} onMenuClick={() => setIsMobileSidebarOpen(true)} isLoggedIn={isLoggedIn}/>
-              <main className="flex-1 overflow-y-auto md:p-6 pb-28 md:pb-6">
-                  {children}
-              </main>
-          </div>
-          {isLoggedIn && <BottomNavBar onFabClick={() => setIsFabMenuOpen(true)} />}
-      </div>
-
-       {isLoggedIn && isImpersonating && (
-        <div className="fixed bottom-16 md:bottom-0 left-0 right-0 bg-amber-500 text-black p-2 text-center text-sm font-semibold z-50 flex items-center justify-center gap-2"
-          style={{ left: isSidebarCollapsed ? '80px' : '288px' }}
-        >
-            <Eye className="h-4 w-4" />
-            Viewing as Staff. Some actions are restricted.
+      <div className="group/sidebar relative">
+        <div className="flex min-h-screen w-full bg-muted/40 md:bg-background">
+            <AppSidebar 
+              isCollapsed={isSidebarCollapsed} 
+              onToggleCollapse={() => setIsSidebarCollapsed(prev => !prev)}
+              isLoggedIn={isLoggedIn}
+              isAuthLoading={isUserLoading}
+              onSignInClick={() => setIsAuthDialogOpen(true)}
+            />
+             <div className={cn(
+                "flex flex-1 flex-col bg-background transition-all duration-300 ease-in-out origin-center",
+                isAnyDialogOpen ? "md:scale-[0.97] md:rounded-2xl md:overflow-hidden md:shadow-2xl" : "md:scale-100 rounded-none"
+            )}>
+                <AppHeader userProfile={userProfile} onMenuClick={() => setIsMobileSidebarOpen(true)} isLoggedIn={isLoggedIn}/>
+                <main className="flex-1 overflow-y-auto md:p-6 pb-28 md:pb-6">
+                    {children}
+                </main>
+            </div>
+            {isLoggedIn && <BottomNavBar onFabClick={() => setIsFabMenuOpen(true)} />}
         </div>
-      )}
+        {isLoggedIn && isImpersonating && (
+          <div className={cn(
+              "fixed bottom-16 md:bottom-0 right-0 bg-amber-500 text-black p-2 text-center text-sm font-semibold z-50 flex items-center justify-center gap-2 transition-all duration-300 ease-in-out",
+              isSidebarCollapsed ? 'md:left-20 group-hover/sidebar:md:left-72' : 'md:left-72'
+            )}
+          >
+              <Eye className="h-4 w-4" />
+              Viewing as Staff. Some actions are restricted.
+          </div>
+        )}
+      </div>
 
 
        {isLoggedIn && (

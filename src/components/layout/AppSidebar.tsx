@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from "next/link";
@@ -176,11 +177,11 @@ export default function AppSidebar({
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <Button variant="ghost" size="icon" className="h-10 w-10 shrink-0" onClick={onToggleCollapse}>
-                            <Pin className={cn("h-5 w-5 transition-transform", isCollapsed && "rotate-90")} />
+                            {isCollapsed ? <Pin className="h-5 w-5" /> : <PinOff className="h-5 w-5" />}
                           </Button>
                         </TooltipTrigger>
                         <TooltipContent side={isCollapsed ? "right" : "top"} align="center">
-                            {isCollapsed ? "Pin sidebar open" : "Collapse sidebar"}
+                            {isCollapsed ? "Pin sidebar open" : "Unpin sidebar"}
                         </TooltipContent>
                       </Tooltip>
                     </TooltipProvider>
