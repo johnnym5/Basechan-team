@@ -82,9 +82,9 @@
         border: 1px solid rgba(255, 255, 255, 0.1);
     }
     .glass-dark {
-        background: rgba(26, 32, 44, 0.6);
-        backdrop-filter: blur(8px);
-        -webkit-backdrop-filter: blur(8px);
+        background: rgba(26, 32, 44, 0.75);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
         border: 1px solid rgba(255, 255, 255, 0.1);
     }
 }
