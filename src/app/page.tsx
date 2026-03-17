@@ -105,14 +105,23 @@ export default function RootPage() {
   const router = useRouter();
 
   useEffect(() => {
-    if (!isUserLoading && !user) {
+    // This is the primary gatekeeper.
+    // It will not run until the initial user loading is complete.
+    if (isUserLoading) {
+      return; // Do nothing while loading
+    }
+
+    if (!user) {
       router.replace('/login');
-    } else if (!isUserLoading && user && isSuperAdmin) {
+    } else if (isSuperAdmin) {
       router.replace('/superadmin');
     }
+    // If a regular user is logged in, we do nothing and allow the page to render.
   }, [user, isUserLoading, isSuperAdmin, router]);
 
-  if (isUserLoading || (user && isSuperAdmin) || !user) {
+  // Show a loader while the auth state is resolving, or if we are about to redirect.
+  // This prevents rendering the dashboard for a split second before redirecting away.
+  if (isUserLoading || !user || (user && isSuperAdmin)) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <Loader2 className="animate-spin text-primary w-12 h-12" />
@@ -120,6 +129,8 @@ export default function RootPage() {
     );
   }
 
+  // If we reach this point, it means the user is loaded, is not a superadmin,
+  // and is authenticated. We can safely render the dashboard.
   return (
     <AppLayout>
       <DashboardGrid />
