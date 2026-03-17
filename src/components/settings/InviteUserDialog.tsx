@@ -19,6 +19,7 @@ import { sanitizeInput } from "@/lib/utils";
 import { initializeApp, deleteApp } from "firebase/app";
 import { getAuth, createUserWithEmailAndPassword } from "firebase/auth";
 import { firebaseConfig } from "@/firebase/config";
+import { ORG_ID } from "@/lib/config";
 
 
 const formSchema = z.object({
@@ -36,7 +37,7 @@ type FormData = z.infer<typeof formSchema>;
 interface InviteUserDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  currentUserProfile: UserProfile;
+  currentUserProfile?: UserProfile;
 }
 
 export function InviteUserDialog({ open, onOpenChange, currentUserProfile }: InviteUserDialogProps) {
@@ -79,7 +80,11 @@ export function InviteUserDialog({ open, onOpenChange, currentUserProfile }: Inv
   }
 
   async function onSubmit(values: FormData) {
-    if (!firestore) return;
+    const orgId = currentUserProfile?.orgId || ORG_ID;
+    if (!firestore || !orgId) {
+        toast({ variant: 'destructive', title: 'Error', description: 'Organization ID is missing.' });
+        return;
+    }
     setIsLoading(true);
     
     const tempAppName = `temp-user-creation-app-${Date.now()}`;
@@ -98,7 +103,7 @@ export function InviteUserDialog({ open, onOpenChange, currentUserProfile }: Inv
       const userDocRef = doc(firestore, "users", newAuthUser.uid);
 
       const newUserProfile: Omit<UserProfile, 'id'> = {
-        orgId: currentUserProfile.orgId,
+        orgId: orgId,
         email: values.email.toLowerCase(),
         username: sanitizeInput(values.username.toLowerCase()),
         fullName: sanitizeInput(values.fullName),
@@ -187,7 +192,8 @@ export function InviteUserDialog({ open, onOpenChange, currentUserProfile }: Inv
                 <FormMessage /></FormItem>
             )}/>
             <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Create User Account"}
+              {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Create User Account
             </Button>
           </form>
         </Form>
