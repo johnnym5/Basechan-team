@@ -23,12 +23,14 @@ import { useSuperAdmin } from '@/hooks/useSuperAdmin';
 import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { uiEmitter } from '@/lib/ui-emitter';
+import { useImpersonation } from '@/context/ImpersonationProvider';
 
 
 function DashboardGrid() {
     const { user: authUser, isUserLoading: isAuthLoading } = useUser();
     const firestore = useFirestore();
     const { isSuperAdmin } = useSuperAdmin();
+    const { isImpersonating } = useImpersonation();
 
     const userProfileRef = useMemoFirebase(() => 
         firestore && authUser ? doc(firestore, 'users', authUser.uid) : null, 
@@ -87,7 +89,7 @@ function DashboardGrid() {
 
     return (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-             {isSuperAdmin && (
+             {isSuperAdmin && !isImpersonating && (
                 <Card className="lg:col-span-3 bg-primary/10 border-primary/20">
                     <CardHeader className="flex-row items-center justify-between">
                         <div>

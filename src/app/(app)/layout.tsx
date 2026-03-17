@@ -2,7 +2,7 @@
 import { useUser, useDoc, useFirestore, useMemoFirebase, useCollection } from '@/firebase';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { Loader2, ListTodo, FileText, CalendarPlus, BookOpenCheck, Plus, UserPlus, Eye, MessageSquare, Megaphone, Home, CalendarDays, User } from 'lucide-react';
+import { Loader2, ListTodo, FileText, CalendarPlus, BookOpenCheck, Plus, UserPlus, MessageSquare, Megaphone, Home, CalendarDays, User } from 'lucide-react';
 import { doc, collection, query, where, limit } from 'firebase/firestore';
 import type { UserProfile, Attendance } from '@/lib/types';
 import { useSystemConfig } from '@/hooks/useSystemConfig';
@@ -260,16 +260,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             </div>
             {isLoggedIn && <BottomNavBar onFabClick={() => setIsFabMenuOpen(true)} />}
         </div>
-        {isLoggedIn && isImpersonating && (
-          <div className={cn(
-              "fixed bottom-16 md:bottom-0 right-0 bg-amber-500 text-black p-2 text-center text-sm font-semibold z-50 flex items-center justify-center gap-2 transition-all duration-300 ease-in-out",
-              'md:left-20 group-hover/sidebar:md:left-72'
-            )}
-          >
-              <Eye className="h-4 w-4" />
-              Viewing in Normal Mode. Some actions are restricted.
-          </div>
-        )}
       </div>
 
 

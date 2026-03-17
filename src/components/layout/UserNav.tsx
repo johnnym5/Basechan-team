@@ -69,27 +69,27 @@ export function UserNav({ userProfile }: { userProfile: UserProfile | null }) {
             <span>Settings</span>
           </DropdownMenuItem>
           <DropdownMenuSeparator />
+          {isSuperAdmin && !isImpersonating && (
+            <DropdownMenuItem onSelect={() => uiEmitter.emit('open-superadmin-dialog')}>
+                <Shield className="mr-2 h-4 w-4" />
+                <span>Super Admin</span>
+            </DropdownMenuItem>
+          )}
           {isSuperAdmin && (
-            <>
-              <DropdownMenuItem onSelect={() => uiEmitter.emit('open-superadmin-dialog')}>
-                  <Shield className="mr-2 h-4 w-4" />
-                  <span>Super Admin</span>
-              </DropdownMenuItem>
-              <DropdownMenuSub>
-                <DropdownMenuSubTrigger>
-                    <Eye className="mr-2 h-4 w-4" />
-                    <span>View Mode</span>
-                </DropdownMenuSubTrigger>
-                <DropdownMenuPortal>
-                    <DropdownMenuSubContent>
-                        <DropdownMenuRadioGroup value={isImpersonating ? 'normal' : 'admin'} onValueChange={(value) => setIsImpersonating(value === 'normal')}>
-                            <DropdownMenuRadioItem value="admin">Admin View</DropdownMenuRadioItem>
-                            <DropdownMenuRadioItem value="normal">Normal View</DropdownMenuRadioItem>
-                        </DropdownMenuRadioGroup>
-                    </DropdownMenuSubContent>
-                </DropdownMenuPortal>
-              </DropdownMenuSub>
-            </>
+            <DropdownMenuSub>
+              <DropdownMenuSubTrigger>
+                  <Eye className="mr-2 h-4 w-4" />
+                  <span>View Mode</span>
+              </DropdownMenuSubTrigger>
+              <DropdownMenuPortal>
+                  <DropdownMenuSubContent>
+                      <DropdownMenuRadioGroup value={isImpersonating ? 'normal' : 'admin'} onValueChange={(value) => setIsImpersonating(value === 'normal')}>
+                          <DropdownMenuRadioItem value="admin">Admin View</DropdownMenuRadioItem>
+                          <DropdownMenuRadioItem value="normal">Normal View</DropdownMenuRadioItem>
+                      </DropdownMenuRadioGroup>
+                  </DropdownMenuSubContent>
+              </DropdownMenuPortal>
+            </DropdownMenuSub>
           )}
           <DropdownMenuItem onClick={handleLogout}>
             <LogOut className="mr-2 h-4 w-4" />
