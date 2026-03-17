@@ -86,11 +86,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const permissions = usePermissions(userProfile);
   const { config, isLoading: isConfigLoading } = useSystemConfig(userProfile?.orgId);
   
-  // useEffect(() => {
-  //   if (!isUserLoading && !user) {
-  //     router.replace('/login');
-  //   }
-  // }, [isUserLoading, user, router]);
+  useEffect(() => {
+    if (!isUserLoading && !user) {
+      router.replace('/login');
+    }
+  }, [isUserLoading, user, router]);
 
   useEffect(() => {
     const root = document.documentElement;

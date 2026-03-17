@@ -1,25 +1,37 @@
+
 'use client';
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { Loader2 } from 'lucide-react';
 import { Logo } from '@/components/Logo';
+import { LoginForm } from '@/components/auth/LoginForm';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { SupportDialog } from '@/components/auth/SupportDialog';
+import { Button } from '@/components/ui/button';
+import { useState } from 'react';
+import { Dialog } from '@/components/ui/dialog';
 
 export default function LoginPage() {
-  const router = useRouter();
-  
-  useEffect(() => {
-    router.replace('/');
-  }, [router]);
+  const [isSupportOpen, setIsSupportOpen] = useState(false);
 
   return (
-    <div className="flex flex-col items-center justify-center text-center gap-8">
-      <Logo />
-      <div className="flex items-center gap-4 mt-8">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <p className="text-muted-foreground">Login is disabled.</p>
+    <>
+      <div className="absolute top-8 left-8">
+        <Logo />
       </div>
-    </div>
+      <Card className="w-full max-w-sm">
+        <CardHeader>
+          <CardTitle>Welcome Back</CardTitle>
+          <CardDescription>Enter your credentials to access your dashboard.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <LoginForm />
+           <div className="text-center text-sm text-muted-foreground pt-4 mt-4 border-t">
+              Having trouble?{' '}
+              <Button variant="link" className="p-0 h-auto" onClick={() => setIsSupportOpen(true)}>Contact Support</Button>
+          </div>
+        </CardContent>
+      </Card>
+       <Dialog open={isSupportOpen} onOpenChange={setIsSupportOpen}>
+          <SupportDialog />
+      </Dialog>
+    </>
   );
 }
-
-    

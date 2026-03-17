@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useMemo } from 'react';
@@ -52,17 +53,6 @@ function DashboardGrid() {
     const { data: pendingReqs, isLoading: reqsLoading } = useCollection<Requisition>(reqsQuery);
     
     const isLoading = isProfileLoading || isAuthLoading || reqsLoading || isConfigLoading;
-
-    if (!authUser && !isAuthLoading) {
-        return (
-            <div className="flex items-center justify-center h-[60vh] text-center">
-                <div>
-                    <h1 className="text-2xl font-bold">Welcome to Palilious</h1>
-                    <p className="text-muted-foreground mt-2">Login is currently disabled.</p>
-                </div>
-            </div>
-        );
-    }
 
     if (isLoading) {
         return (
