@@ -8,7 +8,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2 } from "lucide-react";
+import { Loader2, CalendarIcon } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useFirestore, updateDocumentNonBlocking, useCollection, useMemoFirebase } from "@/firebase";
 import { doc, collection, query, where } from "firebase/firestore";
@@ -16,22 +16,15 @@ import { useToast } from "@/hooks/use-toast";
 import type { Task, UserProfile, Workbook, Sheet } from "@/lib/types";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { cn, sanitizeInput } from "@/lib/utils";
-import { format, parse } from "date-fns";
+import { format } from "date-fns";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
 
 const formSchema = z.object({
   title: z.string().min(5, { message: "Title must be at least 5 characters." }),
   description: z.string().optional(),
   priority: z.enum(["LEVEL_1", "LEVEL_2", "LEVEL_3"]),
-  dueDate: z.string().optional().refine((val) => {
-    if (!val) return true; // Allow empty string
-    try {
-      const parsedDate = parse(val, 'dd/MM/yyyy', new Date());
-      // Check if the parsed date is valid and the year is reasonable
-      return !isNaN(parsedDate.getTime()) && parsedDate.getFullYear() > 1900;
-    } catch (e) {
-      return false;
-    }
-  }, { message: "Invalid date. Please use DD/MM/YYYY format." }),
+  dueDate: z.date().optional(),
   workbookId: z.string().optional(),
   sheetId: z.string().optional(),
 });
@@ -71,7 +64,7 @@ export function EditTaskDialog({ task, open, onOpenChange, currentUserProfile }:
       title: task.title,
       description: task.description || "",
       priority: task.priority,
-      dueDate: task.dueDate ? format(new Date(task.dueDate), 'dd/MM/yyyy') : '',
+      dueDate: task.dueDate ? new Date(task.dueDate) : undefined,
       workbookId: task.workbookId || undefined,
       sheetId: task.sheetId || undefined,
     });
@@ -82,16 +75,7 @@ export function EditTaskDialog({ task, open, onOpenChange, currentUserProfile }:
     if (!firestore) return;
     setIsLoading(true);
 
-    let dueDateISO: string | null = null;
-    if (values.dueDate) {
-        try {
-            const dateObj = parse(values.dueDate, 'dd/MM/yyyy', new Date());
-            dueDateISO = dateObj.toISOString();
-        } catch (e) {
-            form.setError('dueDate', { type: 'manual', message: 'Invalid date format' });
-            return;
-        }
-    }
+    const dueDateISO = values.dueDate ? values.dueDate.toISOString() : null;
 
     try {
         const updateData = {
@@ -168,11 +152,21 @@ export function EditTaskDialog({ task, open, onOpenChange, currentUserProfile }:
                          <FormMessage /></FormItem>
                     )} />
                     <FormField control={form.control} name="dueDate" render={({ field }) => (
-                        <FormItem>
+                        <FormItem className="flex flex-col">
                             <FormLabel>Due Date</FormLabel>
-                            <FormControl>
-                                <Input placeholder="DD/MM/YYYY (e.g., 01/02/2026)" {...field} />
-                            </FormControl>
+                            <Popover>
+                                <PopoverTrigger asChild>
+                                    <FormControl>
+                                        <Button variant={"outline"} className={cn("pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>
+                                            {field.value ? (format(new Date(field.value), "PPP")) : (<span>Pick a date</span>)}
+                                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                        </Button>
+                                    </FormControl>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-0" align="start">
+                                    <Calendar mode="single" selected={field.value ? new Date(field.value) : undefined} onSelect={field.onChange} initialFocus />
+                                </PopoverContent>
+                            </Popover>
                             <FormMessage />
                         </FormItem>
                     )} />

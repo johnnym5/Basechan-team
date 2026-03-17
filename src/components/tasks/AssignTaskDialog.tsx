@@ -8,7 +8,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2 } from "lucide-react";
+import { Loader2, CalendarIcon } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useFirestore, useCollection, addDocumentNonBlocking, useMemoFirebase } from "@/firebase";
 import { collection, query, where, doc, getDocs } from "firebase/firestore";
@@ -16,23 +16,16 @@ import { useToast } from "@/hooks/use-toast";
 import type { Task, UserProfile, ActivityEntry, Permissions, Notification, Workbook, Sheet, TaskPriority } from "@/lib/types";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { cn, sanitizeInput } from "@/lib/utils";
-import { format, parse } from "date-fns";
+import { format } from "date-fns";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
 
 const formSchema = z.object({
   title: z.string().min(5, { message: "Title must be at least 5 characters." }),
   description: z.string().optional(),
   assignedTo: z.string().optional(),
   priority: z.enum(["LEVEL_1", "LEVEL_2", "LEVEL_3"]),
-  dueDate: z.string().optional().refine((val) => {
-    if (!val) return true; // Allow empty string
-    try {
-      const parsedDate = parse(val, 'dd/MM/yyyy', new Date());
-      // Check if the parsed date is valid and the year is reasonable
-      return !isNaN(parsedDate.getTime()) && parsedDate.getFullYear() > 1900;
-    } catch (e) {
-      return false;
-    }
-  }, { message: "Invalid date. Please use DD/MM/YYYY format." }),
+  dueDate: z.date().optional(),
   workbookId: z.string().optional(),
   sheetId: z.string().optional(),
 });
@@ -47,7 +40,7 @@ interface AssignTaskDialogProps {
       title?: string;
       description?: string;
       workbookId?: string;
-      sheetId?: string;
+      sheetId?: string | null;
       priority?: TaskPriority;
       dueDate?: Date;
   } | null;
@@ -76,7 +69,7 @@ export function AssignTaskDialog({ open, onOpenChange, initialData, currentUserP
       title: "",
       description: "",
       priority: "LEVEL_1",
-      dueDate: "",
+      dueDate: undefined,
     },
   });
 
@@ -100,7 +93,7 @@ export function AssignTaskDialog({ open, onOpenChange, initialData, currentUserP
             description: initialData?.description || "",
             priority: initialData?.priority || "LEVEL_1",
             assignedTo: undefined,
-            dueDate: initialData?.dueDate ? format(initialData.dueDate, 'dd/MM/yyyy') : '',
+            dueDate: initialData?.dueDate || undefined,
             workbookId: initialData?.workbookId || undefined,
             sheetId: initialData?.sheetId || undefined,
         });
@@ -117,16 +110,7 @@ export function AssignTaskDialog({ open, onOpenChange, initialData, currentUserP
         return;
     }
 
-    let dueDateISO: string | null = null;
-    if (values.dueDate) {
-        try {
-            const dateObj = parse(values.dueDate, 'dd/MM/yyyy', new Date());
-            dueDateISO = dateObj.toISOString();
-        } catch (e) {
-            form.setError('dueDate', { type: 'manual', message: 'Invalid date format' });
-            return;
-        }
-    }
+    const dueDateISO = values.dueDate ? values.dueDate.toISOString() : null;
     
     if (values.priority === 'LEVEL_3' || values.priority === 'LEVEL_2') {
         const tasksRef = collection(firestore, 'tasks');
@@ -190,8 +174,8 @@ export function AssignTaskDialog({ open, onOpenChange, initialData, currentUserP
             createdBy: currentUserProfile.id,
             activity: [initialActivity],
             createdAt: now,
-            workbookId: values.workbookId || initialData?.workbookId || null,
-            sheetId: values.sheetId || initialData?.sheetId || null,
+            workbookId: values.workbookId || initialData?.workbookId || undefined,
+            sheetId: values.sheetId || initialData?.sheetId || undefined,
             sharedWith: [],
             subTasks: [],
             type: 'STANDARD',
@@ -288,11 +272,21 @@ export function AssignTaskDialog({ open, onOpenChange, initialData, currentUserP
                 </div>
 
                 <FormField control={form.control} name="dueDate" render={({ field }) => (
-                    <FormItem>
+                    <FormItem className="flex flex-col">
                         <FormLabel>Due Date (Optional)</FormLabel>
-                        <FormControl>
-                            <Input placeholder="DD/MM/YYYY (e.g., 01/02/2026)" {...field} />
-                        </FormControl>
+                        <Popover>
+                            <PopoverTrigger asChild>
+                                <FormControl>
+                                    <Button variant={"outline"} className={cn("pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>
+                                        {field.value ? (format(field.value, "PPP")) : (<span>Pick a date</span>)}
+                                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                    </Button>
+                                </FormControl>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0" align="start">
+                                <Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus />
+                            </PopoverContent>
+                        </Popover>
                         <FormMessage />
                     </FormItem>
                 )} />
