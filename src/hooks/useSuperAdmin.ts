@@ -2,7 +2,7 @@
 import { useUser } from '@/firebase';
 
 // This email should match the one in your firestore.rules
-const SUPER_ADMIN_EMAIL = 'superadmin@palilious.com';
+const SUPER_ADMIN_EMAIL = 'jegbase@gmail.com';
 
 export function useSuperAdmin() {
   const { user } = useUser();
