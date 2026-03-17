@@ -1,38 +1,23 @@
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { RegisterForm } from "@/components/auth/RegisterForm";
-import { Logo } from "@/components/Logo";
-import Link from "next/link";
-import { buttonVariants } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+'use client';
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { Loader2 } from 'lucide-react';
+import { Logo } from '@/components/Logo';
 
-export default function RegisterPage() {
+export default function RegisterRedirectPage() {
+  const router = useRouter();
+  
+  useEffect(() => {
+    router.replace('/login');
+  }, [router]);
+
   return (
-    <div className="flex flex-col items-center gap-8">
+    <div className="flex flex-col items-center justify-center text-center gap-8">
       <Logo />
-      <Card className="w-full max-w-sm">
-        <CardHeader>
-          <CardTitle>Create an Organization</CardTitle>
-          <CardDescription>Start by creating an account for your organization's administrator.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <RegisterForm />
-        </CardContent>
-        <CardFooter className="flex flex-col gap-4">
-             <div className="relative w-full">
-                <div className="absolute inset-0 flex items-center">
-                    <span className="w-full border-t" />
-                </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                    <span className="bg-background px-2 text-muted-foreground">
-                    Already have an account?
-                    </span>
-                </div>
-            </div>
-            <Link href="/login" className={cn(buttonVariants({ variant: "outline" }), "w-full")}>
-                Sign In
-            </Link>
-        </CardFooter>
-      </Card>
+      <div className="flex items-center gap-4 mt-8">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <p className="text-muted-foreground">Registration is disabled.</p>
+      </div>
     </div>
   );
 }

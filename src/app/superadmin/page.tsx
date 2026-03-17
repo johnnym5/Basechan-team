@@ -2,25 +2,18 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useUser, useFirestore, useCollection, useDoc, useMemoFirebase, useAuth } from '@/firebase';
+import { useUser, useFirestore, useCollection, useMemoFirebase, useAuth } from '@/firebase';
 import { useSuperAdmin } from '@/hooks/useSuperAdmin';
-import { Loader2, Building, Users, LogOut, Bell, Settings } from 'lucide-react';
+import { Loader2, LogOut, Bell } from 'lucide-react';
 import { signOut } from 'firebase/auth';
-import { collection, getDocs, query, where, doc } from 'firebase/firestore';
-import type { Organization, UserProfile, Feedback } from '@/lib/types';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { collection, query, where } from 'firebase/firestore';
+import type { Feedback } from '@/lib/types';
 import { Button } from '@/components/ui/button';
-import { Skeleton } from "@/components/ui/skeleton";
 import { Logo } from '@/components/Logo';
 import { FeedbackViewer } from '@/components/superadmin/FeedbackViewer';
 import { DataManagement } from '@/components/superadmin/DataManagement';
 import { ErrorLogViewer } from '@/components/superadmin/ErrorLogViewer';
-import { SettingsDialog } from '@/components/settings/SettingsDialog';
 
-
-interface OrgStats {
-    userCount: number;
-}
 
 export default function SuperAdminPage() {
     const { user, isUserLoading } = useUser();
@@ -29,24 +22,13 @@ export default function SuperAdminPage() {
     const router = useRouter();
     const firestore = useFirestore();
 
-    const [orgStats, setOrgStats] = useState<Record<string, OrgStats>>({});
-    const [isStatsLoading, setIsStatsLoading] = useState(true);
     const [showFeedback, setShowFeedback] = useState(false);
-    const [orgToManage, setOrgToManage] = useState<Organization | null>(null);
-
-    const orgsQuery = useMemoFirebase(() => {
-        if (!firestore) return null;
-        return collection(firestore, 'organizations');
-    }, [firestore]);
-    const { data: organizations, isLoading: areOrgsLoading } = useCollection<Organization>(orgsQuery);
     
     const newFeedbackQuery = useMemoFirebase(() => {
         if (!firestore) return null;
         return query(collection(firestore, 'feedback'), where('status', '==', 'NEW'));
     }, [firestore]);
     const { data: newFeedback } = useCollection<Feedback>(newFeedbackQuery);
-
-    const {data: orgToManageProfile } = useDoc<UserProfile>(useMemoFirebase(() => orgToManage && firestore ? doc(firestore, 'users', orgToManage.ownerId) : null, [firestore, orgToManage]))
 
     useEffect(() => {
         if (!isUserLoading && user && !isSuperAdmin) {
@@ -57,37 +39,6 @@ export default function SuperAdminPage() {
         }
     }, [user, isUserLoading, isSuperAdmin, router]);
 
-    useEffect(() => {
-        const fetchStats = async () => {
-            if (!firestore || !organizations || organizations.length === 0) {
-                setIsStatsLoading(false);
-                return;
-            };
-
-            const usersSnapshot = await getDocs(collection(firestore, 'users'));
-            const usersByOrg: Record<string, number> = {};
-            usersSnapshot.forEach(doc => {
-                const user = doc.data() as UserProfile;
-                usersByOrg[user.orgId] = (usersByOrg[user.orgId] || 0) + 1;
-            });
-            
-            const stats: Record<string, OrgStats> = {};
-            organizations.forEach(org => {
-                stats[org.id] = {
-                    userCount: usersByOrg[org.id] || 0
-                };
-            });
-
-            setOrgStats(stats);
-            setIsStatsLoading(false);
-        };
-
-        if (!areOrgsLoading) {
-            fetchStats();
-        }
-
-    }, [organizations, areOrgsLoading, firestore]);
-
     if (isUserLoading || !isSuperAdmin) {
         return (
             <div className="min-h-screen bg-background flex items-center justify-center">
@@ -95,8 +46,6 @@ export default function SuperAdminPage() {
             </div>
         );
     }
-
-    const isLoading = areOrgsLoading || isStatsLoading;
 
     return (
         <div className="min-h-screen bg-background">
@@ -123,57 +72,10 @@ export default function SuperAdminPage() {
                 </div>
             </header>
             <main className="p-4 md:p-6 space-y-8">
-                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                    {isLoading && Array.from({length: 4}).map((_, i) => (
-                        <Card key={i}>
-                            <CardHeader><Skeleton className="h-6 w-3/4" /></CardHeader>
-                            <CardContent><Skeleton className="h-10 w-full" /></CardContent>
-                        </Card>
-                    ))}
-
-                    {!isLoading && organizations?.map(org => (
-                        <Card 
-                            key={org.id} 
-                            className="h-full bg-card/50 hover:bg-card transition-all hover:-translate-y-1 hover:shadow-primary/20 cursor-pointer"
-                            onClick={() => setOrgToManage(org)}
-                        >
-                            <CardHeader>
-                                <CardTitle className="flex items-center gap-2">
-                                    <Building className="h-5 w-5 text-primary" />
-                                    {org.name.charAt(0).toUpperCase() + org.name.slice(1)}
-                                </CardTitle>
-                                <CardDescription className="font-mono text-xs pt-1">{org.id}</CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="flex items-center justify-between text-muted-foreground">
-                                    <div className="flex items-center gap-2">
-                                        <Users className="h-4 w-4" />
-                                        <span>{orgStats[org.id]?.userCount ?? 0} Members</span>
-                                    </div>
-                                    <div className="flex items-center gap-1 text-primary font-semibold text-sm">
-                                        Manage <Settings className="h-4 w-4" />
-                                    </div>
-                                </div>
-                            </CardContent>
-                        </Card>
-                    ))}
-                    {!isLoading && organizations?.length === 0 && (
-                        <p className="text-muted-foreground col-span-full text-center py-16">No organizations found.</p>
-                    )}
-                </div>
-
                 <DataManagement />
                 <ErrorLogViewer />
             </main>
             <FeedbackViewer open={showFeedback} onOpenChange={setShowFeedback} />
-            
-            {orgToManage && orgToManageProfile && (
-                <SettingsDialog 
-                    open={!!orgToManage}
-                    onOpenChange={(isOpen) => !isOpen && setOrgToManage(null)}
-                    userProfile={orgToManageProfile}
-                />
-            )}
         </div>
     );
 }

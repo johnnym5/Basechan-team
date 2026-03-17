@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback } from "../ui/avatar";
 import { useAuth, useDoc, useMemoFirebase, useFirestore } from "@/firebase";
 import { doc } from "firebase/firestore";
-import type { UserProfile, Organization } from "@/lib/types";
+import type { UserProfile } from "@/lib/types";
 import { useUser } from "@/firebase";
 import { signOut } from "firebase/auth";
 import { Skeleton } from "../ui/skeleton";
@@ -16,6 +16,7 @@ import { usePermissions } from "@/hooks/usePermissions";
 import { Badge } from "../ui/badge";
 import { Separator } from "../ui/separator";
 import { uiEmitter } from "@/lib/ui-emitter";
+import { ORG_NAME } from "@/lib/config";
 
 export default function AppSidebar({ isMobile = false }: { isMobile?: boolean }) {
   const pathname = usePathname();
@@ -29,12 +30,6 @@ export default function AppSidebar({ isMobile = false }: { isMobile?: boolean })
   const { data: userProfile, isLoading: isProfileLoading } = useDoc<UserProfile>(userProfileRef);
   const permissions = usePermissions(userProfile);
   
-  const orgRef = useMemoFirebase(() => 
-    firestore && userProfile?.orgId ? doc(firestore, "organizations", userProfile.orgId) : null,
-  [firestore, userProfile?.orgId]);
-  const { data: organization, isLoading: isOrgLoading } = useDoc<Organization>(orgRef);
-
-
   const handleLogout = () => {
     signOut(auth);
   };
@@ -71,16 +66,12 @@ export default function AppSidebar({ isMobile = false }: { isMobile?: boolean })
     }
   };
   
-  const orgName = organization?.name ? organization.name.charAt(0).toUpperCase() + organization.name.slice(1) : "";
-
   if (!authUser) return null;
 
   return (
     <aside className={cn("flex-col border-r bg-background", isMobile ? "flex w-full" : "hidden md:flex md:w-72")}>
       <div className="flex h-16 items-center border-b px-6">
-        {isOrgLoading ? <Skeleton className="h-6 w-3/4" /> :
-          <h2 className="truncate font-bold text-xl text-foreground">{orgName}</h2>
-        }
+          <h2 className="truncate font-bold text-xl text-foreground">{ORG_NAME}</h2>
       </div>
       <div className="flex flex-1 flex-col justify-between">
         <nav className="grid items-start gap-1 p-4 text-sm font-medium">

@@ -22,10 +22,10 @@ import { signInWithEmailAndPassword } from "firebase/auth";
 import { query, collection, where, getDocs } from "firebase/firestore";
 import type { UserProfile } from "@/lib/types";
 import { sanitizeInput } from "@/lib/utils";
+import { ORG_ID } from "@/lib/config";
 
 
 const formSchema = z.object({
-  organizationName: z.string().min(1, { message: "Organization name is required." }),
   username: z.string().min(1, { message: "Username is required." }),
   password: z.string().min(1, { message: "Password is required." }),
 });
@@ -39,7 +39,6 @@ export function LoginForm() {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      organizationName: "",
       username: "",
       password: "",
     },
@@ -48,32 +47,23 @@ export function LoginForm() {
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsSubmitting(true);
     try {
-      const sanitizedOrgName = sanitizeInput(values.organizationName.toLowerCase());
-      // 1. Find organization by name, using lowercase for case-insensitive search
-      const orgsRef = collection(firestore, "organizations");
-      const orgQuery = query(orgsRef, where("name", "==", sanitizedOrgName));
-      const orgSnapshot = await getDocs(orgQuery);
-
-      if (orgSnapshot.empty) {
-        throw new Error("Invalid credentials.");
-      }
-      const orgData = orgSnapshot.docs[0];
-      const orgId = orgData.id;
+      // 1. Use the hardcoded organization ID.
+      const orgId = ORG_ID;
 
       // 2. Find user by username and orgId.
-      // This is now a two-step process to avoid needing a composite index.
       const usersRef = collection(firestore, "users");
-      const orgUsersQuery = query(usersRef, where("orgId", "==", orgId));
-      const orgUsersSnapshot = await getDocs(orgUsersQuery);
+      const userQuery = query(
+        usersRef, 
+        where("orgId", "==", orgId),
+        where("username", "==", sanitizeInput(values.username.toLowerCase()))
+      );
+      const userSnapshot = await getDocs(userQuery);
       
-      const sanitizedUsername = sanitizeInput(values.username.toLowerCase());
-      const userDoc = orgUsersSnapshot.docs.find(doc => doc.data().username === sanitizedUsername);
-      
-      if (!userDoc) {
+      if (userSnapshot.empty) {
           throw new Error("Invalid credentials.");
       }
 
-      const userData = userDoc.data() as UserProfile;
+      const userData = userSnapshot.docs[0].data() as UserProfile;
 
       // 3. Sign in with email and password. Email is already stored in lowercase.
       await signInWithEmailAndPassword(auth, userData.email, values.password);
@@ -94,20 +84,6 @@ export function LoginForm() {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        <FormField
-          control={form.control}
-          name="organizationName"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Organization Name</FormLabel>
-              <FormControl>
-                <Input placeholder="Your Company, Inc." {...field} />
-              </FormControl>
-              <FormDescription className="text-xs">This field is not case-sensitive.</FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
         <FormField
           control={form.control}
           name="username"
