@@ -5,11 +5,17 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
+  DropdownMenuPortal,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
   DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useUser, useAuth } from "@/firebase";
-import { LogOut, User as UserIcon, Settings, Eye, EyeOff, Shield } from "lucide-react";
+import { LogOut, User as UserIcon, Settings, Eye, Shield } from "lucide-react";
 import { signOut } from "firebase/auth";
 import { uiEmitter } from "@/lib/ui-emitter";
 import type { UserProfile } from "@/lib/types";
@@ -29,10 +35,6 @@ export function UserNav({ userProfile }: { userProfile: UserProfile | null }) {
   
   const handleLogout = () => {
     signOut(auth);
-  };
-  
-  const handleToggleImpersonation = () => {
-    setIsImpersonating(!isImpersonating);
   };
 
   const userInitials = user.displayName?.split(' ').map(n => n[0]).join('') || user.email?.charAt(0).toUpperCase();
@@ -73,10 +75,20 @@ export function UserNav({ userProfile }: { userProfile: UserProfile | null }) {
                   <Shield className="mr-2 h-4 w-4" />
                   <span>Super Admin</span>
               </DropdownMenuItem>
-              <DropdownMenuItem onSelect={handleToggleImpersonation}>
-                {isImpersonating ? <EyeOff className="mr-2 h-4 w-4" /> : <Eye className="mr-2 h-4 w-4" />}
-                <span>{isImpersonating ? "Return to Super Admin" : "View as Staff"}</span>
-              </DropdownMenuItem>
+              <DropdownMenuSub>
+                <DropdownMenuSubTrigger>
+                    <Eye className="mr-2 h-4 w-4" />
+                    <span>View Mode</span>
+                </DropdownMenuSubTrigger>
+                <DropdownMenuPortal>
+                    <DropdownMenuSubContent>
+                        <DropdownMenuRadioGroup value={isImpersonating ? 'normal' : 'admin'} onValueChange={(value) => setIsImpersonating(value === 'normal')}>
+                            <DropdownMenuRadioItem value="admin">Admin View</DropdownMenuRadioItem>
+                            <DropdownMenuRadioItem value="normal">Normal View</DropdownMenuRadioItem>
+                        </DropdownMenuRadioGroup>
+                    </DropdownMenuSubContent>
+                </DropdownMenuPortal>
+              </DropdownMenuSub>
             </>
           )}
           <DropdownMenuItem onClick={handleLogout}>

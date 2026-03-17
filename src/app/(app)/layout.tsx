@@ -267,7 +267,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             )}
           >
               <Eye className="h-4 w-4" />
-              Viewing as Staff. Some actions are restricted.
+              Viewing in Normal Mode. Some actions are restricted.
           </div>
         )}
       </div>
