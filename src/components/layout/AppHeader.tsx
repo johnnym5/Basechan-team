@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { useUser, useFirestore, useMemoFirebase, useCollection, updateDocumentNonBlocking } from '@/firebase';
 import { doc, collection, query, where, orderBy, writeBatch, limit } from 'firebase/firestore';
-import type { UserProfile, Notification, Attendance, SystemConfig } from '@/lib/types';
+import type { UserProfile, Notification, Attendance, SystemConfig, DailyReport } from '@/lib/types';
 import { showBrowserNotification } from '@/lib/notifications';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
@@ -40,6 +40,7 @@ export default function AppHeader({
   const [currentTime, setCurrentTime] = useState('');
   const [currentDate, setCurrentDate] = useState('');
   const [animateGreeting, setAnimateGreeting] = useState(false);
+  const [todayForReport, setTodayForReport] = useState('');
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -58,6 +59,12 @@ export default function AppHeader({
         clearInterval(animationTimer);
     };
   }, []);
+
+  useEffect(() => {
+    // Set date on client side to avoid hydration mismatch
+    setTodayForReport(format(new Date(), 'yyyy-MM-dd'));
+  }, []);
+
 
   useEffect(() => {
     const updateGreeting = () => {
@@ -127,6 +134,55 @@ export default function AppHeader({
   }, [firestore, user]);
 
   const { data: notifications } = useCollection<Notification>(notificationsQuery);
+  
+  const dailyReportQuery = useMemoFirebase(() => {
+    if (!firestore || !user || !todayForReport) return null;
+    return query(
+        collection(firestore, 'daily_reports'),
+        where('userId', '==', user.uid),
+        where('reportDate', '==', todayForReport),
+        limit(1)
+    );
+  }, [firestore, user, todayForReport]);
+
+  const { data: dailyReportData } = useCollection<DailyReport>(dailyReportQuery);
+  const hasSubmittedReportToday = (dailyReportData?.length ?? 0) > 0;
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !systemConfig?.work_hours?.end || !user) return;
+    
+    const checkReportReminder = () => {
+        const now = new Date();
+        const todayStr = format(now, 'yyyy-MM-dd');
+        const reportReminderKey = `report-reminder-sent-${todayStr}`;
+
+        if (localStorage.getItem(reportReminderKey) || hasSubmittedReportToday) {
+            return;
+        }
+
+        const [endHour, endMinute] = systemConfig.work_hours.end.split(':').map(Number);
+        const officeEndTime = new Date();
+        officeEndTime.setHours(endHour, endMinute, 0, 0);
+
+        const reminderTime = new Date(officeEndTime.getTime() - 60 * 60000); // 1 hour before end of day
+
+        if (now > reminderTime && now < officeEndTime) {
+            showBrowserNotification(
+                'End of Day Report',
+                { body: "Don't forget to submit your daily report before you sign out." },
+                'daily-report-reminder'
+            );
+            localStorage.setItem(reportReminderKey, 'true');
+        }
+    };
+    
+    // Check every 5 minutes
+    const intervalId = setInterval(checkReportReminder, 300000);
+
+    return () => clearInterval(intervalId);
+
+  }, [systemConfig, user, hasSubmittedReportToday]);
+
 
   useEffect(() => {
     if (!notifications || typeof window === 'undefined' || !('Notification' in window) || Notification.permission !== 'granted') {
