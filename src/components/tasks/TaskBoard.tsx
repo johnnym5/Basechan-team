@@ -1,15 +1,13 @@
 'use client';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query, where, Query } from 'firebase/firestore';
-import type { Task, UserProfile } from '@/lib/types';
+import type { Task, UserProfile, TaskStatus } from '@/lib/types';
 import type { Permissions } from '@/hooks/usePermissions';
 import { TaskCard } from './TaskCard';
 import { useSuperAdmin } from '@/hooks/useSuperAdmin';
 import { useMemo } from 'react';
 import { Skeleton } from '../ui/skeleton';
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 
 interface TaskBoardProps {
     userProfile: UserProfile;
@@ -17,10 +15,18 @@ interface TaskBoardProps {
     onTaskSelect: (task: Task) => void;
 }
 
+const KANBAN_COLUMNS: { title: string, status: TaskStatus }[] = [
+    { title: 'Queued', status: 'QUEUED' },
+    { title: 'Active', status: 'ACTIVE' },
+    { title: 'Awaiting Review', status: 'AWAITING_REVIEW' },
+    { title: 'Archived', status: 'ARCHIVED' },
+];
+
 export function TaskBoard({ userProfile, permissions, onTaskSelect }: TaskBoardProps) {
     const firestore = useFirestore();
     const { isSuperAdmin } = useSuperAdmin();
 
+    // Query all tasks regardless of status, we will filter on the client.
     const tasksQuery = useMemoFirebase((): Query | null => {
         if (!firestore) return null;
         
@@ -41,59 +47,69 @@ export function TaskBoard({ userProfile, permissions, onTaskSelect }: TaskBoardP
 
     const { data: tasks, isLoading } = useCollection<Task>(tasksQuery);
     
-    const usersWithTasks = useMemo(() => {
-        if (!tasks) return [];
-        
-        const userMap: Record<string, { name: string, tasks: Task[] }> = {};
-        tasks.forEach(task => {
-            if (!userMap[task.assignedTo]) {
-                userMap[task.assignedTo] = { name: task.assignedToName, tasks: [] };
+    const tasksByStatus = useMemo(() => {
+        const grouped: Record<TaskStatus, Task[]> = {
+            QUEUED: [],
+            ACTIVE: [],
+            AWAITING_REVIEW: [],
+            ARCHIVED: [],
+        };
+
+        if (tasks) {
+            for (const task of tasks) {
+                if (grouped[task.status]) {
+                    grouped[task.status].push(task);
+                }
             }
-            userMap[task.assignedTo].tasks.push(task);
-        });
-
-        return Object.values(userMap).sort((a,b) => a.name.localeCompare(b.name));
-
+        }
+        return grouped;
     }, [tasks]);
 
+    if (isLoading) {
+        return (
+             <div className="grid grid-cols-4 gap-6">
+                {Array.from({ length: 4 }).map((_, i) => (
+                    <div key={i} className="space-y-4">
+                        <Skeleton className="h-8 w-1/2" />
+                        <Skeleton className="h-24 w-full" />
+                        <Skeleton className="h-24 w-full" />
+                    </div>
+                ))}
+            </div>
+        )
+    }
+
     return (
-        <Accordion type="multiple" className="w-full space-y-4" defaultValue={usersWithTasks.map(u => u.name)}>
-            {isLoading && Array.from({length: 4}).map((_, i) => <Skeleton key={i} className="h-24 w-full"/>)}
-
-            {!isLoading && usersWithTasks.length === 0 && (
-                 <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground p-8">
-                    <p className="text-sm">No tasks found.</p>
-                </div>
-            )}
-
-            {!isLoading && usersWithTasks.map(userGroup => (
-                <AccordionItem key={userGroup.name} value={userGroup.name} className="border-none bg-secondary/30 rounded-lg">
-                    <AccordionTrigger className="p-4 hover:no-underline hover:bg-secondary/50 rounded-lg">
-                        <div className="flex items-center gap-3">
-                            <Avatar className="h-9 w-9">
-                                <AvatarFallback>{userGroup.name.split(' ').map(n=>n[0]).join('')}</AvatarFallback>
-                            </Avatar>
-                            <div>
-                                <h3 className="font-semibold text-left">{userGroup.name}</h3>
-                                <p className="text-sm text-muted-foreground text-left">{userGroup.tasks.length} tasks</p>
-                            </div>
+        <ScrollArea className="w-full">
+            <div className="flex gap-6 pb-4">
+                {KANBAN_COLUMNS.map(col => (
+                    <div key={col.status} className="w-72 flex-shrink-0">
+                        <h3 className="font-semibold text-lg mb-4 px-1">{col.title} ({tasksByStatus[col.status].length})</h3>
+                        <div className="space-y-4 bg-secondary/30 p-2 rounded-lg h-full">
+                           <ScrollArea className="h-[calc(100vh-22rem)]">
+                                <div className="p-2 space-y-3">
+                                {tasksByStatus[col.status].length === 0 ? (
+                                    <div className="text-center text-sm text-muted-foreground pt-16">
+                                        No tasks in this stage.
+                                    </div>
+                                ) : (
+                                    tasksByStatus[col.status].map(task => (
+                                        <TaskCard
+                                            key={task.id}
+                                            task={task}
+                                            userProfile={userProfile}
+                                            permissions={permissions}
+                                            onSelect={() => onTaskSelect(task)}
+                                        />
+                                    ))
+                                )}
+                                </div>
+                           </ScrollArea>
                         </div>
-                    </AccordionTrigger>
-                    <AccordionContent className="pt-0 p-4">
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            {userGroup.tasks.map(task => (
-                                <TaskCard
-                                    key={task.id}
-                                    task={task}
-                                    userProfile={userProfile}
-                                    permissions={permissions}
-                                    onSelect={() => onTaskSelect(task)}
-                                />
-                            ))}
-                        </div>
-                    </AccordionContent>
-                </AccordionItem>
-            ))}
-        </Accordion>
+                    </div>
+                ))}
+            </div>
+            <ScrollBar orientation="horizontal" />
+        </ScrollArea>
     );
 }
