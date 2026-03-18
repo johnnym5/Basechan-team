@@ -24,6 +24,7 @@ const formSchema = z.object({
   dueDate: z.date().optional(),
   workbookId: z.string().optional(),
   sheetId: z.string().optional(),
+  estimatedHours: z.coerce.number().optional(),
 });
 
 const DateDropdowns = ({ value, onChange }: { value?: Date, onChange: (date?: Date) => void }) => {
@@ -113,6 +114,7 @@ export function EditTaskDialog({ task, open, onOpenChange, currentUserProfile }:
       dueDate: task.dueDate ? new Date(task.dueDate) : undefined,
       workbookId: task.workbookId || undefined,
       sheetId: task.sheetId || undefined,
+      estimatedHours: task.estimatedHours,
     });
   }, [task, form]);
 
@@ -131,6 +133,7 @@ export function EditTaskDialog({ task, open, onOpenChange, currentUserProfile }:
             dueDate: dueDateISO,
             workbookId: values.workbookId || null,
             sheetId: values.sheetId || null,
+            estimatedHours: values.estimatedHours,
         }
 
         const taskRef = doc(firestore, 'tasks', task.id);
@@ -197,16 +200,22 @@ export function EditTaskDialog({ task, open, onOpenChange, currentUserProfile }:
                          </Select>
                          <FormMessage /></FormItem>
                     )} />
-                    <FormField control={form.control} name="dueDate" render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Due Date</FormLabel>
-                            <FormControl>
-                                <DateDropdowns value={field.value ? new Date(field.value) : undefined} onChange={field.onChange} />
-                            </FormControl>
-                            <FormMessage />
-                        </FormItem>
+                    <FormField control={form.control} name="estimatedHours" render={({ field }) => (
+                        <FormItem><FormLabel>Estimated Hours</FormLabel>
+                        <FormControl><Input type="number" placeholder="e.g., 8" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : e.target.value)} /></FormControl>
+                        <FormMessage /></FormItem>
                     )} />
                 </div>
+
+                <FormField control={form.control} name="dueDate" render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Due Date</FormLabel>
+                        <FormControl>
+                            <DateDropdowns value={field.value ? new Date(field.value) : undefined} onChange={field.onChange} />
+                        </FormControl>
+                        <FormMessage />
+                    </FormItem>
+                )} />
 
                 <Button type="submit" className="w-full" disabled={isLoading}>
                     {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

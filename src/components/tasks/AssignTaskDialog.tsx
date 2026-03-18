@@ -25,6 +25,7 @@ const formSchema = z.object({
   dueDate: z.date().optional(),
   workbookId: z.string().optional(),
   sheetId: z.string().optional(),
+  estimatedHours: z.coerce.number().optional(),
 });
 
 const DateDropdowns = ({ value, onChange }: { value?: Date, onChange: (date?: Date) => void }) => {
@@ -116,6 +117,7 @@ export function AssignTaskDialog({ open, onOpenChange, initialData, currentUserP
       description: "",
       priority: "LEVEL_1",
       dueDate: undefined,
+      estimatedHours: undefined,
     },
   });
 
@@ -142,6 +144,7 @@ export function AssignTaskDialog({ open, onOpenChange, initialData, currentUserP
             dueDate: initialData?.dueDate || undefined,
             workbookId: initialData?.workbookId || undefined,
             sheetId: initialData?.sheetId || undefined,
+            estimatedHours: undefined,
         });
     }
   }, [initialData, open, form]);
@@ -221,6 +224,7 @@ export function AssignTaskDialog({ open, onOpenChange, initialData, currentUserP
             assignedTo: assigneeId,
             assignedToName: assignedUser.fullName,
             priority: values.priority,
+            estimatedHours: values.estimatedHours,
             status: 'QUEUED',
             dueDate: dueDateISO,
             createdBy: currentUserProfile.id,
@@ -322,6 +326,14 @@ export function AssignTaskDialog({ open, onOpenChange, initialData, currentUserP
                          <FormMessage /></FormItem>
                     )} />
                 </div>
+                
+                 <div className="grid grid-cols-2 gap-4">
+                    <FormField control={form.control} name="estimatedHours" render={({ field }) => (
+                        <FormItem><FormLabel>Estimated Hours</FormLabel>
+                        <FormControl><Input type="number" placeholder="e.g., 8" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : e.target.value)} /></FormControl>
+                        <FormMessage /></FormItem>
+                    )} />
+                 </div>
 
                 <FormField
                     control={form.control}

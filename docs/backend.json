@@ -269,6 +269,10 @@
         "assignedTo": { "type": "string", "description": "The user ID of the assignee." },
         "assignedToName": { "type": "string", "description": "The name of the assignee." },
         "priority": { "type": "string", "enum": ["LEVEL_1", "LEVEL_2", "LEVEL_3"] },
+        "estimatedHours": {
+            "type": "number",
+            "description": "Estimated time in hours to complete the task."
+        },
         "status": { "type": "string", "enum": ["QUEUED", "ACTIVE", "AWAITING_REVIEW", "ARCHIVED"] },
         "dueDate": { "type": "string", "format": "date-time" },
         "createdBy": { "type": "string", "description": "The user ID of the creator." },

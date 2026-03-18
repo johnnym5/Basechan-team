@@ -12,7 +12,7 @@ import {
 import type { Task, UserProfile, ActivityEntry, SubTask, TaskStatus, Notification } from '@/lib/types';
 import type { Permissions } from '@/hooks/usePermissions';
 import { format } from 'date-fns';
-import { Calendar, CheckSquare, History, Info, BookOpenCheck, User, Plus, Trash2, Share2, Pencil, Check, Loader2 } from 'lucide-react';
+import { Calendar, CheckSquare, History, Info, BookOpenCheck, User, Plus, Trash2, Share2, Pencil, Check, Loader2, Hourglass } from 'lucide-react';
 import { TaskPriorityBadge } from './TaskPriorityBadge';
 import { Badge } from '../ui/badge';
 import Link from 'next/link';
@@ -183,7 +183,7 @@ export function TaskDetailDialog({ task: initialTask, isOpen, onOpenChange, curr
                 description: notifDescription,
                 href: `/tasks?taskId=${task.id}`,
                 isRead: false,
-                createdAt: new Date().toISOString(),
+                createdAt: now,
             };
             addDocumentNonBlocking(collection(firestore, 'notifications'), notification);
         }
@@ -285,6 +285,14 @@ export function TaskDetailDialog({ task: initialTask, isOpen, onOpenChange, curr
                 </span>
                 <span className="font-medium">
                   {task.dueDate ? format(new Date(task.dueDate), 'PPP') : 'Not set'}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="flex items-center gap-2 text-muted-foreground">
+                  <Hourglass className="h-4 w-4" /> Estimated Hours
+                </span>
+                <span className="font-medium">
+                  {task.estimatedHours ? `${task.estimatedHours}h` : 'Not set'}
                 </span>
               </div>
                {task.workbookId && (

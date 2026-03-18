@@ -143,6 +143,7 @@ export interface Task {
   assignedTo: string; // userId
   assignedToName: string;
   priority: TaskPriority;
+  estimatedHours?: number;
   status: TaskStatus;
   dueDate?: string | null;
   createdBy: string; // userId
