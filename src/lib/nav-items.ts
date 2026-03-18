@@ -24,5 +24,5 @@ export const mainNavItems = [
   { dialog: "reports", icon: BarChart, label: "Reports" },
   { isSeparator: true },
   { dialog: "chat", icon: MessageSquare, label: "Chat", permission: "canAccessChat"},
-  { dialog: "settings", icon: Settings, label: "Settings", permission: "canManageStaff"},
+  { dialog: "settings", icon: Settings, label: "Settings", permission: "canViewTeam"},
 ];

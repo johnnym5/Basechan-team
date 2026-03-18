@@ -280,6 +280,7 @@ export interface Permissions {
   canAccessAllTasks: boolean;
   canAccessAllWorkbooks: boolean;
   canManageAnnouncements: boolean;
+  canViewTeam: boolean;
 }
 
 export type LeaveType = "ANNUAL" | "SICK" | "UNPAID" | "MATERNITY" | "PATERNITY";

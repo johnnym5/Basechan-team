@@ -26,7 +26,7 @@ export function SettingsDialog({ open, onOpenChange, userProfile }: SettingsDial
     return null;
   }
 
-  if (!permissions.canManageStaff) {
+  if (!permissions.canViewTeam) {
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent>
@@ -63,18 +63,23 @@ export function SettingsDialog({ open, onOpenChange, userProfile }: SettingsDial
         </DialogHeader>
         <Tabs defaultValue="team" className="w-full flex-1 flex flex-col overflow-hidden">
           <div className="px-6">
-            <TabsList className={cn("grid w-full", isSuperAdmin ? "grid-cols-3" : "grid-cols-2")}>
+            <TabsList className={cn(
+                "grid w-full",
+                isSuperAdmin ? "grid-cols-3" : permissions.canManageCompany ? "grid-cols-2" : "grid-cols-1"
+            )}>
                 <TabsTrigger value="team">Team</TabsTrigger>
-                <TabsTrigger value="system">System</TabsTrigger>
+                {permissions.canManageCompany && <TabsTrigger value="system">System</TabsTrigger>}
                 {isSuperAdmin && <TabsTrigger value="superadmin">Super Admin</TabsTrigger>}
             </TabsList>
           </div>
           <TabsContent value="team" className="flex-1 overflow-y-auto mt-4 px-6 pb-6">
-            <TeamPane currentUserProfile={userProfile} />
+            <TeamPane currentUserProfile={userProfile} permissions={permissions} />
           </TabsContent>
-          <TabsContent value="system" className="flex-1 overflow-y-auto mt-4 px-6 pb-6">
-            <SystemPane currentUserProfile={userProfile} />
-          </TabsContent>
+          {permissions.canManageCompany && (
+            <TabsContent value="system" className="flex-1 overflow-y-auto mt-4 px-6 pb-6">
+                <SystemPane currentUserProfile={userProfile} />
+            </TabsContent>
+          )}
           {isSuperAdmin && (
              <TabsContent value="superadmin" className="flex-1 overflow-y-auto mt-4 px-6 pb-6">
                 <div className="flex flex-col items-center justify-center h-full text-center p-8 border-2 border-dashed rounded-lg">

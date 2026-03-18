@@ -19,6 +19,7 @@ export interface Permissions {
   canAccessAllTasks: boolean;
   canAccessAllWorkbooks: boolean;
   canManageAnnouncements: boolean;
+  canViewTeam: boolean;
 }
 
 const rolePermissions: Record<UserRole, Partial<Permissions>> = {
@@ -62,6 +63,7 @@ const defaultPermissions: Permissions = {
   canAccessAllTasks: false,
   canAccessAllWorkbooks: false,
   canManageAnnouncements: false,
+  canViewTeam: false,
 };
 
 export function usePermissions(userProfile: UserProfile | null): Permissions {
@@ -86,6 +88,7 @@ export function usePermissions(userProfile: UserProfile | null): Permissions {
           canAccessAllTasks: true,
           canAccessAllWorkbooks: true,
           canManageAnnouncements: true,
+          canViewTeam: true,
       };
     }
     
@@ -136,6 +139,7 @@ export function usePermissions(userProfile: UserProfile | null): Permissions {
     
     // 4. Special cases
     perms.canEditOwnProfile = effectiveRole !== 'STAFF' || (systemConfig?.allow_self_edit ?? true);
+    perms.canViewTeam = perms.canManageStaff || (systemConfig?.admin_tools ?? false);
 
     return perms;
   }, [isSuperAdmin, userProfile, systemConfig, isImpersonating]);

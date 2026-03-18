@@ -15,13 +15,15 @@ import { useToast } from '@/hooks/use-toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Avatar, AvatarFallback } from '../ui/avatar';
 import { sendPasswordResetEmail } from 'firebase/auth';
+import { Permissions } from '@/hooks/usePermissions';
 
 
 interface TeamPaneProps {
     currentUserProfile: UserProfile;
+    permissions: Permissions;
 }
 
-export function TeamPane({ currentUserProfile }: TeamPaneProps) {
+export function TeamPane({ currentUserProfile, permissions }: TeamPaneProps) {
     const firestore = useFirestore();
     const auth = useAuth();
     const { toast } = useToast();
@@ -112,12 +114,14 @@ export function TeamPane({ currentUserProfile }: TeamPaneProps) {
                         onChange={(e) => setSearchTerm(e.target.value)}
                     />
                 </div>
-                <InviteUserDialog open={isInviteOpen} onOpenChange={setIsInviteOpen} currentUserProfile={currentUserProfile}>
-                    <Button onClick={() => setIsInviteOpen(true)}>
-                        <PlusCircle className="mr-2 h-4 w-4" />
-                        Invite User
-                    </Button>
-                </InviteUserDialog>
+                {permissions.canManageStaff && (
+                    <InviteUserDialog open={isInviteOpen} onOpenChange={setIsInviteOpen} currentUserProfile={currentUserProfile}>
+                        <Button onClick={() => setIsInviteOpen(true)}>
+                            <PlusCircle className="mr-2 h-4 w-4" />
+                            Invite User
+                        </Button>
+                    </InviteUserDialog>
+                )}
             </div>
 
             <div className="border rounded-lg bg-card text-card-foreground shadow-sm">
@@ -150,18 +154,22 @@ export function TeamPane({ currentUserProfile }: TeamPaneProps) {
                             <div className="col-span-2 font-mono text-sm text-muted-foreground truncate">{user.username}</div>
                             <div className="col-span-2 font-mono text-sm text-muted-foreground">••••••••</div>
                             <div className="col-span-2 flex items-center justify-end gap-1">
-                                <Button variant="ghost" size="icon" className="h-8 w-8 text-primary/70 hover:text-primary" onClick={() => setUserToEdit(user)}>
-                                    <Edit className="h-4 w-4" />
-                                </Button>
-                                {user.id !== currentUserProfile.id && (
-                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-amber-500/70 hover:text-amber-500" onClick={() => handlePasswordReset(user)}>
-                                        <KeyRound className="h-4 w-4" />
-                                    </Button>
-                                )}
-                                {canBeDeleted(user) && (
-                                     <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive/70 hover:text-destructive" onClick={() => setUserToDelete(user)}>
-                                        <Trash2 className="h-4 w-4" />
-                                    </Button>
+                                {permissions.canManageStaff && (
+                                    <>
+                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-primary/70 hover:text-primary" onClick={() => setUserToEdit(user)}>
+                                            <Edit className="h-4 w-4" />
+                                        </Button>
+                                        {user.id !== currentUserProfile.id && (
+                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-amber-500/70 hover:text-amber-500" onClick={() => handlePasswordReset(user)}>
+                                                <KeyRound className="h-4 w-4" />
+                                            </Button>
+                                        )}
+                                        {canBeDeleted(user) && (
+                                             <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive/70 hover:text-destructive" onClick={() => setUserToDelete(user)}>
+                                                <Trash2 className="h-4 w-4" />
+                                            </Button>
+                                        )}
+                                    </>
                                 )}
                             </div>
                         </div>
