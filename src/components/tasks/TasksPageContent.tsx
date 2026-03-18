@@ -5,7 +5,6 @@ import { doc } from 'firebase/firestore';
 import type { Task, UserProfile } from '@/lib/types';
 import { usePermissions } from '@/hooks/usePermissions';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { TaskDetailDialog } from '@/components/tasks/TaskDetailDialog';
 import { TaskBoard } from '@/components/tasks/TaskBoard';
 import { TaskList } from '@/components/tasks/TaskList';
@@ -14,12 +13,9 @@ import { PlusCircle } from 'lucide-react';
 import { AssignTaskDialog } from '@/components/tasks/AssignTaskDialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
-export function TasksPageContent() {
+export function TasksPageContent({ initialPayload }: { initialPayload?: { taskId?: string } }) {
   const { user: authUser } = useUser();
   const firestore = useFirestore();
-  const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
   
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [isAssignTaskOpen, setIsAssignTaskOpen] = useState(false);
@@ -32,22 +28,21 @@ export function TasksPageContent() {
 
   const permissions = usePermissions(userProfile);
 
-  const taskIdFromUrl = searchParams.get('taskId');
-  const taskFromUrlRef = useMemoFirebase(() => 
-    firestore && taskIdFromUrl ? doc(firestore, 'tasks', taskIdFromUrl) : null,
-  [firestore, taskIdFromUrl]);
-  const { data: taskFromUrl } = useDoc<Task>(taskFromUrlRef);
+  const taskIdToOpen = initialPayload?.taskId;
+  const taskFromPayloadRef = useMemoFirebase(() => 
+    firestore && taskIdToOpen ? doc(firestore, 'tasks', taskIdToOpen) : null,
+  [firestore, taskIdToOpen]);
+  const { data: taskFromPayload } = useDoc<Task>(taskFromPayloadRef);
 
   useEffect(() => {
-    if (taskFromUrl) {
-      setSelectedTask(taskFromUrl);
+    if (taskFromPayload) {
+      setSelectedTask(taskFromPayload);
     }
-  }, [taskFromUrl]);
+  }, [taskFromPayload]);
 
   const handleDialogClose = (isOpen: boolean) => {
     if (!isOpen) {
       setSelectedTask(null);
-      router.replace(pathname, {scroll: false}); 
     }
   };
 

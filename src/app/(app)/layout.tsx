@@ -47,7 +47,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [isWorkbookOpen, setIsWorkbookOpen] = useState(false);
   const [initialWorkbookPayload, setInitialWorkbookPayload] = useState<{ workbookId?: string; sheetId?: string | null } | undefined>();
   const [isRequisitionsOpen, setIsRequisitionsOpen] = useState(false);
+  const [initialReqPayload, setInitialReqPayload] = useState<{ reqId?: string } | undefined>();
   const [isTasksOpen, setIsTasksOpen] = useState(false);
+  const [initialTaskPayload, setInitialTaskPayload] = useState<{ taskId?: string } | undefined>();
   const [isAttendanceOpen, setIsAttendanceOpen] = useState(false);
   const [isLeaveOpen, setIsLeaveOpen] = useState(false);
   const [isReportsOpen, setIsReportsOpen] = useState(false);
@@ -158,14 +160,24 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       }
       setIsChatOpen(true);
     };
-    const openTasks = () => setIsTasksOpen(true);
+    const openTasks = (payload?: { taskId?: string }) => {
+        if (payload) {
+            setInitialTaskPayload(payload);
+        }
+        setIsTasksOpen(true);
+    };
     const openWorkbooks = (payload?: { workbookId?: string; sheetId?: string | null }) => {
       if (payload) {
         setInitialWorkbookPayload(payload);
       }
       setIsWorkbookOpen(true);
     };
-    const openRequisitions = () => setIsRequisitionsOpen(true);
+    const openRequisitions = (payload?: { reqId?: string }) => {
+        if (payload) {
+            setInitialReqPayload(payload);
+        }
+        setIsRequisitionsOpen(true);
+    };
     const openAttendance = () => setIsAttendanceOpen(true);
     const openLeave = () => setIsLeaveOpen(true);
     const openReports = () => setIsReportsOpen(true);
@@ -371,8 +383,22 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 }}
                 initialPayload={initialWorkbookPayload}
             />
-            <RequisitionsDialog open={isRequisitionsOpen} onOpenChange={setIsRequisitionsOpen} />
-            <TasksDialog open={isTasksOpen} onOpenChange={setIsTasksOpen} />
+            <RequisitionsDialog
+                open={isRequisitionsOpen}
+                onOpenChange={(isOpen) => {
+                    setIsRequisitionsOpen(isOpen);
+                    if (!isOpen) setInitialReqPayload(undefined);
+                }}
+                initialPayload={initialReqPayload}
+            />
+            <TasksDialog
+                open={isTasksOpen}
+                onOpenChange={(isOpen) => {
+                    setIsTasksOpen(isOpen);
+                    if (!isOpen) setInitialTaskPayload(undefined);
+                }}
+                initialPayload={initialTaskPayload}
+            />
             <AttendanceDialog open={isAttendanceOpen} onOpenChange={setIsAttendanceOpen} />
             <LeaveDialog open={isLeaveOpen} onOpenChange={setIsLeaveOpen} />
             <ReportsDialog open={isReportsOpen} onOpenChange={setIsReportsOpen} />

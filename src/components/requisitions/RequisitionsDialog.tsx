@@ -9,9 +9,10 @@ import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
 interface RequisitionsDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  initialPayload?: { reqId?: string };
 }
 
-export function RequisitionsDialog({ open, onOpenChange }: RequisitionsDialogProps) {
+export function RequisitionsDialog({ open, onOpenChange, initialPayload }: RequisitionsDialogProps) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -24,7 +25,7 @@ export function RequisitionsDialog({ open, onOpenChange }: RequisitionsDialogPro
         </VisuallyHidden>
         <ScrollArea className="flex-1">
             <div className="p-6">
-                <RequisitionsPageContent />
+                <RequisitionsPageContent initialPayload={initialPayload} />
             </div>
         </ScrollArea>
       </DialogContent>

@@ -11,7 +11,6 @@ import type { Requisition, UserProfile } from "@/lib/types";
 import { useSuperAdmin } from "@/hooks/useSuperAdmin";
 import { usePermissions, type Permissions } from "@/hooks/usePermissions";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { RequisitionDetailDialog } from "@/components/requisitions/RequisitionDetailDialog";
 import { useSystemConfig } from "@/hooks/useSystemConfig";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
@@ -46,13 +45,10 @@ const getVisibleTabs = (permissions: Permissions, isStaff: boolean) => {
 };
 
 
-export function RequisitionsPageContent() {
+export function RequisitionsPageContent({ initialPayload }: { initialPayload?: { reqId?: string } }) {
   const { user: authUser } = useUser();
   const firestore = useFirestore();
   const { isSuperAdmin } = useSuperAdmin();
-  const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
   const [selectedRequest, setSelectedRequest] = useState<Requisition | null>(null);
   const [isNewRequestOpen, setIsNewRequestOpen] = useState(false);
 
@@ -63,23 +59,21 @@ export function RequisitionsPageContent() {
   const permissions = usePermissions(userProfile);
   const { config: systemConfig } = useSystemConfig(userProfile?.orgId);
 
-  const reqIdFromUrl = searchParams.get('reqId');
-  const reqFromUrlRef = useMemoFirebase(() => 
-    firestore && reqIdFromUrl ? doc(firestore, 'requisitions', reqIdFromUrl) : null
-  , [firestore, reqIdFromUrl]);
-  const { data: reqFromUrl } = useDoc<Requisition>(reqFromUrlRef);
+  const reqIdToOpen = initialPayload?.reqId;
+  const reqFromPayloadRef = useMemoFirebase(() => 
+    firestore && reqIdToOpen ? doc(firestore, 'requisitions', reqIdToOpen) : null
+  , [firestore, reqIdToOpen]);
+  const { data: reqFromPayload } = useDoc<Requisition>(reqFromPayloadRef);
 
   useEffect(() => {
-    if (reqFromUrl) {
-      setSelectedRequest(reqFromUrl);
+    if (reqFromPayload) {
+      setSelectedRequest(reqFromPayload);
     }
-  }, [reqFromUrl]);
+  }, [reqFromPayload]);
   
   const handleDialogClose = (isOpen: boolean) => {
     if (!isOpen) {
       setSelectedRequest(null);
-      // Remove query param from URL without reloading
-      router.replace(pathname, {scroll: false}); 
     }
   }
 
@@ -116,7 +110,6 @@ export function RequisitionsPageContent() {
             <ShieldAlert className="w-16 h-16 text-destructive mb-4" />
             <h1 className="text-2xl font-bold font-headline">Access Denied</h1>
             <p className="text-muted-foreground mt-2">The financial requisitions module is currently disabled for your account or organization.</p>
-            <Button onClick={() => router.push('/')} className="mt-6">Return to Home</Button>
           </div>
     )
   }

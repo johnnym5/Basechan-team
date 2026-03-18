@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
 import { useFirestore } from '@/firebase';
 import { collection, query, where, getDocs, limit } from 'firebase/firestore';
 import type { UserProfile, Task, Requisition, Workbook } from '@/lib/types';
@@ -13,6 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
+import { uiEmitter } from '@/lib/ui-emitter';
 
 
 interface UniversalSearchProps {
@@ -24,7 +24,7 @@ interface SearchResult {
     id: string;
     title: string;
     description: string;
-    url: string;
+    onClick: () => void;
 }
 
 const ICONS = {
@@ -43,7 +43,6 @@ export function UniversalSearch({ userProfile }: UniversalSearchProps) {
     const [isLoading, setIsLoading] = useState(false);
 
     const firestore = useFirestore();
-    const router = useRouter();
     const { isSuperAdmin } = useSuperAdmin();
 
     useEffect(() => {
@@ -112,19 +111,19 @@ export function UniversalSearch({ userProfile }: UniversalSearchProps) {
 
             usersSnap.forEach(doc => {
                 const data = doc.data() as UserProfile;
-                newResults.push({ type: 'User', id: data.id, title: data.fullName, description: `User - ${data.position}`, url: `/settings` });
+                newResults.push({ type: 'User', id: data.id, title: data.fullName, description: `User - ${data.position}`, onClick: () => uiEmitter.emit('open-settings-dialog') });
             });
             tasksSnap.forEach(doc => {
                 const data = doc.data() as Task;
-                newResults.push({ type: 'Task', id: data.id, title: data.title, description: `Task - Assigned to ${data.assignedToName}`, url: `/tasks?taskId=${data.id}` });
+                newResults.push({ type: 'Task', id: data.id, title: data.title, description: `Task - Assigned to ${data.assignedToName}`, onClick: () => uiEmitter.emit('open-tasks-dialog', { taskId: data.id }) });
             });
             reqsSnap.forEach(doc => {
                 const data = doc.data() as Requisition;
-                newResults.push({ type: 'Requisition', id: data.id, title: data.title, description: `Requisition - ${data.serialNo}`, url: `/requisitions?reqId=${data.id}` });
+                newResults.push({ type: 'Requisition', id: data.id, title: data.title, description: `Requisition - ${data.serialNo}`, onClick: () => uiEmitter.emit('open-requisitions-dialog', { reqId: data.id }) });
             });
             workbooksSnap.forEach(doc => {
                 const data = doc.data() as Workbook;
-                newResults.push({ type: 'Workbook', id: data.id, title: data.title, description: `Workbook - Created by ${data.creatorName}`, url: `/workbook?workbookId=${data.id}` });
+                newResults.push({ type: 'Workbook', id: data.id, title: data.title, description: `Workbook - Created by ${data.creatorName}`, onClick: () => uiEmitter.emit('open-workbooks-dialog', { workbookId: data.id }) });
             });
 
             setResults(newResults);
@@ -141,8 +140,8 @@ export function UniversalSearch({ userProfile }: UniversalSearchProps) {
         performSearch(debouncedSearchTerm);
     }, [debouncedSearchTerm, performSearch]);
 
-    const handleSelectResult = (url: string) => {
-        router.push(url);
+    const handleSelectResult = (onClick: () => void) => {
+        onClick();
         setOpen(false);
     };
 
@@ -191,7 +190,7 @@ export function UniversalSearch({ userProfile }: UniversalSearchProps) {
                                         <div
                                             key={`${result.type}-${result.id}`}
                                             className="flex items-center gap-3 p-2 rounded-md text-sm hover:bg-accent cursor-pointer"
-                                            onClick={() => handleSelectResult(result.url)}
+                                            onClick={() => handleSelectResult(result.onClick)}
                                         >
                                             {ICONS[result.type]}
                                             <div className="flex-1 truncate">

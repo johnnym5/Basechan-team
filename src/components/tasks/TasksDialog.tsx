@@ -9,9 +9,10 @@ import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
 interface TasksDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  initialPayload?: { taskId?: string };
 }
 
-export function TasksDialog({ open, onOpenChange }: TasksDialogProps) {
+export function TasksDialog({ open, onOpenChange, initialPayload }: TasksDialogProps) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -24,7 +25,7 @@ export function TasksDialog({ open, onOpenChange }: TasksDialogProps) {
         </VisuallyHidden>
         <ScrollArea className="flex-1">
             <div className="p-6">
-                <TasksPageContent />
+                <TasksPageContent initialPayload={initialPayload} />
             </div>
         </ScrollArea>
       </DialogContent>
