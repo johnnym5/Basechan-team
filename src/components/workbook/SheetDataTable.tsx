@@ -9,7 +9,7 @@ import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
-import { Plus, Trash2, Search } from 'lucide-react';
+import { Plus, Trash2, Search, Download } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -108,11 +108,20 @@ export function SheetDataTable({ sheet, permissions }: SheetDataTableProps) {
         saveChanges({ data: updatedData }, `${selectedRows.length} row(s) deleted.`);
         setSelectedRows([]);
     };
-    
+
     const handleExport = () => {
+        if (headers.length === 0) {
+            toast({
+                variant: "destructive",
+                title: "Cannot Export",
+                description: "This sheet has no columns to export.",
+            });
+            return;
+        }
+
         const sheetData = [
             headers, // First row is headers
-            ...data.map(row => headers.map(header => row[header])) // Subsequent rows are data
+            ...data.map(row => headers.map(header => row[header] ?? '')) // Subsequent rows are data, handle null/undefined
         ];
 
         const ws = XLSX.utils.aoa_to_sheet(sheetData);
@@ -121,7 +130,7 @@ export function SheetDataTable({ sheet, permissions }: SheetDataTableProps) {
         XLSX.writeFile(wb, `${sheet.workbookId}-${sheet.name}.xlsx`);
         toast({ title: 'Exporting...', description: `The sheet "${sheet.name}" is being downloaded.` });
     };
-
+    
     const handleSelectRow = (rowIndex: number, checked: boolean) => {
         if (checked) {
             setSelectedRows(prev => [...prev, rowIndex]);
@@ -164,50 +173,58 @@ export function SheetDataTable({ sheet, permissions }: SheetDataTableProps) {
                         onChange={(e) => setSearchTerm(e.target.value)}
                     />
                 </div>
-                {permissions.canEdit && (
-                    <>
-                         <div className="flex items-center space-x-2">
-                             <div className="flex items-center space-x-2">
-                                 <Checkbox
-                                     id="select-all-rows"
-                                     checked={
-                                         filteredData.length > 0 &&
-                                         selectedRows.length === filteredData.length
-                                             ? true
-                                             : selectedRows.length > 0
-                                             ? "indeterminate"
-                                             : false
-                                     }
-                                     onCheckedChange={handleSelectAll}
-                                     disabled={filteredData.length === 0}
-                                 />
-                                 <label
-                                     htmlFor="select-all-rows"
-                                     className="text-sm font-medium leading-none cursor-pointer peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                                 >
-                                     Select All
-                                 </label>
-                             </div>
-                            <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                     <Button variant="destructive" size="sm" disabled={selectedRows.length === 0}>
-                                        <Trash2 className="mr-2 h-4 w-4" /> Delete ({selectedRows.length})
-                                    </Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                    <AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle><AlertDialogDescription>This will delete {selectedRows.length} selected row(s).</AlertDialogDescription></AlertDialogHeader>
-                                    <AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={handleDeleteSelectedRows} className="bg-destructive hover:bg-destructive/90">Delete</AlertDialogAction></AlertDialogFooter>
-                                </AlertDialogContent>
-                            </AlertDialog>
-                         </div>
+                <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                    <Button variant="outline" size="sm" onClick={handleExport}>
+                        <Download className="mr-2 h-4 w-4" />
+                        Export
+                    </Button>
+                    {permissions.canEdit && (
                         <AddRowDialog open={isAddRowOpen} onOpenChange={setIsAddRowOpen} sheet={sheet}>
                             <Button size="sm">
                                 <Plus className="mr-2 h-4 w-4" />
                                 New Asset
                             </Button>
                         </AddRowDialog>
-                    </>
-                )}
+                    )}
+                </div>
+            </div>
+             <div className="flex-shrink-0 px-2 pb-2 flex items-center justify-start gap-2">
+                 {permissions.canEdit && (
+                     <>
+                         <div className="flex items-center space-x-2">
+                             <Checkbox
+                                 id="select-all-rows"
+                                 checked={
+                                     filteredData.length > 0 &&
+                                     selectedRows.length === filteredData.length
+                                         ? true
+                                         : selectedRows.length > 0
+                                         ? "indeterminate"
+                                         : false
+                                 }
+                                 onCheckedChange={handleSelectAll}
+                                 disabled={filteredData.length === 0}
+                             />
+                             <label
+                                 htmlFor="select-all-rows"
+                                 className="text-sm font-medium leading-none cursor-pointer peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                             >
+                                 Select All
+                             </label>
+                         </div>
+                        <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                    <Button variant="destructive" size="sm" disabled={selectedRows.length === 0}>
+                                    <Trash2 className="mr-2 h-4 w-4" /> Delete ({selectedRows.length})
+                                </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle><AlertDialogDescription>This will delete {selectedRows.length} selected row(s).</AlertDialogDescription></AlertDialogHeader>
+                                <AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={handleDeleteSelectedRows} className="bg-destructive hover:bg-destructive/90">Delete</AlertDialogAction></AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+                     </>
+                 )}
             </div>
             
             <ScrollArea className="flex-grow bg-muted/20 p-4">
