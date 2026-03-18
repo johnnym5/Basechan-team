@@ -1,9 +1,73 @@
 rules_version = '2';
+
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /{document=**} {
-      // This allows anyone to read or write any data forever.
-      allow read, write: if true;
+
+    // ===== Helper Functions =====
+    function isOrgMember(orgId) {
+      // Checks if the authenticated user's custom token contains an orgId
+      // that matches the provided orgId.
+      return request.auth.token.orgId == orgId;
+    }
+
+    function isRequestingUserInOrg(docOrgId) {
+      // This is a common pattern for read operations, where we check the
+      // orgId of the *existing* document in the database.
+      return request.auth != null && isOrgMember(docOrgId);
+    }
+
+    function isCreatingInOwnOrg() {
+      // This is for create operations, where we check the orgId of the
+      // *new* document being created.
+      return request.auth != null && isOrgMember(request.resource.data.orgId);
+    }
+    
+    // ===== Root Collections =====
+
+    // User Profiles: Anyone in the org can read, but only the user can edit their own profile.
+    match /users/{userId} {
+      allow read: if isRequestingUserInOrg(resource.data.orgId);
+      allow create: if isCreatingInOwnOrg(); // Assumes admin/backend creates users
+      allow update: if request.auth.uid == userId;
+      allow delete: if false; // Disallow client-side deletion
+    }
+    
+    // Generic rule for collections with an orgId field.
+    // This applies to: departments, attendance, requisitions, tasks, system_configs,
+    // announcements, workbooks, notifications, leave_requests, daily_reports
+    match /{collection}/{docId} 
+        where collection in ['departments', 'attendance', 'requisitions', 'tasks', 'system_configs', 'announcements', 'workbooks', 'notifications', 'leave_requests', 'daily_reports', 'chats'] {
+      
+      allow read, delete: if isRequestingUserInOrg(resource.data.orgId);
+      allow create: if isCreatingInOwnOrg();
+      allow update: if isRequestingUserInOrg(resource.data.orgId);
+    }
+
+    // Special collections for anonymous/public access
+    match /feedback/{feedbackId} {
+      allow create: if true; // Anyone can submit feedback
+      allow read, update, delete: if false; // Managed by backend/superadmin
+    }
+    match /error_logs/{errorId} {
+      allow create: if true; // Any client can log an error
+      allow read, update, delete: if false; // Managed by backend/superadmin
+    }
+
+    // ===== Subcollections =====
+
+    match /workbooks/{workbookId}/sheets/{sheetId} {
+      // Allow access if the user has access to the parent workbook.
+      allow read, write: if isRequestingUserInOrg(get(/databases/$(database)/documents/workbooks/$(workbookId)).data.orgId);
+    }
+
+    match /chats/{chatId}/messages/{messageId} {
+      // Allow access if the user is a participant of the parent chat.
+      allow read: if request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants;
+      // Only allow creating a message if you are a participant.
+      allow create: if request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants
+                      && request.resource.data.senderId == request.auth.uid;
+      // Users cannot edit/delete chat messages.
+      allow update, delete: if false;
     }
   }
 }
