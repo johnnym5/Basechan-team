@@ -8,7 +8,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2 } from "lucide-react";
+import { Loader2, Sparkles } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useFirestore, useCollection, addDocumentNonBlocking, useMemoFirebase } from "@/firebase";
 import { collection, query, where, doc, getDocs } from "firebase/firestore";
@@ -16,8 +16,11 @@ import { useToast } from "@/hooks/use-toast";
 import type { Task, UserProfile, ActivityEntry, Permissions, Notification, Workbook, Sheet, TaskPriority } from "@/lib/types";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { sanitizeInput } from "@/lib/utils";
+import { createTaskFromText } from "@/ai/flows/create-task-flow";
+import { Separator } from "../ui/separator";
 
 const formSchema = z.object({
+  aiPrompt: z.string().optional(),
   title: z.string().min(5, { message: "Title must be at least 5 characters." }),
   description: z.string().optional(),
   assignedTo: z.string().optional(),
@@ -97,6 +100,7 @@ interface AssignTaskDialogProps {
 
 export function AssignTaskDialog({ open, onOpenChange, initialData, currentUserProfile, permissions }: AssignTaskDialogProps) {
   const [isLoading, setIsLoading] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
   const firestore = useFirestore();
   const { toast } = useToast();
 
@@ -118,6 +122,7 @@ export function AssignTaskDialog({ open, onOpenChange, initialData, currentUserP
       priority: "LEVEL_1",
       dueDate: undefined,
       estimatedHours: undefined,
+      aiPrompt: "",
     },
   });
 
@@ -145,9 +150,34 @@ export function AssignTaskDialog({ open, onOpenChange, initialData, currentUserP
             workbookId: initialData?.workbookId || undefined,
             sheetId: initialData?.sheetId || undefined,
             estimatedHours: undefined,
+            aiPrompt: "",
         });
     }
   }, [initialData, open, form]);
+
+  const handleGenerate = async () => {
+    const prompt = form.getValues("aiPrompt");
+    if (!prompt) {
+        toast({ variant: "destructive", title: "Prompt is empty", description: "Please enter some text to generate a task." });
+        return;
+    }
+    setIsGenerating(true);
+    try {
+        const result = await createTaskFromText({ text: prompt });
+        if (result) {
+            form.setValue("title", result.title);
+            form.setValue("description", result.description || "");
+            if (result.priority) {
+                form.setValue("priority", result.priority);
+            }
+        }
+        toast({ title: "Task Generated", description: "Review the details below and assign the task." });
+    } catch (error: any) {
+        toast({ variant: "destructive", title: "AI Generation Failed", description: error.message });
+    } finally {
+        setIsGenerating(false);
+    }
+  };
 
   async function onSubmit(values: FormData) {
     const assigneeId = permissions.canManageStaff && values.assignedTo ? values.assignedTo : currentUserProfile.id;
@@ -272,6 +302,25 @@ export function AssignTaskDialog({ open, onOpenChange, initialData, currentUserP
         </DialogHeader>
         <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
+                <FormField
+                    control={form.control}
+                    name="aiPrompt"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Create Task with AI</FormLabel>
+                            <FormControl>
+                                <Textarea placeholder="e.g., Remind me to call John about the TPS reports, it's urgent" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+                <Button type="button" variant="outline" className="w-full" onClick={handleGenerate} disabled={isGenerating}>
+                    {isGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
+                    Generate with AI
+                </Button>
+                <Separator />
+
                 <FormField control={form.control} name="title" render={({ field }) => (
                     <FormItem><FormLabel>Title</FormLabel><FormControl><Input placeholder="e.g., Finalize Q3 Report" {...field} /></FormControl><FormMessage /></FormItem>
                 )} />
@@ -315,7 +364,7 @@ export function AssignTaskDialog({ open, onOpenChange, initialData, currentUserP
                     )}
                     <FormField control={form.control} name="priority" render={({ field }) => (
                          <FormItem><FormLabel>Priority</FormLabel>
-                         <Select onValueChange={field.onChange} defaultValue={field.value}>
+                         <Select onValueChange={field.onChange} value={field.value}>
                             <FormControl><SelectTrigger><SelectValue placeholder="Select Priority" /></SelectTrigger></FormControl>
                             <SelectContent>
                                 <SelectItem value="LEVEL_1">Low</SelectItem>
@@ -360,5 +409,3 @@ export function AssignTaskDialog({ open, onOpenChange, initialData, currentUserP
     </Dialog>
   );
 }
-
-    
