@@ -2,12 +2,12 @@
 
 import { useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { Loader2, BookCopy, Shield } from 'lucide-react';
+import { Loader2, BookCopy, Shield, Users, ListTodo } from 'lucide-react';
 import AppLayout from './(app)/layout';
 import { useUser, useFirestore, useDoc, useCollection, useMemoFirebase } from '@/firebase';
 import { ActiveTasks } from "@/components/dashboard/ActiveTasks";
 import { doc, collection, query, where } from "firebase/firestore";
-import type { UserProfile, Requisition } from "@/lib/types";
+import type { UserProfile, Requisition, Task } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Announcements } from "@/components/dashboard/Announcements";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -57,6 +57,26 @@ function DashboardGrid() {
     }, [firestore, userProfile, permissions]);
     const { data: pendingReqs, isLoading: reqsLoading } = useCollection<Requisition>(reqsQuery);
     
+    const onlineUsersQuery = useMemoFirebase(() => {
+        if (!firestore || !userProfile) return null;
+        return query(
+            collection(firestore, 'users'),
+            where('orgId', '==', userProfile.orgId),
+            where('status', '==', 'ONLINE')
+        );
+    }, [firestore, userProfile]);
+    const { data: onlineUsers, isLoading: onlineUsersLoading } = useCollection<UserProfile>(onlineUsersQuery);
+
+    const activeTasksQuery = useMemoFirebase(() => {
+        if (!firestore || !userProfile) return null;
+        return query(
+            collection(firestore, 'tasks'),
+            where('orgId', '==', userProfile.orgId),
+            where('status', 'in', ['QUEUED', 'ACTIVE', 'AWAITING_REVIEW'])
+        );
+    }, [firestore, userProfile]);
+    const { data: activeTasks, isLoading: activeTasksLoading } = useCollection<Task>(activeTasksQuery);
+
     // Show welcome message if not logged in
     if (!authUser && !isAuthLoading) {
       return (
@@ -68,7 +88,7 @@ function DashboardGrid() {
       );
     }
     
-    const isLoading = isProfileLoading || isAuthLoading || reqsLoading || isConfigLoading;
+    const isLoading = isProfileLoading || isAuthLoading || reqsLoading || isConfigLoading || onlineUsersLoading || activeTasksLoading;
 
     if (isLoading) {
         return (
@@ -88,9 +108,9 @@ function DashboardGrid() {
     }
 
     return (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="space-y-6">
              {isSuperAdmin && !isImpersonating && (
-                <Card className="lg:col-span-3 bg-primary/10 border-primary/20">
+                <Card className="bg-primary/10 border-primary/20">
                     <CardHeader className="flex-row items-center justify-between">
                         <div>
                             <CardTitle>Super Admin Console</CardTitle>
@@ -103,18 +123,7 @@ function DashboardGrid() {
                 </Card>
             )}
 
-            {/* Main Column */}
-            <div className="lg:col-span-2 space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <ClockControl userProfile={userProfile} permissions={permissions} systemConfig={systemConfig} />
-                    {userProfile && <PerformanceCard userProfile={userProfile} />}
-                </div>
-                <ActiveTasks />
-                <Announcements />
-            </div>
-
-            {/* Side Column */}
-            <div className="lg:col-span-1 space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <StatCard 
                     title="Pending Approvals" 
                     value={pendingReqs?.length || 0} 
@@ -122,9 +131,37 @@ function DashboardGrid() {
                     onClick={() => uiEmitter.emit('open-requisitions-dialog')}
                     color="bg-emerald-500/20 text-emerald-400"
                 />
-                <QuickActions />
-                <RecentReports />
-                <RecentConversations />
+                <StatCard 
+                    title="Staff Online" 
+                    value={onlineUsers?.length || 0} 
+                    icon={Users}
+                    onClick={() => uiEmitter.emit('open-attendance-dialog')}
+                    color="bg-sky-500/20 text-sky-400"
+                />
+                <StatCard 
+                    title="Active Missions" 
+                    value={activeTasks?.length || 0} 
+                    icon={ListTodo}
+                    onClick={() => uiEmitter.emit('open-tasks-dialog')}
+                    color="bg-amber-500/20 text-amber-400"
+                />
+                 {userProfile && <PerformanceCard userProfile={userProfile} />}
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Main Column */}
+                <div className="lg:col-span-2 space-y-6">
+                    <ActiveTasks />
+                    <Announcements />
+                </div>
+
+                {/* Side Column */}
+                <div className="lg:col-span-1 space-y-6">
+                    <ClockControl userProfile={userProfile} permissions={permissions} systemConfig={systemConfig} />
+                    <QuickActions />
+                    <RecentReports />
+                    <RecentConversations />
+                </div>
             </div>
         </div>
     );
