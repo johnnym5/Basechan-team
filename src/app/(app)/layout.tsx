@@ -171,6 +171,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     const openReports = () => setIsReportsOpen(true);
     const openAssignTask = () => setIsAssignTaskOpen(true);
     const openNewRequisition = () => setIsNewRequisitionOpen(true);
+    const openRequestLeave = () => setIsRequestLeaveOpen(true);
     const openNewWorkbook = () => setIsNewWorkbookOpen(true);
     const openInviteUser = () => setIsInviteUserOpen(true);
     const openNewAnnouncement = () => setIsNewAnnouncementOpen(true);
@@ -188,6 +189,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     uiEmitter.on('open-reports-dialog', openReports);
     uiEmitter.on('open-assign-task-dialog', openAssignTask);
     uiEmitter.on('open-new-requisition-dialog', openNewRequisition);
+    uiEmitter.on('open-request-leave-dialog', openRequestLeave);
     uiEmitter.on('open-new-workbook-dialog', openNewWorkbook);
     uiEmitter.on('open-invite-user-dialog', openInviteUser);
     uiEmitter.on('open-new-announcement-dialog', openNewAnnouncement);
@@ -205,6 +207,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       uiEmitter.off('open-reports-dialog', openReports);
       uiEmitter.off('open-assign-task-dialog', openAssignTask);
       uiEmitter.off('open-new-requisition-dialog', openNewRequisition);
+      uiEmitter.off('open-request-leave-dialog', openRequestLeave);
       uiEmitter.off('open-new-workbook-dialog', openNewWorkbook);
       uiEmitter.off('open-invite-user-dialog', openInviteUser);
       uiEmitter.off('open-new-announcement-dialog', openNewAnnouncement);
