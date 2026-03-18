@@ -72,7 +72,7 @@ export function LeavePageContent() {
          </Button>
        </div>
       
-      {permissions.canManageStaff ? (
+      {permissions.canManageStaff && userProfile ? (
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList>
             <TabsTrigger value="my-leave">My Leave</TabsTrigger>
@@ -80,7 +80,7 @@ export function LeavePageContent() {
             <TabsTrigger value="calendar">Team Calendar</TabsTrigger>
           </TabsList>
           <TabsContent value="my-leave" className="mt-4 space-y-6">
-              <LeaveBalanceCard />
+              {userProfile && <LeaveBalanceCard userProfile={userProfile} />}
               {userProfile && <MyLeaveHistory userProfile={userProfile} />}
           </TabsContent>
           {permissions.canApproveHR && (
@@ -94,17 +94,19 @@ export function LeavePageContent() {
         </Tabs>
       ) : (
         <div className="space-y-6">
-            <LeaveBalanceCard />
+            {userProfile && <LeaveBalanceCard userProfile={userProfile} />}
             {userProfile && <MyLeaveHistory userProfile={userProfile} />}
         </div>
       )}
     </div>
 
-    <RequestLeaveDialog
-        open={isRequestLeaveOpen}
-        onOpenChange={setIsRequestLeaveOpen}
-        userProfile={userProfile}
-    />
+    {userProfile && (
+      <RequestLeaveDialog
+          open={isRequestLeaveOpen}
+          onOpenChange={setIsRequestLeaveOpen}
+          userProfile={userProfile}
+      />
+    )}
     </>
   );
 }
