@@ -6,7 +6,7 @@ import { collection, query, where, doc, deleteDoc } from 'firebase/firestore';
 import type { UserProfile } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { PlusCircle, Trash2, Edit, Loader2, Search } from 'lucide-react';
+import { PlusCircle, Trash2, Edit, Loader2, Search, KeyRound } from 'lucide-react';
 import { Skeleton } from '../ui/skeleton';
 import { Input } from '../ui/input';
 import { InviteUserDialog } from './InviteUserDialog';
@@ -14,6 +14,7 @@ import { EditUserDialog } from './EditUserDialog';
 import { useToast } from '@/hooks/use-toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Avatar, AvatarFallback } from '../ui/avatar';
+import { sendPasswordResetEmail } from 'firebase/auth';
 
 
 interface TeamPaneProps {
@@ -50,6 +51,27 @@ export function TeamPane({ currentUserProfile }: TeamPaneProps) {
     const canBeDeleted = (user: UserProfile) => {
         return user.position !== "Organization Administrator" && user.id !== currentUserProfile.id;
     }
+
+    const handlePasswordReset = async (user: UserProfile) => {
+        if (!auth || !user.email) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Could not send reset email. User email not found.' });
+            return;
+        }
+
+        try {
+            await sendPasswordResetEmail(auth, user.email);
+            toast({
+                title: 'Password Reset Email Sent',
+                description: `An email has been sent to ${user.email} with instructions to reset their password.`,
+            });
+        } catch (error: any) {
+            toast({
+                variant: 'destructive',
+                title: 'Failed to Send Email',
+                description: error.message,
+            });
+        }
+    };
     
     const handleDeleteUser = async () => {
         if (!userToDelete || !firestore) return;
@@ -131,6 +153,11 @@ export function TeamPane({ currentUserProfile }: TeamPaneProps) {
                                 <Button variant="ghost" size="icon" className="h-8 w-8 text-primary/70 hover:text-primary" onClick={() => setUserToEdit(user)}>
                                     <Edit className="h-4 w-4" />
                                 </Button>
+                                {user.id !== currentUserProfile.id && (
+                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-amber-500/70 hover:text-amber-500" onClick={() => handlePasswordReset(user)}>
+                                        <KeyRound className="h-4 w-4" />
+                                    </Button>
+                                )}
                                 {canBeDeleted(user) && (
                                      <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive/70 hover:text-destructive" onClick={() => setUserToDelete(user)}>
                                         <Trash2 className="h-4 w-4" />
@@ -147,7 +174,7 @@ export function TeamPane({ currentUserProfile }: TeamPaneProps) {
                 </div>
             </div>
              <p className="text-xs text-muted-foreground mt-2">
-                Passwords are shown as •••••••• for security. Actual passwords are encrypted and cannot be viewed. Use the "Reset Pass" button inside the user's edit dialog.
+                Passwords are shown as •••••••• for security. Actual passwords are encrypted and cannot be viewed. Use the key icon to send a password reset email to a user.
             </p>
 
             {userToEdit && (
