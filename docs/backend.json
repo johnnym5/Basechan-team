@@ -46,6 +46,21 @@
             "format": "uri",
             "description": "URL of the user's avatar image."
         },
+        "role": {
+          "type": "string",
+          "description": "The user's canonical role in the organization, used for permission checks.",
+          "enum": [
+            "ORG_ADMIN",
+            "MANAGING_DIRECTOR",
+            "HR_MANAGER",
+            "FINANCE_MANAGER",
+            "STAFF"
+          ]
+        },
+        "position": {
+          "type": "string",
+          "description": "The user's job position within the organization."
+        },
         "departmentId": {
           "type": "string",
           "description": "The ID of the department the user belongs to."
@@ -53,10 +68,6 @@
         "departmentName": {
             "type": "string",
             "description": "The name of the department for easier display."
-        },
-        "position": {
-          "type": "string",
-          "description": "The user's job position within the organization."
         },
         "status": {
           "type": "string",
@@ -101,8 +112,9 @@
         "orgId",
         "username",
         "fullName",
-        "position",
         "email",
+        "role",
+        "position",
         "joinedDate"
       ]
     },

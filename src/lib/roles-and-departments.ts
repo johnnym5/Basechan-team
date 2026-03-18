@@ -1,3 +1,5 @@
+import { UserPosition, UserRole } from './types';
+
 export const PREDEFINED_DEPARTMENTS = [
     "Administration & Human Resources (HR)",
     "Finance & Accounting",
@@ -57,3 +59,19 @@ export const GENERIC_ROLES = [
 // Flatten all roles into a single array for type definitions and general use
 const allDepartmentRoles = Object.values(ROLES_BY_DEPARTMENT).flat();
 export const PREDEFINED_ROLES = [...new Set([...allDepartmentRoles, ...GENERIC_ROLES])] as const;
+
+export const getRoleFromPosition = (position: UserPosition): UserRole => {
+    switch (position) {
+        case "CEO / Managing Director":
+            return "MANAGING_DIRECTOR";
+        case "Chief Financial Officer (CFO) / Finance Manager":
+            return "FINANCE_MANAGER";
+        case "HR Manager / Director":
+        case "Office Manager / Admin Lead":
+            return "HR_MANAGER";
+        case "Organization Administrator":
+            return "ORG_ADMIN";
+        default:
+            return "STAFF";
+    }
+}

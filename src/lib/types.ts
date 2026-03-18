@@ -1,6 +1,7 @@
 import { PREDEFINED_ROLES } from './roles-and-departments';
 
 export type UserPosition = (typeof PREDEFINED_ROLES)[number];
+export type UserRole = "ORG_ADMIN" | "MANAGING_DIRECTOR" | "HR_MANAGER" | "FINANCE_MANAGER" | "STAFF";
 export type UserStatus = "ONLINE" | "OFFLINE" | "ON_LEAVE";
 
 export interface Organization {
@@ -45,6 +46,7 @@ export interface UserProfile {
   fullName: string;
   phoneNumber?: string | null;
   avatarUrl?: string | null;
+  role: UserRole;
   position: UserPosition;
   departmentId?: string;
   departmentName?: string;

@@ -1,5 +1,5 @@
 'use client';
-import type { UserProfile, UserPosition } from '@/lib/types';
+import type { UserProfile, UserRole } from '@/lib/types';
 import { useSuperAdmin } from './useSuperAdmin';
 import { useSystemConfig } from './useSystemConfig';
 import { useMemo } from 'react';
@@ -21,41 +21,23 @@ export interface Permissions {
   canManageAnnouncements: boolean;
 }
 
-// Maps new descriptive roles to the original, simpler roles used for permission logic.
-const getBaseRoleForPermissions = (position: UserPosition): 'Staff' | 'HR Manager' | 'Finance Manager' | 'Managing Director' | 'Organization Administrator' => {
-    switch (position) {
-        case "CEO / Managing Director":
-            return "Managing Director";
-        case "Chief Financial Officer (CFO) / Finance Manager":
-            return "Finance Manager";
-        case "HR Manager / Director":
-        case "Office Manager / Admin Lead":
-            return "HR Manager";
-        case "Organization Administrator":
-            return "Organization Administrator";
-        default:
-            return "Staff";
-    }
-}
-
-
-const positionPermissions: Record<'Staff' | 'HR Manager' | 'Finance Manager' | 'Managing Director' | 'Organization Administrator', Partial<Permissions>> = {
-  'Staff': {},
-  'HR Manager': {
+const rolePermissions: Record<UserRole, Partial<Permissions>> = {
+  'STAFF': {},
+  'HR_MANAGER': {
     canApproveHR: true,
     canManageStaff: true,
     canManageAnnouncements: true,
   },
-  'Finance Manager': {
+  'FINANCE_MANAGER': {
     canApproveFinance: true,
     canDisburse: true,
   },
-  'Managing Director': {
+  'MANAGING_DIRECTOR': {
     canApproveMD: true,
     canManageStaff: true,
     canManageAnnouncements: true,
   },
-  'Organization Administrator': {
+  'ORG_ADMIN': {
     canApproveHR: true,
     canApproveFinance: true,
     canApproveMD: true,
@@ -115,11 +97,11 @@ export function usePermissions(userProfile: UserProfile | null): Permissions {
     const isSuperAdminImpersonating = isSuperAdmin && isImpersonating;
 
     // If super admin is impersonating, force their role to 'Staff'. Otherwise, use their actual role.
-    const effectiveBaseRole = isSuperAdminImpersonating
-        ? 'Staff'
-        : getBaseRoleForPermissions(userProfile.position);
+    const effectiveRole = isSuperAdminImpersonating
+        ? 'STAFF'
+        : userProfile.role;
 
-    const rolePerms = positionPermissions[effectiveBaseRole] || {};
+    const rolePerms = rolePermissions[effectiveRole] || {};
     const customPerms = isSuperAdminImpersonating ? {} : (userProfile.customPermissions || {});
 
     const perms: Permissions = {
@@ -153,7 +135,7 @@ export function usePermissions(userProfile: UserProfile | null): Permissions {
     }
     
     // 4. Special cases
-    perms.canEditOwnProfile = effectiveBaseRole !== 'Staff' || (systemConfig?.allow_self_edit ?? true);
+    perms.canEditOwnProfile = effectiveRole !== 'STAFF' || (systemConfig?.allow_self_edit ?? true);
 
     return perms;
   }, [isSuperAdmin, userProfile, systemConfig, isImpersonating]);

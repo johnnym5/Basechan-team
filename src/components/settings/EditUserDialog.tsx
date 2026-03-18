@@ -13,9 +13,9 @@ import { useState, useEffect, useMemo, useRef } from "react";
 import { useFirestore, updateDocumentNonBlocking } from "@/firebase";
 import { doc } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
-import type { UserProfile } from "@/lib/types";
+import type { UserProfile, UserPosition } from "@/lib/types";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { PREDEFINED_DEPARTMENTS, ROLES_BY_DEPARTMENT } from "@/lib/roles-and-departments";
+import { getRoleFromPosition, PREDEFINED_DEPARTMENTS, ROLES_BY_DEPARTMENT } from "@/lib/roles-and-departments";
 import { sanitizeInput } from "@/lib/utils";
 import { Separator } from "../ui/separator";
 
@@ -97,6 +97,7 @@ export function EditUserDialog({ open, onOpenChange, userToEdit }: EditUserDialo
         phoneNumber: sanitizeInput(values.phoneNumber) || null,
         position: values.position,
         departmentName: values.departmentName,
+        role: getRoleFromPosition(values.position as UserPosition),
       });
 
       toast({

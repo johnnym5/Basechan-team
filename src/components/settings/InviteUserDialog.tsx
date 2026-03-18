@@ -12,9 +12,9 @@ import { useState, useEffect, useMemo } from "react";
 import { useFirestore, setDocumentNonBlocking } from "@/firebase";
 import { collection, doc } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
-import type { UserProfile } from "@/lib/types";
+import type { UserProfile, UserPosition } from "@/lib/types";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { PREDEFINED_DEPARTMENTS, ROLES_BY_DEPARTMENT } from "@/lib/roles-and-departments";
+import { getRoleFromPosition, PREDEFINED_DEPARTMENTS, ROLES_BY_DEPARTMENT } from "@/lib/roles-and-departments";
 import { sanitizeInput } from "@/lib/utils";
 import { initializeApp, deleteApp } from "firebase/app";
 import { getAuth, createUserWithEmailAndPassword } from "firebase/auth";
@@ -109,6 +109,7 @@ export function InviteUserDialog({ open, onOpenChange, currentUserProfile }: Inv
         fullName: sanitizeInput(values.fullName),
         phoneNumber: sanitizeInput(values.phoneNumber) || null,
         position: values.position as UserProfile['position'],
+        role: getRoleFromPosition(values.position as UserPosition),
         departmentName: values.departmentName,
         joinedDate: new Date().toISOString(),
         status: 'OFFLINE',
