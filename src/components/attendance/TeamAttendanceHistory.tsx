@@ -15,6 +15,9 @@ import { Button } from "../ui/button";
 import { Download } from "lucide-react";
 import * as XLSX from 'xlsx';
 import { useToast } from "@/hooks/use-toast";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+
 
 interface TeamAttendanceHistoryProps {
   userProfile: UserProfile;
@@ -45,6 +48,14 @@ export function TeamAttendanceHistory({ userProfile }: TeamAttendanceHistoryProp
     if (!attendanceHistory || !selectedDate) return [];
     return attendanceHistory.filter(record => isSameDay(new Date(record.date), selectedDate));
   }, [attendanceHistory, selectedDate]);
+  
+  const groupedRecords = useMemo(() => {
+      return recordsForSelectedDay.reduce((acc, record) => {
+          (acc[record.userName] = acc[record.userName] || []).push(record);
+          return acc;
+      }, {} as Record<string, Attendance[]>);
+  }, [recordsForSelectedDay]);
+
 
   const formatDuration = (totalSeconds: number | undefined): string => {
     if (totalSeconds == null || totalSeconds < 0) return '00:00:00';
@@ -120,42 +131,59 @@ export function TeamAttendanceHistory({ userProfile }: TeamAttendanceHistoryProp
             </CardHeader>
             <CardContent>
                 <ScrollArea className="h-96">
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                        <TableHead>Staff Member</TableHead>
-                        <TableHead>Clock In</TableHead>
-                        <TableHead>Clock Out</TableHead>
-                        <TableHead>Duration</TableHead>
-                        <TableHead>Location</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
                         {isLoading && Array.from({ length: 3 }).map((_, i) => (
-                        <TableRow key={i}>
-                            <TableCell colSpan={5}><Skeleton className="h-6 w-full" /></TableCell>
-                        </TableRow>
+                            <Skeleton key={i} className="h-12 w-full mb-2" />
                         ))}
-                        {!isLoading && recordsForSelectedDay.length === 0 && (
-                        <TableRow>
-                            <TableCell colSpan={5} className="h-24 text-center">
+
+                        {!isLoading && Object.keys(groupedRecords).length === 0 && (
+                            <div className="h-24 text-center flex items-center justify-center text-muted-foreground">
                                 No attendance records for this day.
-                            </TableCell>
-                        </TableRow>
+                            </div>
                         )}
-                        {!isLoading && recordsForSelectedDay.map(record => (
-                        <TableRow key={record.id}>
-                            <TableCell className="font-medium">{record.userName}</TableCell>
-                            <TableCell>{format(new Date(record.clockIn), 'p')}</TableCell>
-                            <TableCell>{record.clockOut ? format(new Date(record.clockOut), 'p') : '—'}</TableCell>
-                            <TableCell className="font-mono">{formatDuration(record.duration)}</TableCell>
-                            <TableCell>
-                                <Badge variant="outline" className="capitalize">{record.location?.toLowerCase()}</Badge>
-                            </TableCell>
-                        </TableRow>
-                        ))}
-                    </TableBody>
-                    </Table>
+
+                        {!isLoading && (
+                            <Accordion type="multiple" className="w-full space-y-2" defaultValue={Object.keys(groupedRecords)}>
+                                {Object.entries(groupedRecords).map(([userName, records]) => (
+                                    <AccordionItem key={userName} value={userName} className="border-none bg-secondary/30 rounded-lg">
+                                        <AccordionTrigger className="p-3 hover:no-underline hover:bg-secondary/50 rounded-lg text-sm">
+                                            <div className="flex items-center gap-3">
+                                                <Avatar className="h-8 w-8">
+                                                    <AvatarFallback>{userName.split(' ').map(n=>n[0]).join('')}</AvatarFallback>
+                                                </Avatar>
+                                                <div className="text-left">
+                                                    <h4 className="font-semibold">{userName}</h4>
+                                                    <p className="text-xs text-muted-foreground">{records.length} record(s)</p>
+                                                </div>
+                                            </div>
+                                        </AccordionTrigger>
+                                        <AccordionContent className="pt-0 p-2">
+                                            <Table>
+                                                <TableHeader>
+                                                    <TableRow>
+                                                        <TableHead className="h-8">Clock In</TableHead>
+                                                        <TableHead className="h-8">Clock Out</TableHead>
+                                                        <TableHead className="h-8">Duration</TableHead>
+                                                        <TableHead className="h-8">Location</TableHead>
+                                                    </TableRow>
+                                                </TableHeader>
+                                                <TableBody>
+                                                    {records.map(record => (
+                                                        <TableRow key={record.id}>
+                                                            <TableCell className="py-2">{format(new Date(record.clockIn), 'p')}</TableCell>
+                                                            <TableCell className="py-2">{record.clockOut ? format(new Date(record.clockOut), 'p') : '—'}</TableCell>
+                                                            <TableCell className="py-2 font-mono">{formatDuration(record.duration)}</TableCell>
+                                                            <TableCell className="py-2">
+                                                                <Badge variant="outline" className="capitalize">{record.location?.toLowerCase()}</Badge>
+                                                            </TableCell>
+                                                        </TableRow>
+                                                    ))}
+                                                </TableBody>
+                                            </Table>
+                                        </AccordionContent>
+                                    </AccordionItem>
+                                ))}
+                            </Accordion>
+                        )}
                 </ScrollArea>
             </CardContent>
         </Card>

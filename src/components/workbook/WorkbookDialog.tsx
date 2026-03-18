@@ -21,6 +21,9 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
 import { Progress } from '@/components/ui/progress';
 import { usePermissions, type Permissions } from '@/hooks/usePermissions';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+
 
 function WorkbookCard({ 
     workbook, 
@@ -139,6 +142,16 @@ function WorkbookList({ userProfile, onSelectSheet }: { userProfile: UserProfile
         );
     }, [workbooks, searchTerm]);
 
+    const groupedWorkbooks = useMemo(() => {
+        if (!filteredWorkbooks) return {};
+        return filteredWorkbooks.reduce((acc, wb) => {
+            const ownerName = wb.creatorName;
+            (acc[ownerName] = acc[ownerName] || []).push(wb);
+            return acc;
+        }, {} as Record<string, Workbook[]>);
+    }, [filteredWorkbooks]);
+
+
     const handleDelete = async () => {
         if (!workbookToDelete || !firestore) return;
         setIsDeleting(true);
@@ -198,27 +211,47 @@ function WorkbookList({ userProfile, onSelectSheet }: { userProfile: UserProfile
                     onChange={(e) => setSearchTerm(e.target.value)}
                 />
             </div>
-            {filteredWorkbooks.length === 0 ? (
+
+            {Object.keys(groupedWorkbooks).length === 0 ? (
                  <div className="flex flex-col items-center justify-center w-full p-8 border-2 border-dashed rounded-lg text-center h-64">
                     <BookCopy className="w-12 h-12 text-muted-foreground" />
                     <p className="mt-4 text-lg font-semibold">{searchTerm ? 'No Workbooks Found' : 'No Workbooks Yet'}</p>
                     <p className="mt-1 text-sm text-muted-foreground">{searchTerm ? 'Try a different search term.' : 'Get started by creating your first workbook or ask a colleague to share one.'}</p>
                 </div>
             ) : (
-                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                    {filteredWorkbooks.map(workbook => (
-                        <WorkbookCard
-                            key={workbook.id}
-                            workbook={workbook}
-                            userProfile={userProfile}
-                            permissions={permissions}
-                            onSelectSheet={onSelectSheet}
-                            onEdit={setWorkbookToEdit}
-                            onShare={setWorkbookToShare}
-                            onDelete={setWorkbookToDelete}
-                        />
+                 <Accordion type="multiple" className="w-full space-y-4" defaultValue={Object.keys(groupedWorkbooks)}>
+                    {Object.entries(groupedWorkbooks).map(([creatorName, userWorkbooks]) => (
+                         <AccordionItem key={creatorName} value={creatorName} className="border-none bg-secondary/30 rounded-lg">
+                            <AccordionTrigger className="p-4 hover:no-underline hover:bg-secondary/50 rounded-lg">
+                                <div className="flex items-center gap-3">
+                                    <Avatar className="h-9 w-9">
+                                        <AvatarFallback>{creatorName.split(' ').map(n=>n[0]).join('')}</AvatarFallback>
+                                    </Avatar>
+                                    <div>
+                                        <h3 className="font-semibold text-left">{creatorName}</h3>
+                                        <p className="text-sm text-muted-foreground text-left">{userWorkbooks.length} workbook(s)</p>
+                                    </div>
+                                </div>
+                            </AccordionTrigger>
+                            <AccordionContent className="pt-0 p-4">
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                                    {userWorkbooks.map(workbook => (
+                                        <WorkbookCard
+                                            key={workbook.id}
+                                            workbook={workbook}
+                                            userProfile={userProfile}
+                                            permissions={permissions}
+                                            onSelectSheet={onSelectSheet}
+                                            onEdit={setWorkbookToEdit}
+                                            onShare={setWorkbookToShare}
+                                            onDelete={setWorkbookToDelete}
+                                        />
+                                    ))}
+                                </div>
+                            </AccordionContent>
+                         </AccordionItem>
                     ))}
-                </div>
+                </Accordion>
             )}
 
             {workbookToEdit && (

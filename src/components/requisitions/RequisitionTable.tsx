@@ -6,6 +6,10 @@ import type { Permissions } from "@/hooks/usePermissions";
 import { Skeleton } from '../ui/skeleton';
 import { Inbox } from 'lucide-react';
 import { RequisitionCard } from './RequisitionCard';
+import { useMemo } from 'react';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+
 
 interface RequisitionTableProps {
     filter: string;
@@ -76,6 +80,17 @@ export function RequisitionTable({ filter, userProfile, isSuperAdmin, permission
 
     const { data: requisitions, isLoading } = useCollection<Requisition>(requisitionsQuery);
 
+    const groupedRequisitions = useMemo(() => {
+        if (!requisitions) return {};
+        if (filter === 'My Requests') return null;
+
+        return requisitions.reduce((acc, req) => {
+            (acc[req.creatorName] = acc[req.creatorName] || []).push(req);
+            return acc;
+        }, {} as Record<string, Requisition[]>);
+    }, [requisitions, filter]);
+
+
     if (isLoading) {
         return (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -100,11 +115,41 @@ export function RequisitionTable({ filter, userProfile, isSuperAdmin, permission
         )
     }
 
+    if (!groupedRequisitions) { // This handles "My Requests" filter
+        return (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {requisitions.map(req => (
+                    <RequisitionCard key={req.id} requisition={req} onSelect={onSelectRequest} />
+                ))}
+            </div>
+        );
+    }
+    
+
     return (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {requisitions.map(req => (
-                <RequisitionCard key={req.id} requisition={req} onSelect={onSelectRequest} />
+        <Accordion type="multiple" className="w-full space-y-4" defaultValue={Object.keys(groupedRequisitions)}>
+            {Object.entries(groupedRequisitions).map(([creatorName, userRequisitions]) => (
+                 <AccordionItem key={creatorName} value={creatorName} className="border-none bg-secondary/30 rounded-lg">
+                    <AccordionTrigger className="p-4 hover:no-underline hover:bg-secondary/50 rounded-lg">
+                         <div className="flex items-center gap-3">
+                            <Avatar className="h-9 w-9">
+                                <AvatarFallback>{creatorName.split(' ').map(n=>n[0]).join('')}</AvatarFallback>
+                            </Avatar>
+                            <div>
+                                <h3 className="font-semibold text-left">{creatorName}</h3>
+                                <p className="text-sm text-muted-foreground text-left">{userRequisitions.length} requisition(s)</p>
+                            </div>
+                        </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="pt-0 p-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {userRequisitions.map(req => (
+                                <RequisitionCard key={req.id} requisition={req} onSelect={onSelectRequest} />
+                            ))}
+                        </div>
+                    </AccordionContent>
+                 </AccordionItem>
             ))}
-        </div>
+        </Accordion>
     );
 }
