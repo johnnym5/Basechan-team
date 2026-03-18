@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -8,7 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import type { Task, UserProfile, ActivityEntry, SubTask, TaskStatus } from '@/lib/types';
+import type { Task, UserProfile, ActivityEntry, SubTask, TaskStatus, Notification } from '@/lib/types';
 import type { Permissions } from '@/hooks/usePermissions';
 import { format } from 'date-fns';
 import { Calendar, CheckSquare, History, Info, BookOpenCheck, User, Plus, Trash2, Share2, Pencil, Check, Loader2 } from 'lucide-react';
@@ -16,8 +17,8 @@ import { TaskPriorityBadge } from './TaskPriorityBadge';
 import { Badge } from '../ui/badge';
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
-import { useFirestore, updateDocumentNonBlocking, deleteDocumentNonBlocking, useDoc, useMemoFirebase } from '@/firebase';
-import { doc, arrayUnion } from 'firebase/firestore';
+import { useFirestore, updateDocumentNonBlocking, deleteDocumentNonBlocking, useDoc, useMemoFirebase, addDocumentNonBlocking } from '@/firebase';
+import { doc, arrayUnion, collection } from 'firebase/firestore';
 import { Checkbox } from '../ui/checkbox';
 import { Input } from '../ui/input';
 import { Button } from '../ui/button';
@@ -162,6 +163,32 @@ export function TaskDetailDialog({ task: initialTask, isOpen, onOpenChange, curr
         activity: arrayUnion(...activity)
     });
     
+    if (currentUserProfile.id !== task.assignedTo) {
+        let notifTitle = '';
+        let notifDescription = '';
+        
+        if (newStatus === 'ACTIVE') {
+            notifTitle = 'Revisions Requested';
+            notifDescription = `Revisions have been requested for "${task.title}".`;
+        } else if (newStatus === 'ARCHIVED') {
+            notifTitle = 'Mission Accomplished';
+            notifDescription = `Your work on "${task.title}" has been approved.`;
+        }
+
+        if (notifTitle) {
+            const notification: Omit<Notification, 'id'> = {
+                orgId: currentUserProfile.orgId,
+                userId: task.assignedTo,
+                title: notifTitle,
+                description: notifDescription,
+                href: `/tasks?taskId=${task.id}`,
+                isRead: false,
+                createdAt: new Date().toISOString(),
+            };
+            addDocumentNonBlocking(collection(firestore, 'notifications'), notification);
+        }
+    }
+
     onOpenChange(false); // Close dialog on status change
     setIsSubmitting(false);
   };

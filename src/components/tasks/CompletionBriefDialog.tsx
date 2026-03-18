@@ -9,10 +9,10 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Textarea } from "@/components/ui/textarea";
 import { Loader2 } from "lucide-react";
 import { useState } from "react";
-import { useFirestore, useUser, updateDocumentNonBlocking } from "@/firebase";
-import { doc, arrayUnion } from "firebase/firestore";
+import { useFirestore, useUser, updateDocumentNonBlocking, addDocumentNonBlocking } from "@/firebase";
+import { doc, arrayUnion, collection } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
-import type { Task, UserProfile, ActivityEntry } from "@/lib/types";
+import type { Task, UserProfile, ActivityEntry, Notification } from "@/lib/types";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { sanitizeInput } from "@/lib/utils";
 
@@ -70,6 +70,19 @@ export function CompletionBriefDialog({ isOpen, onOpenChange, task, userProfile 
             status: nextStatus,
             activity: arrayUnion(commentEntry, logEntry)
         });
+
+        if (userProfile.id !== task.createdBy) {
+            const notification: Omit<Notification, 'id'> = {
+                orgId: userProfile.orgId,
+                userId: task.createdBy,
+                title: 'Mission Awaiting Review',
+                description: `${userProfile.fullName} has submitted "${task.title}" for your review.`,
+                href: `/tasks?taskId=${task.id}`,
+                isRead: false,
+                createdAt: now,
+            };
+            addDocumentNonBlocking(collection(firestore, 'notifications'), notification);
+        }
 
       toast({ title: "Task Submitted for Review", description: "Your completion brief has been logged." });
       form.reset();
