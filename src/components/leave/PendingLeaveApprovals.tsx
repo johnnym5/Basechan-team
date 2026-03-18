@@ -2,8 +2,8 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "../ui/skeleton";
-import type { LeaveRequest, UserProfile } from "@/lib/types";
-import { useFirestore, useCollection, useMemoFirebase, updateDocumentNonBlocking } from "@/firebase";
+import type { LeaveRequest, UserProfile, Notification } from "@/lib/types";
+import { useFirestore, useCollection, useMemoFirebase, updateDocumentNonBlocking, addDocumentNonBlocking } from "@/firebase";
 import { collection, query, where, doc } from "firebase/firestore";
 import { format } from 'date-fns';
 import { Button } from "../ui/button";
@@ -30,6 +30,7 @@ export function PendingLeaveApprovals({ userProfile }: PendingLeaveApprovalsProp
   const { data: pendingRecords, isLoading } = useCollection<LeaveRequest>(pendingQuery);
 
   const handleDecision = (record: LeaveRequest, decision: 'APPROVED' | 'REJECTED') => {
+    if (!firestore) return;
     const leaveRef = doc(firestore, 'leave_requests', record.id);
     
     const approvalData = {
@@ -39,6 +40,17 @@ export function PendingLeaveApprovals({ userProfile }: PendingLeaveApprovalsProp
     };
 
     updateDocumentNonBlocking(leaveRef, approvalData);
+
+    const notification: Omit<Notification, 'id'> = {
+        orgId: userProfile.orgId,
+        userId: record.userId,
+        title: `Leave Request ${decision.charAt(0) + decision.slice(1).toLowerCase()}`,
+        description: `Your request for ${record.leaveType.toLowerCase()} leave for ${format(new Date(record.startDate), 'PP')} to ${format(new Date(record.endDate), 'PP')} has been ${decision.toLowerCase()}.`,
+        href: `/`, // Points to dashboard for now, user can open leave dialog from there
+        isRead: false,
+        createdAt: new Date().toISOString(),
+    };
+    addDocumentNonBlocking(collection(firestore, 'notifications'), notification);
 
     toast({
         title: `Leave Request ${decision.toLowerCase()}`,
