@@ -1,13 +1,14 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useCollection, useFirestore, useMemoFirebase, useAuth } from '@/firebase';
 import { collection, query, where, doc, deleteDoc } from 'firebase/firestore';
 import type { UserProfile } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { PlusCircle, Trash2, Edit, Loader2 } from 'lucide-react';
+import { PlusCircle, Trash2, Edit, Loader2, Search } from 'lucide-react';
 import { Skeleton } from '../ui/skeleton';
+import { Input } from '../ui/input';
 import { InviteUserDialog } from './InviteUserDialog';
 import { EditUserDialog } from './EditUserDialog';
 import { useToast } from '@/hooks/use-toast';
@@ -27,6 +28,7 @@ export function TeamPane({ currentUserProfile }: TeamPaneProps) {
     const [userToEdit, setUserToEdit] = useState<UserProfile | null>(null);
     const [userToDelete, setUserToDelete] = useState<UserProfile | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
+    const [searchTerm, setSearchTerm] = useState('');
 
     const usersQuery = useMemoFirebase(() =>
         firestore ? query(collection(firestore, 'users'), where('orgId', '==', currentUserProfile.orgId)) : null
@@ -34,6 +36,16 @@ export function TeamPane({ currentUserProfile }: TeamPaneProps) {
 
     const { data: users, isLoading } = useCollection<UserProfile>(usersQuery);
     
+    const filteredUsers = useMemo(() => {
+        if (!users) return [];
+        if (!searchTerm) return users;
+        return users.filter(user => 
+            user.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            user.position.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+    }, [users, searchTerm]);
+
     // Admins cannot be deleted
     const canBeDeleted = (user: UserProfile) => {
         return user.position !== "Organization Administrator" && user.id !== currentUserProfile.id;
@@ -68,8 +80,16 @@ export function TeamPane({ currentUserProfile }: TeamPaneProps) {
     
     return (
         <>
-            <div className="flex justify-between items-center mb-4">
-                <h3 className="text-xl font-bold font-headline">Security</h3>
+            <div className="flex justify-between items-center mb-4 gap-4">
+                <div className="relative flex-1">
+                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                    <Input 
+                        placeholder="Search team by name, email, role..."
+                        className="pl-8"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                </div>
                 <InviteUserDialog open={isInviteOpen} onOpenChange={setIsInviteOpen} currentUserProfile={currentUserProfile}>
                     <Button onClick={() => setIsInviteOpen(true)}>
                         <PlusCircle className="mr-2 h-4 w-4" />
@@ -91,7 +111,7 @@ export function TeamPane({ currentUserProfile }: TeamPaneProps) {
                     {isLoading && Array.from({length: 3}).map((_, i) => (
                         <div key={i} className="p-4"><Skeleton className="h-10 w-full" /></div>
                     ))}
-                    {!isLoading && users?.map(user => (
+                    {!isLoading && filteredUsers.map(user => (
                         <div key={user.id} className="grid grid-cols-11 gap-4 p-3 items-center">
                             <div className="col-span-3 flex items-center gap-3 truncate">
                                 <Avatar className="h-8 w-8">
@@ -119,12 +139,12 @@ export function TeamPane({ currentUserProfile }: TeamPaneProps) {
                             </div>
                         </div>
                     ))}
+                     {!isLoading && filteredUsers.length === 0 && (
+                        <div className="text-center text-sm text-muted-foreground py-16">
+                            {searchTerm ? "No users match your search." : "No users found in this organization."}
+                        </div>
+                    )}
                 </div>
-                 {!isLoading && users?.length === 0 && (
-                    <div className="text-center text-sm text-muted-foreground py-16">
-                        No users found in this organization.
-                    </div>
-                )}
             </div>
              <p className="text-xs text-muted-foreground mt-2">
                 Passwords are shown as •••••••• for security. Actual passwords are encrypted and cannot be viewed. Use the "Reset Pass" button inside the user's edit dialog.
