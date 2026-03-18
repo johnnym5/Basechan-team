@@ -8,7 +8,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2 } from "lucide-react";
+import { Loader2, Paperclip } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useFirestore, useCollection, addDocumentNonBlocking, useMemoFirebase } from "@/firebase";
 import { collection, query, where, doc, getDocs } from "firebase/firestore";
@@ -16,6 +16,8 @@ import { useToast } from "@/hooks/use-toast";
 import type { Task, UserProfile, ActivityEntry, Permissions, Notification, Workbook, Sheet, TaskPriority } from "@/lib/types";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { sanitizeInput } from "@/lib/utils";
+import { useFileUpload } from "@/hooks/useFileUpload";
+import { Progress } from "@/components/ui/progress";
 
 const formSchema = z.object({
   title: z.string().min(5, { message: "Title must be at least 5 characters." }),
@@ -26,6 +28,7 @@ const formSchema = z.object({
   workbookId: z.string().optional(),
   sheetId: z.string().optional(),
   estimatedHours: z.coerce.number().optional(),
+  attachment: z.custom<File>().optional(),
 });
 
 const DateDropdowns = ({ value, onChange }: { value?: Date, onChange: (date?: Date) => void }) => {
@@ -99,6 +102,10 @@ export function AssignTaskDialog({ open, onOpenChange, initialData, currentUserP
   const [isLoading, setIsLoading] = useState(false);
   const firestore = useFirestore();
   const { toast } = useToast();
+  const { isUploading, uploadProgress, uploadFile } = useFileUpload();
+  const [fileName, setFileName] = useState<string | null>(null);
+
+  const isBusy = isLoading || isUploading;
 
   const usersQuery = useMemoFirebase(() => 
     currentUserProfile ? query(collection(firestore, 'users'), where('orgId', '==', currentUserProfile.orgId)) : null
@@ -118,6 +125,7 @@ export function AssignTaskDialog({ open, onOpenChange, initialData, currentUserP
       priority: "LEVEL_1",
       dueDate: undefined,
       estimatedHours: undefined,
+      attachment: undefined,
     },
   });
 
@@ -128,9 +136,17 @@ export function AssignTaskDialog({ open, onOpenChange, initialData, currentUserP
   , [firestore, selectedWorkbookId]);
   const { data: sheets, isLoading: areSheetsLoading } = useCollection<Sheet>(sheetsQuery);
 
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      form.setValue('attachment', file);
+      setFileName(file.name);
+    }
+  };
 
   const handleDialogClose = () => {
     form.reset();
+    setFileName(null);
     onOpenChange(false);
   }
 
@@ -145,7 +161,9 @@ export function AssignTaskDialog({ open, onOpenChange, initialData, currentUserP
             workbookId: initialData?.workbookId || undefined,
             sheetId: initialData?.sheetId || undefined,
             estimatedHours: undefined,
+            attachment: undefined,
         });
+        setFileName(null);
     }
   }, [initialData, open, form]);
 
@@ -200,6 +218,14 @@ export function AssignTaskDialog({ open, onOpenChange, initialData, currentUserP
     setIsLoading(true);
 
     try {
+        let attachmentUrl: string | undefined;
+        let attachmentName: string | undefined;
+        if (values.attachment) {
+            const filePath = `tasks/${currentUserProfile.orgId}/${Date.now()}_${values.attachment.name}`;
+            attachmentUrl = await uploadFile(values.attachment, filePath);
+            attachmentName = values.attachment.name;
+        }
+
         const tasksRef = collection(firestore, 'tasks');
         const q = query(tasksRef, where('orgId', '==', assignedUser.orgId));
         const orgTasksSnapshot = await getDocs(q);
@@ -232,6 +258,8 @@ export function AssignTaskDialog({ open, onOpenChange, initialData, currentUserP
             createdAt: now,
             workbookId: values.workbookId || initialData?.workbookId || undefined,
             sheetId: values.sheetId || initialData?.sheetId || undefined,
+            attachmentUrl: attachmentUrl || undefined,
+            attachmentName: attachmentName || undefined,
             sharedWith: [],
             subTasks: [],
             type: 'STANDARD',
@@ -301,6 +329,24 @@ export function AssignTaskDialog({ open, onOpenChange, initialData, currentUserP
                         )}
                      </div>
                 )}
+                 <FormField
+                    control={form.control}
+                    name="attachment"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Attachment (Optional)</FormLabel>
+                            <FormControl>
+                                <Input id="task-attachment-file" type="file" className="hidden" onChange={handleFileChange} disabled={isBusy} />
+                            </FormControl>
+                            <label htmlFor="task-attachment-file" className="flex items-center gap-2 text-sm text-muted-foreground cursor-pointer border p-2 rounded-md hover:bg-accent transition-colors">
+                                <Paperclip className="h-4 w-4" />
+                                <span className="truncate">{fileName || 'Upload a file'}</span>
+                            </label>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                 />
+                 {isUploading && <Progress value={uploadProgress} className="w-full h-2" />}
 
                 <div className="grid grid-cols-2 gap-4">
                     {permissions.canManageStaff && (
@@ -350,8 +396,8 @@ export function AssignTaskDialog({ open, onOpenChange, initialData, currentUserP
                 />
 
 
-                <Button type="submit" className="w-full" disabled={isLoading}>
-                    {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                <Button type="submit" className="w-full" disabled={isBusy}>
+                    {isBusy && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     {permissions.canManageStaff ? 'Assign Mission' : 'Create Mission'}
                 </Button>
             </form>
@@ -360,3 +406,5 @@ export function AssignTaskDialog({ open, onOpenChange, initialData, currentUserP
     </Dialog>
   );
 }
+
+    

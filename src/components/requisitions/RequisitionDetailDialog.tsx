@@ -278,8 +278,8 @@ export function RequisitionDetailDialog({
                   <Paperclip className="h-4 w-4" /> Attachment
                 </span>
                 {requisition.attachmentUrl ? (
-                    <Link href={requisition.attachmentUrl} target="_blank" rel="noopener noreferrer" className='font-medium text-primary hover:underline'>
-                        View File
+                    <Link href={requisition.attachmentUrl} target="_blank" rel="noopener noreferrer" className='font-medium text-primary hover:underline truncate max-w-[150px]' title={requisition.attachmentName || 'View File'}>
+                        {requisition.attachmentName || 'View File'}
                     </Link>
                 ) : (
                     <span className="font-medium text-muted-foreground">None</span>
@@ -371,3 +371,5 @@ export function RequisitionDetailDialog({
     </>
   )
 }
+
+    

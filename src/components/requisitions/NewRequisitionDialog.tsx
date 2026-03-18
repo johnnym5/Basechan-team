@@ -114,6 +114,7 @@ export function NewRequisitionDialog({ open, onOpenChange, userProfile }: NewReq
             createdAt: now,
             activity: [initialActivity],
             attachmentUrl: attachmentUrl || null,
+            attachmentName: values.attachment ? values.attachment.name : null,
         };
 
         await addDocumentNonBlocking(reqsCollection, newRequisition);
@@ -210,3 +211,5 @@ export function NewRequisitionDialog({ open, onOpenChange, userProfile }: NewReq
     </Dialog>
   );
 }
+
+    

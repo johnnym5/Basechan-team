@@ -12,7 +12,7 @@ import {
 import type { Task, UserProfile, ActivityEntry, SubTask, TaskStatus, Notification } from '@/lib/types';
 import type { Permissions } from '@/hooks/usePermissions';
 import { format } from 'date-fns';
-import { Calendar, CheckSquare, History, Info, BookOpenCheck, User, Plus, Trash2, Share2, Pencil, Check, Loader2, Hourglass, LifeBuoy } from 'lucide-react';
+import { Calendar, CheckSquare, History, Info, BookOpenCheck, User, Plus, Trash2, Share2, Pencil, Check, Loader2, Hourglass, LifeBuoy, Paperclip } from 'lucide-react';
 import { TaskPriorityBadge } from './TaskPriorityBadge';
 import { Badge } from '../ui/badge';
 import Link from 'next/link';
@@ -319,6 +319,18 @@ export function TaskDetailDialog({ task: initialTask, isOpen, onOpenChange, curr
                     </Button>
                   </div>
                )}
+                <div className="flex items-center justify-between">
+                  <span className="flex items-center gap-2 text-muted-foreground">
+                    <Paperclip className="h-4 w-4" /> Attachment
+                  </span>
+                  {task.attachmentUrl ? (
+                      <Link href={task.attachmentUrl} target="_blank" rel="noopener noreferrer" className='font-medium text-primary hover:underline truncate max-w-[150px]' title={task.attachmentName || 'View File'}>
+                          {task.attachmentName || 'View File'}
+                      </Link>
+                  ) : (
+                      <span className="font-medium text-muted-foreground">None</span>
+                  )}
+                </div>
             </div>
           </div>
         </div>

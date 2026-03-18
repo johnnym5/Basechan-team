@@ -2,23 +2,24 @@ rules_version = '2';
 
 service firebase.storage {
   match /b/{bucket}/o {
-    // Files are stored at /requisitions/{orgId}/{fileName}
-    match /requisitions/{orgId}/{fileName} {
-      // Helper function to check if the user belongs to the organization
-      // by reading their profile from Firestore.
-      function isUserInOrg() {
-        return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.orgId == orgId;
-      }
-      
-      // Allow read/write access only if the user is authenticated and a member
-      // of the organization specified in the file path.
-      allow read, write: if request.auth != null && isUserInOrg();
+    
+    function isUserInOrg(orgId) {
+      return request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.orgId == orgId;
     }
 
-    // Allow users to read/write their own avatars
+    match /requisitions/{orgId}/{fileName} {
+      allow read, write: if isUserInOrg(orgId);
+    }
+
+    match /tasks/{orgId}/{fileName} {
+      allow read, write: if isUserInOrg(orgId);
+    }
+
     match /avatars/{userId}/{fileName} {
       allow read: if request.auth != null;
       allow write: if request.auth != null && request.auth.uid == userId;
     }
   }
 }
+
+    

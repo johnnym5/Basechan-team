@@ -8,7 +8,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2 } from "lucide-react";
+import { Loader2, Paperclip } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useFirestore, updateDocumentNonBlocking, useCollection, useMemoFirebase } from "@/firebase";
 import { doc, collection, query, where } from "firebase/firestore";
@@ -16,6 +16,8 @@ import { useToast } from "@/hooks/use-toast";
 import type { Task, UserProfile, Workbook, Sheet } from "@/lib/types";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { sanitizeInput } from "@/lib/utils";
+import { useFileUpload } from "@/hooks/useFileUpload";
+import { Progress } from "../ui/progress";
 
 const formSchema = z.object({
   title: z.string().min(5, { message: "Title must be at least 5 characters." }),
@@ -25,6 +27,7 @@ const formSchema = z.object({
   workbookId: z.string().optional(),
   sheetId: z.string().optional(),
   estimatedHours: z.coerce.number().optional(),
+  attachment: z.custom<File>().optional(),
 });
 
 const DateDropdowns = ({ value, onChange }: { value?: Date, onChange: (date?: Date) => void }) => {
@@ -89,6 +92,10 @@ export function EditTaskDialog({ task, open, onOpenChange, currentUserProfile }:
   const [isLoading, setIsLoading] = useState(false);
   const firestore = useFirestore();
   const { toast } = useToast();
+  const { isUploading, uploadProgress, uploadFile } = useFileUpload();
+  const [fileName, setFileName] = useState<string | null>(null);
+
+  const isBusy = isLoading || isUploading;
 
   const workbooksQuery = useMemoFirebase(() => 
     currentUserProfile ? query(collection(firestore, 'workbooks'), where('orgId', '==', currentUserProfile.orgId)) : null
@@ -116,8 +123,16 @@ export function EditTaskDialog({ task, open, onOpenChange, currentUserProfile }:
       sheetId: task.sheetId || undefined,
       estimatedHours: task.estimatedHours,
     });
+    setFileName(task.attachmentName || null);
   }, [task, form]);
 
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      form.setValue('attachment', file);
+      setFileName(file.name);
+    }
+  };
 
   async function onSubmit(values: FormData) {
     if (!firestore) return;
@@ -126,7 +141,7 @@ export function EditTaskDialog({ task, open, onOpenChange, currentUserProfile }:
     const dueDateISO = values.dueDate ? values.dueDate.toISOString() : null;
 
     try {
-        const updateData = {
+        const updateData: Partial<Task> = {
             title: sanitizeInput(values.title),
             description: sanitizeInput(values.description),
             priority: values.priority,
@@ -134,6 +149,12 @@ export function EditTaskDialog({ task, open, onOpenChange, currentUserProfile }:
             workbookId: values.workbookId || null,
             sheetId: values.sheetId || null,
             estimatedHours: values.estimatedHours,
+        };
+
+        if (values.attachment) {
+            const filePath = `tasks/${currentUserProfile.orgId}/${Date.now()}_${values.attachment.name}`;
+            updateData.attachmentUrl = await uploadFile(values.attachment, filePath);
+            updateData.attachmentName = values.attachment.name;
         }
 
         const taskRef = doc(firestore, 'tasks', task.id);
@@ -186,6 +207,25 @@ export function EditTaskDialog({ task, open, onOpenChange, currentUserProfile }:
                         )} />
                     )}
                  </div>
+                 
+                 <FormField
+                    control={form.control}
+                    name="attachment"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Attachment (Optional)</FormLabel>
+                            <FormControl>
+                                <Input id="edit-task-attachment-file" type="file" className="hidden" onChange={handleFileChange} disabled={isBusy} />
+                            </FormControl>
+                            <label htmlFor="edit-task-attachment-file" className="flex items-center gap-2 text-sm text-muted-foreground cursor-pointer border p-2 rounded-md hover:bg-accent transition-colors">
+                                <Paperclip className="h-4 w-4" />
+                                <span className="truncate">{fileName || 'Upload a file'}</span>
+                            </label>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                 />
+                 {isUploading && <Progress value={uploadProgress} className="w-full h-2" />}
 
                 <div className="grid grid-cols-2 gap-4">
                     <FormField control={form.control} name="priority" render={({ field }) => (
@@ -217,8 +257,8 @@ export function EditTaskDialog({ task, open, onOpenChange, currentUserProfile }:
                     </FormItem>
                 )} />
 
-                <Button type="submit" className="w-full" disabled={isLoading}>
-                    {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                <Button type="submit" className="w-full" disabled={isBusy}>
+                    {isBusy && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     Save Changes
                 </Button>
             </form>
@@ -227,3 +267,5 @@ export function EditTaskDialog({ task, open, onOpenChange, currentUserProfile }:
     </Dialog>
   );
 }
+
+    

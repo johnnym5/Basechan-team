@@ -243,6 +243,7 @@
         "amount": { "type": "number", "description": "The requisition amount." },
         "description": { "type": "string", "description": "A detailed description of the requisition." },
         "attachmentUrl": { "type": "string", "format": "uri", "description": "URL of any attachment." },
+        "attachmentName": { "type": "string", "description": "The name of the attached file." },
         "status": {
             "type": "string",
             "enum": ["PENDING_HR", "PENDING_FINANCE", "PENDING_MD", "APPROVED", "PAID", "REJECTED"],
@@ -279,6 +280,8 @@
         "createdAt": { "type": "string", "format": "date-time" },
         "workbookId": { "type": "string", "description": "The ID of the workbook this task is related to." },
         "sheetId": { "type": "string", "description": "The ID of the specific sheet this task is related to." },
+        "attachmentUrl": { "type": "string", "format": "uri", "description": "URL of any attachment related to the task." },
+        "attachmentName": { "type": "string", "description": "The name of the attached file." },
         "sharedWith": {
             "type": "array",
             "description": "A list of user IDs this task is shared with.",

@@ -121,6 +121,7 @@ export interface Requisition {
   amount: number;
   description: string;
   attachmentUrl?: string | null;
+  attachmentName?: string | null;
   status: RequisitionStatus;
   activity: ActivityEntry[];
   createdAt: string; // ISO String for timestamp
@@ -151,6 +152,8 @@ export interface Task {
   createdAt: string; // ISO string
   workbookId?: string | null;
   sheetId?: string | null;
+  attachmentUrl?: string | null;
+  attachmentName?: string | null;
   sharedWith?: string[];
   subTasks?: SubTask[];
   type?: 'STANDARD' | 'ASSISTANCE_REQUEST';
