@@ -197,6 +197,11 @@ export function AssignTaskDialog({ open, onOpenChange, initialData, currentUserP
     setIsLoading(true);
 
     try {
+        const tasksRef = collection(firestore, 'tasks');
+        const q = query(tasksRef, where('orgId', '==', assignedUser.orgId));
+        const orgTasksSnapshot = await getDocs(q);
+        const newSerialNo = `TSK-${String(orgTasksSnapshot.size + 1).padStart(5, '0')}`;
+        
         const now = new Date().toISOString();
         const initialActivity: ActivityEntry = {
             type: 'LOG',
@@ -209,6 +214,7 @@ export function AssignTaskDialog({ open, onOpenChange, initialData, currentUserP
         };
         
         const newTask: Omit<Task, 'id'> = {
+            serialNo: newSerialNo,
             orgId: assignedUser.orgId,
             title: sanitizeInput(values.title),
             description: sanitizeInput(values.description),

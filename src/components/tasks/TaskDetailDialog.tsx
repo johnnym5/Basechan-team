@@ -172,7 +172,7 @@ export function TaskDetailDialog({ task: initialTask, isOpen, onOpenChange, curr
       <DialogContent className="sm:max-w-4xl h-[90vh] w-full flex flex-col">
         <DialogHeader>
           <div className="flex items-start justify-between">
-             <DialogTitle className='max-w-md'>{task.title}</DialogTitle>
+             <DialogTitle className='max-w-md'>{task.serialNo}: {task.title}</DialogTitle>
              <TaskPriorityBadge priority={task.priority} />
           </div>
            <DialogDescription asChild>

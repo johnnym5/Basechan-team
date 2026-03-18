@@ -262,6 +262,7 @@
       "type": "object",
       "description": "Represents a single assignable task.",
       "properties": {
+        "serialNo": { "type": "string", "description": "The task's unique serial number (e.g., TSK-00001)." },
         "orgId": { "type": "string" },
         "title": { "type": "string" },
         "description": { "type": "string" },
@@ -316,6 +317,7 @@
         }
       },
       "required": [
+        "serialNo",
         "orgId",
         "title",
         "assignedTo",

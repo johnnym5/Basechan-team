@@ -27,7 +27,10 @@ export function TaskCard({ task, userProfile, permissions, onSelect }: TaskCardP
                     <TaskPriorityBadge priority={task.priority} />
                     <Badge variant="secondary">{task.assignedToName}</Badge>
                 </div>
-                <p className="font-semibold text-foreground leading-snug">{task.title}</p>
+                <div>
+                  <p className="font-semibold text-foreground leading-snug">{task.title}</p>
+                  <p className="text-xs font-mono text-muted-foreground">{task.serialNo}</p>
+                </div>
             </CardContent>
         </Card>
     )
