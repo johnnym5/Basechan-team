@@ -11,6 +11,10 @@ import { cn } from "@/lib/utils";
 import { Calendar } from "../ui/calendar";
 import { useState, useMemo } from "react";
 import { ScrollArea } from "../ui/scroll-area";
+import { Button } from "../ui/button";
+import { Download } from "lucide-react";
+import * as XLSX from 'xlsx';
+import { useToast } from "@/hooks/use-toast";
 
 interface TeamAttendanceHistoryProps {
   userProfile: UserProfile;
@@ -18,6 +22,7 @@ interface TeamAttendanceHistoryProps {
 
 export function TeamAttendanceHistory({ userProfile }: TeamAttendanceHistoryProps) {
   const firestore = useFirestore();
+  const { toast } = useToast();
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
 
@@ -49,6 +54,35 @@ export function TeamAttendanceHistory({ userProfile }: TeamAttendanceHistoryProp
     return `${h}:${m}:${s}`;
   };
 
+  const handleExport = () => {
+    if (!attendanceHistory || attendanceHistory.length === 0) {
+        toast({
+            variant: "destructive",
+            title: "No Data to Export",
+            description: "There is no attendance data for the selected month.",
+        });
+        return;
+    }
+
+    const headers = ["Staff Member", "Date", "Clock In", "Clock Out", "Work Time (s)", "Break (s)", "Location", "Remarks"];
+    const dataToExport = attendanceHistory.map(record => [
+        record.userName,
+        record.date,
+        format(new Date(record.clockIn), 'p'),
+        record.clockOut ? format(new Date(record.clockOut), 'p') : 'N/A',
+        record.duration || 0,
+        record.totalBreak || 0,
+        record.location,
+        record.remarks?.join(', ') || ''
+    ]);
+
+    const ws = XLSX.utils.aoa_to_sheet([headers, ...dataToExport]);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, `Attendance ${format(currentMonth, 'MMM yyyy')}`);
+    XLSX.writeFile(wb, `attendance_${format(currentMonth, 'yyyy-MM')}.xlsx`);
+    toast({ title: 'Exporting...', description: 'Your attendance report is being downloaded.' });
+  };
+
   const daysWithRecords = useMemo(() => {
       if(!attendanceHistory) return [];
       const dates = new Set(attendanceHistory.map(rec => rec.date));
@@ -73,8 +107,16 @@ export function TeamAttendanceHistory({ userProfile }: TeamAttendanceHistoryProp
         </Card>
         <Card className="lg:col-span-2">
             <CardHeader>
-                <CardTitle>Attendance for {selectedDate ? format(selectedDate, 'PPP') : '...'}</CardTitle>
-                <CardDescription>Showing all records for the selected day.</CardDescription>
+                <div className="flex justify-between items-start">
+                    <div>
+                        <CardTitle>Attendance for {selectedDate ? format(selectedDate, 'PPP') : '...'}</CardTitle>
+                        <CardDescription>Showing all records for the selected day.</CardDescription>
+                    </div>
+                    <Button variant="outline" size="sm" onClick={handleExport} disabled={isLoading}>
+                        <Download className="mr-2 h-4 w-4" />
+                        Export Month
+                    </Button>
+                </div>
             </CardHeader>
             <CardContent>
                 <ScrollArea className="h-96">
