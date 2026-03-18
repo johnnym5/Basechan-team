@@ -9,7 +9,7 @@ import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
-import { Plus, Trash2, Search, Download, Edit } from 'lucide-react';
+import { Plus, Trash2, Search, Download, Edit, Settings } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -33,6 +33,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { ManageHeadersDialog } from './ManageHeadersDialog';
 
 
 interface SheetDataTableProps {
@@ -52,6 +53,7 @@ export function SheetDataTable({ sheet, permissions }: SheetDataTableProps) {
     const [rowToEdit, setRowToEdit] = useState<{ rowIndex: number; data: Record<string, any> } | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedRows, setSelectedRows] = useState<number[]>([]);
+    const [isManageHeadersOpen, setIsManageHeadersOpen] = useState(false);
 
 
     // Update local state if the sheet prop changes (e.g., user switches tabs)
@@ -174,6 +176,12 @@ export function SheetDataTable({ sheet, permissions }: SheetDataTableProps) {
                     />
                 </div>
                 <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                    {permissions.canEdit && (
+                        <Button variant="outline" size="sm" onClick={() => setIsManageHeadersOpen(true)}>
+                            <Settings className="mr-2 h-4 w-4" />
+                            Manage Headers
+                        </Button>
+                    )}
                     <Button variant="outline" size="sm" onClick={handleExport}>
                         <Download className="mr-2 h-4 w-4" />
                         Export
@@ -316,6 +324,14 @@ export function SheetDataTable({ sheet, permissions }: SheetDataTableProps) {
                         </AlertDialogFooter>
                     </AlertDialogContent>
                 </AlertDialog>
+            )}
+
+            {permissions.canEdit && (
+                <ManageHeadersDialog
+                    open={isManageHeadersOpen}
+                    onOpenChange={setIsManageHeadersOpen}
+                    sheet={sheet}
+                />
             )}
         </div>
     );

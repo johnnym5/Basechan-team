@@ -6,7 +6,7 @@ import * as z from "zod";
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Loader2, CalendarIcon, CheckCircle2, XCircle, Settings } from "lucide-react";
+import { Loader2, CalendarIcon, CheckCircle2, XCircle } from "lucide-react";
 import { useState, useMemo, useEffect } from "react";
 import type { Sheet } from "@/lib/types";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
@@ -36,7 +36,6 @@ const ChecklistItem = ({ label, isChecked }: { label: string, isChecked: boolean
 
 export function EditRowDialog({ open, onOpenChange, sheet, rowData, onSave, canEdit }: EditRowDialogProps) {
   const [isLoading, setIsLoading] = useState(false);
-  const [isManageHeadersOpen, setIsManageHeadersOpen] = useState(false);
 
   const formSchema = useMemo(() => {
     const schemaShape: Record<string, z.ZodType<any, any>> = {};
@@ -200,11 +199,6 @@ export function EditRowDialog({ open, onOpenChange, sheet, rowData, onSave, canE
                         <Card>
                             <CardHeader className="flex flex-row items-center justify-between">
                                 <CardTitle className="text-lg">Sheet Header Checklist</CardTitle>
-                                {canEdit && (
-                                    <Button variant="ghost" size="icon" className="h-8 w-8 -mr-2 -mt-2" onClick={() => setIsManageHeadersOpen(true)}>
-                                        <Settings className="h-4 w-4" />
-                                    </Button>
-                                )}
                             </CardHeader>
                             <CardContent className="space-y-4">
                                 {requiredFields.length > 0 && (
@@ -255,13 +249,6 @@ export function EditRowDialog({ open, onOpenChange, sheet, rowData, onSave, canE
         </Form>
       </DialogContent>
     </Dialog>
-    {canEdit && (
-        <ManageHeadersDialog 
-            open={isManageHeadersOpen}
-            onOpenChange={setIsManageHeadersOpen}
-            sheet={sheet}
-        />
-    )}
     </>
   );
 }
