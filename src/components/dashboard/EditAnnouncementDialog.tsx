@@ -19,6 +19,7 @@ import { RadioGroup, RadioGroupItem } from "../ui/radio-group";
 import { ScrollArea } from "../ui/scroll-area";
 import { Checkbox } from "../ui/checkbox";
 import { Avatar, AvatarFallback } from "../ui/avatar";
+import { sanitizeInput } from "@/lib/utils";
 
 const formSchema = z.object({
   title: z.string().min(5, { message: "Title must be at least 5 characters long." }),
@@ -92,8 +93,8 @@ export function EditAnnouncementDialog({ open, onOpenChange, announcement, userP
     try {
       const annRef = doc(firestore, 'announcements', announcement.id);
       updateDocumentNonBlocking(annRef, {
-        title: values.title,
-        content: values.content,
+        title: sanitizeInput(values.title),
+        content: sanitizeInput(values.content),
         isPinned: values.isPinned,
         visibleTo: visibleToArray,
       });

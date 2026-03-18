@@ -15,6 +15,7 @@ import { useSuperAdmin } from '@/hooks/useSuperAdmin';
 import { useAuth, useFirestore, addDocumentNonBlocking } from '@/firebase';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { collection, getDocs, query, where } from 'firebase/firestore';
+import { sanitizeInput } from '@/lib/utils';
 
 const formSchema = z.object({
   name: z.string().min(1, 'Name is required.'),
@@ -89,17 +90,19 @@ export function SupportDialog() {
     } else {
       // Handle feedback submission
       try {
+        if (!firestore) throw new Error("Firestore is not available");
+
         const orgsRef = collection(firestore, "organizations");
         const orgQuery = query(orgsRef, where("name", "==", values.organization.toLowerCase()));
         const orgSnapshot = await getDocs(orgQuery);
         const orgId = orgSnapshot.empty ? 'unknown' : orgSnapshot.docs[0].id;
 
         const feedbackData = {
-            name: values.name,
-            organizationName: values.organization,
+            name: sanitizeInput(values.name),
+            organizationName: sanitizeInput(values.organization),
             orgId: orgId,
-            contactInfo: values.emailOrPassword,
-            message: values.message,
+            contactInfo: sanitizeInput(values.emailOrPassword),
+            message: sanitizeInput(values.message),
             createdAt: new Date().toISOString(),
             status: 'NEW',
         };

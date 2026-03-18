@@ -34,6 +34,8 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { ManageHeadersDialog } from './ManageHeadersDialog';
+import { useMediaQuery } from '@/hooks/use-media-query';
+import { SheetDataCard } from './SheetDataCard';
 
 
 interface SheetDataTableProps {
@@ -54,6 +56,7 @@ export function SheetDataTable({ sheet, permissions }: SheetDataTableProps) {
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedRows, setSelectedRows] = useState<number[]>([]);
     const [isManageHeadersOpen, setIsManageHeadersOpen] = useState(false);
+    const isMobile = useMediaQuery("(max-width: 768px)");
 
 
     // Update local state if the sheet prop changes (e.g., user switches tabs)
@@ -87,6 +90,13 @@ export function SheetDataTable({ sheet, permissions }: SheetDataTableProps) {
         updateDocumentNonBlocking(sheetRef, payload);
         toast({ title: 'Saved', description: toastMessage });
     };
+    
+    const handleFieldChange = (rowIndex: number, field: string, value: any) => {
+        const newData = [...data];
+        newData[rowIndex][field] = value;
+        setData(newData);
+        saveChanges({ data: newData }, `Row ${rowIndex + 1} updated.`);
+    }
 
     const handleSaveEdit = (rowIndex: number, updatedRowData: Record<string, any>) => {
         const newData = [...data];
@@ -236,65 +246,85 @@ export function SheetDataTable({ sheet, permissions }: SheetDataTableProps) {
             </div>
             
             <ScrollArea className="flex-grow bg-muted/20 rounded-md border">
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            {permissions.canEdit && (
-                                <TableHead className="w-12">
-                                    <Checkbox
-                                        checked={
-                                            filteredData.length > 0 && selectedRows.length === filteredData.length
-                                            ? true
-                                            : selectedRows.length > 0
-                                            ? 'indeterminate'
-                                            : false
-                                        }
-                                        onCheckedChange={handleSelectAll}
-                                        disabled={filteredData.length === 0}
-                                    />
-                                </TableHead>
-                            )}
-                            {visibleHeaders.map(header => (
-                                <TableHead key={header}>{header}</TableHead>
-                            ))}
-                            {permissions.canEdit && <TableHead className="w-20 text-right">Actions</TableHead>}
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {filteredData.length === 0 ? (
+                {isMobile ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4">
+                        {filteredData.map((row) => (
+                           <SheetDataCard
+                                key={row.__originalIndex}
+                                rowData={row}
+                                rowIndex={row.__originalIndex}
+                                headers={headers}
+                                sheet={sheet}
+                                isSelected={selectedRows.includes(row.__originalIndex)}
+                                onSelect={handleSelectRow}
+                                onEdit={(rowIndex, data) => setRowToEdit({ rowIndex, data })}
+                                onDelete={(rowIndex) => setRowToDelete(rowIndex)}
+                                onFieldChange={handleFieldChange}
+                                permissions={permissions}
+                           />
+                        ))}
+                    </div>
+                ) : (
+                    <Table>
+                        <TableHeader>
                             <TableRow>
-                                <TableCell colSpan={visibleHeaders.length + (permissions.canEdit ? 2 : 1)} className="h-24 text-center">
-                                    {searchTerm ? "No rows match your search." : "No rows yet. Click 'New Asset' to start."}
-                                </TableCell>
+                                {permissions.canEdit && (
+                                    <TableHead className="w-12">
+                                        <Checkbox
+                                            checked={
+                                                filteredData.length > 0 && selectedRows.length === filteredData.length
+                                                ? true
+                                                : selectedRows.length > 0
+                                                ? 'indeterminate'
+                                                : false
+                                            }
+                                            onCheckedChange={handleSelectAll}
+                                            disabled={filteredData.length === 0}
+                                        />
+                                    </TableHead>
+                                )}
+                                {visibleHeaders.map(header => (
+                                    <TableHead key={header}>{header}</TableHead>
+                                ))}
+                                {permissions.canEdit && <TableHead className="w-20 text-right">Actions</TableHead>}
                             </TableRow>
-                        ) : (
-                            filteredData.map((row) => (
-                                <TableRow key={row.__originalIndex} onDoubleClick={() => setRowToEdit({ rowIndex: row.__originalIndex, data: row })} className="cursor-pointer">
-                                    {permissions.canEdit && (
-                                        <TableCell>
-                                            <Checkbox
-                                                checked={selectedRows.includes(row.__originalIndex)}
-                                                onCheckedChange={(checked) => handleSelectRow(row.__originalIndex, !!checked)}
-                                            />
-                                        </TableCell>
-                                    )}
-                                    {visibleHeaders.map(header => (
-                                        <TableCell key={header} className="max-w-xs truncate">
-                                            {String(row[header] ?? '')}
-                                        </TableCell>
-                                    ))}
-                                    {permissions.canEdit && (
-                                        <TableCell className="text-right">
-                                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setRowToEdit({ rowIndex: row.__originalIndex, data: row })}>
-                                                <Edit className="h-4 w-4" />
-                                            </Button>
-                                        </TableCell>
-                                    )}
+                        </TableHeader>
+                        <TableBody>
+                            {filteredData.length === 0 ? (
+                                <TableRow>
+                                    <TableCell colSpan={visibleHeaders.length + (permissions.canEdit ? 2 : 1)} className="h-24 text-center">
+                                        {searchTerm ? "No rows match your search." : "No rows yet. Click 'New Asset' to start."}
+                                    </TableCell>
                                 </TableRow>
-                            ))
-                        )}
-                    </TableBody>
-                </Table>
+                            ) : (
+                                filteredData.map((row) => (
+                                    <TableRow key={row.__originalIndex} onDoubleClick={() => setRowToEdit({ rowIndex: row.__originalIndex, data: row })} className="cursor-pointer">
+                                        {permissions.canEdit && (
+                                            <TableCell>
+                                                <Checkbox
+                                                    checked={selectedRows.includes(row.__originalIndex)}
+                                                    onCheckedChange={(checked) => handleSelectRow(row.__originalIndex, !!checked)}
+                                                />
+                                            </TableCell>
+                                        )}
+                                        {visibleHeaders.map(header => (
+                                            <TableCell key={header} className="max-w-xs truncate">
+                                                {String(row[header] ?? '')}
+                                            </TableCell>
+                                        ))}
+                                        {permissions.canEdit && (
+                                            <TableCell className="text-right">
+                                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setRowToEdit({ rowIndex: row.__originalIndex, data: row })}>
+                                                    <Edit className="h-4 w-4" />
+                                                </Button>
+                                            </TableCell>
+                                        )}
+                                    </TableRow>
+                                ))
+                            )}
+                        </TableBody>
+                    </Table>
+                )}
                 <ScrollBar orientation="horizontal" />
             </ScrollArea>
 
