@@ -4,22 +4,23 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     // ===== Helper Functions =====
-    function isOrgMember(orgId) {
-      // Checks if the authenticated user's custom token contains an orgId
-      // that matches the provided orgId.
-      return request.auth.token.orgId == orgId;
+    
+    // Function to get the user's orgId from their profile document.
+    function getUserOrgId() {
+      // This function relies on the user having a profile document.
+      // Access to create a user's own profile is handled separately in the /users/{userId} rule.
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.orgId;
     }
 
+    // Checks if the requesting user belongs to the same organization as the document they are trying to access.
     function isRequestingUserInOrg(docOrgId) {
-      // This is a common pattern for read operations, where we check the
-      // orgId of the *existing* document in the database.
-      return request.auth != null && isOrgMember(docOrgId);
+      return request.auth != null && getUserOrgId() == docOrgId;
     }
 
+    // This is for create operations, where we check the orgId of the
+    // *new* document being created.
     function isCreatingInOwnOrg() {
-      // This is for create operations, where we check the orgId of the
-      // *new* document being created.
-      return request.auth != null && isOrgMember(request.resource.data.orgId);
+      return request.auth != null && getUserOrgId() == request.resource.data.orgId;
     }
     
     // ===== Root Collections =====
@@ -27,7 +28,9 @@ service cloud.firestore {
     // User Profiles: Anyone in the org can read, but only the user can edit their own profile.
     match /users/{userId} {
       allow read: if isRequestingUserInOrg(resource.data.orgId);
-      allow create: if isCreatingInOwnOrg(); // Assumes admin/backend creates users
+      // Allow an admin to create a user in their org.
+      allow create: if isCreatingInOwnOrg();
+      // Allow a user to update their own profile.
       allow update: if request.auth.uid == userId;
       allow delete: if false; // Disallow client-side deletion
     }
