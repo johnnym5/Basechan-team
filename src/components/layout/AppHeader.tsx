@@ -15,6 +15,7 @@ import { format, formatDistanceToNow } from 'date-fns';
 import { Separator } from '../ui/separator';
 import { cn } from '@/lib/utils';
 import { UniversalSearch } from '@/components/layout/UniversalSearch';
+import { uiEmitter } from '@/lib/ui-emitter';
 
 
 export default function AppHeader({ 
@@ -163,7 +164,18 @@ export default function AppHeader({
         const notifRef = doc(firestore, 'notifications', notification.id);
         updateDocumentNonBlocking(notifRef, { isRead: true });
     }
-    router.push(notification.href);
+    
+    if (notification.href.startsWith('/chat')) {
+        const urlParams = new URLSearchParams(notification.href.split('?')[1]);
+        const chatId = urlParams.get('chatId');
+        if (chatId) {
+            uiEmitter.emit('open-chat-dialog', { chatId });
+        } else {
+            uiEmitter.emit('open-chat-dialog');
+        }
+    } else {
+      router.push(notification.href);
+    }
     setIsNotificationsOpen(false);
   };
 

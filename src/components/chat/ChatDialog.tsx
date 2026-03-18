@@ -3,7 +3,7 @@
 "use client";
 
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
-import { UserProfile, Chat, ChatMessage } from '@/lib/types';
+import { UserProfile, Chat, ChatMessage, Notification } from '@/lib/types';
 import { useCollection, useFirestore, useMemoFirebase, addDocumentNonBlocking, setDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase';
 import { collection, query, where, orderBy, doc } from 'firebase/firestore';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -28,7 +28,7 @@ interface ChatDialogProps {
   onOpenChange: (open: boolean) => void;
   currentUserProfile: UserProfile;
   permissions: Permissions;
-  initialPayload?: { initialUserId?: string };
+  initialPayload?: { initialUserId?: string; chatId?: string };
 }
 
 function ChatMessages({ chat, currentUserProfile }: { chat: Chat, currentUserProfile: UserProfile }) {
@@ -118,34 +118,39 @@ export function ChatDialog({ open, onOpenChange, currentUserProfile, permissions
   }, [chats]);
   
   useEffect(() => {
-    if (open && initialPayload?.initialUserId) {
+    if (!open || !chats) return;
+
+    let chatToSelect: Chat | null = null;
+
+    if (initialPayload?.chatId) {
+        chatToSelect = chats.find(c => c.id === initialPayload.chatId) || null;
+    } else if (initialPayload?.initialUserId) {
         const userId = initialPayload.initialUserId;
         const dmId = [currentUserProfile.id, userId].sort().join('_');
         
         const existingDM = directMessages.find(dm => dm.id === dmId);
         if (existingDM) {
-            setSelectedChat(existingDM);
+            chatToSelect = existingDM;
         } else {
-            // Find the user profile to create a temporary chat object
-            const otherUser = directMessages.flatMap(dm => dm.participants)
-                .map(pId => chats?.find(c => c.participantProfiles[pId])?.participantProfiles[pId])
-                .find(p => p && p.fullName) // Simplistic way to find user data, better to query users collection
-            
-            // This is a temporary object. The doc is created on first message.
-            setSelectedChat({
+             chatToSelect = {
                 id: dmId,
                 orgId: currentUserProfile.orgId,
                 type: 'DIRECT',
                 participants: [currentUserProfile.id, userId],
                 participantProfiles: {
                     [currentUserProfile.id]: { fullName: currentUserProfile.fullName },
-                    [userId]: { fullName: "Loading..." } // Will be filled on first message
+                    [userId]: { fullName: "Loading..." }
                 },
                 updatedAt: new Date().toISOString()
-            });
+            };
         }
     }
-  }, [open, initialPayload, directMessages, currentUserProfile]);
+    
+    if (chatToSelect) {
+      setSelectedChat(chatToSelect);
+    }
+    
+  }, [open, initialPayload, chats, directMessages, currentUserProfile]);
 
   const handleSendMessage = async () => {
     if (!selectedChat || !message.trim() || !firestore) return;
@@ -155,6 +160,8 @@ export function ChatDialog({ open, onOpenChange, currentUserProfile, permissions
 
     const chatRef = doc(firestore, 'chats', selectedChat.id);
     const messageRef = collection(firestore, 'chats', selectedChat.id, 'messages');
+    const notificationsRef = collection(firestore, 'notifications');
+
 
     const messageData: Omit<ChatMessage, 'id'> = {
         chatId: selectedChat.id,
@@ -177,7 +184,6 @@ export function ChatDialog({ open, onOpenChange, currentUserProfile, permissions
                 timestamp: now,
             },
             updatedAt: now,
-            // If it was a temporary chat, fill in the full details
             ...(!selectedChat.lastMessage && { 
               participants: selectedChat.participants,
               participantProfiles: selectedChat.participantProfiles,
@@ -186,6 +192,22 @@ export function ChatDialog({ open, onOpenChange, currentUserProfile, permissions
             })
         }
         await setDocumentNonBlocking(chatRef, chatUpdateData, { merge: true });
+
+        // Create notifications for other participants
+        selectedChat.participants.forEach(participantId => {
+            if (participantId !== currentUserProfile.id) {
+                const notification: Omit<Notification, 'id'> = {
+                    orgId: currentUserProfile.orgId,
+                    userId: participantId,
+                    title: `New message from ${currentUserProfile.fullName}`,
+                    description: messageData.content,
+                    href: `/chat?chatId=${selectedChat.id}`,
+                    isRead: false,
+                    createdAt: now,
+                };
+                addDocumentNonBlocking(notificationsRef, notification);
+            }
+        });
 
         setMessage('');
     } catch(e) {

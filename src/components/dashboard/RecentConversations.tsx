@@ -48,7 +48,7 @@ export function RecentConversations() {
     }
     
     const handleChatClick = (chat: Chat) => {
-        uiEmitter.emit('open-chat-dialog', { initialUserId: chat.participants.find(p => p !== userProfile?.id) });
+        uiEmitter.emit('open-chat-dialog', { chatId: chat.id });
     };
 
     return (

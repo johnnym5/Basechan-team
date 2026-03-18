@@ -1,10 +1,11 @@
 
+
 'use client';
 
 type AppEvents = {
   'open-profile-dialog': void;
   'open-settings-dialog': void;
-  'open-chat-dialog': { initialUserId?: string } | void;
+  'open-chat-dialog': { initialUserId?: string; chatId?: string; } | void;
   'open-tasks-dialog': void;
   'open-workbooks-dialog': { workbookId?: string; sheetId?: string | null; } | void;
   'open-requisitions-dialog': void;
