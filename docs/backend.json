@@ -501,7 +501,9 @@
                 "type": "object",
                 "properties": {
                     "type": { "type": "string", "enum": ["text", "number", "date", "select"] },
-                    "selectOptions": { "type": "array", "items": { "type": "string" } }
+                    "selectOptions": { "type": "array", "items": { "type": "string" } },
+                    "min": { "type": "number", "description": "Minimum value for number-type columns." },
+                    "max": { "type": "number", "description": "Maximum value for number-type columns." }
                 },
                 "required": ["type"]
             }
@@ -879,5 +881,3 @@
     ]
   }
 }
-
-    

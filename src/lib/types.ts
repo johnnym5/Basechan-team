@@ -240,6 +240,8 @@ export interface Workbook {
 export interface ColumnConfig {
     type: 'text' | 'number' | 'date' | 'select';
     selectOptions?: string[];
+    min?: number;
+    max?: number;
 }
 
 export interface Sheet {
@@ -323,5 +325,3 @@ export interface ErrorLog {
   componentStack?: string;
   path?: string; // e.g., window.location.pathname
 }
-
-    

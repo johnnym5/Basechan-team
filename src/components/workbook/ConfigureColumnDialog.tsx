@@ -14,10 +14,13 @@ import { doc } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import type { Sheet } from "@/lib/types";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Input } from "../ui/input";
 
 const formSchema = z.object({
   type: z.enum(["text", "number", "date", "select"]),
   selectOptions: z.string().optional(),
+  min: z.coerce.number().optional(),
+  max: z.coerce.number().optional(),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -48,9 +51,11 @@ export function ConfigureColumnDialog({ open, onOpenChange, sheet, header }: Con
       form.reset({
         type: config.type,
         selectOptions: config.selectOptions?.join(", ") || "",
+        min: config.min,
+        max: config.max,
       });
     } else {
-        form.reset({ type: 'text', selectOptions: ''});
+        form.reset({ type: 'text', selectOptions: '', min: undefined, max: undefined });
     }
   }, [sheet, header, form]);
 
@@ -64,6 +69,8 @@ export function ConfigureColumnDialog({ open, onOpenChange, sheet, header }: Con
       [header]: {
         type: values.type,
         selectOptions: values.type === 'select' ? values.selectOptions?.split(',').map(s => s.trim()).filter(Boolean) : undefined,
+        min: values.type === 'number' ? values.min : undefined,
+        max: values.type === 'number' ? values.max : undefined,
       },
     };
 
@@ -133,6 +140,36 @@ export function ConfigureColumnDialog({ open, onOpenChange, sheet, header }: Con
                   </FormItem>
                 )}
               />
+            )}
+             {selectedType === "number" && (
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="min"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Minimum Value</FormLabel>
+                      <FormControl>
+                        <Input type="number" placeholder="e.g., 0" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="max"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Maximum Value</FormLabel>
+                      <FormControl>
+                        <Input type="number" placeholder="e.g., 100" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
             )}
             <Button type="submit" className="w-full" disabled={isLoading}>
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

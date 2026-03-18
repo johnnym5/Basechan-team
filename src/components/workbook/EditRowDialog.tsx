@@ -43,7 +43,14 @@ export function EditRowDialog({ open, onOpenChange, sheet, rowData, onSave, canE
         const config = sheet.columnConfig?.[header];
         switch (config?.type) {
             case 'number':
-                schemaShape[header] = z.coerce.number();
+                let numSchema = z.coerce.number();
+                if (config.min !== undefined && config.min !== null) {
+                    numSchema = numSchema.min(config.min, `Value must be at least ${config.min}`);
+                }
+                if (config.max !== undefined && config.max !== null) {
+                    numSchema = numSchema.max(config.max, `Value must be at most ${config.max}`);
+                }
+                schemaShape[header] = numSchema;
                 break;
             case 'date':
                 schemaShape[header] = z.any().optional(); // Accept string or date
