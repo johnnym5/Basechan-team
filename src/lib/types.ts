@@ -320,3 +320,5 @@ export interface ErrorLog {
   componentStack?: string;
   path?: string; // e.g., window.location.pathname
 }
+
+    

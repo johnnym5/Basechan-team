@@ -10,9 +10,9 @@ import { Label } from "@/components/ui/label";
 import { Loader2 } from "lucide-react";
 import { useState } from "react";
 import { useFirestore, useCollection, addDocumentNonBlocking, useMemoFirebase } from "@/firebase";
-import { collection, query, where } from "firebase/firestore";
+import { collection, query, where, getDocs } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
-import type { Task, UserProfile, ActivityEntry } from "@/lib/types";
+import type { Task, UserProfile, ActivityEntry, Notification } from "@/lib/types";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { ScrollArea } from "../ui/scroll-area";
 import { Skeleton } from "../ui/skeleton";
@@ -57,8 +57,15 @@ export function RequestAssistanceDialog({ open, onOpenChange, targetUser, curren
         setIsSubmitting(false);
         return;
     }
+    
+    if (!firestore) return;
 
     try {
+        const tasksRef = collection(firestore, 'tasks');
+        const q = query(tasksRef, where('orgId', '==', currentUserProfile.orgId));
+        const orgTasksSnapshot = await getDocs(q);
+        const newSerialNo = `TSK-${String(orgTasksSnapshot.size + 1).padStart(5, '0')}`;
+        
         const now = new Date().toISOString();
         const initialActivity: ActivityEntry = {
             type: 'LOG',
@@ -69,6 +76,7 @@ export function RequestAssistanceDialog({ open, onOpenChange, targetUser, curren
         };
         
         const assistanceTask: Omit<Task, 'id'> = {
+            serialNo: newSerialNo,
             orgId: currentUserProfile.orgId,
             title: `Assistance Request: ${selectedTask.title}`,
             description: `Requesting assistance for the mission: "${selectedTask.title}"`,
@@ -85,7 +93,20 @@ export function RequestAssistanceDialog({ open, onOpenChange, targetUser, curren
             requesterName: currentUserProfile.fullName,
         };
 
-        await addDocumentNonBlocking(collection(firestore, 'tasks'), assistanceTask);
+        const taskDocRef = await addDocumentNonBlocking(collection(firestore, 'tasks'), assistanceTask);
+
+        if (taskDocRef) {
+            const notification: Omit<Notification, 'id'> = {
+                orgId: currentUserProfile.orgId,
+                userId: targetUser.id,
+                title: 'Assistance Requested',
+                description: `${currentUserProfile.fullName} requested your help on a task.`,
+                href: `/tasks?taskId=${taskDocRef.id}`,
+                isRead: false,
+                createdAt: now,
+            };
+            addDocumentNonBlocking(collection(firestore, 'notifications'), notification);
+        }
         
         toast({ title: "Request Sent", description: `Your request for assistance has been sent to ${targetUser.fullName}.`});
         form.reset();
@@ -150,3 +171,5 @@ export function RequestAssistanceDialog({ open, onOpenChange, targetUser, curren
     </Dialog>
   );
 }
+
+    

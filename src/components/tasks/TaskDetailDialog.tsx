@@ -12,7 +12,7 @@ import {
 import type { Task, UserProfile, ActivityEntry, SubTask, TaskStatus, Notification } from '@/lib/types';
 import type { Permissions } from '@/hooks/usePermissions';
 import { format } from 'date-fns';
-import { Calendar, CheckSquare, History, Info, BookOpenCheck, User, Plus, Trash2, Share2, Pencil, Check, Loader2, Hourglass } from 'lucide-react';
+import { Calendar, CheckSquare, History, Info, BookOpenCheck, User, Plus, Trash2, Share2, Pencil, Check, Loader2, Hourglass, LifeBuoy } from 'lucide-react';
 import { TaskPriorityBadge } from './TaskPriorityBadge';
 import { Badge } from '../ui/badge';
 import Link from 'next/link';
@@ -199,7 +199,14 @@ export function TaskDetailDialog({ task: initialTask, isOpen, onOpenChange, curr
       <DialogContent className="sm:max-w-4xl h-[90vh] w-full flex flex-col">
         <DialogHeader>
           <div className="flex items-start justify-between">
-             <DialogTitle className='max-w-md'>{task.serialNo}: {task.title}</DialogTitle>
+             <DialogTitle className='max-w-md flex items-center gap-2'>
+                <span>{task.serialNo}: {task.title}</span>
+                {task.type === 'ASSISTANCE_REQUEST' && (
+                    <Badge variant="secondary" className="gap-1.5 text-xs">
+                        <LifeBuoy className="h-3 w-3" /> Assistance Request
+                    </Badge>
+                )}
+             </DialogTitle>
              <TaskPriorityBadge priority={task.priority} />
           </div>
            <DialogDescription asChild>
@@ -416,3 +423,5 @@ export function TaskDetailDialog({ task: initialTask, isOpen, onOpenChange, curr
     </Dialog>
   );
 }
+
+    
