@@ -14,6 +14,7 @@ import { ScrollArea } from '../ui/scroll-area';
 import { format, formatDistanceToNow } from 'date-fns';
 import { Separator } from '../ui/separator';
 import { cn } from '@/lib/utils';
+import { UniversalSearch } from '@/components/layout/UniversalSearch';
 
 
 export default function AppHeader({ 
@@ -202,8 +203,9 @@ export default function AppHeader({
           </div>
         ) : null}
       </div>
-      {isLoggedIn && (
+      {isLoggedIn && userProfile && (
         <div className='flex items-center gap-2'>
+            <UniversalSearch userProfile={userProfile} />
             <Popover open={isNotificationsOpen} onOpenChange={setIsNotificationsOpen}>
                 <PopoverTrigger asChild>
                     <Button variant="ghost" size="icon" className="size-10 rounded-full flex items-center justify-center bg-slate-800/50 border border-slate-700 relative">
