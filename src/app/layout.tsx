@@ -6,7 +6,7 @@ import { ThemeProvider } from '@/components/ThemeProvider';
 import { ImpersonationProvider } from '@/context/ImpersonationProvider';
 
 export const metadata: Metadata = {
-  title: 'Palilious',
+  title: 'Basechan Staff',
   description: 'Staff Internal Control & Automation',
 };
 

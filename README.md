@@ -1,6 +1,6 @@
-# Palilious: Internal Staff & Workflow Automation
+# Basechan Staff: Internal Staff & Workflow Automation
 
-Palilious is a comprehensive, all-in-one internal management tool designed to streamline and automate key business operations for small to medium-sized organizations. Built on a modern technology stack including Next.js, Firebase, and Tailwind CSS, it provides a centralized platform for managing staff, finances, tasks, and internal communication.
+Basechan Staff is a comprehensive, all-in-one internal management tool designed to streamline and automate key business operations for small to medium-sized organizations. Built on a modern technology stack including Next.js, Firebase, and Tailwind CSS, it provides a centralized platform for managing staff, finances, tasks, and internal communication.
 
 The application is architected around a multi-tenant system where each organization operates in its own secure environment, managed by a super administrator.
 
@@ -58,7 +58,7 @@ A powerful, in-app spreadsheet and data management tool.
 
 ## Potential Future Enhancements
 
-Palilious is built on a scalable architecture that allows for numerous future enhancements:
+Basechan Staff is built on a scalable architecture that allows for numerous future enhancements:
 
 - **AI-Powered Automation**: Integrate GenAI to create tasks from natural language, summarize long comment threads, analyze workbook data, and provide intelligent assistance.
 - **Advanced Notifications**: Implement a full-featured notification system (in-app, email, push) for task assignments, requisition updates, and new chat messages.

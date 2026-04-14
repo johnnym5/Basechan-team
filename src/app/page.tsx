@@ -82,7 +82,7 @@ function DashboardGrid() {
       return (
         <div className="flex flex-col items-center justify-center h-[60vh] text-center">
             <BookCopy className="h-16 w-16 text-primary" />
-            <h1 className="mt-4 text-3xl font-bold font-headline">Welcome to Palilious</h1>
+            <h1 className="mt-4 text-3xl font-bold font-headline">Welcome to Basechan Staff</h1>
             <p className="mt-2 text-lg text-muted-foreground">The all-in-one internal management tool.</p>
         </div>
       );

@@ -1,7 +1,7 @@
 'use client';
 import React, { createContext, useContext, useState, ReactNode, useMemo, useEffect } from 'react';
 
-const IMPERSONATION_KEY = 'palilious-impersonation-mode';
+const IMPERSONATION_KEY = 'basechanstaff-impersonation-mode';
 
 interface ImpersonationContextType {
   isImpersonating: boolean;
