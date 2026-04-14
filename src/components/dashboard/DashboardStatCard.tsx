@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils";
 import type { LucideIcon } from "lucide-react";
 import Link from 'next/link';
 
-interface StatCardProps {
+interface DashboardStatCardProps {
   title: string;
   value: string | number;
   icon: LucideIcon;
@@ -13,7 +13,7 @@ interface StatCardProps {
   color?: string;
 }
 
-export function StatCard({ title, value, icon: Icon, className, href, onClick, color }: StatCardProps) {
+export function DashboardStatCard({ title, value, icon: Icon, className, href, onClick, color }: DashboardStatCardProps) {
   const content = (
     <Card className={cn("h-full hover:bg-card/70 bg-card/50 backdrop-blur-xl", className)}>
       <CardContent className="p-4 flex flex-col items-center justify-center text-center gap-2">

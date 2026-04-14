@@ -10,7 +10,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { uiEmitter } from "@/lib/ui-emitter";
 import { Avatar, AvatarFallback } from "../ui/avatar";
 
-export function RecentReports() {
+export function DashboardRecentReports() {
     const { user: authUser } = useUser();
     const firestore = useFirestore();
 

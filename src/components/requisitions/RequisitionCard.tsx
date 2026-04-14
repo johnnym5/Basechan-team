@@ -10,9 +10,12 @@ import { useSystemConfig } from '@/hooks/useSystemConfig';
 interface RequisitionCardProps {
     requisition: Requisition;
     onSelect: (req: Requisition) => void;
+    onContextMenu?: (e: React.MouseEvent) => void;
+    onTouchStart?: (e: React.TouchEvent) => void;
+    onTouchEnd?: () => void;
 }
 
-export function RequisitionCard({ requisition, onSelect }: RequisitionCardProps) {
+export function RequisitionCard({ requisition, onSelect, onContextMenu, onTouchStart, onTouchEnd }: RequisitionCardProps) {
     const { config: systemConfig } = useSystemConfig(requisition.orgId);
     const currencySymbol = systemConfig?.currency_symbol || '$';
 
@@ -20,6 +23,9 @@ export function RequisitionCard({ requisition, onSelect }: RequisitionCardProps)
         <Card 
             className="bg-card/50 backdrop-blur-xl hover:bg-card hover:shadow-lg hover:-translate-y-1 transition-all cursor-pointer"
             onClick={() => onSelect(requisition)}
+            onContextMenu={onContextMenu}
+            onTouchStart={onTouchStart}
+            onTouchEnd={onTouchEnd}
         >
             <CardHeader className="pb-2">
                 <div className="flex items-center justify-between">

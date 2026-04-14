@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Loader2, BookCopy, Shield, Users, ListTodo } from 'lucide-react';
 import AppLayout from './(app)/layout';
 import { useUser, useFirestore, useDoc, useCollection, useMemoFirebase } from '@/firebase';
-import { ActiveTasks } from "@/components/dashboard/ActiveTasks";
+import { DashboardTaskList } from "@/components/dashboard/DashboardTaskList";
 import { doc, collection, query, where } from "firebase/firestore";
 import type { UserProfile, Requisition, Task } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -14,11 +14,11 @@ import { usePermissions } from "@/hooks/usePermissions";
 import { ClockControl } from "@/components/attendance/ClockControl";
 import { useSystemConfig } from "@/hooks/useSystemConfig";
 import { PerformanceCard } from '@/components/dashboard/PerformanceCard';
-import { StatCard } from "@/components/dashboard/StatCard";
+import { DashboardStatCard } from "@/components/dashboard/DashboardStatCard";
 import { CheckCircle } from "lucide-react";
-import { QuickActions } from '@/components/dashboard/QuickActions';
-import { RecentReports } from '@/components/dashboard/RecentReports';
-import { RecentConversations } from '@/components/dashboard/RecentConversations';
+import { DashboardQuickActions } from '@/components/dashboard/DashboardQuickActions';
+import { DashboardRecentReports } from '@/components/dashboard/DashboardRecentReports';
+import { DashboardRecentChats } from '@/components/dashboard/DashboardRecentChats';
 import { useSuperAdmin } from '@/hooks/useSuperAdmin';
 import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -124,22 +124,22 @@ function DashboardGrid() {
             )}
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <StatCard 
+                <DashboardStatCard 
                     title="Pending Approvals" 
                     value={pendingReqs?.length || 0} 
                     icon={CheckCircle}
                     onClick={() => uiEmitter.emit('open-requisitions-dialog')}
                     color="bg-emerald-500/20 text-emerald-400"
                 />
-                <StatCard 
+                <DashboardStatCard 
                     title="Staff Online" 
                     value={onlineUsers?.length || 0} 
                     icon={Users}
                     onClick={() => uiEmitter.emit('open-attendance-dialog')}
                     color="bg-sky-500/20 text-sky-400"
                 />
-                <StatCard 
-                    title="Active Missions" 
+                <DashboardStatCard 
+                    title="Active Tasks" 
                     value={activeTasks?.length || 0} 
                     icon={ListTodo}
                     onClick={() => uiEmitter.emit('open-tasks-dialog')}
@@ -151,16 +151,16 @@ function DashboardGrid() {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Main Column */}
                 <div className="lg:col-span-2 space-y-6">
-                    <ActiveTasks />
+                    <DashboardTaskList />
                     <Announcements />
                 </div>
 
                 {/* Side Column */}
                 <div className="lg:col-span-1 space-y-6">
                     <ClockControl userProfile={userProfile} permissions={permissions} systemConfig={systemConfig} />
-                    <QuickActions />
-                    <RecentReports />
-                    <RecentConversations />
+                    <DashboardQuickActions />
+                    <DashboardRecentReports />
+                    <DashboardRecentChats />
                 </div>
             </div>
         </div>

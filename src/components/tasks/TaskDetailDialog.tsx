@@ -128,10 +128,10 @@ export function TaskDetailDialog({ task: initialTask, isOpen, onOpenChange, curr
 
     switch (newStatus) {
         case 'ACTIVE':
-            logText = `activated the mission.`;
+            logText = `activated the task.`;
             break;
         case 'ARCHIVED':
-            logText = `approved and archived the mission.`;
+            logText = `approved and archived the task.`;
             break;
         default:
             logText = `changed status to ${newStatus}.`;
@@ -171,7 +171,7 @@ export function TaskDetailDialog({ task: initialTask, isOpen, onOpenChange, curr
             notifTitle = 'Revisions Requested';
             notifDescription = `Revisions have been requested for "${task.title}".`;
         } else if (newStatus === 'ARCHIVED') {
-            notifTitle = 'Mission Accomplished';
+            notifTitle = 'Task Accomplished';
             notifDescription = `Your work on "${task.title}" has been approved.`;
         }
 
@@ -277,7 +277,7 @@ export function TaskDetailDialog({ task: initialTask, isOpen, onOpenChange, curr
           </div>
           <div className="md:col-span-1 space-y-4 rounded-lg border bg-secondary/30 p-4 h-fit">
             <div className="flex items-start justify-between">
-              <h4 className="font-semibold">Mission Brief</h4>
+              <h4 className="font-semibold">Task Summary</h4>
             </div>
             <div className="space-y-3 text-sm">
               <div className="flex items-center justify-between">
@@ -351,7 +351,7 @@ export function TaskDetailDialog({ task: initialTask, isOpen, onOpenChange, curr
                                     <AlertDialogHeader>
                                         <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                                         <AlertDialogDescription>
-                                            This action cannot be undone. This will permanently delete the mission "{task.title}".
+                                            This action cannot be undone. This will permanently delete the task "{task.title}".
                                         </AlertDialogDescription>
                                     </AlertDialogHeader>
                                     <AlertDialogFooter>
@@ -384,7 +384,7 @@ export function TaskDetailDialog({ task: initialTask, isOpen, onOpenChange, curr
                 {task.assignedTo === currentUserProfile.id && task.status === 'QUEUED' && (
                     <Button onClick={() => handleStatusChange('ACTIVE')} disabled={isSubmitting}>
                         {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                        Start Mission
+                        Start Task
                     </Button>
                 )}
                 {task.assignedTo === currentUserProfile.id && task.status === 'ACTIVE' && (

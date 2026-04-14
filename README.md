@@ -11,7 +11,7 @@ The platform is composed of several integrated modules:
 ### 1. Unified Dashboard
 A centralized command center providing at-a-glance insights into your daily operations.
 - **Stat Cards**: Key metrics including active tasks, online staff members, and pending requisitions.
-- **Mission Log**: A feed of your most recent and active tasks.
+- **My Active Tasks**: A feed of your most recent and active tasks.
 - **Announcements**: A broadcast system for organization-wide messages.
 - **Recent Conversations**: Quick access to your latest private chats.
 
@@ -35,14 +35,14 @@ A structured workflow for managing financial requests, from submission to paymen
 - **Status Tracking**: Clear status badges (e.g., `PENDING_HR`, `APPROVED`, `PAID`) make it easy to track the progress of any request.
 - **Activity Feed**: Every action—from creation to approval to comments—is logged in a detailed, real-time activity feed for full transparency.
 
-### 5. Smart Tasker
+### 5. Task Manager
 A Kanban-style task management system to delegate and monitor work.
 - **Visual Task Board**: Organize tasks in columns: `QUEUED`, `ACTIVE`, `AWAITING_REVIEW`, and `ARCHIVED`.
 - **Task Assignment**: Managers can assign tasks to specific team members, setting priorities and due dates.
 - **Assistance Requests**: Users can formally request help from a colleague on a specific task.
 - **Task Details**: Each task includes a detailed view with a checklist, activity feed, and comment threads.
 
-### 6. Master Workbook
+### 6. Workbooks
 A powerful, in-app spreadsheet and data management tool.
 - **Excel/CSV Import**: Create workbooks by importing existing `.xlsx` or `.csv` files.
 - **Editable Data Grid**: View and edit data directly in a familiar, spreadsheet-like interface.

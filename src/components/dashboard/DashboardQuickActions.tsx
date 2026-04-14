@@ -10,7 +10,7 @@ import { doc } from "firebase/firestore";
 import { uiEmitter } from "@/lib/ui-emitter";
 import { Skeleton } from "../ui/skeleton";
 
-export function QuickActions() {
+export function DashboardQuickActions() {
     const { user: authUser } = useUser();
     const firestore = useFirestore();
 

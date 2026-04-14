@@ -12,7 +12,7 @@ import { Avatar, AvatarFallback } from "../ui/avatar";
 import { Hash } from "lucide-react";
 
 
-export function RecentConversations() {
+export function DashboardRecentChats() {
     const { user: authUser } = useUser();
     const firestore = useFirestore();
 
@@ -54,7 +54,7 @@ export function RecentConversations() {
     return (
         <Card>
             <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle>Recent Conversations</CardTitle>
+                <CardTitle>Recent Chats</CardTitle>
                 <Button variant="link" size="sm" className="text-primary" onClick={() => uiEmitter.emit('open-chat-dialog')}>View All</Button>
             </CardHeader>
             <CardContent>

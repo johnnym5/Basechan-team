@@ -10,7 +10,7 @@ import { TaskDetailDialog } from "../tasks/TaskDetailDialog";
 import { usePermissions } from "@/hooks/usePermissions";
 import { uiEmitter } from "@/lib/ui-emitter";
 
-export function ActiveTasks() {
+export function DashboardTaskList() {
     const { user: authUser } = useUser();
     const firestore = useFirestore();
     const [selectedTask, setSelectedTask] = useState<Task | null>(null);
@@ -75,7 +75,7 @@ export function ActiveTasks() {
     <>
         <div className="space-y-4">
             <div className="flex items-center justify-between">
-                <h2 className="text-xl font-bold font-headline md:text-lg">Mission Log</h2>
+                <h2 className="text-xl font-bold font-headline md:text-lg">My Active Tasks</h2>
                 <Button variant="link" size="sm" className="text-primary" onClick={() => uiEmitter.emit('open-tasks-dialog')}>
                     View All
                 </Button>
@@ -83,7 +83,7 @@ export function ActiveTasks() {
             <div className="space-y-3">
                 {isLoading && Array.from({length: 3}).map((_, i) => <Skeleton key={i} className="h-20 w-full" />)}
                 {!isLoading && sortedTasks.length === 0 && (
-                    <p className="text-sm text-muted-foreground text-center pt-8">No active missions. Enjoy the quiet!</p>
+                    <p className="text-sm text-muted-foreground text-center pt-8">No active tasks. Enjoy the quiet!</p>
                 )}
                 {!isLoading && sortedTasks.map(task => (
                     <TaskCard 

@@ -14,13 +14,19 @@ interface TaskCardProps {
     userProfile: UserProfile;
     permissions: Permissions;
     onSelect: (task: Task) => void;
+    onContextMenu?: (e: React.MouseEvent) => void;
+    onTouchStart?: (e: React.TouchEvent) => void;
+    onTouchEnd?: () => void;
 }
 
-export function TaskCard({ task, userProfile, permissions, onSelect }: TaskCardProps) {
+export function TaskCard({ task, onSelect, onContextMenu, onTouchStart, onTouchEnd }: TaskCardProps) {
     return (
         <Card 
             className="bg-card/50 backdrop-blur-xl hover:bg-card hover:shadow-lg hover:-translate-y-1 transition-all cursor-pointer"
             onClick={() => onSelect(task)}
+            onContextMenu={onContextMenu}
+            onTouchStart={onTouchStart}
+            onTouchEnd={onTouchEnd}
         >
             <CardContent className="p-4 space-y-3">
                 <div className="flex items-center justify-between">

@@ -237,7 +237,7 @@ export function AssignTaskDialog({ open, onOpenChange, initialData, currentUserP
             actorId: currentUserProfile.id,
             actorName: currentUserProfile.fullName,
             timestamp: now,
-            text: `created the mission and assigned it to ${assignedUser.fullName}.`,
+            text: `created the task and assigned it to ${assignedUser.fullName}.`,
             fromStatus: 'N/A',
             toStatus: 'QUEUED',
         };
@@ -271,7 +271,7 @@ export function AssignTaskDialog({ open, onOpenChange, initialData, currentUserP
             const notification: Omit<Notification, 'id'> = {
                 orgId: currentUserProfile.orgId,
                 userId: assigneeId,
-                title: 'New Mission Assigned',
+                title: 'New Task Assigned',
                 description: `"${sanitizeInput(values.title)}"`,
                 href: `/tasks?taskId=${taskDocRef.id}`,
                 isRead: false,
@@ -293,9 +293,9 @@ export function AssignTaskDialog({ open, onOpenChange, initialData, currentUserP
     <Dialog open={open} onOpenChange={handleDialogClose}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Assign New Directive</DialogTitle>
+          <DialogTitle>Assign New Task</DialogTitle>
           <DialogDescription>
-            Delegate a new mission to a member of your team.
+            Delegate a new task to a member of your team.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -304,7 +304,7 @@ export function AssignTaskDialog({ open, onOpenChange, initialData, currentUserP
                     <FormItem><FormLabel>Title</FormLabel><FormControl><Input placeholder="e.g., Finalize Q3 Report" {...field} /></FormControl><FormMessage /></FormItem>
                 )} />
                 <FormField control={form.control} name="description" render={({ field }) => (
-                    <FormItem><FormLabel>Description (Optional)</FormLabel><FormControl><Textarea placeholder="Add more context about the mission..." {...field} /></FormControl><FormMessage /></FormItem>
+                    <FormItem><FormLabel>Description (Optional)</FormLabel><FormControl><Textarea placeholder="Add more context about the task..." {...field} /></FormControl><FormMessage /></FormItem>
                 )} />
                 
                 {!initialData?.workbookId && (
@@ -398,7 +398,7 @@ export function AssignTaskDialog({ open, onOpenChange, initialData, currentUserP
 
                 <Button type="submit" className="w-full" disabled={isBusy}>
                     {isBusy && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    {permissions.canManageStaff ? 'Assign Mission' : 'Create Mission'}
+                    {permissions.canManageStaff ? 'Assign Task' : 'Create Task'}
                 </Button>
             </form>
         </Form>
