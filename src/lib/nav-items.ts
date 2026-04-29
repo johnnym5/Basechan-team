@@ -9,6 +9,7 @@ import {
   MessageSquare,
   Settings,
   User,
+  Landmark,
 } from "lucide-react";
 
 export const mainNavItems = [
@@ -21,6 +22,7 @@ export const mainNavItems = [
   { dialog: "tasks", icon: ListTodo, label: "Task Manager" },
   { dialog: "workbooks", icon: BookOpenCheck, label: "Workbooks" },
   { dialog: "requisitions", icon: ReceiptText, label: "Finances", permission: 'canAccessRequisitions' },
+  { dialog: "accounting", icon: Landmark, label: "Accounting", permission: 'canManageAccounting' },
   { dialog: "reports", icon: BarChart, label: "Reports" },
   { isSeparator: true },
   { dialog: "chat", icon: MessageSquare, label: "Chat", permission: "canAccessChat"},

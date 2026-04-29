@@ -20,6 +20,7 @@ export interface Permissions {
   canAccessAllWorkbooks: boolean;
   canManageAnnouncements: boolean;
   canViewTeam: boolean;
+  canManageAccounting: boolean;
 }
 
 const rolePermissions: Record<UserRole, Partial<Permissions>> = {
@@ -32,6 +33,7 @@ const rolePermissions: Record<UserRole, Partial<Permissions>> = {
   'FINANCE_MANAGER': {
     canApproveFinance: true,
     canDisburse: true,
+    canManageAccounting: true,
   },
   'MANAGING_DIRECTOR': {
     canApproveMD: true,
@@ -46,6 +48,7 @@ const rolePermissions: Record<UserRole, Partial<Permissions>> = {
     canManageStaff: true,
     canManageCompany: true,
     canManageAnnouncements: true,
+    canManageAccounting: true,
   },
 };
 
@@ -64,6 +67,7 @@ const defaultPermissions: Permissions = {
   canAccessAllWorkbooks: false,
   canManageAnnouncements: false,
   canViewTeam: false,
+  canManageAccounting: false,
 };
 
 export function usePermissions(userProfile: UserProfile | null): Permissions {
@@ -89,6 +93,7 @@ export function usePermissions(userProfile: UserProfile | null): Permissions {
           canAccessAllWorkbooks: true,
           canManageAnnouncements: true,
           canViewTeam: true,
+          canManageAccounting: true,
       };
     }
     

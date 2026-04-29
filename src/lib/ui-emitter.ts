@@ -17,6 +17,7 @@ type AppEvents = {
   'open-invite-user-dialog': void;
   'open-new-announcement-dialog': void;
   'open-superadmin-dialog': void;
+  'open-accounting-dialog': void;
 };
 
 type Callback<T> = (data: T) => void;
@@ -50,5 +51,3 @@ function createEventEmitter<T extends Record<string, any>>() {
 
 
 export const uiEmitter = createEventEmitter<AppEvents>();
-
-    

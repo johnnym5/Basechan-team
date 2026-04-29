@@ -5,25 +5,28 @@ service cloud.firestore {
 
     // ===== Helper Functions =====
     
-    // Function to get the user's orgId from their profile document.
     function getUserOrgId() {
-      // This function relies on the user having a profile document.
-      // Access to create a user's own profile is handled separately in the /users/{userId} rule.
       return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.orgId;
     }
 
-    // Checks if the requesting user belongs to the same organization as the document they are trying to access.
     function isRequestingUserInOrg(docOrgId) {
       return request.auth != null && getUserOrgId() == docOrgId;
     }
 
-    // This is for create operations, where we check the orgId of the
-    // *new* document being created.
     function isCreatingInOwnOrg() {
       return request.auth != null && getUserOrgId() == request.resource.data.orgId;
     }
+
+    function isFinanceManager() {
+        return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['FINANCE_MANAGER', 'ORG_ADMIN'];
+    }
     
     // ===== Root Collections =====
+
+    match /accounts/{accountId} {
+      allow read: if isRequestingUserInOrg(resource.data.orgId);
+      allow write: if isFinanceManager() && isRequestingUserInOrg(resource.data.orgId);
+    }
 
     // User Profiles: Anyone in the org can read, but only the user can edit their own profile.
     match /users/{userId} {

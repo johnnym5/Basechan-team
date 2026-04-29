@@ -281,6 +281,7 @@ export interface Permissions {
   canAccessAllWorkbooks: boolean;
   canManageAnnouncements: boolean;
   canViewTeam: boolean;
+  canManageAccounting: boolean;
 }
 
 export type LeaveType = "ANNUAL" | "SICK" | "UNPAID" | "MATERNITY" | "PATERNITY";
@@ -325,4 +326,19 @@ export interface ErrorLog {
   stackTrace?: string;
   componentStack?: string;
   path?: string; // e.g., window.location.pathname
+}
+
+export type AccountType = "ASSET" | "LIABILITY" | "EQUITY" | "REVENUE" | "EXPENSE";
+
+export interface Account {
+  id: string;
+  orgId: string;
+  name: string;
+  code: string;
+  type: AccountType;
+  category: string;
+  balance: number;
+  isDebitNormal: boolean;
+  description?: string;
+  isActive: boolean;
 }

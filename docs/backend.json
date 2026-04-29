@@ -1,5 +1,26 @@
 {
   "entities": {
+    "Account": {
+      "title": "Account",
+      "type": "object",
+      "description": "Represents a single account in the Chart of Accounts.",
+      "properties": {
+        "orgId": { "type": "string" },
+        "name": { "type": "string", "description": "The name of the account (e.g., 'Cash', 'Accounts Payable')." },
+        "code": { "type": "string", "description": "The unique numeric code for the account (e.g., '10100')." },
+        "type": {
+          "type": "string",
+          "enum": ["ASSET", "LIABILITY", "EQUITY", "REVENUE", "EXPENSE"],
+          "description": "The main type of the account."
+        },
+        "category": { "type": "string", "description": "A more specific category (e.g., 'Current Asset', 'Long-term Liability')." },
+        "balance": { "type": "number", "description": "The current balance of the account." },
+        "isDebitNormal": { "type": "boolean", "description": "True if a debit increases the balance (Assets, Expenses)." },
+        "description": { "type": "string" },
+        "isActive": { "type": "boolean" }
+      },
+      "required": ["orgId", "name", "code", "type", "category", "balance", "isDebitNormal", "isActive"]
+    },
     "ActivityEntry": {
       "title": "Activity Entry",
       "type": "object",
@@ -614,6 +635,22 @@
   },
   "firestore": {
     "structure": [
+      {
+        "path": "/accounts/{accountId}",
+        "definition": {
+          "entityName": "Account",
+          "schema": {
+            "$ref": "#/entities/Account"
+          },
+          "description": "Stores accounts for the Chart of Accounts.",
+          "params": [
+            {
+              "name": "accountId",
+              "description": "The account's unique ID."
+            }
+          ]
+        }
+      },
       {
         "path": "/users/{userId}",
         "definition": {

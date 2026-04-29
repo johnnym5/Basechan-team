@@ -36,6 +36,7 @@ import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
 import { AuthDialog } from '@/components/auth/AuthDialog';
 import { SuperAdminDialog } from '@/components/superadmin/SuperAdminDialog';
 import { format } from 'date-fns';
+import { AccountingDialog } from '@/components/accounting/AccountingDialog';
 
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
@@ -53,6 +54,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [isAttendanceOpen, setIsAttendanceOpen] = useState(false);
   const [isLeaveOpen, setIsLeaveOpen] = useState(false);
   const [isReportsOpen, setIsReportsOpen] = useState(false);
+  const [isAccountingOpen, setIsAccountingOpen] = useState(false);
   const [isAssignTaskOpen, setIsAssignTaskOpen] = useState(false);
   const [isNewRequisitionOpen, setIsNewRequisitionOpen] = useState(false);
   const [isRequestLeaveOpen, setIsRequestLeaveOpen] = useState(false);
@@ -92,6 +94,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         isAttendanceOpen ||
         isLeaveOpen ||
         isReportsOpen ||
+        isAccountingOpen ||
         isAssignTaskOpen ||
         isNewRequisitionOpen ||
         isRequestLeaveOpen ||
@@ -181,6 +184,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     const openAttendance = () => setIsAttendanceOpen(true);
     const openLeave = () => setIsLeaveOpen(true);
     const openReports = () => setIsReportsOpen(true);
+    const openAccounting = () => setIsAccountingOpen(true);
     const openAssignTask = () => setIsAssignTaskOpen(true);
     const openNewRequisition = () => setIsNewRequisitionOpen(true);
     const openRequestLeave = () => setIsRequestLeaveOpen(true);
@@ -199,6 +203,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     uiEmitter.on('open-attendance-dialog', openAttendance);
     uiEmitter.on('open-leave-dialog', openLeave);
     uiEmitter.on('open-reports-dialog', openReports);
+    uiEmitter.on('open-accounting-dialog', openAccounting);
     uiEmitter.on('open-assign-task-dialog', openAssignTask);
     uiEmitter.on('open-new-requisition-dialog', openNewRequisition);
     uiEmitter.on('open-request-leave-dialog', openRequestLeave);
@@ -217,6 +222,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       uiEmitter.off('open-attendance-dialog', openAttendance);
       uiEmitter.off('open-leave-dialog', openLeave);
       uiEmitter.off('open-reports-dialog', openReports);
+      uiEmitter.off('open-accounting-dialog', openAccounting);
       uiEmitter.off('open-assign-task-dialog', openAssignTask);
       uiEmitter.off('open-new-requisition-dialog', openNewRequisition);
       uiEmitter.off('open-request-leave-dialog', openRequestLeave);
@@ -402,6 +408,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             <AttendanceDialog open={isAttendanceOpen} onOpenChange={setIsAttendanceOpen} />
             <LeaveDialog open={isLeaveOpen} onOpenChange={setIsLeaveOpen} />
             <ReportsDialog open={isReportsOpen} onOpenChange={setIsReportsOpen} />
+            <AccountingDialog open={isAccountingOpen} onOpenChange={setIsAccountingOpen} />
             <SuperAdminDialog open={isSuperAdminOpen} onOpenChange={setIsSuperAdminOpen} />
             {userProfile && <ProfileDialog open={isProfileOpen} onOpenChange={setIsProfileOpen} userProfile={userProfile} />}
             {userProfile && <SettingsDialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen} userProfile={userProfile} />}
