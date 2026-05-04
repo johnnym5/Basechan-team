@@ -20,10 +20,11 @@ import { DashboardQuickActions } from '@/components/dashboard/DashboardQuickActi
 import { DashboardRecentReports } from '@/components/dashboard/DashboardRecentReports';
 import { DashboardRecentChats } from '@/components/dashboard/DashboardRecentChats';
 import { useSuperAdmin } from '@/hooks/useSuperAdmin';
-import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { uiEmitter } from '@/lib/ui-emitter';
 import { useImpersonation } from '@/context/ImpersonationProvider';
+import { LoginForm } from '@/components/auth/LoginForm';
 
 
 function DashboardGrid() {
@@ -77,13 +78,25 @@ function DashboardGrid() {
     }, [firestore, userProfile]);
     const { data: activeTasks, isLoading: activeTasksLoading } = useCollection<Task>(activeTasksQuery);
 
-    // Show welcome message if not logged in
+    // Show welcome message and login form if not logged in
     if (!authUser && !isAuthLoading) {
       return (
-        <div className="flex flex-col items-center justify-center h-[60vh] text-center">
-            <BookCopy className="h-16 w-16 text-primary" />
-            <h1 className="mt-4 text-3xl font-bold font-headline">Welcome to Basechan Staff</h1>
-            <p className="mt-2 text-lg text-muted-foreground">The all-in-one internal management tool.</p>
+        <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-4">
+            <div className="mb-8">
+                <BookCopy className="h-16 w-16 text-primary mx-auto" />
+                <h1 className="mt-4 text-3xl font-bold font-headline">Welcome to Basechan Staff</h1>
+                <p className="mt-2 text-lg text-muted-foreground">The all-in-one internal management tool.</p>
+            </div>
+
+            <Card className="w-full max-w-md bg-card/50 backdrop-blur-xl border-primary/20 shadow-2xl">
+                <CardHeader>
+                    <CardTitle>Security Terminal</CardTitle>
+                    <CardDescription>Enter your credentials to access the system.</CardDescription>
+                </CardHeader>
+                <CardContent className="text-left">
+                    <LoginForm />
+                </CardContent>
+            </Card>
         </div>
       );
     }
