@@ -6,8 +6,16 @@ service cloud.firestore {
 
     // ===== Helper Functions =====
     
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
     function getUserOrgId() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.orgId;
+      return getUserData().orgId;
+    }
+
+    function getUserRole() {
+      return getUserData().role;
     }
 
     function isRequestingUserInOrg(docOrgId) {
@@ -18,8 +26,16 @@ service cloud.firestore {
       return request.auth != null && getUserOrgId() == request.resource.data.orgId;
     }
 
+    function isHRManager() {
+        return getUserRole() in ['HR_MANAGER', 'ORG_ADMIN'];
+    }
+
     function isFinanceManager() {
-        return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['FINANCE_MANAGER', 'ORG_ADMIN'];
+        return getUserRole() in ['FINANCE_MANAGER', 'ORG_ADMIN'];
+    }
+
+    function isManagingDirector() {
+        return getUserRole() in ['MANAGING_DIRECTOR', 'ORG_ADMIN'];
     }
     
     // ===== Root Collections =====
@@ -29,51 +45,69 @@ service cloud.firestore {
       allow write: if isFinanceManager() && isRequestingUserInOrg(resource.data.orgId);
     }
 
+    match /vendors/{vendorId} {
+        allow read: if isRequestingUserInOrg(resource.data.orgId);
+        allow write: if isHRManager() || isFinanceManager() || isManagingDirector();
+    }
+
+    match /purchase_orders/{poId} {
+        allow read: if isRequestingUserInOrg(resource.data.orgId);
+        allow create: if isManagingDirector() || isFinanceManager();
+        allow update: if isFinanceManager() || isManagingDirector();
+        allow delete: if false;
+    }
+
+    match /requisitions/{reqId} {
+      allow read: if isRequestingUserInOrg(resource.data.orgId);
+      allow create: if isCreatingInOwnOrg();
+      
+      // Approval workflow enforcement
+      allow update: if isRequestingUserInOrg(resource.data.orgId) && (
+        (request.resource.data.status == 'PENDING_FINANCE' && isHRManager()) ||
+        (request.resource.data.status == 'PENDING_MD' && isFinanceManager()) ||
+        (request.resource.data.status == 'APPROVED' && isManagingDirector()) ||
+        (request.resource.data.status == 'PAID' && isFinanceManager()) ||
+        (request.resource.data.status == 'REJECTED' && (isHRManager() || isFinanceManager() || isManagingDirector())) ||
+        (request.auth.uid == resource.data.createdBy && resource.data.status == 'PENDING_HR')
+      );
+    }
+
     // User Profiles: Anyone in the org can read, but only the user can edit their own profile.
     match /users/{userId} {
       allow read: if isRequestingUserInOrg(resource.data.orgId);
-      // Allow an admin to create a user in their org.
       allow create: if isCreatingInOwnOrg();
-      // Allow a user to update their own profile.
-      allow update: if request.auth.uid == userId;
-      allow delete: if false; // Disallow client-side deletion
+      allow update: if request.auth.uid == userId || isHRManager();
+      allow delete: if false;
     }
     
     // Generic rule for collections with an orgId field.
-    // This applies to: departments, attendance, requisitions, tasks, system_configs,
-    // announcements, workbooks, notifications, leave_requests, daily_reports
     match /{collection}/{docId} 
-        where collection in ['departments', 'attendance', 'requisitions', 'tasks', 'system_configs', 'announcements', 'workbooks', 'notifications', 'leave_requests', 'daily_reports', 'chats', 'journal_entries'] {
+        where collection in ['departments', 'attendance', 'tasks', 'system_configs', 'announcements', 'workbooks', 'notifications', 'leave_requests', 'daily_reports', 'chats', 'journal_entries'] {
       
       allow read, delete: if isRequestingUserInOrg(resource.data.orgId);
       allow create: if isCreatingInOwnOrg();
       allow update: if isRequestingUserInOrg(resource.data.orgId);
     }
 
-    // Special collections for anonymous/public access
     match /feedback/{feedbackId} {
-      allow create: if true; // Anyone can submit feedback
-      allow read, update, delete: if false; // Managed by backend/superadmin
+      allow create: if true;
+      allow read, update, delete: if false;
     }
     match /error_logs/{errorId} {
-      allow create: if true; // Any client can log an error
-      allow read, update, delete: if false; // Managed by backend/superadmin
+      allow create: if true;
+      allow read, update, delete: if false;
     }
 
     // ===== Subcollections =====
 
     match /workbooks/{workbookId}/sheets/{sheetId} {
-      // Allow access if the user has access to the parent workbook.
       allow read, write: if isRequestingUserInOrg(get(/databases/$(database)/documents/workbooks/$(workbookId)).data.orgId);
     }
 
     match /chats/{chatId}/messages/{messageId} {
-      // Allow access if the user is a participant of the parent chat.
       allow read: if request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants;
-      // Only allow creating a message if you are a participant.
       allow create: if request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants
                       && request.resource.data.senderId == request.auth.uid;
-      // Users cannot edit/delete chat messages.
       allow update, delete: if false;
     }
   }

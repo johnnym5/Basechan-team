@@ -1,3 +1,4 @@
+
 'use client'
 
 import {
@@ -12,8 +13,7 @@ import {
   Requisition,
   UserProfile,
   ActivityEntry,
-  RequisitionStatus,
-  Notification
+  RequisitionStatus
 } from '@/lib/types'
 import { Permissions } from '@/hooks/usePermissions'
 import { RequisitionStatusBadge } from './RequisitionStatusBadge'
@@ -30,10 +30,11 @@ import {
   ShieldAlert,
   Paperclip,
   ListTodo,
+  Store,
 } from 'lucide-react'
 import { Button } from '../ui/button'
-import { doc, arrayUnion, collection } from 'firebase/firestore'
-import { useFirestore, updateDocumentNonBlocking, addDocumentNonBlocking } from '@/firebase'
+import { doc, arrayUnion } from 'firebase/firestore'
+import { useFirestore, updateDocumentNonBlocking } from '@/firebase'
 import { useToast } from '@/hooks/use-toast'
 import {
   AlertDialog,
@@ -52,6 +53,7 @@ import { ActivityFeed } from '../shared/ActivityFeed'
 import { Badge } from '../ui/badge'
 import Link from 'next/link'
 import { AssignTaskDialog } from '../tasks/AssignTaskDialog'
+import { advanceRequisition, PROCUREMENT_WORKFLOW } from '@/services/procurement'
 
 interface RequisitionDetailDialogProps {
   requisition: Requisition
@@ -63,24 +65,11 @@ interface RequisitionDetailDialogProps {
   currencySymbol: string
 }
 
-const WORKFLOW: Record<
-  RequisitionStatus,
-  { next: RequisitionStatus; permission: keyof Permissions }
-> = {
-  PENDING_HR: { next: 'PENDING_FINANCE', permission: 'canApproveHR' },
-  PENDING_FINANCE: { next: 'PENDING_MD', permission: 'canApproveFinance' },
-  PENDING_MD: { next: 'APPROVED', permission: 'canApproveMD' },
-  APPROVED: { next: 'PAID', permission: 'canDisburse' },
-  PAID: { next: 'PAID', permission: 'canDisburse' }, // Terminal
-  REJECTED: { next: 'REJECTED', permission: 'canApproveHR' }, // Terminal
-}
-
 export function RequisitionDetailDialog({
   requisition,
   isOpen,
   onOpenChange,
   currentUserProfile,
-  isSuperAdmin,
   permissions,
   currencySymbol
 }: RequisitionDetailDialogProps) {
@@ -90,7 +79,6 @@ export function RequisitionDetailDialog({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isUrgent, setIsUrgent] = useState(false);
   const [isAssignTaskOpen, setIsAssignTaskOpen] = useState(false);
-
 
   useEffect(() => {
     if (requisition.status === 'PENDING_HR' && differenceInHours(new Date(), new Date(requisition.createdAt)) > 24) {
@@ -105,8 +93,14 @@ export function RequisitionDetailDialog({
     if (requisition.status === 'PAID' || requisition.status === 'REJECTED')
       return false
 
-    const requiredPermission = WORKFLOW[requisition.status]?.permission
-    return permissions[requiredPermission]
+    const requiredPermission = PROCUREMENT_WORKFLOW[requisition.status]?.role;
+    // Simple mapping check
+    if (requiredPermission === 'HR_MANAGER') return permissions.canApproveHR;
+    if (requiredPermission === 'FINANCE_MANAGER') return permissions.canApproveFinance;
+    if (requiredPermission === 'MANAGING_DIRECTOR') return permissions.canApproveMD;
+    if (requisition.status === 'APPROVED') return permissions.canDisburse;
+    
+    return false;
   }
 
   const canReject = () => {
@@ -116,7 +110,6 @@ export function RequisitionDetailDialog({
   
   const handleAddComment = (commentText: string) => {
     if (!firestore || !currentUserProfile) return;
-    
     const commentEntry: ActivityEntry = {
         type: 'COMMENT',
         actorId: currentUserProfile.id,
@@ -124,7 +117,6 @@ export function RequisitionDetailDialog({
         timestamp: new Date().toISOString(),
         text: commentText,
     };
-    
     const requisitionRef = doc(firestore, 'requisitions', requisition.id);
     updateDocumentNonBlocking(requisitionRef, {
         activity: arrayUnion(commentEntry),
@@ -132,72 +124,24 @@ export function RequisitionDetailDialog({
   }
 
   const handleAction = async (
-    action: 'APPROVE' | 'REJECT' | 'MARK_AS_PAID'
+    action: 'APPROVE' | 'REJECT' | 'PAID'
   ) => {
     if (!firestore || !currentUserProfile) return
     setIsSubmitting(true);
 
-    let nextStatus: RequisitionStatus
-    let logText = ''
-    
-    if (action === 'REJECT') {
-      if (!rejectionReason) {
-        toast({
-          variant: 'destructive',
-          title: 'Reason Required',
-          description: 'Please provide a reason for rejection.',
-        })
+    try {
+        await advanceRequisition(firestore, requisition, currentUserProfile, action, rejectionReason);
+        toast({ title: 'Success', description: 'Requisition has been updated.' })
+        onOpenChange(false)
+        setRejectionReason('');
+    } catch (e: any) {
+        toast({ variant: 'destructive', title: 'Action Failed', description: e.message });
+    } finally {
         setIsSubmitting(false);
-        return
-      }
-      nextStatus = 'REJECTED'
-      logText = `rejected the requisition. Reason: ${rejectionReason}`
-    } else if (action === 'MARK_AS_PAID') {
-      nextStatus = 'PAID'
-      logText = 'marked the requisition as paid.'
-    } else {
-      nextStatus = WORKFLOW[requisition.status].next
-      logText = `approved the requisition, advancing it to ${nextStatus.replace('_', ' ')}.`
     }
-
-    const activityEntry: ActivityEntry = {
-      type: 'LOG',
-      actorId: currentUserProfile.id,
-      actorName: currentUserProfile.fullName,
-      timestamp: new Date().toISOString(),
-      text: logText,
-      fromStatus: requisition.status,
-      toStatus: nextStatus,
-    }
-
-    const requisitionRef = doc(firestore, 'requisitions', requisition.id)
-    updateDocumentNonBlocking(requisitionRef, {
-      status: nextStatus,
-      activity: arrayUnion(activityEntry),
-    })
-
-    // Add notification for the creator
-    if (currentUserProfile.id !== requisition.createdBy) {
-      const notification: Omit<Notification, 'id'> = {
-          orgId: requisition.orgId,
-          userId: requisition.createdBy,
-          title: `Requisition Updated`,
-          description: `"${requisition.title}" is now ${nextStatus.replace(/_/g, ' ')}.`,
-          href: `/requisitions?reqId=${requisition.id}`,
-          isRead: false,
-          createdAt: new Date().toISOString(),
-      };
-      addDocumentNonBlocking(collection(firestore, 'notifications'), notification);
-    }
-
-    toast({ title: 'Success', description: 'Requisition status has been updated.' })
-    setIsSubmitting(false);
-    onOpenChange(false)
-    setRejectionReason('');
   }
 
-  const approvalActionText =
-    requisition.status === 'APPROVED' ? 'Mark as Paid' : 'Approve'
+  const approvalActionText = requisition.status === 'APPROVED' ? 'Mark as Paid' : 'Approve'
 
   return (
     <>
@@ -236,7 +180,7 @@ export function RequisitionDetailDialog({
               <h4 className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
                 <History className="h-4 w-4" /> Activity Feed
               </h4>
-              <div className="flex-1 rounded-md border p-4">
+              <div className="flex-1 rounded-md border p-4 bg-card/50">
                   <ActivityFeed
                     activity={requisition.activity}
                     currentUserProfile={currentUserProfile}
@@ -247,17 +191,21 @@ export function RequisitionDetailDialog({
             </div>
           </div>
           <div className="lg:col-span-1 space-y-4 rounded-lg border bg-secondary/30 p-4 h-fit">
-            <div className="flex items-start justify-between">
-              <h4 className="font-semibold">Summary</h4>
-            </div>
+            <h4 className="font-semibold border-b pb-2">Procurement Summary</h4>
             <div className="space-y-3 text-sm">
               <div className="flex items-center justify-between">
                 <span className="flex items-center gap-2 text-muted-foreground">
                   <Banknote className="h-4 w-4" /> Amount
                 </span>
                 <span className="font-mono text-lg font-semibold text-primary">
-                  {currencySymbol}{requisition.amount.toFixed(2)}
+                  {currencySymbol}{requisition.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                 </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="flex items-center gap-2 text-muted-foreground">
+                  <Store className="h-4 w-4" /> Vendor
+                </span>
+                <span className="font-medium truncate max-w-[120px]">{requisition.vendorName || 'Not Selected'}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="flex items-center gap-2 text-muted-foreground">
@@ -265,20 +213,12 @@ export function RequisitionDetailDialog({
                 </span>
                 <span className="font-medium">{requisition.creatorName}</span>
               </div>
-              <div className="flex items-center justify-between">
-                <span className="flex items-center gap-2 text-muted-foreground">
-                  <Calendar className="h-4 w-4" /> Created
-                </span>
-                <span className="font-medium">
-                  {format(new Date(requisition.createdAt), 'PP')}
-                </span>
-              </div>
-               <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between border-t pt-2">
                 <span className="flex items-center gap-2 text-muted-foreground">
                   <Paperclip className="h-4 w-4" /> Attachment
                 </span>
                 {requisition.attachmentUrl ? (
-                    <Link href={requisition.attachmentUrl} target="_blank" rel="noopener noreferrer" className='font-medium text-primary hover:underline truncate max-w-[150px]' title={requisition.attachmentName || 'View File'}>
+                    <Link href={requisition.attachmentUrl} target="_blank" rel="noopener noreferrer" className='font-medium text-primary hover:underline truncate max-w-[120px]'>
                         {requisition.attachmentName || 'View File'}
                     </Link>
                 ) : (
@@ -291,9 +231,9 @@ export function RequisitionDetailDialog({
 
         <DialogFooter className="gap-2 sm:justify-between">
             <div>
-              {(requisition.status === 'APPROVED' || requisition.status === 'PAID') && permissions.canManageStaff && (
+              {(requisition.status === 'APPROVED' || requisition.status === 'PAID') && (
                 <Button variant="outline" onClick={() => setIsAssignTaskOpen(true)}>
-                    <ListTodo className="mr-2 h-4 w-4" /> Create Task
+                    <ListTodo className="mr-2 h-4 w-4" /> Create Workflow Task
                 </Button>
               )}
             </div>
@@ -325,8 +265,8 @@ export function RequisitionDetailDialog({
                           <AlertDialogAction
                             onClick={() => handleAction('REJECT')}
                             disabled={!rejectionReason || isSubmitting}
+                            className="bg-destructive hover:bg-destructive/90"
                           >
-                            {isSubmitting && <Loader2 className="animate-spin" />}
                             Confirm Rejection
                           </AlertDialogAction>
                         </AlertDialogFooter>
@@ -339,14 +279,14 @@ export function RequisitionDetailDialog({
                     onClick={() =>
                       handleAction(
                         requisition.status === 'APPROVED'
-                          ? 'MARK_AS_PAID'
+                          ? 'PAID'
                           : 'APPROVE'
                       )
                     }
                     className="bg-emerald-600 hover:bg-emerald-700"
                     disabled={isSubmitting}
                   >
-                    {isSubmitting && <Loader2 className="animate-spin" />}
+                    {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     <Check className="mr-2 h-4 w-4" /> {approvalActionText}
                   </Button>
                 </>
@@ -362,8 +302,8 @@ export function RequisitionDetailDialog({
             currentUserProfile={currentUserProfile}
             permissions={permissions}
             initialData={{
-                title: `Follow up on ${requisition.serialNo}: ${requisition.title}`,
-                description: `This task is to follow up on the approved/paid requisition: "${requisition.title}".\n\nAmount: ${currencySymbol}${requisition.amount.toFixed(2)}\n\nOriginal Description: ${requisition.description}`,
+                title: `Procurement: ${requisition.serialNo}`,
+                description: `Follow up task for requisition: "${requisition.title}".`,
                 priority: 'LEVEL_2',
             }}
         />
@@ -371,5 +311,3 @@ export function RequisitionDetailDialog({
     </>
   )
 }
-
-    

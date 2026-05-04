@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useForm } from "react-hook-form";
@@ -7,12 +8,13 @@ import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2, Paperclip } from "lucide-react";
 import { useState } from "react";
-import { useFirestore, useUser, useDoc, addDocumentNonBlocking, useMemoFirebase } from "@/firebase";
-import { collection, query, where, getDocs, doc } from "firebase/firestore";
+import { useFirestore, addDocumentNonBlocking, useCollection, useMemoFirebase } from "@/firebase";
+import { collection, query, where, getDocs } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
-import type { Requisition, UserProfile, ActivityEntry } from "@/lib/types";
+import type { Requisition, UserProfile, ActivityEntry, Vendor } from "@/lib/types";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { useSystemConfig } from "@/hooks/useSystemConfig";
 import { useFileUpload } from "@/hooks/useFileUpload";
@@ -22,6 +24,7 @@ import { sanitizeInput } from "@/lib/utils";
 const formSchema = z.object({
   title: z.string().min(5, { message: "Title must be at least 5 characters." }),
   amount: z.coerce.number().min(1, { message: "Amount must be greater than 0." }),
+  vendorId: z.string().min(1, "Please select a vendor."),
   description: z.string().min(10, { message: "Description must be at least 10 characters." }),
   attachment: z.custom<File>().optional(),
 });
@@ -44,11 +47,17 @@ export function NewRequisitionDialog({ open, onOpenChange, userProfile }: NewReq
   
   const isBusy = isLoading || isUploading;
 
+  const vendorsQuery = useMemoFirebase(() => 
+    firestore && userProfile ? query(collection(firestore, 'vendors'), where('orgId', '==', userProfile.orgId), where('isActive', '==', true)) : null
+  , [firestore, userProfile]);
+  const { data: vendors } = useCollection<Vendor>(vendorsQuery);
+
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       title: "",
       amount: 0,
+      vendorId: "",
       description: "",
       attachment: undefined,
     },
@@ -69,10 +78,7 @@ export function NewRequisitionDialog({ open, onOpenChange, userProfile }: NewReq
   }
 
   async function onSubmit(values: FormData) {
-    if (!firestore || !userProfile) {
-        toast({ variant: "destructive", title: "Error", description: "Could not find user profile." });
-        return;
-    }
+    if (!firestore || !userProfile) return;
     setIsLoading(true);
 
     try {
@@ -82,9 +88,9 @@ export function NewRequisitionDialog({ open, onOpenChange, userProfile }: NewReq
             attachmentUrl = await uploadFile(values.attachment, filePath);
         }
 
+        const vendor = vendors?.find(v => v.id === values.vendorId);
         const reqsCollection = collection(firestore, 'requisitions');
         
-        // This client-side count has a potential race condition but is acceptable for this MVP.
         const q = query(reqsCollection, where('orgId', '==', userProfile.orgId));
         const orgReqsSnapshot = await getDocs(q);
         const newSerialNo = `REQ-${String(orgReqsSnapshot.size + 1).padStart(4, '0')}`;
@@ -109,6 +115,8 @@ export function NewRequisitionDialog({ open, onOpenChange, userProfile }: NewReq
             creatorName: userProfile.fullName,
             title: sanitizeInput(values.title),
             amount: values.amount,
+            vendorId: values.vendorId,
+            vendorName: vendor?.name || 'Unknown Vendor',
             description: sanitizeInput(values.description),
             status: nextStatus,
             createdAt: now,
@@ -118,22 +126,10 @@ export function NewRequisitionDialog({ open, onOpenChange, userProfile }: NewReq
         };
 
         await addDocumentNonBlocking(reqsCollection, newRequisition);
-
-        toast({
-            title: "Requisition Submitted",
-            description: `Your request ${newSerialNo} is now pending HR approval.`,
-        });
-
+        toast({ title: "Requisition Submitted", description: `Request ${newSerialNo} is pending approval.` });
         handleDialogClose();
     } catch (error: any) {
-        console.error("Error creating requisition:", error);
-        if (error.code !== 'permission-denied') {
-            toast({
-                variant: "destructive",
-                title: "Submission Failed",
-                description: error.message || "An unexpected error occurred.",
-            });
-        }
+        toast({ variant: "destructive", title: "Submission Failed", description: error.message });
     } finally {
         setIsLoading(false);
     }
@@ -144,66 +140,43 @@ export function NewRequisitionDialog({ open, onOpenChange, userProfile }: NewReq
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>New Requisition</DialogTitle>
-          <DialogDescription>
-            Fill out the form below to submit a new financial request.
-          </DialogDescription>
+          <DialogDescription>Submit a new financial request for procurement.</DialogDescription>
         </DialogHeader>
         <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
-                <FormField
-                    control={form.control}
-                    name="title"
-                    render={({ field }) => (
-                    <FormItem>
-                        <FormLabel>Title</FormLabel>
-                        <FormControl><Input placeholder="e.g., New Office Chairs" {...field} /></FormControl>
-                        <FormMessage />
-                    </FormItem>
-                    )}
-                />
-                 <FormField
-                    control={form.control}
-                    name="amount"
-                    render={({ field }) => (
-                    <FormItem>
-                        <FormLabel>Amount ({systemConfig?.currency_symbol || '$'})</FormLabel>
-                        <FormControl><Input type="number" placeholder="2500.00" {...field} /></FormControl>
-                        <FormMessage />
-                    </FormItem>
-                    )}
-                />
-                 <FormField
-                    control={form.control}
-                    name="description"
-                    render={({ field }) => (
-                    <FormItem>
-                        <FormLabel>Description & Justification</FormLabel>
-                        <FormControl><Textarea placeholder="Detailed reason for this expenditure..." {...field} /></FormControl>
-                        <FormMessage />
-                    </FormItem>
-                    )}
-                />
-                <FormField
-                    control={form.control}
-                    name="attachment"
-                    render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Attachment (Optional)</FormLabel>
-                            <FormControl>
-                                <Input id="attachment-file" type="file" className="hidden" onChange={handleFileChange} disabled={isBusy} />
-                            </FormControl>
-                            <label htmlFor="attachment-file" className="flex items-center gap-2 text-sm text-muted-foreground cursor-pointer border p-2 rounded-md hover:bg-accent transition-colors">
-                                <Paperclip className="h-4 w-4" />
-                                <span className="truncate">{fileName || 'Upload a file'}</span>
-                            </label>
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                 />
+                <FormField control={form.control} name="title" render={({ field }) => (
+                    <FormItem><FormLabel>Title</FormLabel><FormControl><Input placeholder="e.g., Office Hardware Upgrade" {...field} /></FormControl><FormMessage /></FormItem>
+                )}/>
+                <div className="grid grid-cols-2 gap-4">
+                    <FormField control={form.control} name="amount" render={({ field }) => (
+                        <FormItem><FormLabel>Amount ({systemConfig?.currency_symbol || '$'})</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl><FormMessage /></FormItem>
+                    )}/>
+                    <FormField control={form.control} name="vendorId" render={({ field }) => (
+                        <FormItem><FormLabel>Vendor</FormLabel>
+                            <Select onValueChange={field.onChange} value={field.value}>
+                                <FormControl><SelectTrigger><SelectValue placeholder="Select Supplier" /></SelectTrigger></FormControl>
+                                <SelectContent>
+                                    {vendors?.map(v => <SelectItem key={v.id} value={v.id}>{v.name}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
+                        <FormMessage /></FormItem>
+                    )}/>
+                </div>
+                 <FormField control={form.control} name="description" render={({ field }) => (
+                    <FormItem><FormLabel>Business Justification</FormLabel><FormControl><Textarea placeholder="Detailed reason for this expenditure..." {...field} /></FormControl><FormMessage /></FormItem>
+                )}/>
+                <FormField control={form.control} name="attachment" render={({ field }) => (
+                    <FormItem><FormLabel>Supporting Documents</FormLabel>
+                        <FormControl><Input id="req-attachment" type="file" className="hidden" onChange={handleFileChange} disabled={isBusy} /></FormControl>
+                        <label htmlFor="req-attachment" className="flex items-center gap-2 text-sm text-muted-foreground cursor-pointer border p-2 rounded-md hover:bg-accent transition-colors">
+                            <Paperclip className="h-4 w-4" /><span className="truncate">{fileName || 'Upload Quote/Invoice'}</span>
+                        </label>
+                    <FormMessage /></FormItem>
+                )}/>
                  {isUploading && <Progress value={uploadProgress} className="w-full h-2" />}
                 <Button type="submit" className="w-full" disabled={isBusy}>
-                    {isBusy && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Submit for Approval
+                    {isBusy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <PlusCircle className="mr-2 h-4 w-4" />}
+                    Confirm & Submit
                 </Button>
             </form>
         </Form>
@@ -211,5 +184,3 @@ export function NewRequisitionDialog({ open, onOpenChange, userProfile }: NewReq
     </Dialog>
   );
 }
-
-    

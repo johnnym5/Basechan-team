@@ -1,7 +1,7 @@
+
 'use client';
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ShieldAlert, PlusCircle, Users } from "lucide-react";
+import { ShieldAlert, PlusCircle } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RequisitionTable } from "@/components/requisitions/RequisitionTable";
 import { useState, useEffect } from "react";
@@ -16,6 +16,7 @@ import { useSystemConfig } from "@/hooks/useSystemConfig";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { NewRequisitionDialog } from "@/components/requisitions/NewRequisitionDialog";
 import { VendorsTab } from "./VendorsTab";
+import { PurchaseOrdersTab } from "./PurchaseOrdersTab";
 
 
 const getVisibleTabs = (permissions: Permissions, isStaff: boolean) => {
@@ -29,20 +30,22 @@ const getVisibleTabs = (permissions: Permissions, isStaff: boolean) => {
         tabs.add("Inbox");
     }
 
-    if (permissions.canManageStaff) { // For Org Admins, Super Admins, etc.
+    tabs.add("Purchase Orders");
+
+    if (permissions.canManageStaff) { 
         tabs.add("All");
         tabs.add("Pending");
         tabs.add("Approved");
         tabs.add("Paid");
         tabs.add("Rejected");
         tabs.add("Vendors");
-    } else { // Staff members see a simplified view
+    } else { 
         tabs.add("Pending");
         tabs.add("Approved");
         tabs.add("Rejected");
     }
     
-    const orderedTabs = ["My Requests", "Inbox", "All", "Pending", "Approved", "Paid", "Rejected", "Vendors"];
+    const orderedTabs = ["My Requests", "Inbox", "Purchase Orders", "All", "Pending", "Approved", "Paid", "Rejected", "Vendors"];
     return orderedTabs.filter(tab => tabs.has(tab));
 };
 
@@ -123,14 +126,12 @@ export function RequisitionsPageContent({ initialPayload }: { initialPayload?: {
        <div className="flex items-center justify-between">
             <div>
                 <h1 className="text-3xl font-bold font-headline tracking-tight">Procurement & Requisitions</h1>
-                <p className="text-muted-foreground">Manage financial requests and external vendors.</p>
+                <p className="text-muted-foreground">Manage financial requests, purchase orders, and external vendors.</p>
             </div>
-            <NewRequisitionDialog open={isNewRequestOpen} onOpenChange={setIsNewRequestOpen} userProfile={userProfile}>
-                <Button onClick={() => setIsNewRequestOpen(true)}>
-                    <PlusCircle className="mr-2"/>
-                    New Requisition
-                </Button>
-            </NewRequisitionDialog>
+            <Button onClick={() => setIsNewRequestOpen(true)}>
+                <PlusCircle className="mr-2"/>
+                New Requisition
+            </Button>
         </div>
       {isProfileLoading ? (
         <Skeleton className="h-[calc(100vh-12rem)] w-full" />
@@ -147,6 +148,8 @@ export function RequisitionsPageContent({ initialPayload }: { initialPayload?: {
                     <TabsContent key={tab} value={tab} className="mt-4">
                         {tab === 'Vendors' ? (
                             <VendorsTab userProfile={userProfile!} permissions={permissions} />
+                        ) : tab === 'Purchase Orders' ? (
+                            <PurchaseOrdersTab userProfile={userProfile!} />
                         ) : (
                             <RequisitionTable 
                                 filter={tab} 
@@ -171,6 +174,12 @@ export function RequisitionsPageContent({ initialPayload }: { initialPayload?: {
                     currencySymbol={currencySymbol}
                 />
             )}
+            
+            <NewRequisitionDialog 
+                open={isNewRequestOpen} 
+                onOpenChange={setIsNewRequestOpen} 
+                userProfile={userProfile} 
+            />
         </>
       )}
     </div>
