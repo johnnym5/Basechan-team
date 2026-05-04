@@ -3,7 +3,7 @@
 import { firebaseConfig } from '@/firebase/config';
 import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
-import { getFirestore, enableIndexedDbPersistence } from 'firebase/firestore';
+import { initializeFirestore, enableIndexedDbPersistence, getFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 import { getDatabase } from 'firebase/database';
 
@@ -32,8 +32,19 @@ export function initializeFirebase() {
 }
 
 let persistenceEnabled = false;
+
 export function getSdks(firebaseApp: FirebaseApp) {
-  const firestore = getFirestore(firebaseApp);
+  // Use initializeFirestore with experimentalForceLongPolling to prevent connection timeouts 
+  // in Cloud Workstation / IDE environments where WebSockets might be restricted.
+  let firestore;
+  try {
+    firestore = initializeFirestore(firebaseApp, {
+      experimentalForceLongPolling: true,
+    });
+  } catch (e) {
+    // Fallback if already initialized
+    firestore = getFirestore(firebaseApp);
+  }
 
   if (typeof window !== 'undefined' && !persistenceEnabled) {
     persistenceEnabled = true; // Attempt only once
