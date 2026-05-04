@@ -1,3 +1,4 @@
+
 {
   "entities": {
     "Account": {
@@ -20,6 +21,35 @@
         "isActive": { "type": "boolean" }
       },
       "required": ["orgId", "name", "code", "type", "category", "balance", "isDebitNormal", "isActive"]
+    },
+    "JournalEntry": {
+      "title": "Journal Entry",
+      "type": "object",
+      "description": "A financial transaction record in the General Ledger.",
+      "properties": {
+        "orgId": { "type": "string" },
+        "date": { "type": "string", "format": "date-time" },
+        "description": { "type": "string" },
+        "reference": { "type": "string", "description": "A reference number (e.g., invoice # or requisition serial)." },
+        "status": { "type": "string", "enum": ["DRAFT", "POSTED"] },
+        "createdBy": { "type": "string" },
+        "creatorName": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "lines": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "accountId": { "type": "string" },
+              "accountName": { "type": "string" },
+              "debit": { "type": "number" },
+              "credit": { "type": "number" }
+            },
+            "required": ["accountId", "accountName", "debit", "credit"]
+          }
+        }
+      },
+      "required": ["orgId", "date", "description", "status", "createdBy", "creatorName", "createdAt", "lines"]
     },
     "ActivityEntry": {
       "title": "Activity Entry",
@@ -647,6 +677,22 @@
             {
               "name": "accountId",
               "description": "The account's unique ID."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/journal_entries/{entryId}",
+        "definition": {
+          "entityName": "JournalEntry",
+          "schema": {
+            "$ref": "#/entities/JournalEntry"
+          },
+          "description": "Stores General Ledger journal entries.",
+          "params": [
+            {
+              "name": "entryId",
+              "description": "The unique ID for the journal entry."
             }
           ]
         }

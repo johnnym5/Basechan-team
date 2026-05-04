@@ -1,3 +1,4 @@
+
 rules_version = '2';
 
 service cloud.firestore {
@@ -42,7 +43,7 @@ service cloud.firestore {
     // This applies to: departments, attendance, requisitions, tasks, system_configs,
     // announcements, workbooks, notifications, leave_requests, daily_reports
     match /{collection}/{docId} 
-        where collection in ['departments', 'attendance', 'requisitions', 'tasks', 'system_configs', 'announcements', 'workbooks', 'notifications', 'leave_requests', 'daily_reports', 'chats'] {
+        where collection in ['departments', 'attendance', 'requisitions', 'tasks', 'system_configs', 'announcements', 'workbooks', 'notifications', 'leave_requests', 'daily_reports', 'chats', 'journal_entries'] {
       
       allow read, delete: if isRequestingUserInOrg(resource.data.orgId);
       allow create: if isCreatingInOwnOrg();

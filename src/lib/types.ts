@@ -1,3 +1,4 @@
+
 import { PREDEFINED_ROLES } from './roles-and-departments';
 
 export type UserPosition = (typeof PREDEFINED_ROLES)[number];
@@ -341,4 +342,26 @@ export interface Account {
   isDebitNormal: boolean;
   description?: string;
   isActive: boolean;
+}
+
+export type JournalEntryStatus = "DRAFT" | "POSTED";
+
+export interface JournalEntryLine {
+    accountId: string;
+    accountName: string;
+    debit: number;
+    credit: number;
+}
+
+export interface JournalEntry {
+    id: string;
+    orgId: string;
+    date: string; // ISO
+    description: string;
+    reference: string;
+    status: JournalEntryStatus;
+    createdBy: string;
+    creatorName: string;
+    createdAt: string; // ISO
+    lines: JournalEntryLine[];
 }
