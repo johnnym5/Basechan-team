@@ -2,7 +2,7 @@
 import { useUser, useDoc, useFirestore, useMemoFirebase, useCollection } from '@/firebase';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { ListTodo, FileText, CalendarPlus, BookOpenCheck, Plus, UserPlus, MessageSquare, Megaphone, Landmark } from 'lucide-react';
+import { ListTodo, FileText, CalendarPlus, BookOpenCheck, Plus, UserPlus, MessageSquare, Megaphone, Landmark, BookCopy } from 'lucide-react';
 import { doc, collection, query, where, limit } from 'firebase/firestore';
 import type { UserProfile, Attendance } from '@/lib/types';
 import { useSystemConfig } from '@/hooks/useSystemConfig';
@@ -36,6 +36,8 @@ import { AuthDialog } from '@/components/auth/AuthDialog';
 import { SuperAdminDialog } from '@/components/superadmin/SuperAdminDialog';
 import { format } from 'date-fns';
 import { AccountingDialog } from '@/components/accounting/AccountingDialog';
+import { mainNavItems } from '@/lib/nav-items';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
@@ -144,6 +146,22 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       root.style.setProperty('--accent', defaultAccent);
     }
   }, [config, theme]);
+
+  const handleDialogClick = (dialog: string) => {
+    switch(dialog) {
+      case 'chat': setIsChatOpen(true); break;
+      case 'settings': setIsSettingsOpen(true); break;
+      case 'tasks': setIsTasksOpen(true); break;
+      case 'workbooks': setIsWorkbookOpen(true); break;
+      case 'requisitions': setIsRequisitionsOpen(true); break;
+      case 'attendance': setIsAttendanceOpen(true); break;
+      case 'leave': setIsLeaveOpen(true); break;
+      case 'reports': setIsReportsOpen(true); break;
+      case 'profile': setIsProfileOpen(true); break;
+      case 'accounting': setIsAccountingOpen(true); break;
+      case 'superadmin': setIsSuperAdminOpen(true); break;
+    }
+  };
 
   useEffect(() => {
     const openProfile = () => setIsProfileOpen(true);
