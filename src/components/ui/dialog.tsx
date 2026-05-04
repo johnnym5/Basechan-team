@@ -1,13 +1,13 @@
-
 "use client"
 
 import * as React from "react"
 import * as DialogPrimitive from "@radix-ui/react-dialog"
 import { cva, type VariantProps } from "class-variance-authority"
-import { X } from "lucide-react"
+import { ChevronUp } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 import { useMediaQuery } from "@/hooks/use-media-query"
+import { PanelSwitcher } from "@/components/layout/PanelSwitcher"
 
 const Dialog = DialogPrimitive.Root
 
@@ -41,7 +41,7 @@ const dialogVariants = cva(
         left: "inset-y-0 left-0 h-full border-r data-[state=closed]:slide-out-to-left data-[state=open]:slide-in-from-left",
         right: "inset-y-0 right-0 h-full border-l data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right",
         bottom: "inset-x-0 bottom-0 border-t data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom h-[90vh] rounded-t-[3rem]",
-        top: "inset-x-0 top-0 border-b data-[state=closed]:slide-out-to-top data-[state=open]:slide-in-from-top h-[95vh] rounded-b-[4rem] px-8 pt-10 pb-16",
+        top: "inset-x-0 top-0 border-b data-[state=closed]:slide-out-to-top data-[state=open]:slide-in-from-top h-[95vh] rounded-b-[4rem] px-0 pt-0 pb-16",
       },
     },
     defaultVariants: {
@@ -60,6 +60,8 @@ const DialogContent = React.forwardRef<
 >(({ className, children, position, ...props }, ref) => {
   const isMobile = useMediaQuery("(max-width: 768px)");
   const finalPosition = isMobile ? "bottom" : position || "top";
+  const isTopPanel = finalPosition === "top";
+
   return (
     <DialogPortal>
       <DialogOverlay />
@@ -69,10 +71,19 @@ const DialogContent = React.forwardRef<
         {...props}
       >
         <div className="mx-auto w-full max-w-7xl h-full flex flex-col relative">
-            {children}
-            <DialogPrimitive.Close className="absolute -right-4 -top-4 rounded-full p-2 bg-secondary text-muted-foreground opacity-70 transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground shadow-lg">
-                <X className="h-5 w-5" />
-                <span className="sr-only">Close</span>
+            {isTopPanel && <PanelSwitcher />}
+            <div className={cn("flex-1 h-full min-h-0", isTopPanel && "px-8 pt-4")}>
+                {children}
+            </div>
+            
+            <DialogPrimitive.Close className={cn(
+                "absolute rounded-full transition-all hover:scale-110 active:scale-95 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground shadow-2xl z-[60]",
+                isTopPanel 
+                  ? "left-1/2 -top-6 -translate-x-1/2 p-4 bg-primary text-primary-foreground border-4 border-background h-16 w-16 flex items-center justify-center" 
+                  : "right-4 top-4 p-2 bg-secondary text-muted-foreground opacity-70 hover:opacity-100"
+            )}>
+                <ChevronUp className={cn(isTopPanel ? "h-8 w-8" : "h-5 w-5")} />
+                <span className="sr-only">Retract Panel</span>
             </DialogPrimitive.Close>
         </div>
       </DialogPrimitive.Content>

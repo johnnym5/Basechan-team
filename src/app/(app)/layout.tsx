@@ -1,7 +1,7 @@
 'use client';
 import { useUser, useDoc, useFirestore, useMemoFirebase, useCollection } from '@/firebase';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { ListTodo, FileText, CalendarPlus, BookOpenCheck, Plus, UserPlus, MessageSquare, Megaphone, Landmark, BookCopy } from 'lucide-react';
 import { doc, collection, query, where, limit } from 'firebase/firestore';
 import type { UserProfile, Attendance } from '@/lib/types';
@@ -75,6 +75,26 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [today, setToday] = useState('');
 
   const isLoggedIn = !!user;
+
+  const closeAllDialogs = useCallback(() => {
+    setIsWorkbookOpen(false);
+    setIsRequisitionsOpen(false);
+    setIsTasksOpen(false);
+    setIsAttendanceOpen(false);
+    setIsLeaveOpen(false);
+    setIsReportsOpen(false);
+    setIsAccountingOpen(false);
+    setIsAssignTaskOpen(false);
+    setIsNewRequisitionOpen(false);
+    setIsRequestLeaveOpen(false);
+    setIsNewWorkbookOpen(false);
+    setIsProfileOpen(false);
+    setIsSettingsOpen(false);
+    setIsChatOpen(false);
+    setIsInviteUserOpen(false);
+    setIsNewAnnouncementOpen(false);
+    setIsSuperAdminOpen(false);
+  }, []);
 
   useEffect(() => {
     if (isLoggedIn) setIsAuthDialogOpen(false);
@@ -211,6 +231,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     uiEmitter.on('open-invite-user-dialog', openInviteUser);
     uiEmitter.on('open-new-announcement-dialog', openNewAnnouncement);
     uiEmitter.on('open-superadmin-dialog', openSuperAdmin);
+    uiEmitter.on('close-all-dialogs', closeAllDialogs);
     
     return () => {
       uiEmitter.off('open-profile-dialog', openProfile);
@@ -230,8 +251,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       uiEmitter.off('open-invite-user-dialog', openInviteUser);
       uiEmitter.off('open-new-announcement-dialog', openNewAnnouncement);
       uiEmitter.off('open-superadmin-dialog', openSuperAdmin);
+      uiEmitter.off('close-all-dialogs', closeAllDialogs);
     };
-  }, []);
+  }, [closeAllDialogs]);
 
   return (
     <>

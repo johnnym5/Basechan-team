@@ -18,6 +18,7 @@ type AppEvents = {
   'open-new-announcement-dialog': void;
   'open-superadmin-dialog': void;
   'open-accounting-dialog': void;
+  'close-all-dialogs': void;
 };
 
 type Callback<T> = (data: T) => void;
