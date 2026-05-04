@@ -1,6 +1,6 @@
 'use client';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Megaphone, Pin, Eye, MoreVertical, Edit, Trash2 } from "lucide-react";
+import { Megaphone, Pin, Eye, MoreVertical, Edit, Trash2, Users } from "lucide-react";
 import { useUser, useDoc, useMemoFirebase, useCollection, useFirestore, updateDocumentNonBlocking, deleteDocumentNonBlocking } from "@/firebase";
 import { UserProfile, Announcement } from "@/lib/types";
 import { collection, doc, query, where, orderBy, arrayUnion, limit } from "firebase/firestore";
@@ -13,7 +13,9 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '../ui/alert-dialog';
 import { EditAnnouncementDialog } from "./EditAnnouncementDialog";
 import { useToast } from "@/hooks/use-toast";
-import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
+import { Avatar, AvatarFallback } from "../ui/avatar";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "../ui/dialog";
+import { ScrollArea } from "../ui/scroll-area";
 
 
 export function Announcements() {
@@ -23,6 +25,7 @@ export function Announcements() {
     
     const [annToEdit, setAnnToEdit] = useState<Announcement | null>(null);
     const [annToDelete, setAnnToDelete] = useState<Announcement | null>(null);
+    const [viewersToDisplay, setViewersToDisplay] = useState<Announcement | null>(null);
 
     const userProfileRef = useMemoFirebase(() => 
         firestore && authUser ? doc(firestore, "users", authUser.uid) : null,
@@ -43,6 +46,11 @@ export function Announcements() {
     }, [firestore, userProfile, authUser]);
 
     const { data: announcements, isLoading } = useCollection<Announcement>(announcementsQuery);
+
+    const usersQuery = useMemoFirebase(() =>
+        (firestore && userProfile) ? query(collection(firestore, 'users'), where('orgId', '==', userProfile.orgId)) : null,
+    [firestore, userProfile]);
+    const { data: allUsers } = useCollection<UserProfile>(usersQuery);
 
     const sortedAnnouncements = useMemo(() => {
         if (!announcements) return [];
@@ -79,6 +87,11 @@ export function Announcements() {
         });
         toast({ title: "Updated", description: `Announcement has been ${ann.isPinned ? 'unpinned' : 'pinned'}.` });
     }
+
+    const viewers = useMemo(() => {
+        if (!viewersToDisplay || !allUsers) return [];
+        return allUsers.filter(u => viewersToDisplay.viewedBy?.includes(u.id));
+    }, [viewersToDisplay, allUsers]);
 
     return (
         <>
@@ -124,10 +137,14 @@ export function Announcements() {
                                                 {announcement.authorName} - {formatDistanceToNow(new Date(announcement.createdAt), { addSuffix: true })}
                                             </span>
                                             {announcement.isPinned && permissions.canManageAnnouncements && (
-                                                <span className="flex items-center gap-1 text-primary/80">
+                                                <button 
+                                                    className="flex items-center gap-1 text-primary/80 hover:text-primary transition-colors cursor-pointer group"
+                                                    onClick={() => setViewersToDisplay(announcement)}
+                                                >
                                                     <Eye className="h-3 w-3" />
-                                                    {announcement.viewedBy?.length || 0}
-                                                </span>
+                                                    <span>{announcement.viewedBy?.length || 0}</span>
+                                                    <span className="opacity-0 group-hover:opacity-100 text-[10px] ml-1">View List</span>
+                                                </button>
                                             )}
                                         </div>
                                     </div>
@@ -186,6 +203,41 @@ export function Announcements() {
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
+        )}
+
+        {viewersToDisplay && (
+            <Dialog open={!!viewersToDisplay} onOpenChange={(isOpen) => !isOpen && setViewersToDisplay(null)}>
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2">
+                            <Users className="h-5 w-5 text-primary" />
+                            Announcement Viewers
+                        </DialogTitle>
+                        <DialogDescription>
+                            Staff members who have seen "{viewersToDisplay.title}"
+                        </DialogDescription>
+                    </DialogHeader>
+                    <ScrollArea className="h-72 mt-4 pr-4">
+                        <div className="space-y-4">
+                            {viewers.length === 0 ? (
+                                <p className="text-center text-sm text-muted-foreground py-8">No views recorded yet.</p>
+                            ) : (
+                                viewers.map(viewer => (
+                                    <div key={viewer.id} className="flex items-center gap-3">
+                                        <Avatar className="h-8 w-8">
+                                            <AvatarFallback>{viewer.fullName.split(' ').map(n=>n[0]).join('')}</AvatarFallback>
+                                        </Avatar>
+                                        <div>
+                                            <p className="text-sm font-semibold">{viewer.fullName}</p>
+                                            <p className="text-xs text-muted-foreground">{viewer.position}</p>
+                                        </div>
+                                    </div>
+                                ))
+                            )}
+                        </div>
+                    </ScrollArea>
+                </DialogContent>
+            </Dialog>
         )}
         </>
     );
