@@ -90,7 +90,7 @@ function DashboardGrid() {
 
             <Card className="w-full max-w-md bg-card/50 backdrop-blur-xl border-primary/20 shadow-2xl">
                 <CardHeader>
-                    <CardTitle>Security Terminal</CardTitle>
+                    <CardTitle>LOGIN</CardTitle>
                     <CardDescription>Enter your credentials to access the system.</CardDescription>
                 </CardHeader>
                 <CardContent className="text-left">
