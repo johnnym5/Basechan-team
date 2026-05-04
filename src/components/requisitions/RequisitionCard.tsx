@@ -1,9 +1,10 @@
 'use client';
 
+import React, { memo } from 'react';
 import type { Requisition } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { cn } from '@/lib/utils';
-import { Banknote, Eye, Trash2, CheckCircle } from 'lucide-react';
+import { Banknote, Eye } from 'lucide-react';
 import { RequisitionStatusBadge } from './RequisitionStatusBadge';
 import { useSystemConfig } from '@/hooks/useSystemConfig';
 import { useContextMenu } from '@/hooks/useContextMenu';
@@ -14,7 +15,7 @@ interface RequisitionCardProps {
     onSelect: (req: Requisition) => void;
 }
 
-export function RequisitionCard({ requisition, onSelect }: RequisitionCardProps) {
+export const RequisitionCard = memo(function RequisitionCard({ requisition, onSelect }: RequisitionCardProps) {
     const { config: systemConfig } = useSystemConfig(requisition.orgId);
     const currencySymbol = systemConfig?.currency_symbol || '$';
     const { isOpen, anchorPoint, handleContextMenu, handleTouchStart, handleTouchEnd, closeMenu } = useContextMenu();
@@ -54,4 +55,8 @@ export function RequisitionCard({ requisition, onSelect }: RequisitionCardProps)
             <ContextMenu isOpen={isOpen} anchorPoint={anchorPoint} items={menuItems} onClose={closeMenu} />
         </>
     )
-}
+}, (prev, next) => {
+    return prev.requisition.id === next.requisition.id && 
+           prev.requisition.status === next.requisition.status &&
+           prev.requisition.amount === next.requisition.amount;
+});

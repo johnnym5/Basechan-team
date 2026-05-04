@@ -7,15 +7,12 @@ export function cn(...inputs: ClassValue[]) {
 
 /**
  * Converts a hex color string to an HSL component string.
- * @param hex The hex color string (e.g., "#RRGGBB").
- * @returns A string formatted as "H S% L%" for use in CSS variables.
  */
 export function hexToHslString(hex: string): string | null {
   if (!hex || hex.length < 4) {
     return null;
   }
 
-  // Expand shorthand form (e.g. "03F") to full form (e.g. "0033FF")
   const shorthandRegex = /^#?([a-f\d])([a-f\d])([a-f\d])$/i;
   hex = hex.replace(shorthandRegex, (m, r, g, b) => r + r + g + g + b + b);
 
@@ -37,20 +34,14 @@ export function hexToHslString(hex: string): string | null {
   let h = 0, s = 0, l = (max + min) / 2;
 
   if (max === min) {
-    h = s = 0; // achromatic
+    h = s = 0;
   } else {
     const d = max - min;
     s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
     switch (max) {
-      case r:
-        h = (g - b) / d + (g < b ? 6 : 0);
-        break;
-      case g:
-        h = (b - r) / d + 2;
-        break;
-      case b:
-        h = (r - g) / d + 4;
-        break;
+      case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+      case g: h = (b - r) / d + 2; break;
+      case b: h = (r - g) / d + 4; break;
     }
     h /= 6;
   }
@@ -63,39 +54,29 @@ export function hexToHslString(hex: string): string | null {
 }
 
 /**
- * Sanitizes a string by replacing HTML special characters with their entities.
- * @param input The string to sanitize.
- * @returns The sanitized string.
+ * Robustly sanitizes user input to prevent XSS.
  */
 export function sanitizeInput(input: string | null | undefined): string {
   if (!input) return "";
-  return input
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
+  const map: Record<string, string> = {
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#039;'
+  };
+  return input.replace(/[&<>"']/g, (m) => map[m]);
 }
 
 /**
- * Calculates the distance between two points on Earth in meters using the Haversine formula.
- * @param lat1 Latitude of point 1.
- * @param lon1 Longitude of point 1.
- * @param lat2 Latitude of point 2.
- * @param lon2 Longitude of point 2.
- * @returns The distance in meters.
+ * Calculates distance in meters.
  */
 export function getDistanceInMeters(lat1: number, lon1: number, lat2: number, lon2: number): number {
-    const R = 6371e3; // Earth's radius in metres
-    const φ1 = lat1 * Math.PI / 180; // φ, λ in radians
+    const R = 6371e3;
+    const φ1 = lat1 * Math.PI / 180;
     const φ2 = lat2 * Math.PI / 180;
     const Δφ = (lat2 - lat1) * Math.PI / 180;
     const Δλ = (lon2 - lon1) * Math.PI / 180;
-
-    const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
-              Math.cos(φ1) * Math.cos(φ2) *
-              Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-
-    return R * c; // in metres
+    const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) + Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+    return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
 }

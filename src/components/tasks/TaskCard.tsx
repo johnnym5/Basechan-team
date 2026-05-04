@@ -1,5 +1,6 @@
 'use client';
 
+import React, { memo } from 'react';
 import type { Task, UserProfile } from '@/lib/types';
 import type { Permissions } from '@/hooks/usePermissions';
 import { Card, CardContent } from '../ui/card';
@@ -8,7 +9,7 @@ import { Badge } from '../ui/badge';
 import { useContextMenu } from '@/hooks/useContextMenu';
 import { ContextMenu, type ContextMenuItem } from '../shared/ContextMenu';
 import { TaskPriorityBadge } from './TaskPriorityBadge';
-import { Pencil, Share2, Trash2, Eye } from 'lucide-react';
+import { Pencil, Trash2, Eye } from 'lucide-react';
 
 interface TaskCardProps {
     task: Task;
@@ -17,7 +18,7 @@ interface TaskCardProps {
     onSelect: (task: Task) => void;
 }
 
-export function TaskCard({ task, onSelect, permissions }: TaskCardProps) {
+export const TaskCard = memo(function TaskCard({ task, onSelect, permissions }: TaskCardProps) {
     const { isOpen, anchorPoint, handleContextMenu, handleTouchStart, handleTouchEnd, closeMenu } = useContextMenu();
 
     const menuItems: ContextMenuItem[] = [
@@ -51,4 +52,9 @@ export function TaskCard({ task, onSelect, permissions }: TaskCardProps) {
             <ContextMenu isOpen={isOpen} anchorPoint={anchorPoint} items={menuItems} onClose={closeMenu} />
         </>
     )
-}
+}, (prev, next) => {
+    return prev.task.id === next.task.id && 
+           prev.task.status === next.task.status && 
+           prev.task.priority === next.task.priority &&
+           prev.task.title === next.task.title;
+});

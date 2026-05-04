@@ -1,4 +1,3 @@
-
 import { PREDEFINED_ROLES } from './roles-and-departments';
 
 export type UserPosition = (typeof PREDEFINED_ROLES)[number];
@@ -10,12 +9,6 @@ export interface Organization {
   name: string;
   ownerId: string;
   createdAt: string;
-}
-
-export interface Department {
-  id: string;
-  orgId: string;
-  name: string;
 }
 
 export interface SystemConfig {
@@ -31,16 +24,16 @@ export interface SystemConfig {
     lng: number;
   } | null;
   work_hours?: {
-    start: string; // "HH:mm"
-    end: string;   // "HH:mm"
+    start: string;
+    end: string;
   };
   currency_symbol: string;
-  branding_color?: string | null; // Hex code
-  accent_color?: string | null; // Hex code
+  branding_color?: string | null;
+  accent_color?: string | null;
 }
 
 export interface UserProfile {
-  id: string; // UID
+  id: string;
   orgId: string;
   email: string;
   username: string;
@@ -51,9 +44,9 @@ export interface UserProfile {
   position: UserPosition;
   departmentId?: string;
   departmentName?: string;
-  joinedDate: string; // ISO String for timestamp
+  joinedDate: string;
   status?: UserStatus;
-  lastSeen?: string; // ISO String
+  lastSeen?: string;
   notificationPreferences?: {
     requisitionUpdates?: boolean;
     taskAssignments?: boolean;
@@ -76,23 +69,23 @@ export interface Attendance {
     userId: string;
     userName: string;
     orgId: string;
-    date: string; // YYYY-MM-DD
-    clockIn: string; // ISO String for timestamp
-    clockOut?: string; // ISO String for timestamp
+    date: string;
+    clockIn: string;
+    clockOut?: string;
     status: AttendanceStatus;
     location: AttendanceLocation;
-    approvedBy?: string; // userId
-    approvedAt?: string; // ISO String
+    approvedBy?: string;
+    approvedAt?: string;
     remarks?: Array<'EARLY' | 'LATE' | 'OVERTIME' | 'UNDERTIME'>;
-    duration?: number; // seconds
-    overtime?: number; // seconds
-    undertime?: number; // seconds;
+    duration?: number;
+    overtime?: number;
+    undertime?: number;
     onBreak?: boolean;
     breaks?: {
         start: string;
         end?: string;
     }[];
-    totalBreak?: number; // seconds
+    totalBreak?: number;
 }
 
 export type RequisitionStatus = "PENDING_HR" | "PENDING_FINANCE" | "PENDING_MD" | "APPROVED" | "PAID" | "REJECTED";
@@ -101,22 +94,53 @@ export type ActivityType = 'LOG' | 'COMMENT';
 
 export interface ActivityEntry {
     type: ActivityType;
-    actorId: string; // userId
+    actorId: string;
     actorName: string;
-    timestamp: string; // ISO String for timestamp
-    text: string; // The content of the log or comment
-    
-    // Optional fields for LOG entries
+    timestamp: string;
+    text: string;
     fromStatus?: RequisitionStatus | TaskStatus | 'N/A';
     toStatus?: RequisitionStatus | TaskStatus;
 }
 
+export interface Vendor {
+    id: string;
+    orgId: string;
+    name: string;
+    contactPerson: string;
+    email: string;
+    phone: string;
+    address: string;
+    category: string;
+    rating: number;
+    isActive: boolean;
+    createdAt: string;
+}
+
+export interface PurchaseOrder {
+    id: string;
+    serialNo: string;
+    orgId: string;
+    vendorId: string;
+    vendorName: string;
+    requisitionId?: string;
+    title: string;
+    totalAmount: number;
+    status: 'DRAFT' | 'SENT' | 'DELIVERED' | 'CANCELLED';
+    items: {
+        description: string;
+        quantity: number;
+        unitPrice: number;
+        total: number;
+    }[];
+    createdAt: string;
+    createdBy: string;
+}
 
 export interface Requisition {
   id: string;
   serialNo: string;
   orgId: string;
-  createdBy: string; // userId
+  createdBy: string;
   creatorName: string;
   title: string;
   amount: number;
@@ -125,7 +149,9 @@ export interface Requisition {
   attachmentName?: string | null;
   status: RequisitionStatus;
   activity: ActivityEntry[];
-  createdAt: string; // ISO String for timestamp
+  createdAt: string;
+  vendorId?: string;
+  vendorName?: string;
 }
 
 export type TaskPriority = "LEVEL_1" | "LEVEL_2" | "LEVEL_3";
@@ -142,15 +168,15 @@ export interface Task {
   orgId: string;
   title: string;
   description: string;
-  assignedTo: string; // userId
+  assignedTo: string;
   assignedToName: string;
   priority: TaskPriority;
   estimatedHours?: number;
   status: TaskStatus;
   dueDate?: string | null;
-  createdBy: string; // userId
+  createdBy: string;
   activity: ActivityEntry[];
-  createdAt: string; // ISO string
+  createdAt: string;
   workbookId?: string | null;
   sheetId?: string | null;
   attachmentUrl?: string | null;
@@ -163,18 +189,17 @@ export interface Task {
   requesterName?: string;
 }
 
-
 export interface Announcement {
   id: string;
   orgId: string;
   title: string;
   content: string;
   isPinned: boolean;
-  authorId: string; // userId
+  authorId: string;
   authorName: string;
-  createdAt: string; // ISO String for timestamp
-  viewedBy: string[]; // Array of userIds
-  visibleTo: string[]; // `['ALL']` for all users, or `['userId1', 'userId2']` for specific users
+  createdAt: string;
+  viewedBy: string[];
+  visibleTo: string[];
 }
 
 export type ChatType = 'DIRECT' | 'CHANNEL';
@@ -183,10 +208,10 @@ export interface Chat {
     id: string;
     orgId: string;
     type: ChatType;
-    name?: string; // For channels
-    createdBy?: string; // For channels
-    participants: string[]; // userIds
-    participantProfiles: { // Map userId to a mini profile
+    name?: string;
+    createdBy?: string;
+    participants: string[];
+    participantProfiles: {
         [key: string]: {
             fullName: string;
         }
@@ -197,7 +222,7 @@ export interface Chat {
         senderName: string;
         timestamp: string;
     };
-    updatedAt: string; // ISO String for timestamp
+    updatedAt: string;
 }
 
 export interface ChatMessage {
@@ -207,18 +232,18 @@ export interface ChatMessage {
     senderId: string;
     senderName: string;
     content: string;
-    timestamp: string; // ISO String for timestamp
+    timestamp: string;
 }
 
 export interface Notification {
   id: string;
   orgId: string;
-  userId: string; // The user who receives the notification
+  userId: string;
   title: string;
   description: string;
-  href: string; // URL to navigate to on click
+  href: string;
   isRead: boolean;
-  createdAt: string; // ISO String
+  createdAt: string;
 }
 
 export type WorkbookRole = "VIEWER" | "EDITOR" | "MANAGER";
@@ -230,7 +255,7 @@ export interface Workbook {
   description?: string;
   createdBy: string;
   creatorName: string;
-  createdAt: string; // ISO String
+  createdAt: string;
   visibleTo: string[];
   sharedWith?: {
     userId: string;
@@ -253,7 +278,7 @@ export interface Sheet {
   headers: string[];
   columnConfig?: Record<string, ColumnConfig>;
   hiddenHeaders?: string[];
-  createdAt: string; // ISO String
+  createdAt: string;
 }
 
 export interface Feedback {
@@ -263,7 +288,7 @@ export interface Feedback {
   name: string;
   contactInfo: string;
   message: string;
-  createdAt: string; // ISO String
+  createdAt: string;
   status: 'NEW' | 'READ';
 }
 
@@ -294,13 +319,13 @@ export interface LeaveRequest {
   userId: string;
   userName: string;
   leaveType: LeaveType;
-  startDate: string; // ISO String
-  endDate: string; // ISO String
+  startDate: string;
+  endDate: string;
   reason: string;
   status: LeaveStatus;
-  approvedBy?: string; // userId
-  approvedAt?: string; // ISO String
-  createdAt: string; // ISO String
+  approvedBy?: string;
+  approvedAt?: string;
+  createdAt: string;
 }
 
 export interface DailyReport {
@@ -308,13 +333,13 @@ export interface DailyReport {
   orgId: string;
   userId: string;
   userName: string;
-  reportDate: string; // YYYY-MM-DD
+  reportDate: string;
   content: string;
   completedTasks?: {
     taskId: string;
     title: string;
   }[];
-  createdAt: string; // ISO String
+  createdAt: string;
 }
 
 export interface ErrorLog {
@@ -326,7 +351,7 @@ export interface ErrorLog {
   errorMessage: string;
   stackTrace?: string;
   componentStack?: string;
-  path?: string; // e.g., window.location.pathname
+  path?: string;
 }
 
 export type AccountType = "ASSET" | "LIABILITY" | "EQUITY" | "REVENUE" | "EXPENSE";
@@ -356,12 +381,12 @@ export interface JournalEntryLine {
 export interface JournalEntry {
     id: string;
     orgId: string;
-    date: string; // ISO
+    date: string;
     description: string;
     reference: string;
     status: JournalEntryStatus;
     createdBy: string;
     creatorName: string;
-    createdAt: string; // ISO
+    createdAt: string;
     lines: JournalEntryLine[];
 }

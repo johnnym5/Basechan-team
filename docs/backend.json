@@ -1,22 +1,64 @@
-
 {
   "entities": {
+    "Vendor": {
+      "title": "Vendor",
+      "type": "object",
+      "description": "Represents an external supplier or service provider.",
+      "properties": {
+        "orgId": { "type": "string" },
+        "name": { "type": "string" },
+        "contactPerson": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "phone": { "type": "string" },
+        "address": { "type": "string" },
+        "category": { "type": "string" },
+        "rating": { "type": "number", "minimum": 0, "maximum": 5 },
+        "isActive": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["orgId", "name", "email", "isActive"]
+    },
+    "PurchaseOrder": {
+        "title": "Purchase Order",
+        "type": "object",
+        "description": "A formal order sent to a vendor for goods or services.",
+        "properties": {
+            "serialNo": { "type": "string" },
+            "orgId": { "type": "string" },
+            "vendorId": { "type": "string" },
+            "vendorName": { "type": "string" },
+            "requisitionId": { "type": "string" },
+            "title": { "type": "string" },
+            "totalAmount": { "type": "number" },
+            "status": { "type": "string", "enum": ["DRAFT", "SENT", "DELIVERED", "CANCELLED"] },
+            "items": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "description": { "type": "string" },
+                        "quantity": { "type": "number" },
+                        "unitPrice": { "type": "number" },
+                        "total": { "type": "number" }
+                    }
+                }
+            },
+            "createdAt": { "type": "string", "format": "date-time" },
+            "createdBy": { "type": "string" }
+        }
+    },
     "Account": {
       "title": "Account",
       "type": "object",
       "description": "Represents a single account in the Chart of Accounts.",
       "properties": {
         "orgId": { "type": "string" },
-        "name": { "type": "string", "description": "The name of the account (e.g., 'Cash', 'Accounts Payable')." },
-        "code": { "type": "string", "description": "The unique numeric code for the account (e.g., '10100')." },
-        "type": {
-          "type": "string",
-          "enum": ["ASSET", "LIABILITY", "EQUITY", "REVENUE", "EXPENSE"],
-          "description": "The main type of the account."
-        },
-        "category": { "type": "string", "description": "A more specific category (e.g., 'Current Asset', 'Long-term Liability')." },
-        "balance": { "type": "number", "description": "The current balance of the account." },
-        "isDebitNormal": { "type": "boolean", "description": "True if a debit increases the balance (Assets, Expenses)." },
+        "name": { "type": "string" },
+        "code": { "type": "string" },
+        "type": { "type": "string", "enum": ["ASSET", "LIABILITY", "EQUITY", "REVENUE", "EXPENSE"] },
+        "category": { "type": "string" },
+        "balance": { "type": "number" },
+        "isDebitNormal": { "type": "boolean" },
         "description": { "type": "string" },
         "isActive": { "type": "boolean" }
       },
@@ -25,12 +67,12 @@
     "JournalEntry": {
       "title": "Journal Entry",
       "type": "object",
-      "description": "A financial transaction record in the General Ledger.",
+      "description": "A financial transaction record.",
       "properties": {
         "orgId": { "type": "string" },
         "date": { "type": "string", "format": "date-time" },
         "description": { "type": "string" },
-        "reference": { "type": "string", "description": "A reference number (e.g., invoice # or requisition serial)." },
+        "reference": { "type": "string" },
         "status": { "type": "string", "enum": ["DRAFT", "POSTED"] },
         "createdBy": { "type": "string" },
         "creatorName": { "type": "string" },
@@ -44,923 +86,34 @@
               "accountName": { "type": "string" },
               "debit": { "type": "number" },
               "credit": { "type": "number" }
-            },
-            "required": ["accountId", "accountName", "debit", "credit"]
+            }
           }
         }
       },
-      "required": ["orgId", "date", "description", "status", "createdBy", "creatorName", "createdAt", "lines"]
-    },
-    "ActivityEntry": {
-      "title": "Activity Entry",
-      "type": "object",
-      "description": "A single entry in an activity log, can be a system log or a user comment.",
-      "properties": {
-        "type": { "type": "string", "enum": ["LOG", "COMMENT"] },
-        "actorId": { "type": "string" },
-        "actorName": { "type": "string" },
-        "text": { "type": "string" },
-        "timestamp": { "type": "string", "format": "date-time" },
-        "fromStatus": { "type": "string" },
-        "toStatus": { "type": "string" }
-      },
-      "required": ["type", "actorId", "actorName", "text", "timestamp"]
+      "required": ["orgId", "date", "description", "status", "createdBy", "lines"]
     },
     "UserProfile": {
       "title": "UserProfile",
       "type": "object",
-      "description": "Represents a user's profile for the Palilious app.",
-      "properties": {
-        "orgId": {
-          "type": "string",
-          "description": "The ID of the organization the user belongs to."
-        },
-        "email": {
-          "type": "string",
-          "format": "email",
-          "description": "User's email, used for auth."
-        },
-        "username": {
-          "type": "string",
-          "description": "User's unique username."
-        },
-        "fullName": {
-          "type": "string",
-          "description": "User's full name."
-        },
-        "phoneNumber": {
-            "type": "string",
-            "description": "User's phone number."
-        },
-        "avatarUrl": {
-            "type": "string",
-            "format": "uri",
-            "description": "URL of the user's avatar image."
-        },
-        "role": {
-          "type": "string",
-          "description": "The user's canonical role in the organization, used for permission checks.",
-          "enum": [
-            "ORG_ADMIN",
-            "MANAGING_DIRECTOR",
-            "HR_MANAGER",
-            "FINANCE_MANAGER",
-            "STAFF"
-          ]
-        },
-        "position": {
-          "type": "string",
-          "description": "The user's job position within the organization."
-        },
-        "departmentId": {
-          "type": "string",
-          "description": "The ID of the department the user belongs to."
-        },
-        "departmentName": {
-            "type": "string",
-            "description": "The name of the department for easier display."
-        },
-        "status": {
-          "type": "string",
-          "enum": [
-            "ONLINE",
-            "OFFLINE",
-            "ON_LEAVE"
-          ],
-          "description": "User's current status."
-        },
-        "joinedDate": {
-            "type": "string",
-            "format": "date-time",
-            "description": "The ISO timestamp when the user joined the organization."
-        },
-        "lastSeen": {
-            "type": "string",
-            "format": "date-time",
-            "description": "The ISO timestamp when the user's status was last updated."
-        },
-        "notificationPreferences": {
-            "type": "object",
-            "properties": {
-                "requisitionUpdates": { "type": "boolean" },
-                "taskAssignments": { "type": "boolean" },
-                "announcements": { "type": "boolean" }
-            }
-        },
-        "customPermissions": {
-            "type": "object",
-            "description": "User-specific permission overrides that supplement their role-based access.",
-            "properties": {
-                "canAccessRequisitions": { "type": "boolean" },
-                "canAccessChat": { "type": "boolean" },
-                "canAccessAllTasks": { "type": "boolean" },
-                "canAccessAllWorkbooks": { "type": "boolean" },
-                "canManageAnnouncements": { "type": "boolean" }
-            }
-        }
-      },
-      "required": [
-        "orgId",
-        "username",
-        "fullName",
-        "email",
-        "role",
-        "position",
-        "joinedDate"
-      ]
-    },
-     "Department": {
-      "title": "Department",
-      "type": "object",
-      "description": "Represents a department within an organization.",
       "properties": {
         "orgId": { "type": "string" },
-        "name": { "type": "string" }
-      },
-      "required": ["orgId", "name"]
-    },
-    "Attendance": {
-      "title": "Attendance",
-      "type": "object",
-      "description": "Represents a single attendance record for a user.",
-      "properties": {
-        "userId": {
-          "type": "string",
-          "description": "The ID of the user."
-        },
-        "userName": {
-            "type": "string",
-            "description": "The name of the user who clocked in."
-        },
-        "orgId": {
-          "type": "string",
-          "description": "The ID of the organization."
-        },
-        "date": {
-          "type": "string",
-          "format": "date",
-          "description": "The date of the attendance record in YYYY-MM-DD format."
-        },
-        "clockIn": {
-          "type": "string",
-          "format": "date-time",
-          "description": "The ISO timestamp when the user clocked in."
-        },
-        "clockOut": {
-          "type": "string",
-          "format": "date-time",
-          "description": "The ISO timestamp when the user clocked out."
-        },
-        "location": {
-            "type": "string",
-            "enum": ["OFFICE", "REMOTE"],
-            "description": "The location where the user clocked in from."
-        },
-        "status": {
-            "type": "string",
-            "enum": ["PENDING", "APPROVED", "REJECTED"],
-            "description": "The approval status of the clock-in record."
-        },
-        "approvedBy": {
-            "type": "string",
-            "description": "The ID of the user who approved or rejected the record."
-        },
-        "approvedAt": {
-            "type": "string",
-            "format": "date-time",
-            "description": "The timestamp of the approval or rejection."
-        },
-        "remarks": {
-            "type": "array",
-            "description": "Notes about the attendance record, like early/late clock-in or overtime/undertime.",
-            "items": {
-                "type": "string",
-                "enum": ["EARLY", "LATE", "OVERTIME", "UNDERTIME"]
-            }
-        },
-        "duration": {
-            "type": "number",
-            "description": "The total duration of the shift in seconds."
-        },
-        "overtime": {
-            "type": "number",
-            "description": "Calculated overtime in seconds."
-        },
-        "undertime": {
-            "type": "number",
-            "description": "Calculated undertime in seconds."
-        },
-        "onBreak": {
-            "type": "boolean",
-            "description": "Whether the user is currently on a break."
-        },
-        "breaks": {
-            "type": "array",
-            "description": "A log of break intervals taken during the shift.",
-            "items": {
-                "type": "object",
-                "properties": {
-                    "start": { "type": "string", "format": "date-time" },
-                    "end": { "type": "string", "format": "date-time" }
-                },
-                "required": ["start"]
-            }
-        },
-        "totalBreak": {
-            "type": "number",
-            "description": "Total duration of breaks in seconds."
-        }
-      },
-      "required": [
-        "userId",
-        "userName",
-        "orgId",
-        "date",
-        "clockIn",
-        "status",
-        "location"
-      ]
-    },
-    "Requisition": {
-      "title": "Requisition",
-      "type": "object",
-      "description": "Represents a single financial requisition.",
-      "properties": {
-        "serialNo": { "type": "string", "description": "The requisition's unique serial number (e.g., REQ-0001)." },
-        "orgId": { "type": "string", "description": "The ID of the organization." },
-        "createdBy": { "type": "string", "description": "The user ID of the creator." },
-        "creatorName": { "type": "string", "description": "The name of the user who created the request." },
-        "title": { "type": "string", "description": "The title of the requisition." },
-        "amount": { "type": "number", "description": "The requisition amount." },
-        "description": { "type": "string", "description": "A detailed description of the requisition." },
-        "attachmentUrl": { "type": "string", "format": "uri", "description": "URL of any attachment." },
-        "attachmentName": { "type": "string", "description": "The name of the attached file." },
-        "status": {
-            "type": "string",
-            "enum": ["PENDING_HR", "PENDING_FINANCE", "PENDING_MD", "APPROVED", "PAID", "REJECTED"],
-            "description": "The current status of the requisition."
-        },
-        "createdAt": { "type": "string", "format": "date-time" },
-        "activity": {
-          "type": "array",
-          "description": "A log of all status changes and comments.",
-          "items": { "$ref": "#/entities/ActivityEntry" }
-        }
-      },
-      "required": ["serialNo", "orgId", "createdBy", "creatorName", "title", "amount", "description", "status", "createdAt", "activity"]
-    },
-     "Task": {
-      "title": "Task",
-      "type": "object",
-      "description": "Represents a single assignable task.",
-      "properties": {
-        "serialNo": { "type": "string", "description": "The task's unique serial number (e.g., TSK-00001)." },
-        "orgId": { "type": "string" },
-        "title": { "type": "string" },
-        "description": { "type": "string" },
-        "assignedTo": { "type": "string", "description": "The user ID of the assignee." },
-        "assignedToName": { "type": "string", "description": "The name of the assignee." },
-        "priority": { "type": "string", "enum": ["LEVEL_1", "LEVEL_2", "LEVEL_3"] },
-        "estimatedHours": {
-            "type": "number",
-            "description": "Estimated time in hours to complete the task."
-        },
-        "status": { "type": "string", "enum": ["QUEUED", "ACTIVE", "AWAITING_REVIEW", "ARCHIVED"] },
-        "dueDate": { "type": "string", "format": "date-time" },
-        "createdBy": { "type": "string", "description": "The user ID of the creator." },
-        "createdAt": { "type": "string", "format": "date-time" },
-        "workbookId": { "type": "string", "description": "The ID of the workbook this task is related to." },
-        "sheetId": { "type": "string", "description": "The ID of the specific sheet this task is related to." },
-        "attachmentUrl": { "type": "string", "format": "uri", "description": "URL of any attachment related to the task." },
-        "attachmentName": { "type": "string", "description": "The name of the attached file." },
-        "sharedWith": {
-            "type": "array",
-            "description": "A list of user IDs this task is shared with.",
-            "items": { "type": "string" }
-        },
-        "activity": {
-          "type": "array",
-          "description": "A log of all status changes and comments.",
-          "items": { "$ref": "#/entities/ActivityEntry" }
-        },
-        "subTasks": {
-            "type": "array",
-            "description": "A list of sub-tasks or checklist items within the task.",
-            "items": {
-                "type": "object",
-                "properties": {
-                    "id": { "type": "string", "description": "A unique ID for the sub-task item." },
-                    "text": { "type": "string", "description": "The content of the sub-task item." },
-                    "completed": { "type": "boolean", "description": "Whether the sub-task item is completed." }
-                },
-                "required": ["id", "text", "completed"]
-            }
-        },
-        "type": {
-          "type": "string",
-          "enum": ["STANDARD", "ASSISTANCE_REQUEST"],
-          "description": "The type of the task."
-        },
-        "relatedTaskId": {
-          "type": "string",
-          "description": "The ID of the original task for assistance requests."
-        },
-        "requesterId": {
-          "type": "string",
-          "description": "The ID of the user requesting assistance."
-        },
-        "requesterName": {
-          "type": "string",
-          "description": "The name of the user requesting assistance."
-        }
-      },
-      "required": [
-        "serialNo",
-        "orgId",
-        "title",
-        "assignedTo",
-        "assignedToName",
-        "priority",
-        "status",
-        "dueDate",
-        "createdBy",
-        "activity",
-        "createdAt"
-      ]
-    },
-    "SystemConfig": {
-      "title": "SystemConfig",
-      "type": "object",
-      "description": "Stores system-wide configuration for an organization.",
-      "properties": {
-        "orgId": { "type": "string" },
-        "finance_access": { "type": "boolean", "description": "Toggles visibility of the Requisitions module." },
-        "admin_tools": { "type": "boolean", "description": "Toggles visibility of Team Management for non-admins." },
-        "attendance_strict": { "type": "boolean", "description": "Toggles strict mode for attendance (e.g., Geofencing)." },
-        "chat_enabled": { "type": "boolean", "description": "Globally enable or disable the internal messaging system." },
-        "allow_self_edit": { "type": "boolean", "description": "Toggle whether staff can edit their own profile details." },
-        "office_coordinates": {
-          "type": "object",
-          "properties": {
-            "lat": { "type": "number" },
-            "lng": { "type": "number" }
-          }
-        },
-        "work_hours": {
-          "type": "object",
-          "properties": {
-            "start": { "type": "string", "format": "time" },
-            "end": { "type": "string", "format": "time" }
-          }
-        },
-        "currency_symbol": { "type": "string" },
-        "branding_color": { "type": "string", "description": "A hex code for the primary brand color." },
-        "accent_color": { "type": "string", "description": "A hex code for the accent brand color." }
-      },
-      "required": [
-        "orgId",
-        "finance_access",
-        "admin_tools",
-        "attendance_strict",
-        "chat_enabled",
-        "allow_self_edit",
-        "currency_symbol"
-      ]
-    },
-    "Chat": {
-      "title": "Chat",
-      "type": "object",
-      "description": "Represents a chat conversation, which can be a direct message or a group channel.",
-      "properties": {
-        "orgId": { "type": "string" },
-        "name": { "type": "string", "description": "The name of the channel. Null for direct messages." },
-        "type": { "type": "string", "enum": ["DIRECT", "CHANNEL"], "description": "The type of chat." },
-        "createdBy": { "type": "string", "description": "The user ID of the channel creator. Null for direct messages." },
-        "participants": {
-          "type": "array",
-          "items": { "type": "string" },
-          "description": "Array of user IDs participating in the chat."
-        },
-        "participantProfiles": {
-          "type": "object",
-          "description": "A map of participant IDs to their profile details for quick access."
-        },
-        "lastMessage": {
-          "type": "object",
-          "properties": {
-            "text": { "type": "string" },
-            "senderId": { "type": "string" },
-            "senderName": { "type": "string" },
-            "timestamp": { "type": "string", "format": "date-time" }
-          }
-        },
-        "updatedAt": { "type": "string", "format": "date-time" }
-      },
-      "required": ["orgId", "participants", "type", "updatedAt"]
-    },
-    "ChatMessage": {
-      "title": "ChatMessage",
-      "type": "object",
-      "description": "Represents a single message within a chat.",
-      "properties": {
-        "chatId": { "type": "string" },
-        "orgId": { "type": "string" },
-        "senderId": { "type": "string" },
-        "senderName": { "type": "string" },
-        "content": { "type": "string" },
-        "timestamp": { "type": "string", "format": "date-time" }
-      },
-      "required": ["chatId", "orgId", "senderId", "senderName", "content", "timestamp"]
-    },
-    "Announcement": {
-      "title": "Announcement",
-      "type": "object",
-      "description": "Represents an organization-wide announcement.",
-      "properties": {
-        "orgId": { "type": "string" },
-        "title": { "type": "string" },
-        "content": { "type": "string" },
-        "isPinned": { "type": "boolean" },
-        "authorId": { "type": "string", "description": "The user ID of the author." },
-        "authorName": { "type": "string", "description": "The name of the author." },
-        "createdAt": { "type": "string", "format": "date-time" },
-        "viewedBy": {
-            "type": "array",
-            "description": "List of user IDs who have viewed this announcement.",
-            "items": { "type": "string" }
-        },
-        "visibleTo": {
-            "type": "array",
-            "description": "List of user IDs who can see the announcement. Contains 'ALL' for public.",
-            "items": { "type": "string" }
-        }
-      },
-      "required": ["orgId", "title", "content", "isPinned", "authorId", "authorName", "createdAt", "viewedBy", "visibleTo"]
-    },
-    "Workbook": {
-      "title": "Workbook",
-      "type": "object",
-      "description": "A collection of sheets, similar to a spreadsheet file.",
-      "properties": {
-        "orgId": { "type": "string" },
-        "title": { "type": "string" },
-        "description": { "type": "string" },
-        "createdBy": { "type": "string" },
-        "creatorName": { "type": "string"},
-        "createdAt": { "type": "string", "format": "date-time" },
-        "visibleTo": {
-            "type": "array",
-            "description": "A list of user IDs that have any level of access to this workbook, for querying.",
-            "items": { "type": "string" }
-        },
-        "sharedWith": {
-            "type": "array",
-            "description": "A list of users this workbook is shared with and their roles.",
-            "items": {
-                "type": "object",
-                "properties": {
-                    "userId": { "type": "string" },
-                    "role": { "type": "string", "enum": ["VIEWER", "EDITOR", "MANAGER"] }
-                },
-                "required": ["userId", "role"]
-            }
-        }
-      },
-      "required": ["orgId", "title", "createdBy", "creatorName", "createdAt", "visibleTo"]
-    },
-    "Sheet": {
-      "title": "Sheet",
-      "type": "object",
-      "description": "A single sheet within a workbook, containing rows of data.",
-      "properties": {
-        "workbookId": { "type": "string" },
-        "name": { "type": "string" },
-        "data": {
-          "type": "array",
-          "description": "The grid data of the sheet, stored as an array of objects.",
-          "items": { "type": "object", "additionalProperties": true }
-        },
-        "headers": {
-          "type": "array",
-          "description": "An array of strings representing the column headers.",
-          "items": { "type": "string" }
-        },
-        "columnConfig": {
-            "type": "object",
-            "description": "Configuration for each column, keyed by header name.",
-            "additionalProperties": {
-                "type": "object",
-                "properties": {
-                    "type": { "type": "string", "enum": ["text", "number", "date", "select"] },
-                    "selectOptions": { "type": "array", "items": { "type": "string" } },
-                    "min": { "type": "number", "description": "Minimum value for number-type columns." },
-                    "max": { "type": "number", "description": "Maximum value for number-type columns." }
-                },
-                "required": ["type"]
-            }
-        },
-        "hiddenHeaders": {
-            "type": "array",
-            "description": "An array of header names that should be hidden from the default view.",
-            "items": { "type": "string" }
-        },
-        "createdAt": { "type": "string", "format": "date-time" }
-      },
-      "required": ["workbookId", "name", "data", "headers", "createdAt"]
-    },
-    "Feedback": {
-      "title": "Feedback",
-      "type": "object",
-      "description": "Represents a user feedback submission.",
-      "properties": {
-        "orgId": { "type": "string", "description": "The ID of the user's organization." },
-        "organizationName": { "type": "string", "description": "The organization name the user entered." },
-        "name": { "type": "string" },
-        "contactInfo": { "type": "string", "description": "User's email for contact." },
-        "message": { "type": "string" },
-        "createdAt": { "type": "string", "format": "date-time" },
-        "status": { "type": "string", "enum": ["NEW", "READ"] }
-      },
-      "required": ["organizationName", "name", "contactInfo", "message", "createdAt", "status"]
-    },
-    "Notification": {
-      "title": "Notification",
-      "type": "object",
-      "description": "Represents an in-app notification for a user.",
-      "properties": {
-        "orgId": { "type": "string" },
-        "userId": { "type": "string", "description": "The ID of the user who should receive the notification." },
-        "title": { "type": "string" },
-        "description": { "type": "string" },
-        "href": { "type": "string", "description": "The URL the notification should link to." },
-        "isRead": { "type": "boolean" },
-        "createdAt": { "type": "string", "format": "date-time" }
-      },
-      "required": ["orgId", "userId", "title", "href", "isRead", "createdAt"]
-    },
-    "LeaveRequest": {
-      "title": "LeaveRequest",
-      "type": "object",
-      "description": "Represents a single leave request from a user.",
-      "properties": {
-        "orgId": { "type": "string" },
-        "userId": { "type": "string" },
-        "userName": { "type": "string" },
-        "leaveType": { "type": "string", "enum": ["ANNUAL", "SICK", "UNPAID", "MATERNITY", "PATERNITY"] },
-        "startDate": { "type": "string", "format": "date-time" },
-        "endDate": { "type": "string", "format": "date-time" },
-        "reason": { "type": "string" },
-        "status": { "type": "string", "enum": ["PENDING", "APPROVED", "REJECTED"] },
-        "approvedBy": { "type": "string" },
-        "approvedAt": { "type": "string", "format": "date-time" },
-        "createdAt": { "type": "string", "format": "date-time" }
-      },
-      "required": ["orgId", "userId", "userName", "leaveType", "startDate", "endDate", "reason", "status", "createdAt"]
-    },
-    "DailyReport": {
-      "title": "DailyReport",
-      "type": "object",
-      "description": "Represents a user's daily work report submission.",
-      "properties": {
-        "orgId": { "type": "string" },
-        "userId": { "type": "string" },
-        "userName": { "type": "string" },
-        "reportDate": { "type": "string", "format": "date" },
-        "content": { "type": "string" },
-        "completedTasks": {
-          "type": "array",
-          "description": "A list of tasks mentioned in the report.",
-          "items": {
-            "type": "object",
-            "properties": {
-              "taskId": { "type": "string" },
-              "title": { "type": "string" }
-            },
-            "required": ["taskId", "title"]
-          }
-        },
-        "createdAt": { "type": "string", "format": "date-time" }
-      },
-      "required": ["orgId", "userId", "userName", "reportDate", "content", "createdAt"]
-    },
-    "ErrorLog": {
-      "title": "Error Log",
-      "type": "object",
-      "description": "Represents a single error log captured from the application.",
-      "properties": {
-        "orgId": { "type": "string" },
-        "userId": { "type": "string" },
-        "userName": { "type": "string" },
-        "timestamp": { "type": "string", "format": "date-time" },
-        "errorMessage": { "type": "string" },
-        "stackTrace": { "type": "string" },
-        "componentStack": { "type": "string" },
-        "path": { "type": "string" }
-      },
-      "required": ["timestamp", "errorMessage"]
+        "email": { "type": "string", "format": "email" },
+        "username": { "type": "string" },
+        "fullName": { "type": "string" },
+        "role": { "type": "string", "enum": ["ORG_ADMIN", "MANAGING_DIRECTOR", "HR_MANAGER", "FINANCE_MANAGER", "STAFF"] },
+        "position": { "type": "string" },
+        "joinedDate": { "type": "string", "format": "date-time" }
+      }
     }
   },
-  "auth": {
-    "providers": []
-  },
+  "auth": { "providers": [] },
   "firestore": {
     "structure": [
-      {
-        "path": "/accounts/{accountId}",
-        "definition": {
-          "entityName": "Account",
-          "schema": {
-            "$ref": "#/entities/Account"
-          },
-          "description": "Stores accounts for the Chart of Accounts.",
-          "params": [
-            {
-              "name": "accountId",
-              "description": "The account's unique ID."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/journal_entries/{entryId}",
-        "definition": {
-          "entityName": "JournalEntry",
-          "schema": {
-            "$ref": "#/entities/JournalEntry"
-          },
-          "description": "Stores General Ledger journal entries.",
-          "params": [
-            {
-              "name": "entryId",
-              "description": "The unique ID for the journal entry."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/users/{userId}",
-        "definition": {
-          "entityName": "UserProfile",
-          "schema": {
-            "$ref": "#/entities/UserProfile"
-          },
-          "description": "Stores user profiles for the Palilious app.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The user's unique ID."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/departments/{departmentId}",
-        "definition": {
-          "entityName": "Department",
-          "schema": {
-            "$ref": "#/entities/Department"
-          },
-          "description": "Stores departments within an organization.",
-          "params": [
-            {
-              "name": "departmentId",
-              "description": "The unique ID for the department."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/attendance/{attendanceId}",
-        "definition": {
-          "entityName": "Attendance",
-          "schema": {
-            "$ref": "#/entities/Attendance"
-          },
-          "description": "Stores user attendance records.",
-          "params": [
-            {
-              "name": "attendanceId",
-              "description": "The attendance record's unique ID."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/requisitions/{requisitionId}",
-        "definition": {
-          "entityName": "Requisition",
-          "schema": {
-            "$ref": "#/entities/Requisition"
-          },
-          "description": "Stores financial requisition requests.",
-          "params": [
-            {
-              "name": "requisitionId",
-              "description": "The requisition's unique ID."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/tasks/{taskId}",
-        "definition": {
-          "entityName": "Task",
-          "schema": {
-            "$ref": "#/entities/Task"
-          },
-          "description": "Stores tasks assigned to users.",
-          "params": [
-            {
-              "name": "taskId",
-              "description": "The task's unique ID."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/system_configs/{configId}",
-        "definition": {
-          "entityName": "SystemConfig",
-          "schema": {
-            "$ref": "#/entities/SystemConfig"
-          },
-          "description": "Stores feature toggle configurations for each organization.",
-          "params": [
-            {
-              "name": "configId",
-              "description": "The unique ID for the configuration document."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/chats/{chatId}",
-        "definition": {
-            "entityName": "Chat",
-            "schema": {
-            "$ref": "#/entities/Chat"
-            },
-            "description": "Stores chat conversations.",
-            "params": [
-            {
-                "name": "chatId",
-                "description": "The chat's unique ID."
-            }
-            ]
-        }
-    },
-    {
-        "path": "/chats/{chatId}/messages/{messageId}",
-        "definition": {
-            "entityName": "ChatMessage",
-            "schema": {
-            "$ref": "#/entities/ChatMessage"
-            },
-            "description": "Stores messages for a specific chat.",
-            "params": [
-            {
-                "name": "chatId",
-                "description": "The chat's unique ID."
-            },
-            {
-                "name": "messageId",
-                "description": "The message's unique ID."
-            }
-            ]
-        }
-    },
-    {
-        "path": "/announcements/{announcementId}",
-        "definition": {
-            "entityName": "Announcement",
-            "schema": {
-                "$ref": "#/entities/Announcement"
-            },
-            "description": "Stores organization-wide announcements.",
-            "params": [
-                {
-                    "name": "announcementId",
-                    "description": "The announcement's unique ID."
-                }
-            ]
-        }
-    },
-    {
-        "path": "/workbooks/{workbookId}",
-        "definition": {
-          "entityName": "Workbook",
-          "schema": {
-            "$ref": "#/entities/Workbook"
-          },
-          "description": "Stores user-created workbooks.",
-          "params": [
-            {
-              "name": "workbookId",
-              "description": "The workbook's unique ID."
-            }
-          ]
-        }
-    },
-    {
-        "path": "/workbooks/{workbookId}/sheets/{sheetId}",
-        "definition": {
-            "entityName": "Sheet",
-            "schema": {
-                "$ref": "#/entities/Sheet"
-            },
-            "description": "Stores individual sheets for a workbook.",
-            "params": [
-                {
-                    "name": "workbookId",
-                    "description": "The workbook's unique ID."
-                },
-                {
-                    "name": "sheetId",
-                    "description": "The sheet's unique ID."
-                }
-            ]
-        }
-    },
-    {
-        "path": "/feedback/{feedbackId}",
-        "definition": {
-            "entityName": "Feedback",
-            "schema": {
-                "$ref": "#/entities/Feedback"
-            },
-            "description": "Stores user feedback submissions.",
-            "params": [
-                {
-                    "name": "feedbackId",
-                    "description": "The unique ID for the feedback."
-                }
-            ]
-        }
-    },
-    {
-        "path": "/notifications/{notificationId}",
-        "definition": {
-            "entityName": "Notification",
-            "schema": {
-                "$ref": "#/entities/Notification"
-            },
-            "description": "Stores in-app user notifications.",
-            "params": [
-                {
-                    "name": "notificationId",
-                    "description": "The notification's unique ID."
-                }
-            ]
-        }
-    },
-    {
-      "path": "/leave_requests/{leaveRequestId}",
-      "definition": {
-        "entityName": "LeaveRequest",
-        "schema": {
-          "$ref": "#/entities/LeaveRequest"
-        },
-        "description": "Stores user leave requests.",
-        "params": [
-          {
-            "name": "leaveRequestId",
-            "description": "The unique ID for the leave request."
-          }
-        ]
-      }
-    },
-    {
-        "path": "/daily_reports/{reportId}",
-        "definition": {
-          "entityName": "DailyReport",
-          "schema": {
-            "$ref": "#/entities/DailyReport"
-          },
-          "description": "Stores user daily work reports.",
-          "params": [
-            {
-              "name": "reportId",
-              "description": "The unique ID for the report."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/error_logs/{errorId}",
-        "definition": {
-          "entityName": "ErrorLog",
-          "schema": {
-            "$ref": "#/entities/ErrorLog"
-          },
-          "description": "Stores client-side application errors for admin review.",
-          "params": [
-            {
-              "name": "errorId",
-              "description": "The unique ID for the error log."
-            }
-          ]
-        }
-      }
+      { "path": "/vendors/{vendorId}", "definition": { "entityName": "Vendor", "schema": { "$ref": "#/entities/Vendor" } } },
+      { "path": "/purchase_orders/{poId}", "definition": { "entityName": "PurchaseOrder", "schema": { "$ref": "#/entities/PurchaseOrder" } } },
+      { "path": "/accounts/{accountId}", "definition": { "entityName": "Account", "schema": { "$ref": "#/entities/Account" } } },
+      { "path": "/journal_entries/{entryId}", "definition": { "entityName": "JournalEntry", "schema": { "$ref": "#/entities/JournalEntry" } } },
+      { "path": "/users/{userId}", "definition": { "entityName": "UserProfile", "schema": { "$ref": "#/entities/UserProfile" } } }
     ]
   }
 }
