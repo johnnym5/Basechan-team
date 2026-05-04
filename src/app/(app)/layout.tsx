@@ -2,14 +2,13 @@
 import { useUser, useDoc, useFirestore, useMemoFirebase, useCollection } from '@/firebase';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { Loader2, ListTodo, FileText, CalendarPlus, BookOpenCheck, Plus, UserPlus, MessageSquare, Megaphone, Home, CalendarDays, User } from 'lucide-react';
+import { ListTodo, FileText, CalendarPlus, BookOpenCheck, Plus, UserPlus, MessageSquare, Megaphone, Landmark } from 'lucide-react';
 import { doc, collection, query, where, limit } from 'firebase/firestore';
 import type { UserProfile, Attendance } from '@/lib/types';
 import { useSystemConfig } from '@/hooks/useSystemConfig';
 import { hexToHslString, cn } from '@/lib/utils';
 import { useTheme } from 'next-themes';
 import { BottomNavBar } from '@/components/layout/BottomNavBar';
-import AppSidebar from '@/components/layout/AppSidebar';
 import AppHeader from '@/components/layout/AppHeader';
 import { WorkbookDialog } from '@/components/workbook/WorkbookDialog';
 import { RequisitionsDialog } from '@/components/requisitions/RequisitionsDialog';
@@ -44,7 +43,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const firestore = useFirestore();
   const router = useRouter();
   const { theme } = useTheme();
-  // Sidebar is always in hover-to-expand mode, so local state for pinning is removed.
+  
   const [isWorkbookOpen, setIsWorkbookOpen] = useState(false);
   const [initialWorkbookPayload, setInitialWorkbookPayload] = useState<{ workbookId?: string; sheetId?: string | null } | undefined>();
   const [isRequisitionsOpen, setIsRequisitionsOpen] = useState(false);
@@ -75,11 +74,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   const isLoggedIn = !!user;
 
-  // When user logs in successfully, close the auth dialog.
   useEffect(() => {
-    if (isLoggedIn) {
-        setIsAuthDialogOpen(false);
-    }
+    if (isLoggedIn) setIsAuthDialogOpen(false);
   }, [isLoggedIn]);
 
   useEffect(() => {
@@ -112,7 +108,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const userProfileRef = useMemoFirebase(() => 
     firestore && user ? doc(firestore, 'users', user.uid) : null
   , [firestore, user]);
-  const { data: userProfile, isLoading: isProfileLoading } = useDoc<UserProfile>(userProfileRef);
+  const { data: userProfile } = useDoc<UserProfile>(userProfileRef);
   
   const attendanceQuery = useMemoFirebase(() => {
     if (!user || !firestore || !today) return null;
@@ -127,7 +123,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const attendanceRecord = attendanceData?.[0] || null;
 
   const permissions = usePermissions(userProfile);
-  const { config, isLoading: isConfigLoading } = useSystemConfig(userProfile?.orgId);
+  const { config } = useSystemConfig(userProfile?.orgId);
   
   useEffect(() => {
     const root = document.documentElement;
@@ -136,49 +132,36 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     
     if (config?.branding_color) {
       const hslString = hexToHslString(config.branding_color);
-      if (hslString) {
-        root.style.setProperty('--primary', hslString);
-      }
+      if (hslString) root.style.setProperty('--primary', hslString);
     } else {
       root.style.setProperty('--primary', defaultPrimary);
     }
 
     if (config?.accent_color) {
       const hslString = hexToHslString(config.accent_color);
-      if (hslString) {
-        root.style.setProperty('--accent', hslString);
-      }
+      if (hslString) root.style.setProperty('--accent', hslString);
     } else {
       root.style.setProperty('--accent', defaultAccent);
     }
-
   }, [config, theme]);
 
   useEffect(() => {
     const openProfile = () => setIsProfileOpen(true);
     const openSettings = () => setIsSettingsOpen(true);
     const openChat = (payload?: { initialUserId?: string }) => {
-      if (payload) {
-        setInitialChatPayload(payload);
-      }
+      if (payload) setInitialChatPayload(payload);
       setIsChatOpen(true);
     };
     const openTasks = (payload?: { taskId?: string }) => {
-        if (payload) {
-            setInitialTaskPayload(payload);
-        }
+        if (payload) setInitialTaskPayload(payload);
         setIsTasksOpen(true);
     };
     const openWorkbooks = (payload?: { workbookId?: string; sheetId?: string | null }) => {
-      if (payload) {
-        setInitialWorkbookPayload(payload);
-      }
+      if (payload) setInitialWorkbookPayload(payload);
       setIsWorkbookOpen(true);
     };
     const openRequisitions = (payload?: { reqId?: string }) => {
-        if (payload) {
-            setInitialReqPayload(payload);
-        }
+        if (payload) setInitialReqPayload(payload);
         setIsRequisitionsOpen(true);
     };
     const openAttendance = () => setIsAttendanceOpen(true);
@@ -192,7 +175,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     const openInviteUser = () => setIsInviteUserOpen(true);
     const openNewAnnouncement = () => setIsNewAnnouncementOpen(true);
     const openSuperAdmin = () => setIsSuperAdminOpen(true);
-
 
     uiEmitter.on('open-profile-dialog', openProfile);
     uiEmitter.on('open-settings-dialog', openSettings);
@@ -245,42 +227,54 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 <SheetDescription>Navigation links for the application.</SheetDescription>
               </SheetHeader>
             </VisuallyHidden>
-            <AppSidebar 
-              isMobile={true} 
-              isCollapsed={false} 
-              isLoggedIn={isLoggedIn}
-              isAuthLoading={isUserLoading}
-              onSignInClick={() => setIsAuthDialogOpen(true)}
-            />
+            <div className="flex flex-col h-full bg-background">
+                <div className="p-6 border-b flex items-center gap-2">
+                    <BookCopy className="h-6 w-6 text-primary" />
+                    <h2 className="font-bold text-lg">Basechan Staff</h2>
+                </div>
+                <ScrollArea className="flex-1">
+                    <div className="p-4 space-y-2">
+                         {mainNavItems.map((item, idx) => {
+                            if ('isSeparator' in item) return <div key={idx} className="h-px bg-border my-2" />;
+                            if ('permission' in item && userProfile && !permissions[item.permission as keyof typeof permissions]) return null;
+
+                            return (
+                                <Button
+                                    key={item.label}
+                                    variant="ghost"
+                                    className="w-full justify-start gap-3"
+                                    onClick={() => {
+                                        setIsMobileSidebarOpen(false);
+                                        'href' in item ? router.push(item.href) : handleDialogClick(item.dialog!);
+                                    }}
+                                >
+                                    <item.icon className="h-5 w-5" />
+                                    {item.label}
+                                </Button>
+                            );
+                        })}
+                    </div>
+                </ScrollArea>
+            </div>
         </SheetContent>
       </Sheet>
 
-      <div className="group/sidebar relative">
-        <div className="flex min-h-screen w-full bg-muted/40 md:bg-background">
-            <AppSidebar 
-              isCollapsed={true}
-              isLoggedIn={isLoggedIn}
-              isAuthLoading={isUserLoading}
-              onSignInClick={() => setIsAuthDialogOpen(true)}
+      <div className="relative min-h-screen flex flex-col bg-background">
+            <AppHeader
+                userProfile={userProfile || null}
+                onMenuClick={() => setIsMobileSidebarOpen(true)}
+                isLoggedIn={isLoggedIn}
+                attendanceRecord={attendanceRecord}
+                systemConfig={config || null}
             />
-             <div className={cn(
-                "flex flex-1 flex-col bg-background transition-all duration-500 ease-in-out",
-                isAnyDialogOpen ? "md:scale-[0.97] md:rounded-2xl md:overflow-hidden md:shadow-2xl" : "md:scale-100 rounded-none",
-                isMobileSidebarOpen && "scale-90 translate-x-8 rounded-2xl overflow-hidden shadow-2xl"
+            <main className={cn(
+                "flex-1 transition-all duration-500 ease-in-out",
+                isAnyDialogOpen ? "md:scale-[0.98] md:px-6" : "w-full md:px-10",
+                "py-6 pb-28 md:pb-10"
             )}>
-                <AppHeader
-                    userProfile={userProfile}
-                    onMenuClick={() => setIsMobileSidebarOpen(true)}
-                    isLoggedIn={isLoggedIn}
-                    attendanceRecord={attendanceRecord}
-                    systemConfig={config}
-                />
-                <main className="flex-1 overflow-y-auto md:p-6 pb-28 md:pb-6">
-                    {children}
-                </main>
-            </div>
+                {children}
+            </main>
             {isLoggedIn && <BottomNavBar onFabClick={() => setIsFabMenuOpen(true)} />}
-        </div>
       </div>
 
 
@@ -377,15 +371,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 </DropdownMenuContent>
             </DropdownMenu>
 
-
-            {/* Main Feature Dialogs */}
             <WorkbookDialog
                 open={isWorkbookOpen}
                 onOpenChange={(isOpen) => {
-                setIsWorkbookOpen(isOpen);
-                if (!isOpen) {
-                    setInitialWorkbookPayload(undefined); // Clear payload on close
-                }
+                    setIsWorkbookOpen(isOpen);
+                    if (!isOpen) setInitialWorkbookPayload(undefined);
                 }}
                 initialPayload={initialWorkbookPayload}
             />
@@ -417,9 +407,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 open={isChatOpen}
                 onOpenChange={(isOpen) => {
                     setIsChatOpen(isOpen);
-                    if (!isOpen) {
-                    setInitialChatPayload(undefined); // Clear payload on close
-                    }
+                    if (!isOpen) setInitialChatPayload(undefined);
                 }}
                 currentUserProfile={userProfile}
                 permissions={permissions}
@@ -427,7 +415,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 />
             )}
 
-            {/* Creation Dialogs */}
             {userProfile && (
                 <>
                     <AssignTaskDialog open={isAssignTaskOpen} onOpenChange={setIsAssignTaskOpen} currentUserProfile={userProfile} permissions={permissions} initialData={null} />

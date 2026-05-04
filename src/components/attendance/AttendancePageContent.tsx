@@ -33,7 +33,7 @@ export function AttendancePageContent() {
           const savedTab = localStorage.getItem(storageKey);
           if (savedTab) return savedTab;
       }
-      return 'my-view';
+      return 'clock';
   });
 
   useEffect(() => {
@@ -42,40 +42,14 @@ export function AttendancePageContent() {
       }
   }, [activeTab]);
 
-
   if (isLoading) {
     return (
         <div className="space-y-8">
-            <div className="space-y-2">
-                <Skeleton className="h-8 w-1/2" />
-                <Skeleton className="h-5 w-3/4" />
-            </div>
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <div className="lg:col-span-1 space-y-8">
-                    <Skeleton className="h-48 w-full" />
-                    <Skeleton className="h-96 w-full" />
-                </div>
-                <div className="lg:col-span-2 space-y-8">
-                    <Skeleton className="h-64 w-full" />
-                    <Skeleton className="h-80 w-full" />
-                </div>
-            </div>
+            <Skeleton className="h-10 w-1/3" />
+            <Skeleton className="h-[500px] w-full" />
         </div>
     )
   }
-  
-  const MyViewContent = () => (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-      <div className="lg:col-span-1 space-y-8">
-        <ClockControl userProfile={userProfile} permissions={permissions} systemConfig={systemConfig} />
-        <StatusFeed userProfile={userProfile} permissions={permissions} />
-      </div>
-      <div className="lg:col-span-2 space-y-8">
-        {userProfile && permissions.canApproveHR && <PendingApprovals userProfile={userProfile} />}
-        <AttendanceHistory userProfile={userProfile} />
-      </div>
-    </div>
-  );
 
   return (
     <div className="space-y-8">
@@ -84,22 +58,41 @@ export function AttendancePageContent() {
         <p className="text-muted-foreground">Manage your work hours and see who's currently online.</p>
       </div>
       
-      {permissions.canManageStaff && userProfile ? (
-         <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList>
-                <TabsTrigger value="my-view">My View</TabsTrigger>
-                <TabsTrigger value="team-history">Team History</TabsTrigger>
-            </TabsList>
-            <TabsContent value="my-view" className="mt-4">
-                 <MyViewContent />
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="w-full justify-start border-b rounded-none h-auto p-0 bg-transparent gap-8 mb-6 overflow-x-auto overflow-y-hidden">
+            <TabsTrigger value="clock" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-0 pb-3 text-sm font-semibold uppercase tracking-wider">Time Clock</TabsTrigger>
+            <TabsTrigger value="history" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-0 pb-3 text-sm font-semibold uppercase tracking-wider">My History</TabsTrigger>
+            <TabsTrigger value="online" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-0 pb-3 text-sm font-semibold uppercase tracking-wider">Who's Online</TabsTrigger>
+            {permissions.canApproveHR && <TabsTrigger value="approvals" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-0 pb-3 text-sm font-semibold uppercase tracking-wider">Approvals</TabsTrigger>}
+            {permissions.canManageStaff && <TabsTrigger value="team-history" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-0 pb-3 text-sm font-semibold uppercase tracking-wider">Team Reports</TabsTrigger>}
+        </TabsList>
+        
+        <TabsContent value="clock" className="mt-0">
+            <div className="max-w-2xl mx-auto py-8">
+                <ClockControl userProfile={userProfile || null} permissions={permissions} systemConfig={systemConfig || null} />
+            </div>
+        </TabsContent>
+        
+        <TabsContent value="history" className="mt-0">
+            <AttendanceHistory userProfile={userProfile || null} />
+        </TabsContent>
+        
+        <TabsContent value="online" className="mt-0">
+            <StatusFeed userProfile={userProfile || null} permissions={permissions} />
+        </TabsContent>
+        
+        {permissions.canApproveHR && userProfile && (
+            <TabsContent value="approvals" className="mt-0">
+                <PendingApprovals userProfile={userProfile} />
             </TabsContent>
-            <TabsContent value="team-history" className="mt-4">
+        )}
+        
+        {permissions.canManageStaff && userProfile && (
+            <TabsContent value="team-history" className="mt-0">
                 <TeamAttendanceHistory userProfile={userProfile} />
             </TabsContent>
-        </Tabs>
-      ) : (
-        <MyViewContent />
-      )}
+        )}
+      </Tabs>
     </div>
   );
 }

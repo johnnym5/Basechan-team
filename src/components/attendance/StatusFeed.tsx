@@ -20,8 +20,6 @@ interface StatusFeedProps {
 
 export function StatusFeed({ userProfile, permissions }: StatusFeedProps) {
   const firestore = useFirestore();
-
-  // State for assistance dialog
   const [assistanceUser, setAssistanceUser] = useState<UserProfile | null>(null);
 
   const usersQuery = useMemoFirebase(() => {
@@ -47,68 +45,50 @@ export function StatusFeed({ userProfile, permissions }: StatusFeedProps) {
       uiEmitter.emit('open-chat-dialog', { initialUserId: userId });
   };
 
-
   return (
     <>
-      <Card>
-        <CardHeader>
-          <CardTitle>Who's In Office?</CardTitle>
-          <CardDescription>Live status of all staff members.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <ScrollArea className="h-96">
-              <div className="space-y-1">
-                 {isLoading && Array.from({ length: 5 }).map((_, i) => (
-                      <div key={i} className="flex items-center gap-3 p-2">
-                          <Skeleton className="h-3 w-3 rounded-full" />
-                          <div className="space-y-2">
-                              <Skeleton className="h-4 w-32" />
-                              <Skeleton className="h-3 w-24" />
-                          </div>
-                      </div>
+      <div className="space-y-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                 {isLoading && Array.from({ length: 8 }).map((_, i) => (
+                      <Card key={i} className="p-4"><Skeleton className="h-12 w-full" /></Card>
                  ))}
                  {!isLoading && sortedUsers.map(user => {
-                     if (user.id === userProfile?.id) {
-                         // Don't show popover for self
-                         return (
-                            <div key={user.id} className="flex items-center gap-3 p-2 rounded-lg">
-                               <span className={`h-2.5 w-2.5 rounded-full shrink-0 ${user.status === 'ONLINE' ? 'bg-emerald-500' : 'bg-muted'}`} />
-                               <div>
-                                   <p className="font-medium text-sm text-foreground">{user.fullName} (You)</p>
-                                   <p className="text-xs text-muted-foreground">{user.position}</p>
-                               </div>
-                           </div>
-                         );
-                     }
-                     
+                     const isSelf = user.id === userProfile?.id;
                      return (
                         <Popover key={user.id}>
                             <PopoverTrigger asChild>
-                                <div className="flex items-center gap-3 p-2 rounded-lg transition-colors hover:bg-secondary cursor-pointer">
-                                    <span className={`h-2.5 w-2.5 rounded-full shrink-0 ${user.status === 'ONLINE' ? 'bg-emerald-500' : 'bg-muted'}`} />
-                                    <div>
-                                        <p className="font-medium text-sm text-foreground">{user.fullName}</p>
-                                        <p className="text-xs text-muted-foreground">{user.position}</p>
+                                <Card className="p-4 hover:bg-accent cursor-pointer transition-colors">
+                                    <div className="flex items-center gap-4">
+                                        <div className="relative">
+                                            <span className={`absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-background ${user.status === 'ONLINE' ? 'bg-emerald-500' : 'bg-muted-foreground'}`} />
+                                            <div className="h-10 w-10 rounded-full bg-secondary flex items-center justify-center font-bold text-sm">
+                                                {user.fullName.split(' ').map(n=>n[0]).join('')}
+                                            </div>
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <p className="font-semibold text-sm truncate">{user.fullName} {isSelf && "(You)"}</p>
+                                            <p className="text-xs text-muted-foreground truncate">{user.position}</p>
+                                        </div>
                                     </div>
-                                </div>
+                                </Card>
                             </PopoverTrigger>
-                            <PopoverContent className="w-48 p-1">
-                                <Button variant="ghost" className="w-full justify-start" onClick={() => handleChat(user.id)}>
-                                    <MessageSquare className="mr-2 h-4 w-4" /> Send Message
-                                </Button>
-                                <Button variant="ghost" className="w-full justify-start" onClick={() => setAssistanceUser(user)}>
-                                    <LifeBuoy className="mr-2 h-4 w-4" /> Request Assistance
-                                </Button>
-                            </PopoverContent>
+                            {!isSelf && (
+                                <PopoverContent className="w-48 p-1">
+                                    <Button variant="ghost" className="w-full justify-start" onClick={() => handleChat(user.id)}>
+                                        <MessageSquare className="mr-2 h-4 w-4" /> Send Message
+                                    </Button>
+                                    <Button variant="ghost" className="w-full justify-start" onClick={() => setAssistanceUser(user)}>
+                                        <LifeBuoy className="mr-2 h-4 w-4" /> Request Help
+                                    </Button>
+                                </PopoverContent>
+                            )}
                         </Popover>
                  )})}
                   {!isLoading && sortedUsers.length === 0 && (
-                       <p className="text-sm text-muted-foreground text-center pt-8">No staff members found.</p>
+                       <p className="text-sm text-muted-foreground text-center py-20 col-span-full">No staff members found.</p>
                   )}
-              </div>
-          </ScrollArea>
-        </CardContent>
-      </Card>
+          </div>
+      </div>
       
       {assistanceUser && userProfile && (
         <RequestAssistanceDialog

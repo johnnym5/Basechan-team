@@ -9,14 +9,16 @@ import type { UserProfile, Notification, Attendance, SystemConfig, DailyReport }
 import { showBrowserNotification } from '@/lib/notifications';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
-import { Bell, CheckCheck } from 'lucide-react';
+import { Bell, CheckCheck, Menu, BookCopy } from 'lucide-react';
 import { ScrollArea } from '../ui/scroll-area';
 import { format, formatDistanceToNow } from 'date-fns';
-import { Separator } from '../ui/separator';
 import { cn } from '@/lib/utils';
 import { UniversalSearch } from '@/components/layout/UniversalSearch';
 import { uiEmitter } from '@/lib/ui-emitter';
-
+import { mainNavItems } from '@/lib/nav-items';
+import Link from 'next/link';
+import { usePermissions } from '@/hooks/usePermissions';
+import { ORG_NAME } from '@/lib/config';
 
 export default function AppHeader({ 
   userProfile, 
@@ -34,6 +36,7 @@ export default function AppHeader({
   const router = useRouter();
   const { user } = useUser();
   const firestore = useFirestore();
+  const permissions = usePermissions(userProfile);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [shownNotificationIds, setShownNotificationIds] = useState<Set<string>>(new Set());
   const [greeting, setGreeting] = useState("Good Morning");
@@ -61,10 +64,8 @@ export default function AppHeader({
   }, []);
 
   useEffect(() => {
-    // Set date on client side to avoid hydration mismatch
     setTodayForReport(format(new Date(), 'yyyy-MM-dd'));
   }, []);
-
 
   useEffect(() => {
     const updateGreeting = () => {
@@ -92,7 +93,7 @@ export default function AppHeader({
                 } else if (now >= clockOutReminderStart) {
                     newGreeting = "Winding down?";
                 }
-            } else { // Not clocked in or already clocked out
+            } else {
                 if (now >= clockInReminderStart && now <= clockInGraceEnd) {
                     newGreeting = "Time to clock in!";
                 } else if (now > clockInGraceEnd && now < officeEndTime) {
@@ -101,28 +102,20 @@ export default function AppHeader({
             }
         }
 
-        // Fallback to generic greeting if no specific message was set
         if (!newGreeting) {
-            if (hour < 12) {
-                newGreeting = "Good Morning";
-            } else if (hour < 17) { // 5 PM
-                newGreeting = "Good Afternoon";
-            } else {
-                newGreeting = "Good Evening";
-            }
+            if (hour < 12) newGreeting = "Good Morning";
+            else if (hour < 17) newGreeting = "Good Afternoon";
+            else newGreeting = "Good Evening";
         }
 
         setGreeting(newGreeting);
     };
 
     updateGreeting();
-    const intervalId = setInterval(updateGreeting, 60000); // Update every minute
-
+    const intervalId = setInterval(updateGreeting, 60000);
     return () => clearInterval(intervalId);
   }, [attendanceRecord, systemConfig]);
 
-
-  // --- Start of logic from Notifications ---
   const notificationsQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
     return query(
@@ -156,15 +149,13 @@ export default function AppHeader({
         const todayStr = format(now, 'yyyy-MM-dd');
         const reportReminderKey = `report-reminder-sent-${todayStr}`;
 
-        if (localStorage.getItem(reportReminderKey) || hasSubmittedReportToday) {
-            return;
-        }
+        if (localStorage.getItem(reportReminderKey) || hasSubmittedReportToday) return;
 
         const [endHour, endMinute] = systemConfig.work_hours.end.split(':').map(Number);
         const officeEndTime = new Date();
         officeEndTime.setHours(endHour, endMinute, 0, 0);
 
-        const reminderTime = new Date(officeEndTime.getTime() - 60 * 60000); // 1 hour before end of day
+        const reminderTime = new Date(officeEndTime.getTime() - 60 * 60000);
 
         if (now > reminderTime && now < officeEndTime) {
             showBrowserNotification(
@@ -176,18 +167,12 @@ export default function AppHeader({
         }
     };
     
-    // Check every 5 minutes
     const intervalId = setInterval(checkReportReminder, 300000);
-
     return () => clearInterval(intervalId);
-
   }, [systemConfig, user, hasSubmittedReportToday]);
 
-
   useEffect(() => {
-    if (!notifications || typeof window === 'undefined' || !('Notification' in window) || Notification.permission !== 'granted') {
-      return;
-    }
+    if (!notifications || typeof window === 'undefined' || !('Notification' in window) || Notification.permission !== 'granted') return;
     
     const newUnreadNotifications = notifications.filter(
       n => !n.isRead && !shownNotificationIds.has(n.id)
@@ -195,16 +180,7 @@ export default function AppHeader({
   
     if (newUnreadNotifications.length > 0) {
       const latestNotification = newUnreadNotifications[0];
-      
-      showBrowserNotification(
-        latestNotification.title,
-        {
-          body: latestNotification.description,
-          tag: latestNotification.id,
-        },
-        latestNotification.id
-      );
-
+      showBrowserNotification(latestNotification.title, { body: latestNotification.description, tag: latestNotification.id }, latestNotification.id);
       setShownNotificationIds(prev => {
         const newSet = new Set(prev);
         newUnreadNotifications.forEach(n => newSet.add(n.id));
@@ -224,11 +200,7 @@ export default function AppHeader({
     if (notification.href.startsWith('/chat')) {
         const urlParams = new URLSearchParams(notification.href.split('?')[1]);
         const chatId = urlParams.get('chatId');
-        if (chatId) {
-            uiEmitter.emit('open-chat-dialog', { chatId });
-        } else {
-            uiEmitter.emit('open-chat-dialog');
-        }
+        uiEmitter.emit('open-chat-dialog', { chatId: chatId || undefined });
     } else {
       router.push(notification.href);
     }
@@ -237,43 +209,73 @@ export default function AppHeader({
 
   const handleMarkAllAsRead = () => {
     if (!firestore || !notifications || unreadCount === 0) return;
-    
     const batch = writeBatch(firestore);
     notifications.forEach(n => {
-        if (!n.isRead) {
-            const notifRef = doc(firestore, 'notifications', n.id);
-            batch.update(notifRef, { isRead: true });
-        }
+        if (!n.isRead) batch.update(doc(firestore, 'notifications', n.id), { isRead: true });
     });
     batch.commit();
   };
-  // --- End of logic from Notifications ---
+
+  const handleDialogClick = (dialog: string) => {
+    switch(dialog) {
+      case 'chat': uiEmitter.emit('open-chat-dialog'); break;
+      case 'settings': uiEmitter.emit('open-settings-dialog'); break;
+      case 'tasks': uiEmitter.emit('open-tasks-dialog'); break;
+      case 'workbooks': uiEmitter.emit('open-workbooks-dialog'); break;
+      case 'requisitions': uiEmitter.emit('open-requisitions-dialog'); break;
+      case 'attendance': uiEmitter.emit('open-attendance-dialog'); break;
+      case 'leave': uiEmitter.emit('open-leave-dialog'); break;
+      case 'reports': uiEmitter.emit('open-reports-dialog'); break;
+      case 'profile': uiEmitter.emit('open-profile-dialog'); break;
+      case 'accounting': uiEmitter.emit('open-accounting-dialog'); break;
+    }
+  };
 
   return (
-    <header className="sticky top-0 z-40 glass-dark px-4 sm:px-6 py-4 flex items-center justify-between">
-      <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon" className="md:hidden size-10 rounded-full flex items-center justify-center bg-slate-800/50 border border-slate-700" onClick={onMenuClick}>
-            <span className="material-symbols-outlined text-xl">menu</span>
+    <header className="sticky top-0 z-40 glass-dark border-b px-4 sm:px-6 py-3 flex items-center justify-between">
+      <div className="flex items-center gap-6">
+        <Link href="/" className="flex items-center gap-2">
+            <BookCopy className="h-6 w-6 text-primary" />
+            <h1 className="font-bold text-lg tracking-tight hidden lg:block">{ORG_NAME}</h1>
+        </Link>
+
+        {isLoggedIn && (
+            <nav className="hidden md:flex items-center gap-1">
+                {mainNavItems.map((item, idx) => {
+                    if ('isSeparator' in item) return <div key={idx} className="w-px h-4 bg-border mx-2" />;
+                    if ('permission' in item && userProfile && !permissions[item.permission as keyof typeof permissions]) return null;
+
+                    return (
+                        <Button
+                            key={item.label}
+                            variant="ghost"
+                            size="sm"
+                            className="text-xs font-semibold uppercase tracking-wider text-muted-foreground hover:text-primary px-3"
+                            onClick={() => 'href' in item ? router.push(item.href) : handleDialogClick(item.dialog!)}
+                        >
+                            {item.label}
+                        </Button>
+                    );
+                })}
+            </nav>
+        )}
+
+        <Button variant="ghost" size="icon" className="md:hidden" onClick={onMenuClick}>
+            <Menu className="h-6 w-6" />
         </Button>
-        {isLoggedIn && userProfile ? (
-          <div className="flex items-center gap-3">
-            <Avatar className="size-10 rounded-full bg-primary/20 flex items-center justify-center border border-primary/30 overflow-hidden">
-                <AvatarImage src={userProfile.avatarUrl || user?.photoURL || ''} alt={userProfile.fullName} />
-                <AvatarFallback>{userProfile.fullName.split(' ').map(n=>n[0]).join('')}</AvatarFallback>
-            </Avatar>
-            <div className="hidden sm:block">
-                <div className="flex items-baseline gap-2">
-                    <h2 className={cn("text-base font-bold transition-all duration-300", animateGreeting && "text-primary scale-105")}>{greeting}</h2>
-                    <span className="text-xs text-muted-foreground font-mono">{currentTime}</span>
-                </div>
-                <p className="text-sm text-muted-foreground">{userProfile.fullName} | {currentDate}</p>
-            </div>
-          </div>
-        ) : null}
       </div>
+
       {isLoggedIn && userProfile && (
-        <div className='flex items-center gap-2'>
+        <div className='flex items-center gap-3'>
             <UniversalSearch userProfile={userProfile} />
+            
+            <div className="hidden sm:flex flex-col items-end mr-2 text-right">
+                <div className="flex items-center gap-2">
+                    <h2 className={cn("text-sm font-bold transition-all duration-300", animateGreeting && "text-primary")}>{greeting}</h2>
+                </div>
+                <p className="text-[10px] text-muted-foreground uppercase tracking-widest">{currentTime} | {currentDate}</p>
+            </div>
+
             <Popover open={isNotificationsOpen} onOpenChange={setIsNotificationsOpen}>
                 <PopoverTrigger asChild>
                     <Button variant="ghost" size="icon" className="size-10 rounded-full flex items-center justify-center bg-slate-800/50 border border-slate-700 relative">
@@ -313,9 +315,7 @@ export default function AppHeader({
                 </PopoverContent>
             </Popover>
 
-            <div className="hidden md:block">
-                <UserNav userProfile={userProfile} />
-            </div>
+            <UserNav userProfile={userProfile} />
         </div>
       )}
     </header>

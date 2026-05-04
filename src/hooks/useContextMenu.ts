@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 export const useContextMenu = () => {
   const [anchorPoint, setAnchorPoint] = useState({ x: 0, y: 0 });
   const [isOpen, setIsOpen] = useState(false);
-  const longPressTimeoutRef = useRef<NodeJS.Timeout>();
+  const longPressTimeoutRef = useRef<NodeJS.Timeout>(null);
 
   const handleContextMenu = useCallback((event: React.MouseEvent) => {
     event.preventDefault();
@@ -13,10 +13,9 @@ export const useContextMenu = () => {
   }, []);
   
   const handleTouchStart = useCallback((event: React.TouchEvent) => {
+    const touch = event.touches[0];
     longPressTimeoutRef.current = setTimeout(() => {
-        // Prevent context menu from opening if touch moves
-        event.preventDefault();
-        setAnchorPoint({ x: event.touches[0].pageX, y: event.touches[0].pageY });
+        setAnchorPoint({ x: touch.pageX, y: touch.pageY });
         setIsOpen(true);
     }, 500); // 500ms for long press
   }, []);

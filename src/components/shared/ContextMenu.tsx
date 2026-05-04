@@ -24,7 +24,7 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({ isOpen, anchorPoint, i
     <div
       style={{ top: anchorPoint.y, left: anchorPoint.x }}
       className="fixed z-[9999] min-w-[12rem] overflow-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-md animate-in fade-in-0 zoom-in-95"
-      onClick={(e) => e.stopPropagation()} // Prevent click from closing menu immediately
+      onClick={(e) => e.stopPropagation()}
     >
       <ul className="space-y-0.5">
         {items.map((item, index) => {
