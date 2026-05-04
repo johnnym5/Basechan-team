@@ -1,0 +1,6 @@
+kind: "AppHostingYaml"
+apiVersion: "v1"
+runConfig:
+  concurrency: 80
+  cpu: 1
+  memoryMiB: 512
