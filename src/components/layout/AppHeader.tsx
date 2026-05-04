@@ -9,7 +9,7 @@ import type { UserProfile, Notification, Attendance, SystemConfig, DailyReport }
 import { showBrowserNotification } from '@/lib/notifications';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
-import { Bell, CheckCheck, Menu, BookCopy } from 'lucide-react';
+import { Bell, CheckCheck, Menu, BookCopy, ChevronDown, ChevronUp } from 'lucide-react';
 import { ScrollArea } from '../ui/scroll-area';
 import { format, formatDistanceToNow } from 'date-fns';
 import { cn } from '@/lib/utils';
@@ -44,6 +44,7 @@ export default function AppHeader({
   const [currentDate, setCurrentDate] = useState('');
   const [animateGreeting, setAnimateGreeting] = useState(false);
   const [todayForReport, setTodayForReport] = useState('');
+  const [isHeaderVisible, setIsHeaderVisible] = useState(false);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -232,92 +233,124 @@ export default function AppHeader({
   };
 
   return (
-    <header className="sticky top-0 z-40 glass-dark border-b px-4 sm:px-6 py-3 flex items-center justify-between">
-      <div className="flex items-center gap-6">
-        <Link href="/" className="flex items-center gap-2">
-            <BookCopy className="h-6 w-6 text-primary" />
-            <h1 className="font-bold text-lg tracking-tight hidden lg:block">{ORG_NAME}</h1>
-        </Link>
-
-        {isLoggedIn && (
-            <nav className="hidden md:flex items-center gap-1">
-                {mainNavItems.map((item, idx) => {
-                    if ('isSeparator' in item) return <div key={idx} className="w-px h-4 bg-border mx-2" />;
-                    if ('permission' in item && userProfile && !permissions[item.permission as keyof typeof permissions]) return null;
-
-                    return (
-                        <Button
-                            key={item.label}
-                            variant="ghost"
-                            size="sm"
-                            className="text-xs font-semibold uppercase tracking-wider text-muted-foreground hover:text-primary px-3"
-                            onClick={() => 'href' in item ? router.push(item.href) : handleDialogClick(item.dialog!)}
-                        >
-                            {item.label}
-                        </Button>
-                    );
-                })}
-            </nav>
+    <div className="sticky top-0 z-40 w-full group/header-container">
+        {/* Reveal Handle */}
+        {!isHeaderVisible && isLoggedIn && (
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-xs flex justify-center">
+                <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={() => setIsHeaderVisible(true)}
+                    className="h-6 w-32 bg-primary/10 hover:bg-primary/20 backdrop-blur-xl border border-t-0 border-primary/30 rounded-b-2xl flex items-center justify-center gap-2 group shadow-2xl shadow-primary/20 transition-all animate-fade-in-down pointer-events-auto"
+                >
+                    <div className="w-8 h-0.5 bg-primary/40 rounded-full group-hover:bg-primary transition-colors" />
+                    <ChevronDown className="h-3 w-3 text-primary/50 group-hover:text-primary transition-colors" />
+                </Button>
+            </div>
         )}
 
-        <Button variant="ghost" size="icon" className="md:hidden" onClick={onMenuClick}>
-            <Menu className="h-6 w-6" />
-        </Button>
-      </div>
+        <header className={cn(
+            "glass-dark border-b px-4 sm:px-6 flex items-center justify-between transition-all duration-500 ease-in-out origin-top relative",
+            (isHeaderVisible || !isLoggedIn) ? "py-3 opacity-100 translate-y-0" : "h-0 py-0 opacity-0 -translate-y-full overflow-hidden"
+        )}>
+            <div className="flex items-center gap-6">
+                <Link href="/" className="flex items-center gap-2">
+                    <BookCopy className="h-6 w-6 text-primary" />
+                    <h1 className="font-bold text-lg tracking-tight hidden lg:block">{ORG_NAME}</h1>
+                </Link>
 
-      {isLoggedIn && userProfile && (
-        <div className='flex items-center gap-3'>
-            <UniversalSearch userProfile={userProfile} />
-            
-            <div className="hidden sm:flex flex-col items-end mr-2 text-right">
-                <div className="flex items-center gap-2">
-                    <h2 className={cn("text-sm font-bold transition-all duration-300", animateGreeting && "text-primary")}>{greeting}</h2>
-                </div>
-                <p className="text-[10px] text-muted-foreground uppercase tracking-widest">{currentTime} | {currentDate}</p>
+                {isLoggedIn && (
+                    <nav className="hidden md:flex items-center gap-1">
+                        {mainNavItems.map((item, idx) => {
+                            if ('isSeparator' in item) return <div key={idx} className="w-px h-4 bg-border mx-2" />;
+                            if ('permission' in item && userProfile && !permissions[item.permission as keyof typeof permissions]) return null;
+
+                            return (
+                                <Button
+                                    key={item.label}
+                                    variant="ghost"
+                                    size="sm"
+                                    className="text-xs font-semibold uppercase tracking-wider text-muted-foreground hover:text-primary px-3"
+                                    onClick={() => 'href' in item ? router.push(item.href) : handleDialogClick(item.dialog!)}
+                                >
+                                    {item.label}
+                                </Button>
+                            );
+                        })}
+                    </nav>
+                )}
+
+                <Button variant="ghost" size="icon" className="md:hidden" onClick={onMenuClick}>
+                    <Menu className="h-6 w-6" />
+                </Button>
             </div>
 
-            <Popover open={isNotificationsOpen} onOpenChange={setIsNotificationsOpen}>
-                <PopoverTrigger asChild>
-                    <Button variant="ghost" size="icon" className="size-10 rounded-full flex items-center justify-center bg-slate-800/50 border border-slate-700 relative">
-                        <Bell className="h-5 w-5" />
-                        {unreadCount > 0 && <span className="absolute top-2.5 right-2.5 size-2 bg-primary rounded-full border-2 border-background"></span>}
-                    </Button>
-                </PopoverTrigger>
-                <PopoverContent align="end" className="w-80 p-0">
-                    <div className="p-3 flex items-center justify-between border-b">
-                        <h3 className="font-semibold text-sm">Notifications</h3>
-                        <Button variant="link" size="sm" onClick={handleMarkAllAsRead} disabled={unreadCount === 0} className="text-xs h-auto p-0">
-                            <CheckCheck className="mr-1 h-3 w-3" /> Mark all as read
-                        </Button>
+            {isLoggedIn && userProfile && (
+                <div className='flex items-center gap-3'>
+                    <UniversalSearch userProfile={userProfile} />
+                    
+                    <div className="hidden sm:flex flex-col items-end mr-2 text-right">
+                        <div className="flex items-center gap-2">
+                            <h2 className={cn("text-sm font-bold transition-all duration-300", animateGreeting && "text-primary")}>{greeting}</h2>
+                        </div>
+                        <p className="text-[10px] text-muted-foreground uppercase tracking-widest">{currentTime} | {currentDate}</p>
                     </div>
-                    <ScrollArea className="h-96">
-                        {!notifications || notifications.length === 0 ? (
-                            <p className="text-center text-sm text-muted-foreground py-16">No new notifications</p>
-                        ) : (
-                            <div className="divide-y divide-border">
-                                {notifications.map(n => (
-                                    <div key={n.id} onClick={() => handleNotificationClick(n)} 
-                                        className={cn("p-3 flex items-start gap-3 hover:bg-accent cursor-pointer", !n.isRead && "bg-primary/5 hover:bg-primary/10")}
-                                    >
-                                        {!n.isRead && <div className="mt-1 h-2 w-2 rounded-full bg-primary flex-shrink-0"></div>}
-                                        <div className={cn("flex-1", n.isRead && "pl-5")}>
-                                            <p className="text-sm font-semibold">{n.title}</p>
-                                            <p className="text-sm text-muted-foreground">{n.description}</p>
-                                            <p className="text-xs text-muted-foreground/70 mt-1">
-                                                {formatDistanceToNow(new Date(n.createdAt), { addSuffix: true })}
-                                            </p>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </ScrollArea>
-                </PopoverContent>
-            </Popover>
 
-            <UserNav userProfile={userProfile} />
-        </div>
-      )}
-    </header>
+                    <Popover open={isNotificationsOpen} onOpenChange={setIsNotificationsOpen}>
+                        <PopoverTrigger asChild>
+                            <Button variant="ghost" size="icon" className="size-10 rounded-full flex items-center justify-center bg-slate-800/50 border border-slate-700 relative">
+                                <Bell className="h-5 w-5" />
+                                {unreadCount > 0 && <span className="absolute top-2.5 right-2.5 size-2 bg-primary rounded-full border-2 border-background"></span>}
+                            </Button>
+                        </PopoverTrigger>
+                        <PopoverContent align="end" className="w-80 p-0">
+                            <div className="p-3 flex items-center justify-between border-b">
+                                <h3 className="font-semibold text-sm">Notifications</h3>
+                                <Button variant="link" size="sm" onClick={handleMarkAllAsRead} disabled={unreadCount === 0} className="text-xs h-auto p-0">
+                                    <CheckCheck className="mr-1 h-3 w-3" /> Mark all as read
+                                </Button>
+                            </div>
+                            <ScrollArea className="h-96">
+                                {!notifications || notifications.length === 0 ? (
+                                    <p className="text-center text-sm text-muted-foreground py-16">No new notifications</p>
+                                ) : (
+                                    <div className="divide-y divide-border">
+                                        {notifications.map(n => (
+                                            <div key={n.id} onClick={() => handleNotificationClick(n)} 
+                                                className={cn("p-3 flex items-start gap-3 hover:bg-accent cursor-pointer", !n.isRead && "bg-primary/5 hover:bg-primary/10")}
+                                            >
+                                                {!n.isRead && <div className="mt-1 h-2 w-2 rounded-full bg-primary flex-shrink-0"></div>}
+                                                <div className={cn("flex-1", n.isRead && "pl-5")}>
+                                                    <p className="text-sm font-semibold">{n.title}</p>
+                                                    <p className="text-sm text-muted-foreground">{n.description}</p>
+                                                    <p className="text-xs text-muted-foreground/70 mt-1">
+                                                        {formatDistanceToNow(new Date(n.createdAt), { addSuffix: true })}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </ScrollArea>
+                        </PopoverContent>
+                    </Popover>
+
+                    <UserNav userProfile={userProfile} />
+                </div>
+            )}
+
+            {/* Hide Handle */}
+            {isHeaderVisible && isLoggedIn && (
+                <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={() => setIsHeaderVisible(false)}
+                    className="absolute bottom-[-1.5rem] left-1/2 -translate-x-1/2 h-6 w-24 bg-background/80 backdrop-blur-md border border-t-0 rounded-b-2xl flex items-center justify-center hover:bg-destructive/10 group shadow-lg transition-all"
+                >
+                    <ChevronUp className="h-4 w-4 text-muted-foreground group-hover:text-destructive transition-colors" />
+                </Button>
+            )}
+        </header>
+    </div>
   );
 }
