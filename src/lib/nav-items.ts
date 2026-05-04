@@ -10,6 +10,7 @@ import {
   Settings,
   User,
   Landmark,
+  Library,
 } from "lucide-react";
 
 export const mainNavItems = [
@@ -23,6 +24,7 @@ export const mainNavItems = [
   { dialog: "workbooks", icon: BookOpenCheck, label: "Workbooks" },
   { dialog: "requisitions", icon: ReceiptText, label: "Requisitions", permission: 'canAccessRequisitions' },
   { dialog: "accounting", icon: Landmark, label: "Accounting", permission: 'canManageAccounting' },
+  { dialog: "library", icon: Library, label: "Library", permission: 'canAccessLibrary' },
   { dialog: "reports", icon: BarChart, label: "Reports" },
   { isSeparator: true },
   { dialog: "chat", icon: MessageSquare, label: "Chat", permission: "canAccessChat"},

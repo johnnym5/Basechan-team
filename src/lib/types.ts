@@ -58,6 +58,7 @@ export interface UserProfile {
     canAccessAllTasks?: boolean;
     canAccessAllWorkbooks?: boolean;
     canManageAnnouncements?: boolean;
+    canManageLibrary?: boolean;
   };
 }
 
@@ -78,6 +79,7 @@ export interface Attendance {
     approvedAt?: string;
     remarks?: Array<'EARLY' | 'LATE' | 'OVERTIME' | 'UNDERTIME'>;
     duration?: number;
+    idleTime?: number; // Accumulated seconds of inactivity
     overtime?: number;
     undertime?: number;
     onBreak?: boolean;
@@ -281,6 +283,20 @@ export interface Sheet {
   createdAt: string;
 }
 
+export interface LibraryItem {
+    id: string;
+    orgId: string;
+    name: string;
+    type: 'FILE' | 'FOLDER';
+    parentFolderId: string | null;
+    url?: string | null;
+    mimeType?: string | null;
+    size?: number;
+    createdBy: string;
+    creatorName: string;
+    createdAt: string;
+}
+
 export interface Feedback {
   id: string;
   orgId: string;
@@ -308,6 +324,9 @@ export interface Permissions {
   canManageAnnouncements: boolean;
   canViewTeam: boolean;
   canManageAccounting: boolean;
+  canAccessLibrary: boolean;
+  canManageLibrary: boolean;
+  canViewFiles: boolean;
 }
 
 export type LeaveType = "ANNUAL" | "SICK" | "UNPAID" | "MATERNITY" | "PATERNITY";

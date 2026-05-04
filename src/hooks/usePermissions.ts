@@ -21,24 +21,38 @@ export interface Permissions {
   canManageAnnouncements: boolean;
   canViewTeam: boolean;
   canManageAccounting: boolean;
+  canAccessLibrary: boolean;
+  canManageLibrary: boolean;
+  canViewFiles: boolean;
 }
 
 const rolePermissions: Record<UserRole, Partial<Permissions>> = {
-  'STAFF': {},
+  'STAFF': {
+      canAccessLibrary: true,
+      canViewFiles: true,
+  },
   'HR_MANAGER': {
     canApproveHR: true,
     canManageStaff: true,
     canManageAnnouncements: true,
+    canAccessLibrary: true,
+    canManageLibrary: true,
+    canViewFiles: true,
   },
   'FINANCE_MANAGER': {
     canApproveFinance: true,
     canDisburse: true,
     canManageAccounting: true,
+    canAccessLibrary: true,
+    canViewFiles: true,
   },
   'MANAGING_DIRECTOR': {
     canApproveMD: true,
     canManageStaff: true,
     canManageAnnouncements: true,
+    canAccessLibrary: true,
+    canManageLibrary: true,
+    canViewFiles: true,
   },
   'ORG_ADMIN': {
     canApproveHR: true,
@@ -49,6 +63,9 @@ const rolePermissions: Record<UserRole, Partial<Permissions>> = {
     canManageCompany: true,
     canManageAnnouncements: true,
     canManageAccounting: true,
+    canAccessLibrary: true,
+    canManageLibrary: true,
+    canViewFiles: true,
   },
 };
 
@@ -68,6 +85,9 @@ const defaultPermissions: Permissions = {
   canManageAnnouncements: false,
   canViewTeam: false,
   canManageAccounting: false,
+  canAccessLibrary: false,
+  canManageLibrary: false,
+  canViewFiles: false,
 };
 
 export function usePermissions(userProfile: UserProfile | null): Permissions {
@@ -94,6 +114,9 @@ export function usePermissions(userProfile: UserProfile | null): Permissions {
           canManageAnnouncements: true,
           canViewTeam: true,
           canManageAccounting: true,
+          canAccessLibrary: true,
+          canManageLibrary: true,
+          canViewFiles: true,
       };
     }
     
@@ -140,6 +163,9 @@ export function usePermissions(userProfile: UserProfile | null): Permissions {
     }
     if (typeof customPerms.canManageAnnouncements === 'boolean') {
         perms.canManageAnnouncements = customPerms.canManageAnnouncements;
+    }
+    if (typeof customPerms.canManageLibrary === 'boolean') {
+        perms.canManageLibrary = customPerms.canManageLibrary;
     }
     
     // 4. Special cases

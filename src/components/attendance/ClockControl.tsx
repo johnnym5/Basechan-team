@@ -19,6 +19,7 @@ import {
   Building,
   Briefcase,
   Coffee,
+  ZapOff,
 } from 'lucide-react';
 import type {
   UserProfile,
@@ -132,7 +133,7 @@ export function ClockControl({
         }, 0);
         
         const rawTotalSeconds = differenceInSeconds(now, clockInTime);
-        const secondsWorked = Math.max(0, rawTotalSeconds - totalBreakSeconds);
+        const secondsWorked = Math.max(0, rawTotalSeconds - totalBreakSeconds - (attendanceRecord.idleTime || 0));
         setShiftDuration(formatDuration(secondsWorked));
 
         if (systemConfig?.work_hours?.start && systemConfig.work_hours.end) {
@@ -158,45 +159,6 @@ export function ClockControl({
     }
     return () => clearInterval(timer);
   }, [isApproved, attendanceRecord, systemConfig]);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-
-    const checkReminders = () => {
-      if (!systemConfig?.work_hours) return;
-
-      const now = new Date();
-      const todayStr = format(now, 'yyyy-MM-dd');
-      
-      const { start, end } = systemConfig.work_hours;
-      const [startHour, startMinute] = start.split(':').map(Number);
-      const officeStartTime = new Date();
-      officeStartTime.setHours(startHour, startMinute, 0, 0);
-
-      const [endHour, endMinute] = end.split(':').map(Number);
-      const officeEndTime = new Date();
-      officeEndTime.setHours(endHour, endMinute, 0, 0);
-
-      const lateReminderKey = `late-reminder-sent-${todayStr}`;
-      const clockOutReminderKey = `clock-out-reminder-sent-${todayStr}`;
-
-      // Running late reminder
-      if (!attendanceRecord && now > new Date(officeStartTime.getTime() + 30 * 60000) && !localStorage.getItem(lateReminderKey)) {
-        showBrowserNotification('Running Late?', { body: "Don't forget to clock in for your shift." }, 'late-reminder');
-        localStorage.setItem(lateReminderKey, 'true');
-      }
-
-      // Clock out reminder
-      if (isApproved && now > new Date(officeEndTime.getTime() - 15 * 60000) && now < officeEndTime && !localStorage.getItem(clockOutReminderKey)) {
-        showBrowserNotification('End of Day', { body: 'Your shift is ending soon. Remember to clock out!' }, 'clock-out-reminder');
-        localStorage.setItem(clockOutReminderKey, 'true');
-      }
-    };
-
-    const intervalId = setInterval(checkReminders, 60000); // Check every minute
-
-    return () => clearInterval(intervalId);
-  }, [attendanceRecord, isApproved, systemConfig]);
 
 
   const handleClockIn = async () => {
@@ -291,6 +253,7 @@ export function ClockControl({
         status: 'PENDING',
         location,
         remarks,
+        idleTime: 0,
       };
 
       await addDocumentNonBlocking(
@@ -368,7 +331,7 @@ export function ClockControl({
       }, 0);
       
       const totalShiftSeconds = differenceInSeconds(clockOutTime, clockInTime);
-      const durationInSeconds = totalShiftSeconds - totalBreakSeconds;
+      const durationInSeconds = totalShiftSeconds - totalBreakSeconds - (attendanceRecord.idleTime || 0);
 
       let overtime = 0;
       let undertime = 0;
@@ -491,10 +454,18 @@ export function ClockControl({
                 </Button>
             </div>
             {isApproved && (
-              <div className="space-y-2 pt-2">
-                <div className="text-center">
-                    <p className="font-mono text-base tracking-widest">{shiftDuration}</p>
-                    <p className="text-xs text-muted-foreground">TIME ELAPSED</p>
+              <div className="space-y-4 pt-2">
+                <div className="flex items-center justify-center gap-6">
+                    <div className="text-center">
+                        <p className="font-mono text-base tracking-widest">{shiftDuration}</p>
+                        <p className="text-[10px] text-muted-foreground uppercase">Active Time</p>
+                    </div>
+                    {attendanceRecord?.idleTime && attendanceRecord.idleTime > 0 ? (
+                        <div className="text-center text-amber-500">
+                            <p className="font-mono text-base tracking-widest">{formatDuration(attendanceRecord.idleTime)}</p>
+                            <p className="text-[10px] uppercase">Standby Time</p>
+                        </div>
+                    ) : null}
                 </div>
                 {timeRemaining !== null && (
                     <div>

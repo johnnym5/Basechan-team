@@ -2,7 +2,7 @@
 import { useUser, useDoc, useFirestore, useMemoFirebase, useCollection } from '@/firebase';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState, useCallback } from 'react';
-import { ListTodo, FileText, CalendarPlus, BookOpenCheck, Plus, UserPlus, MessageSquare, Megaphone, Landmark, BookCopy } from 'lucide-react';
+import { ListTodo, FileText, CalendarPlus, BookOpenCheck, Plus, UserPlus, MessageSquare, Megaphone, Landmark, BookCopy, Library } from 'lucide-react';
 import { doc, collection, query, where, limit } from 'firebase/firestore';
 import type { UserProfile, Attendance } from '@/lib/types';
 import { useSystemConfig } from '@/hooks/useSystemConfig';
@@ -38,6 +38,8 @@ import { format } from 'date-fns';
 import { AccountingDialog } from '@/components/accounting/AccountingDialog';
 import { mainNavItems } from '@/lib/nav-items';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { LibraryDialog } from '@/components/library/LibraryDialog';
+import { useIdleTimer } from '@/hooks/useIdleTimer';
 
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
@@ -56,6 +58,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [isLeaveOpen, setIsLeaveOpen] = useState(false);
   const [isReportsOpen, setIsReportsOpen] = useState(false);
   const [isAccountingOpen, setIsAccountingOpen] = useState(false);
+  const [isLibraryOpen, setIsLibraryOpen] = useState(false);
   const [isAssignTaskOpen, setIsAssignTaskOpen] = useState(false);
   const [isNewRequisitionOpen, setIsNewRequisitionOpen] = useState(false);
   const [isRequestLeaveOpen, setIsRequestLeaveOpen] = useState(false);
@@ -84,6 +87,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     setIsLeaveOpen(false);
     setIsReportsOpen(false);
     setIsAccountingOpen(false);
+    setIsLibraryOpen(false);
     setIsAssignTaskOpen(false);
     setIsNewRequisitionOpen(false);
     setIsRequestLeaveOpen(false);
@@ -104,29 +108,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       setToday(format(new Date(), 'yyyy-MM-dd'));
   }, []);
 
-  const isAnyMainDialogOpen =
-    isLoggedIn && (
-        isWorkbookOpen ||
-        isRequisitionsOpen ||
-        isTasksOpen ||
-        isAttendanceOpen ||
-        isLeaveOpen ||
-        isReportsOpen ||
-        isAccountingOpen ||
-        isAssignTaskOpen ||
-        isNewRequisitionOpen ||
-        isRequestLeaveOpen ||
-        isNewWorkbookOpen ||
-        isProfileOpen ||
-        isSettingsOpen ||
-        isChatOpen ||
-        isInviteUserOpen ||
-        isNewAnnouncementOpen ||
-        isSuperAdminOpen
-    );
-
-  const isAnyDialogOpen = isAnyMainDialogOpen || isAuthDialogOpen;
-
   const userProfileRef = useMemoFirebase(() => 
     firestore && user ? doc(firestore, 'users', user.uid) : null
   , [firestore, user]);
@@ -144,8 +125,35 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { data: attendanceData } = useCollection<Attendance>(attendanceQuery);
   const attendanceRecord = attendanceData?.[0] || null;
 
+  // Global Idle Tracking
+  const { isIdle } = useIdleTimer(attendanceRecord);
+
   const permissions = usePermissions(userProfile);
   const { config } = useSystemConfig(userProfile?.orgId);
+
+  const isAnyMainDialogOpen =
+    isLoggedIn && (
+        isWorkbookOpen ||
+        isRequisitionsOpen ||
+        isTasksOpen ||
+        isAttendanceOpen ||
+        isLeaveOpen ||
+        isReportsOpen ||
+        isAccountingOpen ||
+        isLibraryOpen ||
+        isAssignTaskOpen ||
+        isNewRequisitionOpen ||
+        isRequestLeaveOpen ||
+        isNewWorkbookOpen ||
+        isProfileOpen ||
+        isSettingsOpen ||
+        isChatOpen ||
+        isInviteUserOpen ||
+        isNewAnnouncementOpen ||
+        isSuperAdminOpen
+    );
+
+  const isAnyDialogOpen = isAnyMainDialogOpen || isAuthDialogOpen;
   
   useEffect(() => {
     const root = document.documentElement;
@@ -179,6 +187,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       case 'reports': setIsReportsOpen(true); break;
       case 'profile': setIsProfileOpen(true); break;
       case 'accounting': setIsAccountingOpen(true); break;
+      case 'library': setIsLibraryOpen(true); break;
       case 'superadmin': setIsSuperAdminOpen(true); break;
     }
   };
@@ -206,6 +215,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     const openLeave = () => setIsLeaveOpen(true);
     const openReports = () => setIsReportsOpen(true);
     const openAccounting = () => setIsAccountingOpen(true);
+    const openLibrary = () => setIsLibraryOpen(true);
     const openAssignTask = () => setIsAssignTaskOpen(true);
     const openNewRequisition = () => setIsNewRequisitionOpen(true);
     const openRequestLeave = () => setIsRequestLeaveOpen(true);
@@ -224,6 +234,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     uiEmitter.on('open-leave-dialog', openLeave);
     uiEmitter.on('open-reports-dialog', openReports);
     uiEmitter.on('open-accounting-dialog', openAccounting);
+    uiEmitter.on('open-library-dialog', openLibrary);
     uiEmitter.on('open-assign-task-dialog', openAssignTask);
     uiEmitter.on('open-new-requisition-dialog', openNewRequisition);
     uiEmitter.on('open-request-leave-dialog', openRequestLeave);
@@ -244,6 +255,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       uiEmitter.off('open-leave-dialog', openLeave);
       uiEmitter.off('open-reports-dialog', openReports);
       uiEmitter.off('open-accounting-dialog', openAccounting);
+      uiEmitter.off('open-library-dialog', openLibrary);
       uiEmitter.off('open-assign-task-dialog', openAssignTask);
       uiEmitter.off('open-new-requisition-dialog', openNewRequisition);
       uiEmitter.off('open-request-leave-dialog', openRequestLeave);
@@ -439,6 +451,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             <LeaveDialog open={isLeaveOpen} onOpenChange={setIsLeaveOpen} />
             <ReportsDialog open={isReportsOpen} onOpenChange={setIsReportsOpen} />
             <AccountingDialog open={isAccountingOpen} onOpenChange={setIsAccountingOpen} />
+            <LibraryDialog open={isLibraryOpen} onOpenChange={setIsLibraryOpen} />
             <SuperAdminDialog open={isSuperAdminOpen} onOpenChange={setIsSuperAdminOpen} />
             {userProfile && <ProfileDialog open={isProfileOpen} onOpenChange={setIsProfileOpen} userProfile={userProfile} />}
             {userProfile && <SettingsDialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen} userProfile={userProfile} />}
