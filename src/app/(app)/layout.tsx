@@ -310,7 +310,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             <main className={cn(
                 "flex-1 transition-all duration-500 ease-in-out",
                 isAnyDialogOpen ? "md:scale-[0.98] md:px-6" : "w-full md:px-10",
-                "py-6 pb-28 md:pb-10"
+                "py-6 pb-28 md:pb-10 min-h-screen"
             )}>
                 {children}
             </main>
