@@ -9,7 +9,7 @@ import type { UserProfile, Notification, Attendance, SystemConfig, DailyReport }
 import { showBrowserNotification } from '@/lib/notifications';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
-import { Bell, CheckCheck, Menu, BookCopy, ChevronDown, ChevronUp } from 'lucide-react';
+import { Bell, CheckCheck, Menu, BookCopy, ChevronDown, ChevronUp, ZapOff } from 'lucide-react';
 import { ScrollArea } from '../ui/scroll-area';
 import { format, formatDistanceToNow } from 'date-fns';
 import { cn } from '@/lib/utils';
@@ -19,6 +19,8 @@ import { mainNavItems } from '@/lib/nav-items';
 import Link from 'next/link';
 import { usePermissions } from '@/hooks/usePermissions';
 import { ORG_NAME } from '@/lib/config';
+import { useIdleTimer } from '@/hooks/useIdleTimer';
+import { Badge } from '../ui/badge';
 
 export default function AppHeader({ 
   userProfile, 
@@ -45,6 +47,8 @@ export default function AppHeader({
   const [animateGreeting, setAnimateGreeting] = useState(false);
   const [todayForReport, setTodayForReport] = useState('');
   const [isHeaderVisible, setIsHeaderVisible] = useState(false);
+
+  const { isIdle } = useIdleTimer(attendanceRecord);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -291,6 +295,11 @@ export default function AppHeader({
                     
                     <div className="hidden sm:flex flex-col items-end mr-2 text-right">
                         <div className="flex items-center gap-2">
+                            {isIdle && (
+                                <Badge variant="outline" className="h-5 px-1.5 bg-amber-500/10 text-amber-500 border-amber-500/30 gap-1 animate-pulse">
+                                    <ZapOff className="h-3 w-3" /> STANDBY
+                                </Badge>
+                            )}
                             <h2 className={cn("text-sm font-bold transition-all duration-300", animateGreeting && "text-primary")}>{greeting}</h2>
                         </div>
                         <p className="text-[10px] text-muted-foreground uppercase tracking-widest">{currentTime} | {currentDate}</p>
