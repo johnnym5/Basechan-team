@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -522,22 +521,26 @@ export function ClockControl({
               onValueChange={(value: AttendanceLocation) => setLocation(value)}
               className="grid grid-cols-2 gap-4 mb-4"
             >
-              <Label
-                htmlFor="office"
-                className="flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-3 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer"
-              >
-                <RadioGroupItem value="OFFICE" id="office" className="sr-only" />
-                <Building className="mb-2 h-5 w-5" />
-                In Office
-              </Label>
-              <Label
-                htmlFor="remote"
-                className="flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-3 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer"
-              >
-                <RadioGroupItem value="REMOTE" id="remote" className="sr-only" />
-                <Briefcase className="mb-2 h-5 w-5" />
-                Remote
-              </Label>
+              <div className="relative">
+                <RadioGroupItem value="OFFICE" id="office" className="peer sr-only" />
+                <Label
+                  htmlFor="office"
+                  className="flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-3 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary cursor-pointer h-full"
+                >
+                  <Building className="mb-2 h-5 w-5" />
+                  In Office
+                </Label>
+              </div>
+              <div className="relative">
+                <RadioGroupItem value="REMOTE" id="remote" className="peer sr-only" />
+                <Label
+                  htmlFor="remote"
+                  className="flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-3 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary cursor-pointer h-full"
+                >
+                  <Briefcase className="mb-2 h-5 w-5" />
+                  Remote
+                </Label>
+              </div>
             </RadioGroup>
             <Button
               className="w-full h-10 text-sm bg-emerald-600 hover:bg-emerald-700"
@@ -553,5 +556,3 @@ export function ClockControl({
     </Card>
   );
 }
-
-    
