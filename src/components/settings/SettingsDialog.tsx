@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
@@ -54,7 +55,7 @@ export function SettingsDialog({ open, onOpenChange, userProfile }: SettingsDial
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl h-[90vh] flex flex-col p-0">
+      <DialogContent className="flex flex-col p-0">
         <DialogHeader className="p-6 pb-0">
           <DialogTitle>Settings</DialogTitle>
           <DialogDescription>
@@ -85,7 +86,7 @@ export function SettingsDialog({ open, onOpenChange, userProfile }: SettingsDial
                 <div className="flex flex-col items-center justify-center h-full text-center p-8 border-2 border-dashed rounded-lg">
                     <Shield className="w-16 h-16 text-primary mb-4" />
                     <h2 className="text-xl font-bold">Super Admin Access</h2>
-                    <p className="text-muted-foreground mt-2 max-w-sm">You have super administrative privileges. Access the main console for advanced data management and system oversight.</p>
+                    <p className="text-muted-foreground mt-2 max-sm">You have super administrative privileges. Access the main console for advanced data management and system oversight.</p>
                     <Button onClick={handleOpenSuperAdmin} className="mt-6">
                         Go to Super Admin Console
                     </Button>

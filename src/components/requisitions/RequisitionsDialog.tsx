@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
@@ -16,7 +17,7 @@ export function RequisitionsDialog({ open, onOpenChange, initialPayload }: Requi
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-7xl h-[90vh] flex flex-col p-0">
+      <DialogContent className="flex flex-col p-0">
         <VisuallyHidden>
           <DialogHeader>
             <DialogTitle>Requisitions</DialogTitle>
