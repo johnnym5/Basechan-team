@@ -1,7 +1,7 @@
 'use client';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ShieldAlert, PlusCircle } from "lucide-react";
+import { ShieldAlert, PlusCircle, Users } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RequisitionTable } from "@/components/requisitions/RequisitionTable";
 import { useState, useEffect } from "react";
@@ -15,6 +15,7 @@ import { RequisitionDetailDialog } from "@/components/requisitions/RequisitionDe
 import { useSystemConfig } from "@/hooks/useSystemConfig";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { NewRequisitionDialog } from "@/components/requisitions/NewRequisitionDialog";
+import { VendorsTab } from "./VendorsTab";
 
 
 const getVisibleTabs = (permissions: Permissions, isStaff: boolean) => {
@@ -34,13 +35,14 @@ const getVisibleTabs = (permissions: Permissions, isStaff: boolean) => {
         tabs.add("Approved");
         tabs.add("Paid");
         tabs.add("Rejected");
+        tabs.add("Vendors");
     } else { // Staff members see a simplified view
         tabs.add("Pending");
         tabs.add("Approved");
         tabs.add("Rejected");
     }
     
-    const orderedTabs = ["My Requests", "Inbox", "All", "Pending", "Approved", "Paid", "Rejected"];
+    const orderedTabs = ["My Requests", "Inbox", "All", "Pending", "Approved", "Paid", "Rejected", "Vendors"];
     return orderedTabs.filter(tab => tabs.has(tab));
 };
 
@@ -120,8 +122,8 @@ export function RequisitionsPageContent({ initialPayload }: { initialPayload?: {
     <div className="space-y-6">
        <div className="flex items-center justify-between">
             <div>
-                <h1 className="text-3xl font-bold font-headline tracking-tight">Requisitions</h1>
-                <p className="text-muted-foreground">Manage all financial requisitions.</p>
+                <h1 className="text-3xl font-bold font-headline tracking-tight">Procurement & Requisitions</h1>
+                <p className="text-muted-foreground">Manage financial requests and external vendors.</p>
             </div>
             <NewRequisitionDialog open={isNewRequestOpen} onOpenChange={setIsNewRequestOpen} userProfile={userProfile}>
                 <Button onClick={() => setIsNewRequestOpen(true)}>
@@ -143,13 +145,17 @@ export function RequisitionsPageContent({ initialPayload }: { initialPayload?: {
                 </ScrollArea>
                 {visibleTabs.map(tab => (
                     <TabsContent key={tab} value={tab} className="mt-4">
-                        <RequisitionTable 
-                          filter={tab} 
-                          userProfile={userProfile} 
-                          isSuperAdmin={isSuperAdmin} 
-                          permissions={permissions} 
-                          onSelectRequest={setSelectedRequest}
-                        />
+                        {tab === 'Vendors' ? (
+                            <VendorsTab userProfile={userProfile!} permissions={permissions} />
+                        ) : (
+                            <RequisitionTable 
+                                filter={tab} 
+                                userProfile={userProfile} 
+                                isSuperAdmin={isSuperAdmin} 
+                                permissions={permissions} 
+                                onSelectRequest={setSelectedRequest}
+                            />
+                        )}
                     </TabsContent>
                 ))}
             </Tabs>
