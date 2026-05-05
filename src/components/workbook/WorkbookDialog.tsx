@@ -44,7 +44,9 @@ function WorkbookCard({
     onDelete: (workbook: Workbook) => void,
 }) {
     const firestore = useFirestore();
-    const sheetsQuery = useMemoFirebase(() => firestore ? query(collection(firestore, `workbooks/${workbook.id}/sheets`), where('__name__', '!=', '')) : null, [firestore, workbook.id]);
+    const sheetsQuery = useMemoFirebase(() => 
+        firestore ? collection(firestore, `workbooks/${workbook.id}/sheets`) : null
+    , [firestore, workbook.id]);
     const { data: sheets, isLoading } = useCollection<Sheet>(sheetsQuery);
 
     const recordCount = sheets?.[0]?.data?.length ?? 0;
