@@ -90,7 +90,7 @@ function DashboardGrid() {
                 </section>
 
                 <section className="col-span-12 lg:col-span-9">
-                    <DashboardTaskList />
+                    {userProfile && <DashboardTaskList userProfile={userProfile} permissions={permissions} />}
                 </section>
 
                 <div className="col-span-12 lg:col-span-3 space-y-6">

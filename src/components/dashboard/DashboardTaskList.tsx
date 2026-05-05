@@ -1,26 +1,50 @@
 'use client';
-import { useUser, useFirestore, useCollection, useMemoFirebase } from "@/firebase";
+import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
 import { collection, query, where, orderBy, limit } from "firebase/firestore";
-import type { Task } from "@/lib/types";
+import type { Task, UserProfile, Permissions } from "@/lib/types";
 import { Skeleton } from "../ui/skeleton";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import { uiEmitter } from "@/lib/ui-emitter";
+import { useSuperAdmin } from "@/hooks/useSuperAdmin";
 
-export function DashboardTaskList() {
-    const { user: authUser } = useUser();
+interface DashboardTaskListProps {
+    userProfile: UserProfile;
+    permissions: Permissions;
+}
+
+export function DashboardTaskList({ userProfile, permissions }: DashboardTaskListProps) {
     const firestore = useFirestore();
+    const { isSuperAdmin } = useSuperAdmin();
 
     const tasksQuery = useMemoFirebase(() => {
-        if (!firestore || !authUser) return null;
-        return query(
-            collection(firestore, 'tasks'),
-            where('orgId', '==', authUser.uid), // In a real app we'd use orgId, for now using user context
-            orderBy('createdAt', 'desc'),
-            limit(10)
-        );
-    }, [firestore, authUser]);
+        if (!firestore || !userProfile) return null;
+        
+        const tasksRef = collection(firestore, 'tasks');
+        
+        // For the dashboard, we either show all active tasks in the org (managers)
+        // or just the tasks assigned to the current user.
+        if (permissions.canAccessAllTasks || isSuperAdmin) {
+            return query(
+                tasksRef,
+                where('orgId', '==', userProfile.orgId),
+                orderBy('createdAt', 'desc'),
+                limit(20)
+            );
+        } else {
+            return query(
+                tasksRef,
+                where('assignedTo', '==', userProfile.id),
+                orderBy('createdAt', 'desc'),
+                limit(20)
+            );
+        }
+    }, [firestore, userProfile, permissions.canAccessAllTasks, isSuperAdmin]);
 
-    const { data: tasks, isLoading } = useCollection<Task>(tasksQuery);
+    const { data: allTasks, isLoading } = useCollection<Task>(tasksQuery);
+    
+    // Filter for active tasks on the client to avoid complex index requirements for simple dashboard views
+    const tasks = allTasks?.filter(t => t.status !== 'ARCHIVED').slice(0, 10);
 
   return (
     <section className="card-bg rounded-2xl p-6 shadow-lg h-full">
@@ -40,7 +64,11 @@ export function DashboardTaskList() {
                         <tr key={i}><td colSpan={4} className="py-4"><Skeleton className="h-6 w-full" /></td></tr>
                     ))}
                     {!isLoading && tasks?.map((task) => (
-                        <tr key={task.id} className="border-b border-gray-800/50 hover:bg-gray-800/20 transition-colors">
+                        <tr 
+                            key={task.id} 
+                            className="border-b border-gray-800/50 hover:bg-gray-800/20 transition-colors cursor-pointer group"
+                            onClick={() => uiEmitter.emit('open-tasks-dialog', { taskId: task.id })}
+                        >
                             <td className="py-4">
                                 <span className={cn(
                                     "px-3 py-1 rounded-md text-xs font-semibold uppercase",
@@ -51,12 +79,12 @@ export function DashboardTaskList() {
                                     {task.priority === 'LEVEL_3' ? 'High' : task.priority === 'LEVEL_2' ? 'Medium' : 'Low'}
                                 </span>
                             </td>
-                            <td className="py-4 font-medium text-gray-200">{task.title}</td>
+                            <td className="py-4 font-medium text-gray-200 group-hover:text-primary transition-colors">{task.title}</td>
                             <td className="py-4 text-gray-400">{task.assignedToName}</td>
                             <td className="py-4 text-gray-400">{task.dueDate ? format(new Date(task.dueDate), 'MMM d') : 'N/A'}</td>
                         </tr>
                     ))}
-                    {!isLoading && tasks?.length === 0 && (
+                    {!isLoading && (!tasks || tasks.length === 0) && (
                         <tr><td colSpan={4} className="py-10 text-center text-gray-500">No active tasks found.</td></tr>
                     )}
                 </tbody>
