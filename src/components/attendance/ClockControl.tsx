@@ -371,8 +371,8 @@ export function ClockControl({
   return (
     <Card className={cn("overflow-hidden", className)}>
       <CardHeader className="text-center p-6 pb-2">
-        <CardTitle className="text-2xl font-bold tracking-tight">Time Clock</CardTitle>
-        <CardDescription className="text-base">
+        <CardTitle className="text-xl md:text-2xl font-bold tracking-tight">Time Clock</CardTitle>
+        <CardDescription className="text-sm md:text-base">
           {dateDisplay || <Skeleton className="h-5 w-32 mx-auto" />}
         </CardDescription>
       </CardHeader>
@@ -401,26 +401,26 @@ export function ClockControl({
             </div>
             {isApproved && (
               <div className="space-y-6 pt-2">
-                <div className="flex items-center justify-center gap-8">
+                <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-8">
                     <div className="text-center relative">
                         {isIdle && (
                             <Badge className="absolute -top-6 left-1/2 -translate-x-1/2 bg-amber-500 text-white animate-pulse">
                                 STANDBY
                             </Badge>
                         )}
-                        <p className="font-mono text-4xl font-bold tracking-widest">{shiftDuration}</p>
-                        <p className="text-xs text-muted-foreground uppercase tracking-wider mt-1">Active Time</p>
+                        <p className="font-mono text-3xl md:text-4xl font-bold tracking-widest">{shiftDuration}</p>
+                        <p className="text-[10px] md:text-xs text-muted-foreground uppercase tracking-wider mt-1">Active Time</p>
                     </div>
                     {attendanceRecord?.idleTime && attendanceRecord.idleTime > 0 ? (
-                        <div className="text-center text-amber-500 border-l pl-8">
-                            <p className="font-mono text-2xl font-bold tracking-widest">{formatDuration(attendanceRecord.idleTime)}</p>
-                            <p className="text-[10px] uppercase tracking-widest mt-1">Standby Time</p>
+                        <div className="text-center text-amber-500 sm:border-l sm:pl-8">
+                            <p className="font-mono text-xl md:text-2xl font-bold tracking-widest">{formatDuration(attendanceRecord.idleTime)}</p>
+                            <p className="text-[9px] md:text-[10px] uppercase tracking-widest mt-1">Standby Time</p>
                         </div>
                     ) : null}
                 </div>
                 {timeRemaining !== null && (
                     <div className="space-y-2">
-                        <div className="flex justify-between text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                        <div className="flex justify-between text-[10px] md:text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                             <span>Progress ({Math.round(shiftProgress)}%)</span>
                             <span>{timeRemaining} to EOD</span>
                         </div>
@@ -431,8 +431,8 @@ export function ClockControl({
             )}
             {isPending && (
               <div className="flex items-center justify-center gap-2 p-4 bg-amber-500/10 border border-amber-500/20 rounded-xl text-amber-500 animate-pulse">
-                <ShieldQuestion className="h-5 w-5" />
-                <span className="font-semibold uppercase tracking-wider">Pending HR Approval</span>
+                <ShieldQuestion className="h-5 w-5 shrink-0" />
+                <span className="font-semibold text-xs uppercase tracking-wider">Pending HR Approval</span>
               </div>
             )}
           </>
@@ -450,7 +450,7 @@ export function ClockControl({
                 )}
               >
                 <Building className={cn("mb-2 h-8 w-8", location === 'OFFICE' ? "text-primary" : "text-muted-foreground")} />
-                <span className="text-sm font-bold uppercase tracking-widest">Office</span>
+                <span className="text-xs md:text-sm font-bold uppercase tracking-widest">Office</span>
               </button>
               <button
                 type="button"
@@ -463,11 +463,11 @@ export function ClockControl({
                 )}
               >
                 <Briefcase className={cn("mb-2 h-8 w-8", location === 'REMOTE' ? "text-primary" : "text-muted-foreground")} />
-                <span className="text-sm font-bold uppercase tracking-widest">Remote</span>
+                <span className="text-xs md:text-sm font-bold uppercase tracking-widest">Remote</span>
               </button>
             </div>
             <Button
-              className="w-full h-14 text-lg font-bold uppercase tracking-[0.2em] bg-emerald-600 hover:bg-emerald-700 shadow-xl shadow-emerald-900/20"
+              className="w-full h-14 text-base md:text-lg font-bold uppercase tracking-[0.15em] md:tracking-[0.2em] bg-emerald-600 hover:bg-emerald-700 shadow-xl shadow-emerald-900/20"
               disabled={isSubmitting}
               onClick={handleClockIn}
             >

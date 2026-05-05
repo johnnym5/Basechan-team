@@ -4,8 +4,6 @@ import { useState, useEffect, useCallback } from 'react';
 import dynamic from 'next/dynamic';
 import { uiEmitter } from '@/lib/ui-emitter';
 import type { UserProfile, Permissions } from '@/lib/types';
-import { ListTodo, FileText, CalendarPlus, BookOpenCheck, MessageSquare, Megaphone, UserPlus } from 'lucide-react';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/dropdown-menu';
 
 // Dynamically import heavy dialog components
 const WorkbookDialog = dynamic(() => import('@/components/workbook/WorkbookDialog').then(m => m.WorkbookDialog), { ssr: false });
@@ -57,7 +55,6 @@ export function GlobalDialogs({ userProfile, permissions, onAnyDialogOpenChange 
   const [isInviteUserOpen, setIsInviteUserOpen] = useState(false);
   const [isNewAnnouncementOpen, setIsNewAnnouncementOpen] = useState(false);
   const [isSuperAdminOpen, setIsSuperAdminOpen] = useState(false);
-  const [isFabMenuOpen, setIsFabMenuOpen] = useState(false);
 
   const closeAllDialogs = useCallback(() => {
     setIsWorkbookOpen(false);
@@ -131,7 +128,6 @@ export function GlobalDialogs({ userProfile, permissions, onAnyDialogOpenChange 
     const openInviteUser = () => setIsInviteUserOpen(true);
     const openNewAnnouncement = () => setIsNewAnnouncementOpen(true);
     const openSuperAdmin = () => setIsSuperAdminOpen(true);
-    const openFabMenu = () => setIsFabMenuOpen(true);
 
     uiEmitter.on('open-profile-dialog', openProfile);
     uiEmitter.on('open-settings-dialog', openSettings);
@@ -151,7 +147,6 @@ export function GlobalDialogs({ userProfile, permissions, onAnyDialogOpenChange 
     uiEmitter.on('open-invite-user-dialog', openInviteUser);
     uiEmitter.on('open-new-announcement-dialog', openNewAnnouncement);
     uiEmitter.on('open-superadmin-dialog', openSuperAdmin);
-    uiEmitter.on('open-fab-menu' as any, openFabMenu);
     uiEmitter.on('close-all-dialogs', closeAllDialogs);
     
     return () => {
@@ -173,54 +168,12 @@ export function GlobalDialogs({ userProfile, permissions, onAnyDialogOpenChange 
       uiEmitter.off('open-invite-user-dialog', openInviteUser);
       uiEmitter.off('open-new-announcement-dialog', openNewAnnouncement);
       uiEmitter.off('open-superadmin-dialog', openSuperAdmin);
-      uiEmitter.off('open-fab-menu' as any, openFabMenu);
       uiEmitter.off('close-all-dialogs', closeAllDialogs);
     };
   }, [closeAllDialogs]);
 
   return (
     <>
-      <DropdownMenu open={isFabMenuOpen} onOpenChange={setIsFabMenuOpen}>
-          <DropdownMenuContent className="w-56 mb-20 md:hidden" align="end">
-          {permissions.canManageStaff && (
-                  <DropdownMenuItem onSelect={() => setIsInviteUserOpen(true)}>
-                      <UserPlus className="mr-2 h-4 w-4" />
-                      <span>Add Team Member</span>
-                  </DropdownMenuItem>
-              )}
-              <DropdownMenuItem onSelect={() => setIsAssignTaskOpen(true)}>
-                  <ListTodo className="mr-2 h-4 w-4" />
-                  <span>New Task</span>
-              </DropdownMenuItem>
-              {permissions.canAccessRequisitions && (
-                  <DropdownMenuItem onSelect={() => setIsNewRequisitionOpen(true)}>
-                      <FileText className="mr-2 h-4 w-4" />
-                      <span>New Requisition</span>
-                  </DropdownMenuItem>
-              )}
-              <DropdownMenuItem onSelect={() => setIsRequestLeaveOpen(true)}>
-                  <CalendarPlus className="mr-2 h-4 w-4" />
-                  <span>Request Leave</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem onSelect={() => setIsNewWorkbookOpen(true)}>
-                  <BookOpenCheck className="mr-2 h-4 w-4" />
-                  <span>New Workbook</span>
-              </DropdownMenuItem>
-              {permissions.canManageAnnouncements && (
-                  <DropdownMenuItem onSelect={() => setIsNewAnnouncementOpen(true)}>
-                      <Megaphone className="mr-2 h-4 w-4" />
-                      <span>New Announcement</span>
-                  </DropdownMenuItem>
-              )}
-              {permissions.canAccessChat && (
-                  <DropdownMenuItem onSelect={() => setIsChatOpen(true)}>
-                      <MessageSquare className="mr-2 h-4 w-4" />
-                      <span>New Chat</span>
-                  </DropdownMenuItem>
-              )}
-          </DropdownMenuContent>
-      </DropdownMenu>
-
       {isWorkbookOpen && (
         <WorkbookDialog
             open={isWorkbookOpen}
