@@ -43,6 +43,7 @@ export function GlobalDialogs({ userProfile, permissions, onAnyDialogOpenChange 
   const [isAttendanceOpen, setIsAttendanceOpen] = useState(false);
   const [isLeaveOpen, setIsLeaveOpen] = useState(false);
   const [isReportsOpen, setIsReportsOpen] = useState(false);
+  const [initialReportsPayload, setInitialReportsPayload] = useState<{ tab?: string } | undefined>();
   const [isAccountingOpen, setIsAccountingOpen] = useState(false);
   const [isLibraryOpen, setIsLibraryOpen] = useState(false);
   const [isAssignTaskOpen, setIsAssignTaskOpen] = useState(false);
@@ -117,7 +118,10 @@ export function GlobalDialogs({ userProfile, permissions, onAnyDialogOpenChange 
     };
     const openAttendance = () => setIsAttendanceOpen(true);
     const openLeave = () => setIsLeaveOpen(true);
-    const openReports = () => setIsReportsOpen(true);
+    const openReports = (payload?: any) => {
+        if (payload) setInitialReportsPayload(payload);
+        setIsReportsOpen(true);
+    };
     const openAccounting = () => setIsAccountingOpen(true);
     const openLibrary = () => setIsLibraryOpen(true);
     const openAssignTask = () => setIsAssignTaskOpen(true);
@@ -249,7 +253,16 @@ export function GlobalDialogs({ userProfile, permissions, onAnyDialogOpenChange 
       )}
       {isAttendanceOpen && <AttendanceDialog open={isAttendanceOpen} onOpenChange={setIsAttendanceOpen} />}
       {isLeaveOpen && <LeaveDialog open={isLeaveOpen} onOpenChange={setIsLeaveOpen} />}
-      {isReportsOpen && <ReportsDialog open={isReportsOpen} onOpenChange={setIsReportsOpen} />}
+      {isReportsOpen && (
+        <ReportsDialog
+            open={isReportsOpen}
+            onOpenChange={(isOpen) => {
+                setIsReportsOpen(isOpen);
+                if (!isOpen) setInitialReportsPayload(undefined);
+            }}
+            initialPayload={initialReportsPayload}
+        />
+      )}
       {isAccountingOpen && <AccountingDialog open={isAccountingOpen} onOpenChange={setIsAccountingOpen} />}
       {isLibraryOpen && <LibraryDialog open={isLibraryOpen} onOpenChange={setIsLibraryOpen} />}
       {isSuperAdminOpen && <SuperAdminDialog open={isSuperAdminOpen} onOpenChange={setIsSuperAdminOpen} />}

@@ -6,6 +6,8 @@ import { useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import { Skeleton } from '../ui/skeleton';
+import { Clock, Timer } from 'lucide-react';
+import { format } from 'date-fns';
 
 interface AttendanceReportProps {
     userProfile: UserProfile;
@@ -24,34 +26,45 @@ export function AttendanceReport({ userProfile }: AttendanceReportProps) {
 
     const { data: attendanceRecords, isLoading } = useCollection<Attendance>(attendanceQuery);
 
-    const userAttendanceData = useMemo(() => {
+    const reportData = useMemo(() => {
         if (!attendanceRecords) return [];
 
         const userTotals = attendanceRecords.reduce((acc, record) => {
             if (!acc[record.userName]) {
                 acc[record.userName] = {
-                    totalHours: 0,
-                    overtimeHours: 0,
-                    undertimeHours: 0,
+                    useTime: 0,
+                    standbyTime: 0,
+                    clockIns: [] as number[],
                 };
             }
-            acc[record.userName].totalHours += (record.duration || 0);
-            acc[record.userName].overtimeHours += (record.overtime || 0);
-            acc[record.userName].undertimeHours += (record.undertime || 0);
+            acc[record.userName].useTime += (record.duration || 0);
+            acc[record.userName].standbyTime += (record.idleTime || 0);
+            
+            const clockInDate = new Date(record.clockIn);
+            const minutesSinceMidnight = clockInDate.getHours() * 60 + clockInDate.getMinutes();
+            acc[record.userName].clockIns.push(minutesSinceMidnight);
+            
             return acc;
-        }, {} as Record<string, { totalHours: number; overtimeHours: number; undertimeHours: number }>);
+        }, {} as Record<string, { useTime: number; standbyTime: number; clockIns: number[] }>);
 
-        return Object.entries(userTotals).map(([userName, totals]) => ({
-            name: userName.split(' ')[0], // Use first name for brevity
-            "Total Hours": parseFloat((totals.totalHours / 3600).toFixed(2)),
-            "Overtime": parseFloat((totals.overtimeHours / 3600).toFixed(2)),
-            "Undertime": parseFloat((totals.undertimeHours / 3600).toFixed(2)),
-        }));
+        return Object.entries(userTotals).map(([userName, totals]) => {
+            const avgClockInMinutes = totals.clockIns.reduce((a, b) => a + b, 0) / totals.clockIns.length;
+            const hours = Math.floor(avgClockInMinutes / 60);
+            const minutes = Math.round(avgClockInMinutes % 60);
+            const formattedTime = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+
+            return {
+                name: userName.split(' ')[0],
+                "Active (Use)": parseFloat((totals.useTime / 3600).toFixed(2)),
+                "Standby (Idle)": parseFloat((totals.standbyTime / 3600).toFixed(2)),
+                avgClockIn: formattedTime,
+            };
+        });
     }, [attendanceRecords]);
 
     if (isLoading) {
         return (
-            <Card>
+            <Card className="h-full">
                 <CardHeader>
                     <Skeleton className="h-6 w-1/2" />
                     <Skeleton className="h-4 w-1/3" />
@@ -64,39 +77,46 @@ export function AttendanceReport({ userProfile }: AttendanceReportProps) {
     }
 
     return (
-        <Card>
+        <Card className="h-full flex flex-col">
             <CardHeader>
-                <CardTitle>Team Attendance Summary</CardTitle>
-                <CardDescription>Total hours, overtime, and undertime logged by each team member.</CardDescription>
-            </CardHeader>
-            <CardContent>
-                <div className="h-96 w-full">
-                    <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={userAttendanceData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
-                            <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                            <XAxis dataKey="name" tickLine={false} axisLine={false} />
-                            <YAxis 
-                                stroke="#888888"
-                                fontSize={12}
-                                tickLine={false}
-                                axisLine={false}
-                                unit="h"
-                            />
-                            <Tooltip 
-                                cursor={{fill: 'hsl(var(--secondary))'}}
-                                contentStyle={{
-                                    backgroundColor: 'hsl(var(--background))',
-                                    borderColor: 'hsl(var(--border))',
-                                }}
-                                formatter={(value: number, name: string) => [`${value.toFixed(2)} hours`, name]}
-                            />
-                            <Legend />
-                            <Bar dataKey="Total Hours" fill="hsl(var(--chart-1))" radius={[4, 4, 0, 0]} />
-                            <Bar dataKey="Overtime" fill="hsl(var(--chart-2))" radius={[4, 4, 0, 0]} />
-                            <Bar dataKey="Undertime" fill="hsl(var(--chart-3))" radius={[4, 4, 0, 0]} />
-                        </BarChart>
-                    </ResponsiveContainer>
+                <div className="flex items-center justify-between">
+                    <div>
+                        <CardTitle className="text-xl">Team Productivity & Punctuality</CardTitle>
+                        <CardDescription>Comparison of Active vs Standby hours and average login times.</CardDescription>
+                    </div>
+                    <Timer className="h-5 w-5 text-primary opacity-50" />
                 </div>
+            </CardHeader>
+            <CardContent className="flex-1 min-h-[350px]">
+                <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={reportData} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--muted))" />
+                        <XAxis dataKey="name" axisLine={false} tickLine={false} />
+                        <YAxis axisLine={false} tickLine={false} unit="h" />
+                        <Tooltip 
+                            cursor={{fill: 'hsl(var(--secondary))'}}
+                            contentStyle={{ backgroundColor: 'hsl(var(--background))', borderColor: 'hsl(var(--border))', borderRadius: '8px' }}
+                            formatter={(value: number, name: string, props: any) => {
+                                if (name === 'Active (Use)' || name === 'Standby (Idle)') return [`${value}h`, name];
+                                return [value, name];
+                            }}
+                            labelFormatter={(label, payload) => {
+                                const user = payload[0]?.payload;
+                                return (
+                                    <div className="font-bold border-b pb-1 mb-1">
+                                        <p>{label}</p>
+                                        <p className="text-[10px] font-normal text-muted-foreground uppercase flex items-center gap-1">
+                                            <Clock className="h-3 w-3" /> Avg. Login: {user?.avgClockIn}
+                                        </p>
+                                    </div>
+                                );
+                            }}
+                        />
+                        <Legend verticalAlign="top" align="right" height={36}/>
+                        <Bar dataKey="Active (Use)" stackId="a" fill="hsl(var(--primary))" radius={[0, 0, 0, 0]} barSize={40} />
+                        <Bar dataKey="Standby (Idle)" stackId="a" fill="hsl(var(--chart-3))" radius={[4, 4, 0, 0]} barSize={40} />
+                    </BarChart>
+                </ResponsiveContainer>
             </CardContent>
         </Card>
     );

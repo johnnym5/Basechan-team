@@ -10,9 +10,10 @@ import { PanelSwitcher } from '@/components/layout/PanelSwitcher';
 interface ReportsDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  initialPayload?: { tab?: string };
 }
 
-export function ReportsDialog({ open, onOpenChange }: ReportsDialogProps) {
+export function ReportsDialog({ open, onOpenChange, initialPayload }: ReportsDialogProps) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -26,7 +27,7 @@ export function ReportsDialog({ open, onOpenChange }: ReportsDialogProps) {
         </VisuallyHidden>
         <ScrollArea className="flex-1">
             <div className="p-6">
-                <ReportsPageContent />
+                <ReportsPageContent initialPayload={initialPayload} />
             </div>
         </ScrollArea>
       </DialogContent>

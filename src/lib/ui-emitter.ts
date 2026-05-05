@@ -9,7 +9,7 @@ type AppEvents = {
   'open-requisitions-dialog': { reqId?: string } | void;
   'open-attendance-dialog': void;
   'open-leave-dialog': void;
-  'open-reports-dialog': void;
+  'open-reports-dialog': { tab?: string } | void;
   'open-assign-task-dialog': void;
   'open-new-requisition-dialog': void;
   'open-request-leave-dialog': void;

@@ -2,15 +2,16 @@
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { TrendingUp } from "lucide-react";
+import { TrendingUp, ShieldInfo } from "lucide-react";
 import { useMemo } from "react";
 import type { UserProfile, Task } from "@/lib/types";
-import { useSystemConfig } from "@/hooks/useSystemConfig";
 import { uiEmitter } from "@/lib/ui-emitter";
 import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
 import { collection, query, where } from "firebase/firestore";
 import { startOfMonth, endOfMonth, isWithinInterval } from 'date-fns';
 import { Skeleton } from "../ui/skeleton";
+import { usePermissions } from "@/hooks/usePermissions";
+import { cn } from "@/lib/utils";
 
 
 interface PerformanceCardProps {
@@ -19,7 +20,7 @@ interface PerformanceCardProps {
 
 export function PerformanceCard({ userProfile }: PerformanceCardProps) {
     const firestore = useFirestore();
-    const { config: systemConfig, isLoading: isConfigLoading } = useSystemConfig(userProfile?.orgId);
+    const permissions = usePermissions(userProfile);
 
     const tasksQuery = useMemoFirebase(() => {
         if (!firestore || !userProfile) return null;
@@ -32,7 +33,7 @@ export function PerformanceCard({ userProfile }: PerformanceCardProps) {
     const { data: allTasks, isLoading: areTasksLoading } = useCollection<Task>(tasksQuery);
 
     const { monthlyProgress, isLoading: isProgressLoading } = useMemo(() => {
-        if (areTasksLoading || isConfigLoading) return { monthlyProgress: 0, isLoading: true };
+        if (areTasksLoading) return { monthlyProgress: 0, isLoading: true };
         if (!allTasks) return { monthlyProgress: 0, isLoading: false };
 
         const now = new Date();
@@ -53,16 +54,31 @@ export function PerformanceCard({ userProfile }: PerformanceCardProps) {
         const progress = Math.round((completedTasks / monthlyTasks.length) * 100);
 
         return { monthlyProgress: progress, isLoading: false };
-    }, [allTasks, areTasksLoading, isConfigLoading]);
+    }, [allTasks, areTasksLoading]);
+
+    const handleCardClick = () => {
+        if (permissions.canManageStaff) {
+            uiEmitter.emit('open-reports-dialog', { tab: 'analytics' });
+        }
+    };
 
 
     return (
-        <Card className="bg-primary/90 text-primary-foreground h-full flex flex-col justify-between">
+        <Card 
+            className={cn(
+                "bg-primary/90 text-primary-foreground h-full flex flex-col justify-between transition-all duration-300",
+                permissions.canManageStaff && "cursor-pointer hover:bg-primary hover:shadow-2xl hover:shadow-primary/20 active:scale-[0.98] group"
+            )}
+            onClick={handleCardClick}
+        >
             <div>
                 <CardHeader className="p-4">
                     <div className="flex items-center justify-between">
-                        <CardTitle className="text-sm font-semibold tracking-wider uppercase">Performance Overview</CardTitle>
-                        <TrendingUp className="h-5 w-5 text-primary-foreground/70" />
+                        <CardTitle className="text-sm font-semibold tracking-wider uppercase flex items-center gap-2">
+                             {permissions.canManageStaff && <ShieldInfo className="h-4 w-4 text-primary-foreground/60" />}
+                             {permissions.canManageStaff ? 'Team Performance' : 'My Performance'}
+                        </CardTitle>
+                        <TrendingUp className="h-5 w-5 text-primary-foreground/70 group-hover:scale-110 transition-transform" />
                     </div>
                 </CardHeader>
                 <CardContent className="p-4 pt-0">
@@ -75,16 +91,19 @@ export function PerformanceCard({ userProfile }: PerformanceCardProps) {
                         ) : (
                             <div>
                                 <p className="text-4xl font-bold font-headline">{monthlyProgress}%</p>
-                                <p className="text-sm text-primary-foreground/80">Monthly Target</p>
+                                <p className="text-sm text-primary-foreground/80">{permissions.canManageStaff ? 'Team Success Rate' : 'Monthly Target'}</p>
                             </div>
                         )}
                         <Button 
                             size="sm"
                             variant="secondary" 
                             className="bg-primary-foreground/20 text-primary-foreground hover:bg-primary-foreground/30"
-                            onClick={() => uiEmitter.emit('open-reports-dialog')}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                uiEmitter.emit('open-reports-dialog');
+                            }}
                         >
-                            Details
+                            {permissions.canManageStaff ? 'Analytics' : 'Details'}
                         </Button>
                     </div>
                 </CardContent>
