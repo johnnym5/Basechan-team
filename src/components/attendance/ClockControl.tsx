@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '../ui/button';
 import {
   Card,
@@ -20,7 +20,6 @@ import {
   Briefcase,
   Coffee,
   ZapOff,
-  Camera,
 } from 'lucide-react';
 import type {
   UserProfile,
@@ -44,7 +43,6 @@ import { cn } from '@/lib/utils';
 import { Progress } from '../ui/progress';
 import { Badge } from '../ui/badge';
 import { useIdleTimer } from '@/hooks/useIdleTimer';
-import { Alert, AlertTitle, AlertDescription } from '../ui/alert';
 
 interface ClockControlProps {
   userProfile: UserProfile | null;
@@ -72,38 +70,6 @@ export function ClockControl({
   const [location, setLocation] = useState<AttendanceLocation>('OFFICE');
   const [shiftProgress, setShiftProgress] = useState(0);
   const [timeRemaining, setTimeRemaining] = useState<string | null>(null);
-
-  // Camera & Permission States
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
-
-  useEffect(() => {
-    const checkAndRequestCamera = async () => {
-      try {
-        // Try to get existing permission or request it
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-        setHasCameraPermission(true);
-
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-        }
-      } catch (error) {
-        console.error('Error accessing camera:', error);
-        setHasCameraPermission(false);
-      }
-    };
-
-    if (!isClockedIn) {
-        checkAndRequestCamera();
-    }
-
-    return () => {
-        if (videoRef.current?.srcObject) {
-            const stream = videoRef.current.srcObject as MediaStream;
-            stream.getTracks().forEach(track => track.stop());
-        }
-    }
-  }, []);
 
   useEffect(() => {
     setToday(format(new Date(), 'yyyy-MM-dd'));
@@ -196,12 +162,6 @@ export function ClockControl({
 
   const handleClockIn = async () => {
     if (!userProfile) return;
-    
-    if (hasCameraPermission === false) {
-        toast({ variant: 'destructive', title: 'Security Requirement', description: 'Camera access is required for identity verification.' });
-        return;
-    }
-
     setIsSubmitting(true);
 
     if (
@@ -478,26 +438,6 @@ export function ClockControl({
           </>
         ) : (
           <>
-            <div className="relative rounded-2xl overflow-hidden bg-slate-950 aspect-video border-2 border-primary/20 group">
-                <video ref={videoRef} className="w-full h-full object-cover" autoPlay muted />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent pointer-events-none" />
-                <div className="absolute bottom-4 left-4 flex items-center gap-2">
-                    <div className={cn("size-2 rounded-full animate-pulse", hasCameraPermission ? "bg-emerald-500" : "bg-rose-500")} />
-                    <span className="text-[10px] font-bold uppercase tracking-widest text-white shadow-sm">
-                        {hasCameraPermission ? "Secure Media Feed Active" : "Camera Access Required"}
-                    </span>
-                </div>
-                {!hasCameraPermission && (
-                    <div className="absolute inset-0 flex items-center justify-center p-6 text-center bg-black/40 backdrop-blur-sm">
-                        <Alert variant="destructive" className="bg-background/90 border-destructive/50">
-                            <Camera className="h-4 w-4" />
-                            <AlertTitle>Media Authorization Required</AlertTitle>
-                            <AlertDescription>Please allow camera access to initialize the time clock.</AlertDescription>
-                        </Alert>
-                    </div>
-                )}
-            </div>
-
             <div className="grid grid-cols-2 gap-4">
               <button
                 type="button"
@@ -528,7 +468,7 @@ export function ClockControl({
             </div>
             <Button
               className="w-full h-14 text-lg font-bold uppercase tracking-[0.2em] bg-emerald-600 hover:bg-emerald-700 shadow-xl shadow-emerald-900/20"
-              disabled={isSubmitting || !hasCameraPermission}
+              disabled={isSubmitting}
               onClick={handleClockIn}
             >
               {isSubmitting ? <Loader2 className="mr-2 h-6 w-6 animate-spin" /> : <LogIn className="mr-2 h-6 w-6" />}

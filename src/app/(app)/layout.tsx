@@ -65,18 +65,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             );
         }
 
-        // 3. Media (Camera)
-        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-                // Immediately stop to just obtain permission
-                stream.getTracks().forEach(track => track.stop());
-                console.log("Media authorized.");
-            } catch (e) {
-                console.warn("Media denied or unavailable.");
-            }
-        }
-
         sessionStorage.setItem(bootstrappedKey, 'true');
     };
 

@@ -13,7 +13,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Bell, BellOff, BellRing, Loader2, Pencil, MapPin, Camera, Calendar } from "lucide-react";
+import { Bell, Loader2, Pencil, MapPin, Calendar, Lock } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useFirestore, updateDocumentNonBlocking, useUser, useAuth } from "@/firebase";
 import { doc } from "firebase/firestore";
@@ -62,7 +62,6 @@ export function ProfileDialog({ open, onOpenChange, userProfile }: ProfileDialog
   // Permission States
   const [notifStatus, setNotifStatus] = useState<NotificationPermission>('default');
   const [locationStatus, setLocationStatus] = useState<'default' | 'granted' | 'denied'>('default');
-  const [cameraStatus, setCameraStatus] = useState<'default' | 'granted' | 'denied'>('default');
 
   useEffect(() => {
     if (open) {
@@ -72,9 +71,6 @@ export function ProfileDialog({ open, onOpenChange, userProfile }: ProfileDialog
       if ('permissions' in navigator) {
         navigator.permissions.query({ name: 'geolocation' as any }).then(res => {
             setLocationStatus(res.state as any);
-        });
-        navigator.permissions.query({ name: 'camera' as any }).then(res => {
-            setCameraStatus(res.state as any);
         });
       }
     }
@@ -137,17 +133,13 @@ export function ProfileDialog({ open, onOpenChange, userProfile }: ProfileDialog
     }
   }
 
-  const handleRequestPermission = async (type: 'notifications' | 'location' | 'camera') => {
+  const handleRequestPermission = async (type: 'notifications' | 'location') => {
     try {
         if (type === 'notifications') {
             const permission = await Notification.requestPermission();
             setNotifStatus(permission);
         } else if (type === 'location') {
             navigator.geolocation.getCurrentPosition(() => setLocationStatus('granted'), () => setLocationStatus('denied'));
-        } else if (type === 'camera') {
-            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-            setCameraStatus('granted');
-            stream.getTracks().forEach(track => track.stop()); // Stop immediately after check
         }
         toast({ title: "Permission Updated", description: `Authorization for ${type} has been processed.` });
     } catch (e: any) {
@@ -165,7 +157,7 @@ export function ProfileDialog({ open, onOpenChange, userProfile }: ProfileDialog
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-2xl h-[90vh] flex flex-col p-0">
         <DialogHeader className="p-6 pb-0">
-          <DialogTitle>My Profile & Device Access</DialogTitle>
+          <DialogTitle>My Profile & Security</DialogTitle>
           <DialogDescription>Manage your identity and authorize system access.</DialogDescription>
         </DialogHeader>
         
@@ -203,9 +195,9 @@ export function ProfileDialog({ open, onOpenChange, userProfile }: ProfileDialog
                     </Form>
                     <Separator />
                     <div className="space-y-4">
-                        <h4 className="text-sm font-bold uppercase tracking-widest text-primary">Security</h4>
+                        <h4 className="text-sm font-bold uppercase tracking-widest text-primary">Security Access</h4>
                         <Button variant="outline" className="w-full" onClick={() => sendPasswordResetEmail(auth!, userProfile.email)}>
-                            Send Password Reset Email
+                            <Lock className="mr-2 h-4 w-4" /> Send Password Reset
                         </Button>
                     </div>
                 </div>
@@ -237,23 +229,12 @@ export function ProfileDialog({ open, onOpenChange, userProfile }: ProfileDialog
                             </div>
                         </div>
 
-                        <div className="flex items-center justify-between p-3 rounded-xl border bg-secondary/20">
-                            <div className="flex items-center gap-3">
-                                <div className="p-2 bg-background rounded-lg"><Camera className="h-4 w-4 text-primary" /></div>
-                                <div><p className="text-sm font-semibold">Media Access</p><p className="text-[10px] text-muted-foreground uppercase">Secure Camera Feed</p></div>
-                            </div>
-                            <div className="flex flex-col items-end gap-2">
-                                {getStatusBadge(cameraStatus)}
-                                {cameraStatus !== 'granted' && <Button size="sm" variant="ghost" className="h-6 text-[10px] uppercase" onClick={() => handleRequestPermission('camera')}>Authorize</Button>}
-                            </div>
-                        </div>
-
-                        <div className="flex items-center justify-between p-3 rounded-xl border bg-secondary/20">
+                        <div className="flex items-center justify-between p-3 rounded-xl border bg-secondary/20 opacity-60">
                             <div className="flex items-center gap-3">
                                 <div className="p-2 bg-background rounded-lg"><Calendar className="h-4 w-4 text-primary" /></div>
-                                <div><p className="text-sm font-semibold">Organization Calendar</p><p className="text-[10px] text-muted-foreground uppercase">Availability Sync</p></div>
+                                <div><p className="text-sm font-semibold">Availability Sync</p><p className="text-[10px] text-muted-foreground uppercase">Org Calendar</p></div>
                             </div>
-                            <Badge variant="outline">Enterprise API</Badge>
+                            <Badge variant="outline" className="text-[10px]">Auto-Managed</Badge>
                         </div>
                     </div>
                 </div>
