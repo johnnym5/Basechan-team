@@ -17,7 +17,7 @@ export function ReportsDialog({ open, onOpenChange, initialPayload }: ReportsDia
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent position="top" className="flex flex-col p-0">
+      <DialogContent position="left" className="flex flex-col p-0">
         <PanelSwitcher />
         <VisuallyHidden>
           <DialogHeader>

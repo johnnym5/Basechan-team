@@ -3,7 +3,7 @@
 import * as React from "react"
 import * as DialogPrimitive from "@radix-ui/react-dialog"
 import { cva, type VariantProps } from "class-variance-authority"
-import { ChevronUp, X } from "lucide-react"
+import { ChevronUp, X, ChevronLeft } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 import { useMediaQuery } from "@/hooks/use-media-query"
@@ -37,7 +37,7 @@ const dialogVariants = cva(
     variants: {
       position: {
         center: "left-[50%] top-[50%] w-full max-w-lg translate-x-[-50%] translate-y-[-50%] border p-6 duration-200 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] sm:rounded-lg",
-        left: "inset-y-0 left-0 h-full border-r data-[state=closed]:slide-out-to-left data-[state=open]:slide-in-from-left sm:max-w-sm",
+        left: "inset-y-0 left-0 h-full border-r data-[state=closed]:slide-out-to-left data-[state=open]:slide-in-from-left sm:max-w-4xl",
         right: "inset-y-0 right-0 h-full border-l data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right sm:max-w-sm",
         bottom: "inset-x-0 bottom-0 border-t data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom h-[90vh] rounded-t-[2.5rem] p-6 pb-20",
         top: "inset-x-0 top-0 border-b data-[state=closed]:slide-out-to-top data-[state=open]:slide-in-from-top h-full max-h-[98vh] rounded-b-[4rem] px-0 pt-0 pb-16",
@@ -63,6 +63,7 @@ const DialogContent = React.forwardRef<
   const finalPosition = isMobile ? "bottom" : position || "center";
   const isTopPanel = finalPosition === "top";
   const isBottomPanel = finalPosition === "bottom";
+  const isSidePanel = finalPosition === "left" || finalPosition === "right";
 
   return (
     <DialogPortal>
@@ -77,7 +78,7 @@ const DialogContent = React.forwardRef<
         )}
 
         <div className={cn("mx-auto w-full h-full flex flex-col relative", isTopPanel ? "max-w-7xl" : "")}>
-            <div className={cn("flex-1 h-full min-h-0", isTopPanel && "px-8 pt-4", isBottomPanel && "pt-6")}>
+            <div className={cn("flex-1 h-full min-h-0", (isTopPanel || isSidePanel) && "px-8 pt-4", isBottomPanel && "pt-6")}>
                 {children}
             </div>
             
@@ -85,7 +86,7 @@ const DialogContent = React.forwardRef<
                 "absolute rounded-full transition-all hover:scale-110 active:scale-95 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground shadow-2xl z-[60]",
                 isTopPanel 
                   ? "left-1/2 -bottom-2 -translate-x-1/2 p-4 bg-primary text-primary-foreground border-4 border-background h-16 w-16 flex items-center justify-center translate-y-1/2" 
-                  : "right-0 top-0 p-2 bg-secondary text-muted-foreground opacity-70 hover:opacity-100 translate-x-1/2 -translate-y-1/2",
+                  : "right-4 top-4 p-2 bg-secondary text-muted-foreground opacity-70 hover:opacity-100",
                 isBottomPanel && "top-0 right-2 translate-y-2 translate-x-0"
             )}>
                 {isTopPanel ? <ChevronUp className="h-8 w-8" /> : <X className="h-4 w-4" />}
