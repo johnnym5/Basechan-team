@@ -174,6 +174,7 @@ export interface Task {
   assignedToName: string;
   priority: TaskPriority;
   estimatedHours?: number;
+  actualHours?: number; // Time taken from ACTIVE to ARCHIVED in hours
   status: TaskStatus;
   dueDate?: string | null;
   createdBy: string;

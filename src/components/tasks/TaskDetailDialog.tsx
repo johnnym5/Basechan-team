@@ -1,4 +1,3 @@
-
 'use client';
 
 import {
@@ -11,7 +10,7 @@ import {
 } from '@/components/ui/dialog';
 import type { Task, UserProfile, ActivityEntry, SubTask, TaskStatus, Notification } from '@/lib/types';
 import type { Permissions } from '@/hooks/usePermissions';
-import { format } from 'date-fns';
+import { format, differenceInHours } from 'date-fns';
 import { Calendar, CheckSquare, History, Info, BookOpenCheck, User, Plus, Trash2, Share2, Pencil, Check, Loader2, Hourglass, LifeBuoy, Paperclip } from 'lucide-react';
 import { TaskPriorityBadge } from './TaskPriorityBadge';
 import { Badge } from '../ui/badge';
@@ -125,6 +124,7 @@ export function TaskDetailDialog({ task: initialTask, isOpen, onOpenChange, curr
     const taskRef = doc(firestore, 'tasks', task.id);
     const now = new Date().toISOString();
     let logText = '';
+    let updatePayload: any = { status: newStatus };
 
     switch (newStatus) {
         case 'ACTIVE':
@@ -132,6 +132,16 @@ export function TaskDetailDialog({ task: initialTask, isOpen, onOpenChange, curr
             break;
         case 'ARCHIVED':
             logText = `approved and archived the task.`;
+            // Calculate actual duration on completion
+            const activeLog = task.activity.find(a => a.toStatus === 'ACTIVE');
+            if (activeLog) {
+                const duration = Math.max(0, differenceInHours(new Date(now), new Date(activeLog.timestamp)));
+                updatePayload.actualHours = duration;
+            } else {
+                // Fallback to creation date if no active log found
+                const duration = Math.max(0, differenceInHours(new Date(now), new Date(task.createdAt)));
+                updatePayload.actualHours = duration;
+            }
             break;
         default:
             logText = `changed status to ${newStatus}.`;
@@ -158,10 +168,9 @@ export function TaskDetailDialog({ task: initialTask, isOpen, onOpenChange, curr
         });
     }
     
-    updateDocumentNonBlocking(taskRef, {
-        status: newStatus,
-        activity: arrayUnion(...activity)
-    });
+    updatePayload.activity = arrayUnion(...activity);
+    
+    updateDocumentNonBlocking(taskRef, updatePayload);
     
     if (currentUserProfile.id !== task.assignedTo) {
         let notifTitle = '';
@@ -223,14 +232,14 @@ export function TaskDetailDialog({ task: initialTask, isOpen, onOpenChange, curr
           <div className="md:col-span-2 space-y-6 flex flex-col">
             <div className="space-y-2">
               <h4 className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
-                <Info className="h-4 w-4" /> Details
+                <span className="material-symbols-outlined text-[18px]">info</span> Details
               </h4>
               <p className="text-foreground text-sm">{task.description || "No description provided."}</p>
             </div>
             
             <div className="space-y-2">
                 <h4 className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
-                    <CheckSquare className="h-4 w-4" /> Checklist
+                    <span className="material-symbols-outlined text-[18px]">checklist</span> Checklist
                 </h4>
                 <div className="space-y-2 rounded-md border p-3">
                     {subTasks.map(st => (
@@ -296,12 +305,20 @@ export function TaskDetailDialog({ task: initialTask, isOpen, onOpenChange, curr
               </div>
               <div className="flex items-center justify-between">
                 <span className="flex items-center gap-2 text-muted-foreground">
-                  <Hourglass className="h-4 w-4" /> Estimated Hours
+                  <span className="material-symbols-outlined text-[18px]">timer</span> Estimated Hours
                 </span>
                 <span className="font-medium">
                   {task.estimatedHours ? `${task.estimatedHours}h` : 'Not set'}
                 </span>
               </div>
+              {task.actualHours != null && (
+                 <div className="flex items-center justify-between">
+                    <span className="flex items-center gap-2 text-muted-foreground">
+                    <span className="material-symbols-outlined text-[18px]">done_all</span> Actual Time
+                    </span>
+                    <span className="font-medium">{task.actualHours}h</span>
+                </div>
+              )}
                {task.workbookId && (
                  <div className="flex items-center justify-between">
                     <span className="flex items-center gap-2 text-muted-foreground">
@@ -435,5 +452,3 @@ export function TaskDetailDialog({ task: initialTask, isOpen, onOpenChange, curr
     </Dialog>
   );
 }
-
-    
