@@ -4,17 +4,21 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Button } from "@/components/ui/button";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2 } from "lucide-react";
-import { useState } from "react";
-import { useFirestore, addDocumentNonBlocking } from "@/firebase";
-import { collection } from "firebase/firestore";
+import { Loader2, CalendarIcon, ShieldAlert } from "lucide-react";
+import { useState, useMemo } from "react";
+import { useFirestore, addDocumentNonBlocking, useCollection, useMemoFirebase } from "@/firebase";
+import { collection, query, where } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import type { LeaveRequest, LeaveType, UserProfile } from "@/lib/types";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { sanitizeInput } from "@/lib/utils";
+import { sanitizeInput, cn } from "@/lib/utils";
+import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
+import { Calendar } from "../ui/calendar";
+import { format, isSameDay, eachDayOfInterval, isWithinInterval } from "date-fns";
+import { isHoliday } from "@/lib/holidays";
 
 const formSchema = z.object({
   leaveType: z.enum(["ANNUAL", "SICK", "UNPAID", "MATERNITY", "PATERNITY"], { required_error: "Leave type is required."}),
@@ -25,56 +29,6 @@ const formSchema = z.object({
   message: "End date cannot be before start date.",
   path: ["endDate"],
 });
-
-const DateDropdowns = ({ value, onChange }: { value?: Date, onChange: (date?: Date) => void }) => {
-    const selectedDate = value;
-    const day = selectedDate ? selectedDate.getDate() : undefined;
-    const month = selectedDate ? selectedDate.getMonth() : undefined;
-    const year = selectedDate ? selectedDate.getFullYear() : undefined;
-
-    const years = Array.from({ length: 10 }, (_, i) => new Date().getFullYear() + i);
-    const months = Array.from({ length: 12 }, (_, i) => ({ value: i, label: new Date(0, i).toLocaleString('default', { month: 'long' }) }));
-    const daysInMonth = (year !== undefined && month !== undefined) ? new Date(year, month + 1, 0).getDate() : 31;
-    const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
-
-    const handleDateChange = (part: 'day' | 'month' | 'year', valueStr: string) => {
-        const value = parseInt(valueStr, 10);
-        if (isNaN(value)) {
-            onChange(undefined);
-            return;
-        }
-
-        const d = selectedDate || new Date();
-        const newYear = part === 'year' ? value : d.getFullYear();
-        const newMonth = part === 'month' ? value : d.getMonth();
-        let newDay = part === 'day' ? value : d.getDate();
-
-        const daysInNewMonth = new Date(newYear, newMonth + 1, 0).getDate();
-        if (newDay > daysInNewMonth) {
-            newDay = daysInNewMonth;
-        }
-
-        onChange(new Date(newYear, newMonth, newDay));
-    };
-
-    return (
-        <div className="grid grid-cols-3 gap-2">
-            <Select value={day?.toString()} onValueChange={(val) => handleDateChange('day', val)}>
-                <SelectTrigger><SelectValue placeholder="Day" /></SelectTrigger>
-                <SelectContent>{days.map(d => <SelectItem key={d} value={d.toString()}>{d}</SelectItem>)}</SelectContent>
-            </Select>
-            <Select value={month?.toString()} onValueChange={(val) => handleDateChange('month', val)}>
-                <SelectTrigger><SelectValue placeholder="Month" /></SelectTrigger>
-                <SelectContent>{months.map(m => <SelectItem key={m.value} value={m.value.toString()}>{m.label}</SelectItem>)}</SelectContent>
-            </Select>
-            <Select value={year?.toString()} onValueChange={(val) => handleDateChange('year', val)}>
-                <SelectTrigger><SelectValue placeholder="Year" /></SelectTrigger>
-                <SelectContent>{years.map(y => <SelectItem key={y} value={y.toString()}>{y}</SelectItem>)}</SelectContent>
-            </Select>
-        </div>
-    );
-};
-
 
 type FormData = z.infer<typeof formSchema>;
 
@@ -91,6 +45,32 @@ export function RequestLeaveDialog({ open, onOpenChange, userProfile }: RequestL
   const firestore = useFirestore();
   const { toast } = useToast();
 
+  const approvedLeavesQuery = useMemoFirebase(() => {
+    if (!firestore || !userProfile) return null;
+    return query(
+        collection(firestore, 'leave_requests'),
+        where('orgId', '==', userProfile.orgId),
+        where('status', '==', 'APPROVED')
+    );
+  }, [firestore, userProfile]);
+
+  const { data: approvedLeaves } = useCollection<LeaveRequest>(approvedLeavesQuery);
+
+  const occupiedDates = useMemo(() => {
+    const dates: Date[] = [];
+    if (!approvedLeaves) return dates;
+    approvedLeaves.forEach(req => {
+        try {
+            const interval = eachDayOfInterval({
+                start: new Date(req.startDate),
+                end: new Date(req.endDate)
+            });
+            dates.push(...interval);
+        } catch (e) {}
+    });
+    return dates;
+  }, [approvedLeaves]);
+
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
   });
@@ -102,6 +82,21 @@ export function RequestLeaveDialog({ open, onOpenChange, userProfile }: RequestL
 
   async function onSubmit(values: FormData) {
     if (!firestore || !userProfile) return;
+    
+    // Final check for overlap in case local state was out of sync
+    const isRangeOccupied = occupiedDates.some(date => 
+        isWithinInterval(date, { start: values.startDate, end: values.endDate })
+    );
+
+    if (isRangeOccupied) {
+        toast({
+            variant: "destructive",
+            title: "Dates Occupied",
+            description: "One or more dates in your selection are already occupied by another staff member."
+        });
+        return;
+    }
+
     setIsLoading(true);
 
     try {
@@ -135,9 +130,9 @@ export function RequestLeaveDialog({ open, onOpenChange, userProfile }: RequestL
     <Dialog open={open} onOpenChange={handleDialogClose}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Request Time Off</DialogTitle>
+          <DialogTitle>Request Exclusive Time Off</DialogTitle>
           <DialogDescription>
-            Submit a leave request for HR approval.
+            Submit a leave request. Dates can only be occupied by one staff member at a time.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -158,24 +153,82 @@ export function RequestLeaveDialog({ open, onOpenChange, userProfile }: RequestL
                     </FormItem>
                     )}
                 />
-                 <FormField control={form.control} name="startDate" render={({ field }) => (
-                    <FormItem>
-                        <FormLabel>Start Date</FormLabel>
-                        <FormControl>
-                            <DateDropdowns value={field.value} onChange={field.onChange} />
-                        </FormControl>
-                        <FormMessage />
-                    </FormItem>
-                 )} />
-                  <FormField control={form.control} name="endDate" render={({ field }) => (
-                     <FormItem>
-                        <FormLabel>End Date</FormLabel>
-                        <FormControl>
-                            <DateDropdowns value={field.value} onChange={field.onChange} />
-                        </FormControl>
-                        <FormMessage />
-                    </FormItem>
-                 )} />
+
+                <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                        control={form.control}
+                        name="startDate"
+                        render={({ field }) => (
+                            <FormItem className="flex flex-col">
+                                <FormLabel>Start Date</FormLabel>
+                                <Popover>
+                                    <PopoverTrigger asChild>
+                                        <FormControl>
+                                            <Button variant={"outline"} className={cn("pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>
+                                                {field.value ? format(field.value, "PPP") : <span>Pick a date</span>}
+                                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                            </Button>
+                                        </FormControl>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-auto p-0" align="start">
+                                        <Calendar
+                                            mode="single"
+                                            selected={field.value}
+                                            onSelect={field.onChange}
+                                            disabled={(date) => 
+                                                date < new Date() || 
+                                                isHoliday(date) || 
+                                                occupiedDates.some(od => isSameDay(od, date))
+                                            }
+                                            initialFocus
+                                        />
+                                    </PopoverContent>
+                                </Popover>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                    <FormField
+                        control={form.control}
+                        name="endDate"
+                        render={({ field }) => (
+                            <FormItem className="flex flex-col">
+                                <FormLabel>End Date</FormLabel>
+                                <Popover>
+                                    <PopoverTrigger asChild>
+                                        <FormControl>
+                                            <Button variant={"outline"} className={cn("pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>
+                                                {field.value ? format(field.value, "PPP") : <span>Pick a date</span>}
+                                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                            </Button>
+                                        </FormControl>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-auto p-0" align="start">
+                                        <Calendar
+                                            mode="single"
+                                            selected={field.value}
+                                            onSelect={field.onChange}
+                                            disabled={(date) => 
+                                                date < new Date() || 
+                                                isHoliday(date) || 
+                                                occupiedDates.some(od => isSameDay(od, date)) ||
+                                                (form.getValues('startDate') && date < form.getValues('startDate'))
+                                            }
+                                            initialFocus
+                                        />
+                                    </PopoverContent>
+                                </Popover>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                </div>
+
+                <div className="p-3 rounded-lg bg-amber-500/5 border border-amber-500/20 text-[10px] text-amber-600 flex gap-2">
+                    <ShieldAlert className="h-3 w-3 shrink-0 mt-0.5" />
+                    <p>Occupied dates and public holidays are disabled for selection. Our policy requires unique leave assignments per day.</p>
+                </div>
+
                  <FormField
                     control={form.control}
                     name="reason"
