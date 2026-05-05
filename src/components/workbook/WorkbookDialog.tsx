@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -24,6 +23,7 @@ import { Progress } from '@/components/ui/progress';
 import { usePermissions, type Permissions } from '@/hooks/usePermissions';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { PanelSwitcher } from '@/components/layout/PanelSwitcher';
 
 
 function WorkbookCard({ 
@@ -373,7 +373,8 @@ interface WorkbookDialogProps {
 export function WorkbookDialog({ open, onOpenChange, initialPayload }: WorkbookDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex flex-col p-0">
+      <DialogContent position="top" className="flex flex-col p-0">
+        <PanelSwitcher />
         <VisuallyHidden>
           <DialogHeader>
             <DialogTitle>Workbooks</DialogTitle>

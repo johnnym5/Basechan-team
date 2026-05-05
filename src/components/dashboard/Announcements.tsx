@@ -207,7 +207,7 @@ export function Announcements() {
 
         {viewersToDisplay && (
             <Dialog open={!!viewersToDisplay} onOpenChange={(isOpen) => !isOpen && setViewersToDisplay(null)}>
-                <DialogContent className="sm:max-w-md">
+                <DialogContent position="center" className="sm:max-w-md">
                     <DialogHeader>
                         <DialogTitle className="flex items-center gap-2">
                             <Users className="h-5 w-5 text-primary" />

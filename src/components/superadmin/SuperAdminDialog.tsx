@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState } from 'react';
@@ -13,6 +12,7 @@ import { ErrorLogViewer } from '@/components/superadmin/ErrorLogViewer';
 import { InviteUserDialog } from '@/components/settings/InviteUserDialog';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { PanelSwitcher } from '@/components/layout/PanelSwitcher';
 
 interface SuperAdminDialogProps {
   open: boolean;
@@ -33,7 +33,8 @@ export function SuperAdminDialog({ open, onOpenChange }: SuperAdminDialogProps) 
     return (
         <>
             <Dialog open={open} onOpenChange={onOpenChange}>
-                <DialogContent className="flex flex-col p-0">
+                <DialogContent position="top" className="flex flex-col p-0">
+                    <PanelSwitcher />
                     <DialogHeader className="p-6 pb-4 border-b">
                         <DialogTitle className="flex items-center gap-2 text-2xl font-bold font-headline">
                             <Shield className="h-6 w-6 text-primary" />

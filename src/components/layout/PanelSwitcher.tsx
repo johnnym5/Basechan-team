@@ -6,23 +6,28 @@ import { doc } from 'firebase/firestore';
 import { uiEmitter } from '@/lib/ui-emitter';
 import { Button } from '@/components/ui/button';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
-import { cn } from '@/lib/utils';
+import { useRouter } from 'next/navigation';
+import type { UserProfile } from '@/lib/types';
 
 export function PanelSwitcher() {
     const { user } = useUser();
     const firestore = useFirestore();
+    const router = useRouter();
     const userProfileRef = useMemoFirebase(() => 
         firestore && user ? doc(firestore, 'users', user.uid) : null
     , [firestore, user]);
-    const { data: userProfile } = useDoc<any>(userProfileRef);
+    const { data: userProfile } = useDoc<UserProfile>(userProfileRef);
     const permissions = usePermissions(userProfile);
 
     const handleSwitch = (item: any) => {
         uiEmitter.emit('close-all-dialogs');
         if ('href' in item) {
-            window.location.href = item.href;
+            router.push(item.href);
         } else if (item.dialog) {
-            uiEmitter.emit(`open-${item.dialog}-dialog` as any);
+            // Small delay to allow the current panel to retract smoothly
+            setTimeout(() => {
+                uiEmitter.emit(`open-${item.dialog}-dialog` as any);
+            }, 100);
         }
     };
 

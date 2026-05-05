@@ -1,10 +1,10 @@
-
 'use client';
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { TasksPageContent } from './TasksPageContent';
 import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
+import { PanelSwitcher } from '@/components/layout/PanelSwitcher';
 
 
 interface TasksDialogProps {
@@ -17,7 +17,8 @@ export function TasksDialog({ open, onOpenChange, initialPayload }: TasksDialogP
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex flex-col p-0">
+      <DialogContent position="top" className="flex flex-col p-0">
+        <PanelSwitcher />
         <VisuallyHidden>
             <DialogHeader>
                 <DialogTitle>Task Manager</DialogTitle>
