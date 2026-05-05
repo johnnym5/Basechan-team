@@ -10,7 +10,7 @@ import { ShieldAlert, BookCopy, MoreHorizontal, Edit, Trash2, Share2, Search, Pl
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { EditWorkbookDialog } from '@/components/workbook/EditWorkbookDialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/dialog";
 import { useToast } from '@/hooks/use-toast';
 import { ShareWorkbookDialog } from '@/components/workbook/ShareWorkbookDialog';
 import WorkbookDetailPage from '@/components/workbook/WorkbookDetailPage';
