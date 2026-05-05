@@ -232,14 +232,14 @@ export function TaskDetailDialog({ task: initialTask, isOpen, onOpenChange, curr
           <div className="md:col-span-2 space-y-6 flex flex-col">
             <div className="space-y-2">
               <h4 className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
-                <span className="material-symbols-outlined text-[18px]">info</span> Details
+                <span className="material-symbols-outlined text-[1.125rem]">info</span> Details
               </h4>
               <p className="text-foreground text-sm">{task.description || "No description provided."}</p>
             </div>
             
             <div className="space-y-2">
                 <h4 className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
-                    <span className="material-symbols-outlined text-[18px]">checklist</span> Checklist
+                    <span className="material-symbols-outlined text-[1.125rem]">checklist</span> Checklist
                 </h4>
                 <div className="space-y-2 rounded-md border p-3">
                     {subTasks.map(st => (
@@ -305,7 +305,7 @@ export function TaskDetailDialog({ task: initialTask, isOpen, onOpenChange, curr
               </div>
               <div className="flex items-center justify-between">
                 <span className="flex items-center gap-2 text-muted-foreground">
-                  <span className="material-symbols-outlined text-[18px]">timer</span> Estimated Hours
+                  <span className="material-symbols-outlined text-[1.125rem]">timer</span> Estimated Hours
                 </span>
                 <span className="font-medium">
                   {task.estimatedHours ? `${task.estimatedHours}h` : 'Not set'}
@@ -314,7 +314,7 @@ export function TaskDetailDialog({ task: initialTask, isOpen, onOpenChange, curr
               {task.actualHours != null && (
                  <div className="flex items-center justify-between">
                     <span className="flex items-center gap-2 text-muted-foreground">
-                    <span className="material-symbols-outlined text-[18px]">done_all</span> Actual Time
+                    <span className="material-symbols-outlined text-[1.125rem]">done_all</span> Actual Time
                     </span>
                     <span className="font-medium">{task.actualHours}h</span>
                 </div>

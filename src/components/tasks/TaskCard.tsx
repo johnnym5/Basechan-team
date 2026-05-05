@@ -32,7 +32,7 @@ export const TaskCard = memo(function TaskCard({ task, onSelect, permissions }: 
     return (
         <>
             <Card 
-                className="bg-card/50 backdrop-blur-xl hover:bg-card hover:shadow-lg hover:-translate-y-1 transition-all cursor-pointer"
+                className="group bg-card/50 backdrop-blur-xl hover:bg-card hover:shadow-lg hover:-translate-y-1 transition-all cursor-pointer"
                 onClick={() => onSelect(task)}
                 onContextMenu={handleContextMenu}
                 onTouchStart={handleTouchStart}
@@ -41,11 +41,11 @@ export const TaskCard = memo(function TaskCard({ task, onSelect, permissions }: 
                 <CardContent className="p-4 space-y-3">
                     <div className="flex items-center justify-between">
                         <TaskPriorityBadge priority={task.priority} />
-                        <Badge variant="secondary" className="text-[10px] uppercase">{task.assignedToName}</Badge>
+                        <Badge variant="secondary" className="text-[0.625rem] uppercase">{task.assignedToName}</Badge>
                     </div>
                     <div>
                       <p className="font-bold text-sm text-foreground leading-tight line-clamp-2">{task.title}</p>
-                      <p className="text-[10px] font-mono text-muted-foreground mt-1">{task.serialNo}</p>
+                      <p className="text-[0.625rem] font-mono text-muted-foreground mt-1">{task.serialNo}</p>
                     </div>
                 </CardContent>
             </Card>

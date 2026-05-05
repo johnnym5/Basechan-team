@@ -37,11 +37,11 @@ export function BottomNavBar({ onFabClick }: BottomNavBarProps) {
       <div className="max-w-md mx-auto glass-dark rounded-3xl px-2 py-2 flex items-center justify-between shadow-2xl shadow-black/50">
         <button onClick={() => { window.location.href = '/'; }} className="flex-1 flex flex-col items-center gap-1 py-2 text-primary transition-transform duration-200 hover:scale-110">
             <LayoutDashboard className="h-6 w-6" />
-            <span className="text-[10px] font-bold uppercase tracking-wider">Dashboard</span>
+            <span className="text-[0.625rem] font-bold uppercase tracking-wider">Dashboard</span>
         </button>
         <button onClick={() => handleDialogClick('attendance')} className="flex-1 flex flex-col items-center gap-1 py-2 text-slate-500 transition-transform duration-200 hover:scale-110">
             <CalendarDays className="h-6 w-6" />
-            <span className="text-[10px] font-bold uppercase tracking-wider">Attendance</span>
+            <span className="text-[0.625rem] font-bold uppercase tracking-wider">Attendance</span>
         </button>
 
         <div className="px-2">
@@ -94,11 +94,11 @@ export function BottomNavBar({ onFabClick }: BottomNavBarProps) {
 
         <button onClick={() => handleDialogClick('tasks')} className="flex-1 flex flex-col items-center gap-1 py-2 text-slate-500 transition-transform duration-200 hover:scale-110">
             <ListTodo className="h-6 w-6" />
-            <span className="text-[10px] font-bold uppercase tracking-wider">Tasks</span>
+            <span className="text-[0.625rem] font-bold uppercase tracking-wider">Tasks</span>
         </button>
         <button onClick={() => handleDialogClick('workbooks')} className="flex-1 flex flex-col items-center gap-1 py-2 text-slate-500 transition-transform duration-200 hover:scale-110">
              <BookOpen className="h-6 w-6" />
-            <span className="text-[10px] font-bold uppercase tracking-wider">Workbooks</span>
+            <span className="text-[0.625rem] font-bold uppercase tracking-wider">Workbooks</span>
         </button>
       </div>
     </nav>

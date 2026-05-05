@@ -117,7 +117,7 @@ export default function AppSidebar({
                     {isExpanded && (
                         <div className="flex-1 truncate animate-in fade-in slide-in-from-left-2 duration-300">
                             <p className="font-semibold text-sm truncate">{userProfile?.fullName}</p>
-                            <p className="text-[10px] text-gray-500 uppercase tracking-widest truncate">{userProfile?.position}</p>
+                            <p className="text-[0.625rem] text-gray-500 uppercase tracking-widest truncate">{userProfile?.position}</p>
                         </div>
                     )}
                 </div>

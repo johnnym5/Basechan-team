@@ -47,7 +47,7 @@ export function PerformanceCard({ userProfile }: PerformanceCardProps) {
                     <div className="gauge-fill" style={{ transform: `rotate(${45 + (stats.success * 1.8)}deg)` }}></div>
                     <div className="absolute inset-0 flex flex-col items-center justify-center pt-8">
                         <span className="text-4xl font-bold">{stats.success}%</span>
-                        <span className="text-[10px] uppercase tracking-widest text-gray-400">Team Success</span>
+                        <span className="text-[0.625rem] uppercase tracking-widest text-gray-400">Team Success</span>
                     </div>
                 </div>
                 
