@@ -1,7 +1,5 @@
 'use client';
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { useUser, useDoc, useMemoFirebase, useFirestore, useCollection } from "@/firebase";
 import type { UserProfile, Chat } from "@/lib/types";
 import { doc, collection, query, where, orderBy, limit } from "firebase/firestore";
@@ -9,8 +7,6 @@ import { Skeleton } from "../ui/skeleton";
 import { formatDistanceToNow } from 'date-fns';
 import { uiEmitter } from "@/lib/ui-emitter";
 import { Avatar, AvatarFallback } from "../ui/avatar";
-import { Hash } from "lucide-react";
-
 
 export function DashboardRecentChats() {
     const { user: authUser } = useUser();
@@ -37,59 +33,38 @@ export function DashboardRecentChats() {
     const getChatTitle = (chat: Chat) => {
         if (chat.type === 'CHANNEL') return `# ${chat.name}`;
         const otherParticipantId = chat.participants.find(p => p !== userProfile?.id);
-        if (!otherParticipantId) return "Unknown Chat";
+        if (!otherParticipantId) return "Unknown User";
         return chat.participantProfiles[otherParticipantId]?.fullName || "Unknown User";
     }
 
-    const getAvatarFallback = (chat: Chat) => {
-        if (chat.type === 'CHANNEL') return '#';
-        const title = getChatTitle(chat);
-        return title.split(' ').map(n => n[0]).join('');
-    }
-    
-    const handleChatClick = (chat: Chat) => {
-        uiEmitter.emit('open-chat-dialog', { chatId: chat.id });
-    };
-
     return (
-        <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle>Recent Chats</CardTitle>
-                <Button variant="link" size="sm" className="text-primary" onClick={() => uiEmitter.emit('open-chat-dialog')}>View All</Button>
-            </CardHeader>
-            <CardContent>
-                {isLoading && (
-                    <div className="space-y-4">
-                        <Skeleton className="h-12 w-full" />
-                        <Skeleton className="h-12 w-full" />
-                    </div>
-                )}
-                {!isLoading && (!chats || chats.length === 0) && (
-                    <p className="text-sm text-center text-muted-foreground py-8">No recent conversations.</p>
-                )}
-                {!isLoading && chats && (
-                    <div className="space-y-4">
-                        {chats.map(chat => (
-                            <div key={chat.id} className="flex items-center gap-3 cursor-pointer" onClick={() => handleChatClick(chat)}>
-                                <Avatar className="h-9 w-9">
-                                    <AvatarFallback>
-                                        {chat.type === 'CHANNEL' ? <Hash className="h-4 w-4"/> : getAvatarFallback(chat)}
-                                    </AvatarFallback>
-                                </Avatar>
-                                <div className="flex-1 overflow-hidden">
-                                    <p className="text-sm font-medium truncate">{getChatTitle(chat)}</p>
-                                    <p className="text-xs text-muted-foreground truncate">{chat.lastMessage?.text}</p>
-                                </div>
+        <section className="card-bg rounded-2xl p-6 shadow-lg">
+            <h3 className="text-lg font-semibold mb-6">Recent Chats</h3>
+            <div className="space-y-6">
+                {isLoading ? (
+                    Array.from({length: 3}).map((_, i) => <Skeleton key={i} className="h-12 w-full rounded-lg" />)
+                ) : chats?.map(chat => (
+                    <div key={chat.id} className="flex items-start space-x-3 cursor-pointer hover:bg-gray-800/50 p-2 -m-2 rounded-lg transition-colors" onClick={() => uiEmitter.emit('open-chat-dialog', { chatId: chat.id })}>
+                        <Avatar className="w-10 h-10 border border-gray-700">
+                            <AvatarFallback>{getChatTitle(chat).split(' ').map(n=>n[0]).join('')}</AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 min-w-0">
+                            <div className="flex justify-between items-baseline">
+                                <span className="font-medium text-sm text-gray-200 truncate pr-2">{getChatTitle(chat)}</span>
                                 {chat.lastMessage && (
-                                    <p className="text-xs text-muted-foreground flex-shrink-0">
+                                    <span className="text-[10px] text-gray-500 whitespace-nowrap">
                                         {formatDistanceToNow(new Date(chat.lastMessage.timestamp), { addSuffix: true })}
-                                    </p>
+                                    </span>
                                 )}
                             </div>
-                        ))}
+                            <p className="text-xs text-gray-400 truncate">{chat.lastMessage?.text || 'No messages yet'}</p>
+                        </div>
                     </div>
+                ))}
+                {!isLoading && (!chats || chats.length === 0) && (
+                    <p className="text-center text-xs text-gray-500 py-4">No recent conversations.</p>
                 )}
-            </CardContent>
-        </Card>
+            </div>
+        </section>
     );
 }

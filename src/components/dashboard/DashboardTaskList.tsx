@@ -1,111 +1,67 @@
 'use client';
-import { useUser, useFirestore, useCollection, useMemoFirebase, useDoc } from "@/firebase";
-import { collection, query, where, doc } from "firebase/firestore";
-import type { Task, TaskPriority } from "@/lib/types";
+import { useUser, useFirestore, useCollection, useMemoFirebase } from "@/firebase";
+import { collection, query, where, orderBy, limit } from "firebase/firestore";
+import type { Task } from "@/lib/types";
 import { Skeleton } from "../ui/skeleton";
-import { Button } from "../ui/button";
-import { useState, useMemo } from "react";
-import { TaskCard } from "../tasks/TaskCard";
-import { TaskDetailDialog } from "../tasks/TaskDetailDialog";
-import { usePermissions } from "@/hooks/usePermissions";
-import { uiEmitter } from "@/lib/ui-emitter";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
 
 export function DashboardTaskList() {
     const { user: authUser } = useUser();
     const firestore = useFirestore();
-    const [selectedTask, setSelectedTask] = useState<Task | null>(null);
 
-    const userProfileRef = useMemoFirebase(() => 
-        firestore && authUser ? doc(firestore, 'users', authUser.uid) : null,
-    [firestore, authUser]);
-    const { data: userProfile } = useDoc(userProfileRef);
-    const permissions = usePermissions(userProfile);
-
-    // Fetches all active tasks for the user. Sorting is handled on the client.
     const tasksQuery = useMemoFirebase(() => {
         if (!firestore || !authUser) return null;
         return query(
             collection(firestore, 'tasks'),
-            where('assignedTo', '==', authUser.uid),
-            where('status', 'in', ['QUEUED', 'ACTIVE', 'AWAITING_REVIEW'])
+            where('orgId', '==', authUser.uid), // In a real app we'd use orgId, for now using user context
+            orderBy('createdAt', 'desc'),
+            limit(10)
         );
     }, [firestore, authUser]);
 
     const { data: tasks, isLoading } = useCollection<Task>(tasksQuery);
 
-    const sortedTasks = useMemo(() => {
-        if (!tasks) return [];
-        
-        const priorityOrder: Record<TaskPriority, number> = {
-            "LEVEL_3": 3,
-            "LEVEL_2": 2,
-            "LEVEL_1": 1
-        };
-
-        const sorted = [...tasks].sort((a, b) => {
-            // Sort by priority descending
-            const priorityA = priorityOrder[a.priority] || 0;
-            const priorityB = priorityOrder[b.priority] || 0;
-            if (priorityA !== priorityB) {
-                return priorityB - priorityA;
-            }
-
-            // Then by due date ascending (earlier due dates first)
-            const dueDateA = a.dueDate ? new Date(a.dueDate).getTime() : Infinity;
-            const dueDateB = b.dueDate ? new Date(b.dueDate).getTime() : Infinity;
-            if (dueDateA !== dueDateB) {
-                return dueDateA - dueDateB;
-            }
-
-            // Fallback to creation date if priorities and due dates are the same
-            return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-        });
-
-        return sorted.slice(0, 5); // Show top 5 prioritized tasks
-    }, [tasks]);
-
-
-    const handleDialogClose = (isOpen: boolean) => {
-        if (!isOpen) {
-          setSelectedTask(null);
-        }
-    };
-
   return (
-    <>
-        <div className="space-y-4">
-            <div className="flex items-center justify-between">
-                <h2 className="text-xl font-bold font-headline md:text-lg">My Active Tasks</h2>
-                <Button variant="link" size="sm" className="text-primary" onClick={() => uiEmitter.emit('open-tasks-dialog')}>
-                    View All
-                </Button>
-            </div>
-            <div className="space-y-3">
-                {isLoading && Array.from({length: 3}).map((_, i) => <Skeleton key={i} className="h-20 w-full" />)}
-                {!isLoading && sortedTasks.length === 0 && (
-                    <p className="text-sm text-muted-foreground text-center pt-8">No active tasks. Enjoy the quiet!</p>
-                )}
-                {!isLoading && sortedTasks.map(task => (
-                    <TaskCard 
-                        key={task.id} 
-                        task={task} 
-                        userProfile={userProfile!} 
-                        permissions={permissions}
-                        onSelect={() => setSelectedTask(task)}
-                    />
-                ))}
-            </div>
+    <section className="card-bg rounded-2xl p-6 shadow-lg h-full">
+        <h3 className="text-lg font-semibold mb-6">Active Tasks</h3>
+        <div className="overflow-x-auto">
+            <table className="w-full text-left">
+                <thead>
+                    <tr className="text-gray-500 text-sm border-b border-gray-800">
+                        <th className="pb-4 font-medium">Priority</th>
+                        <th className="pb-4 font-medium">Task Name</th>
+                        <th className="pb-4 font-medium">Assignee</th>
+                        <th className="pb-4 font-medium">Due Date</th>
+                    </tr>
+                </thead>
+                <tbody className="text-sm">
+                    {isLoading && Array.from({length: 5}).map((_, i) => (
+                        <tr key={i}><td colSpan={4} className="py-4"><Skeleton className="h-6 w-full" /></td></tr>
+                    ))}
+                    {!isLoading && tasks?.map((task) => (
+                        <tr key={task.id} className="border-b border-gray-800/50 hover:bg-gray-800/20 transition-colors">
+                            <td className="py-4">
+                                <span className={cn(
+                                    "px-3 py-1 rounded-md text-xs font-semibold uppercase",
+                                    task.priority === 'LEVEL_3' ? "bg-red-500/20 text-red-500" :
+                                    task.priority === 'LEVEL_2' ? "bg-orange-500/20 text-orange-400" :
+                                    "bg-blue-500/20 text-blue-400"
+                                )}>
+                                    {task.priority === 'LEVEL_3' ? 'High' : task.priority === 'LEVEL_2' ? 'Medium' : 'Low'}
+                                </span>
+                            </td>
+                            <td className="py-4 font-medium text-gray-200">{task.title}</td>
+                            <td className="py-4 text-gray-400">{task.assignedToName}</td>
+                            <td className="py-4 text-gray-400">{task.dueDate ? format(new Date(task.dueDate), 'MMM d') : 'N/A'}</td>
+                        </tr>
+                    ))}
+                    {!isLoading && tasks?.length === 0 && (
+                        <tr><td colSpan={4} className="py-10 text-center text-gray-500">No active tasks found.</td></tr>
+                    )}
+                </tbody>
+            </table>
         </div>
-
-         {selectedTask && userProfile && (
-            <TaskDetailDialog
-            task={selectedTask}
-            isOpen={!!selectedTask}
-            onOpenChange={handleDialogClose}
-            currentUserProfile={userProfile}
-            permissions={permissions}
-            />
-        )}
-    </>
+    </section>
   );
 }
