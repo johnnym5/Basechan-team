@@ -3,6 +3,10 @@
 @tailwind utilities;
 
 @layer base {
+  html {
+    font-size: 50%; /* Scale the whole app by 50% (8px base) */
+  }
+
   :root {
     --background: 225 15% 7%; /* #0f1014 */
     --foreground: 210 40% 98%;
@@ -31,7 +35,7 @@
     --border: 220 15% 15%;
     --input: 220 15% 15%;
     --ring: 217 91% 60%;
-    --radius: 0.75rem;
+    --radius: 0.375rem; /* Scaled down from 0.75rem */
 
     --sidebar-background: 230 15% 10%; /* #17181f */
     --sidebar-foreground: 210 40% 98%;
@@ -72,8 +76,8 @@
 
   /* Custom System-Wide Scrollbar */
   ::-webkit-scrollbar {
-    width: 10px;
-    height: 10px;
+    width: 0.625rem; /* 10px -> scaled */
+    height: 0.625rem;
   }
 
   ::-webkit-scrollbar-track {
@@ -81,7 +85,7 @@
   }
 
   ::-webkit-scrollbar-thumb {
-    @apply bg-muted-foreground/20 rounded-full border-[3px] border-transparent bg-clip-content transition-colors duration-200;
+    @apply bg-muted-foreground/20 rounded-full border-[2px] border-transparent bg-clip-content transition-colors duration-200;
   }
 
   ::-webkit-scrollbar-thumb:hover {
@@ -102,23 +106,23 @@
     
     .gauge-container {
       position: relative;
-      width: 200px;
-      height: 100px;
+      width: 12.5rem; /* 200px -> scaled */
+      height: 6.25rem; /* 100px -> scaled */
       overflow: hidden;
     }
     .gauge-track {
-      width: 200px;
-      height: 200px;
-      border: 24px solid #2d2f39;
+      width: 12.5rem;
+      height: 12.5rem;
+      border: 1.5rem solid #2d2f39; /* 24px -> scaled */
       border-radius: 50%;
     }
     .gauge-fill {
       position: absolute;
       top: 0;
       left: 0;
-      width: 200px;
-      height: 200px;
-      border: 24px solid #3b82f6;
+      width: 12.5rem;
+      height: 12.5rem;
+      border: 1.5rem solid #3b82f6;
       border-radius: 50%;
       border-bottom-color: transparent;
       border-left-color: transparent;
