@@ -1,14 +1,16 @@
 'use client';
-import { useUser, useDoc, useMemoFirebase, useCollection, useFirestore } from "@/firebase";
+import { useUser, useDoc, useMemoFirebase, useCollection, useFirestore, updateDocumentNonBlocking } from "@/firebase";
 import { UserProfile, Announcement } from "@/lib/types";
-import { collection, doc, query, where, orderBy, limit } from "firebase/firestore";
+import { collection, doc, query, where, orderBy, limit, arrayUnion } from "firebase/firestore";
 import { Skeleton } from "../ui/skeleton";
 import { formatDistanceToNow } from "date-fns";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
+import { AnnouncementDetailDialog } from "./AnnouncementDetailDialog";
 
 export function Announcements() {
     const { user: authUser } = useUser();
     const firestore = useFirestore();
+    const [selectedAnnouncement, setSelectedAnnouncement] = useState<Announcement | null>(null);
     
     const userProfileRef = useMemoFirebase(() => 
         firestore && authUser ? doc(firestore, "users", authUser.uid) : null,
@@ -33,28 +35,63 @@ export function Announcements() {
         return [...announcements].sort((a, b) => b.isPinned ? 1 : -1);
     }, [announcements]);
 
+    const handleViewAnnouncement = (ann: Announcement) => {
+        if (firestore && authUser && !ann.viewedBy?.includes(authUser.uid)) {
+            const annRef = doc(firestore, 'announcements', ann.id);
+            updateDocumentNonBlocking(annRef, {
+                viewedBy: arrayUnion(authUser.uid)
+            });
+        }
+        setSelectedAnnouncement(ann);
+    };
+
+    const isAdmin = userProfile?.role === 'ORG_ADMIN' || userProfile?.role === 'MANAGING_DIRECTOR' || userProfile?.role === 'HR_MANAGER';
+
     return (
-        <section className="card-bg rounded-2xl p-6 shadow-lg">
-            <h3 className="text-lg font-semibold mb-6">Announcements</h3>
-            <div className="space-y-6">
-                {isLoading ? (
-                    Array.from({length: 2}).map((_, i) => <Skeleton key={i} className="h-20 w-full rounded-lg" />)
-                ) : sortedAnnouncements.map(ann => (
-                    <div key={ann.id} className="pb-6 border-b border-gray-800 last:border-0 last:pb-0">
-                        <span className="text-[10px] text-primary font-bold uppercase tracking-wider mb-1 block">
-                            {ann.isPinned ? '📌 Pinned Update' : 'Recent Update'}
-                        </span>
-                        <h4 className="text-sm font-medium mb-1 text-gray-200">{ann.title}</h4>
-                        <p className="text-xs text-gray-400 leading-relaxed mb-2 line-clamp-2">{ann.content}</p>
-                        <span className="text-[10px] text-gray-500 uppercase tracking-widest">
-                            {formatDistanceToNow(new Date(ann.createdAt), { addSuffix: true })}
-                        </span>
-                    </div>
-                ))}
-                {!isLoading && sortedAnnouncements.length === 0 && (
-                    <p className="text-center text-xs text-gray-500 py-4">No active broadcasts.</p>
-                )}
-            </div>
-        </section>
+        <>
+            <section className="card-bg rounded-2xl p-6 shadow-lg">
+                <h3 className="text-lg font-semibold mb-6">Announcements</h3>
+                <div className="space-y-6">
+                    {isLoading ? (
+                        Array.from({length: 2}).map((_, i) => <Skeleton key={i} className="h-20 w-full rounded-lg" />)
+                    ) : sortedAnnouncements.map(ann => (
+                        <div 
+                            key={ann.id} 
+                            className="pb-6 border-b border-gray-800 last:border-0 last:pb-0 cursor-pointer group"
+                            onClick={() => handleViewAnnouncement(ann)}
+                        >
+                            <span className="text-[10px] text-primary font-bold uppercase tracking-wider mb-1 block group-hover:text-blue-400 transition-colors">
+                                {ann.isPinned ? '📌 Pinned Update' : 'Recent Update'}
+                            </span>
+                            <h4 className="text-sm font-medium mb-1 text-gray-200 group-hover:text-white transition-colors">{ann.title}</h4>
+                            <p className="text-xs text-gray-400 leading-relaxed mb-2 line-clamp-2">{ann.content}</p>
+                            <div className="flex items-center justify-between">
+                                <span className="text-[10px] text-gray-500 uppercase tracking-widest">
+                                    {formatDistanceToNow(new Date(ann.createdAt), { addSuffix: true })}
+                                </span>
+                                {isAdmin && (
+                                    <span className="text-[10px] text-muted-foreground flex items-center gap-1 bg-white/5 px-1.5 py-0.5 rounded">
+                                        <span className="material-symbols-outlined text-[12px]">visibility</span>
+                                        {ann.viewedBy?.length || 0}
+                                    </span>
+                                )}
+                            </div>
+                        </div>
+                    ))}
+                    {!isLoading && sortedAnnouncements.length === 0 && (
+                        <p className="text-center text-xs text-gray-500 py-4">No active broadcasts.</p>
+                    )}
+                </div>
+            </section>
+
+            {selectedAnnouncement && userProfile && (
+                <AnnouncementDetailDialog
+                    announcement={selectedAnnouncement}
+                    isOpen={!!selectedAnnouncement}
+                    onOpenChange={(open) => !open && setSelectedAnnouncement(null)}
+                    userProfile={userProfile}
+                />
+            )}
+        </>
     );
 }
