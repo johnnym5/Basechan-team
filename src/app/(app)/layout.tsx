@@ -40,6 +40,49 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   const isLoggedIn = !!user;
 
+  // Permission Bootstrapping on Load
+  useEffect(() => {
+    const bootstrapPermissions = async () => {
+        if (!isLoggedIn || isUserLoading || typeof window === 'undefined') return;
+
+        // Check if we already tried in this session to avoid hardware flicker
+        const bootstrappedKey = 'basechan-perms-bootstrapped';
+        if (sessionStorage.getItem(bootstrappedKey)) return;
+
+        console.log("Initializing device authorization protocol...");
+
+        // 1. Notifications
+        if ('Notification' in window && Notification.permission === 'default') {
+            try { await Notification.requestPermission(); } catch (e) {}
+        }
+
+        // 2. Geolocation (Location)
+        if ('geolocation' in navigator) {
+            navigator.geolocation.getCurrentPosition(
+                () => console.log("Location authorized."),
+                () => console.warn("Location denied."),
+                { timeout: 5000 }
+            );
+        }
+
+        // 3. Media (Camera)
+        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                // Immediately stop to just obtain permission
+                stream.getTracks().forEach(track => track.stop());
+                console.log("Media authorized.");
+            } catch (e) {
+                console.warn("Media denied or unavailable.");
+            }
+        }
+
+        sessionStorage.setItem(bootstrappedKey, 'true');
+    };
+
+    bootstrapPermissions();
+  }, [isLoggedIn, isUserLoading]);
+
   useEffect(() => {
     if (isLoggedIn) setIsAuthDialogOpen(false);
   }, [isLoggedIn]);

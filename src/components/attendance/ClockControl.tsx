@@ -78,9 +78,10 @@ export function ClockControl({
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
 
   useEffect(() => {
-    const getCameraPermission = async () => {
+    const checkAndRequestCamera = async () => {
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({video: true});
+        // Try to get existing permission or request it
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
         setHasCameraPermission(true);
 
         if (videoRef.current) {
@@ -89,16 +90,11 @@ export function ClockControl({
       } catch (error) {
         console.error('Error accessing camera:', error);
         setHasCameraPermission(false);
-        toast({
-          variant: 'destructive',
-          title: 'Camera Access Denied',
-          description: 'Please enable camera permissions in your browser settings to use this app.',
-        });
       }
     };
 
     if (!isClockedIn) {
-        getCameraPermission();
+        checkAndRequestCamera();
     }
 
     return () => {
