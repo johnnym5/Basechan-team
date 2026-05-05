@@ -40,7 +40,7 @@ const dialogVariants = cva(
         left: "inset-y-0 left-0 h-full border-r data-[state=closed]:slide-out-to-left data-[state=open]:slide-in-from-left sm:max-w-sm",
         right: "inset-y-0 right-0 h-full border-l data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right sm:max-w-sm",
         bottom: "inset-x-0 bottom-0 border-t data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom h-[90vh] rounded-t-[2.5rem] p-6 pb-20",
-        top: "inset-x-0 top-0 border-b data-[state=closed]:slide-out-to-top data-[state=open]:slide-in-from-top h-[95vh] rounded-b-[4rem] px-0 pt-0 pb-16",
+        top: "inset-x-0 top-0 border-b data-[state=closed]:slide-out-to-top data-[state=open]:slide-in-from-top h-full max-h-[98vh] rounded-b-[4rem] px-0 pt-0 pb-16",
       },
     },
     defaultVariants: {
@@ -84,7 +84,7 @@ const DialogContent = React.forwardRef<
             <DialogPrimitive.Close className={cn(
                 "absolute rounded-full transition-all hover:scale-110 active:scale-95 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground shadow-2xl z-[60]",
                 isTopPanel 
-                  ? "left-1/2 -top-6 -translate-x-1/2 p-4 bg-primary text-primary-foreground border-4 border-background h-16 w-16 flex items-center justify-center" 
+                  ? "left-1/2 -bottom-2 -translate-x-1/2 p-4 bg-primary text-primary-foreground border-4 border-background h-16 w-16 flex items-center justify-center translate-y-1/2" 
                   : "right-0 top-0 p-2 bg-secondary text-muted-foreground opacity-70 hover:opacity-100 translate-x-1/2 -translate-y-1/2",
                 isBottomPanel && "top-0 right-2 translate-y-2 translate-x-0"
             )}>
@@ -137,7 +137,9 @@ const DialogTitle = React.forwardRef<
       className
     )}
     {...props}
-  />
+  >
+    {props.children}
+  </DialogPrimitive.Title>
 ))
 DialogTitle.displayName = DialogPrimitive.Title.displayName
 
@@ -149,7 +151,9 @@ const DialogDescription = React.forwardRef<
     ref={ref}
     className={cn("text-lg text-muted-foreground", className)}
     {...props}
-  />
+  >
+    {props.children}
+  </DialogPrimitive.Description>
 ))
 DialogDescription.displayName =
   DialogPrimitive.Description.displayName

@@ -46,7 +46,7 @@ export default function AppHeader({
   const [currentDate, setCurrentDate] = useState('');
   const [animateGreeting, setAnimateGreeting] = useState(false);
   const [todayForReport, setTodayForReport] = useState('');
-  const [isHeaderVisible, setIsHeaderVisible] = useState(false);
+  const [isHeaderVisible, setIsHeaderVisible] = useState(true);
 
   const { isIdle } = useIdleTimer(attendanceRecord);
 
@@ -349,7 +349,7 @@ export default function AppHeader({
             )}
 
             {/* Hide Handle */}
-            {isHeaderVisible && isLoggedIn && (
+            {(isHeaderVisible && isLoggedIn) && (
                 <Button 
                     variant="ghost" 
                     size="sm" 

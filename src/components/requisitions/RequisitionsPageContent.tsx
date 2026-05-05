@@ -1,4 +1,3 @@
-
 'use client';
 import { Button } from "@/components/ui/button";
 import { ShieldAlert, PlusCircle } from "lucide-react";
@@ -122,8 +121,8 @@ export function RequisitionsPageContent({ initialPayload }: { initialPayload?: {
   const currencySymbol = systemConfig?.currency_symbol || '$';
 
   return (
-    <div className="space-y-6">
-       <div className="flex items-center justify-between">
+    <div className="space-y-6 flex flex-col h-full overflow-hidden">
+       <div className="flex items-center justify-between flex-shrink-0">
             <div>
                 <h1 className="text-3xl font-bold font-headline tracking-tight">Procurement & Requisitions</h1>
                 <p className="text-muted-foreground">Manage financial requests, purchase orders, and external vendors.</p>
@@ -134,33 +133,38 @@ export function RequisitionsPageContent({ initialPayload }: { initialPayload?: {
             </Button>
         </div>
       {isProfileLoading ? (
-        <Skeleton className="h-[calc(100vh-12rem)] w-full" />
+        <Skeleton className="flex-1 w-full" />
       ) : (
-        <>
-            <Tabs value={activeTab} onValueChange={setActiveTab}>
-                <ScrollArea className="w-full pb-2 whitespace-nowrap">
+        <div className="flex-1 flex flex-col min-h-0">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
+                <ScrollArea className="w-full pb-2 whitespace-nowrap flex-shrink-0">
                     <TabsList>
                         {visibleTabs.map(tab => <TabsTrigger key={tab} value={tab}>{tab}</TabsTrigger>)}
                     </TabsList>
                     <ScrollBar orientation="horizontal" />
                 </ScrollArea>
-                {visibleTabs.map(tab => (
-                    <TabsContent key={tab} value={tab} className="mt-4">
-                        {tab === 'Vendors' ? (
-                            <VendorsTab userProfile={userProfile!} permissions={permissions} />
-                        ) : tab === 'Purchase Orders' ? (
-                            <PurchaseOrdersTab userProfile={userProfile!} />
-                        ) : (
-                            <RequisitionTable 
-                                filter={tab} 
-                                userProfile={userProfile} 
-                                isSuperAdmin={isSuperAdmin} 
-                                permissions={permissions} 
-                                onSelectRequest={setSelectedRequest}
-                            />
-                        )}
-                    </TabsContent>
-                ))}
+                
+                <div className="flex-1 mt-4 overflow-hidden border rounded-xl bg-card/30">
+                    <ScrollArea className="h-full p-4">
+                        {visibleTabs.map(tab => (
+                            <TabsContent key={tab} value={tab} className="m-0">
+                                {tab === 'Vendors' ? (
+                                    <VendorsTab userProfile={userProfile!} permissions={permissions} />
+                                ) : tab === 'Purchase Orders' ? (
+                                    <PurchaseOrdersTab userProfile={userProfile!} />
+                                ) : (
+                                    <RequisitionTable 
+                                        filter={tab} 
+                                        userProfile={userProfile} 
+                                        isSuperAdmin={isSuperAdmin} 
+                                        permissions={permissions} 
+                                        onSelectRequest={setSelectedRequest}
+                                    />
+                                )}
+                            </TabsContent>
+                        ))}
+                    </ScrollArea>
+                </div>
             </Tabs>
 
           {selectedRequest && userProfile && (
@@ -180,7 +184,7 @@ export function RequisitionsPageContent({ initialPayload }: { initialPayload?: {
                 onOpenChange={setIsNewRequestOpen} 
                 userProfile={userProfile} 
             />
-        </>
+        </div>
       )}
     </div>
   );
