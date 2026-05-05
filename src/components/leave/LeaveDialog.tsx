@@ -4,7 +4,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { LeavePageContent } from './LeavePageContent';
 import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
-import { PanelSwitcher } from '@/components/layout/PanelSwitcher';
 
 interface LeaveDialogProps {
   open: boolean;
@@ -16,7 +15,6 @@ export function LeaveDialog({ open, onOpenChange }: LeaveDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent position="left" className="flex flex-col p-0">
-        <PanelSwitcher />
         <VisuallyHidden>
           <DialogHeader>
             <DialogTitle>Leave Management</DialogTitle>

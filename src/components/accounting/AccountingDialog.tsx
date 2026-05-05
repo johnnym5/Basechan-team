@@ -4,7 +4,6 @@ import { Dialog, DialogContent, DialogHeader, DialogDescription, DialogTitle } f
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { AccountingPageContent } from './AccountingPageContent';
 import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
-import { PanelSwitcher } from '@/components/layout/PanelSwitcher';
 
 
 interface AccountingDialogProps {
@@ -17,7 +16,6 @@ export function AccountingDialog({ open, onOpenChange }: AccountingDialogProps) 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent position="left" className="flex flex-col p-0">
-        <PanelSwitcher />
         <VisuallyHidden>
           <DialogHeader>
               <DialogTitle>Accounting</DialogTitle>

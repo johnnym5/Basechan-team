@@ -4,7 +4,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { ReportsPageContent } from './ReportsPageContent';
 import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
-import { PanelSwitcher } from '@/components/layout/PanelSwitcher';
 
 
 interface ReportsDialogProps {
@@ -18,7 +17,6 @@ export function ReportsDialog({ open, onOpenChange, initialPayload }: ReportsDia
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent position="left" className="flex flex-col p-0">
-        <PanelSwitcher />
         <VisuallyHidden>
           <DialogHeader>
             <DialogTitle>Reports</DialogTitle>

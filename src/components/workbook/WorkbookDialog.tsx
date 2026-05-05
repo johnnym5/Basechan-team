@@ -23,7 +23,6 @@ import { Progress } from '@/components/ui/progress';
 import { usePermissions, type Permissions } from '@/hooks/usePermissions';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { PanelSwitcher } from '@/components/layout/PanelSwitcher';
 
 
 function WorkbookCard({ 
@@ -376,7 +375,6 @@ export function WorkbookDialog({ open, onOpenChange, initialPayload }: WorkbookD
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent position="left" className="flex flex-col p-0">
-        <PanelSwitcher />
         <VisuallyHidden>
           <DialogHeader>
             <DialogTitle>Workbooks</DialogTitle>
