@@ -2,7 +2,7 @@
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { TrendingUp, ShieldInfo } from "lucide-react";
+import { TrendingUp, ShieldCheck } from "lucide-react";
 import { useMemo } from "react";
 import type { UserProfile, Task } from "@/lib/types";
 import { uiEmitter } from "@/lib/ui-emitter";
@@ -75,7 +75,7 @@ export function PerformanceCard({ userProfile }: PerformanceCardProps) {
                 <CardHeader className="p-4">
                     <div className="flex items-center justify-between">
                         <CardTitle className="text-sm font-semibold tracking-wider uppercase flex items-center gap-2">
-                             {permissions.canManageStaff && <ShieldInfo className="h-4 w-4 text-primary-foreground/60" />}
+                             {permissions.canManageStaff && <ShieldCheck className="h-4 w-4 text-primary-foreground/60" />}
                              {permissions.canManageStaff ? 'Team Performance' : 'My Performance'}
                         </CardTitle>
                         <TrendingUp className="h-5 w-5 text-primary-foreground/70 group-hover:scale-110 transition-transform" />
