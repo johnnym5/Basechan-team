@@ -23,10 +23,16 @@ export function PerformanceCard({ userProfile }: PerformanceCardProps) {
 
     const { data: allTasks } = useCollection<Task>(tasksQuery);
 
-    const progress = useMemo(() => {
-        if (!allTasks || allTasks.length === 0) return 20; 
+    const stats = useMemo(() => {
+        if (!allTasks || allTasks.length === 0) return { success: 0, management: 0 };
+        
         const completed = allTasks.filter(t => t.status === 'ARCHIVED').length;
-        return Math.round((completed / allTasks.length) * 100);
+        const success = Math.round((completed / allTasks.length) * 100);
+        
+        const started = allTasks.filter(t => t.status !== 'QUEUED').length;
+        const management = Math.round((started / allTasks.length) * 100);
+
+        return { success, management };
     }, [allTasks]);
 
     return (
@@ -38,9 +44,9 @@ export function PerformanceCard({ userProfile }: PerformanceCardProps) {
                     onClick={() => uiEmitter.emit('open-reports-dialog', { tab: 'analytics' })}
                 >
                     <div className="gauge-track"></div>
-                    <div className="gauge-fill" style={{ transform: `rotate(${45 + (progress * 1.8)}deg)` }}></div>
+                    <div className="gauge-fill" style={{ transform: `rotate(${45 + (stats.success * 1.8)}deg)` }}></div>
                     <div className="absolute inset-0 flex flex-col items-center justify-center pt-8">
-                        <span className="text-4xl font-bold">{progress}%</span>
+                        <span className="text-4xl font-bold">{stats.success}%</span>
                         <span className="text-[10px] uppercase tracking-widest text-gray-400">Team Success</span>
                     </div>
                 </div>
@@ -50,28 +56,28 @@ export function PerformanceCard({ userProfile }: PerformanceCardProps) {
                         className="flex flex-col cursor-pointer p-2 rounded-lg hover:bg-white/5 transition-colors group"
                         onClick={() => uiEmitter.emit('open-reports-dialog', { tab: 'analytics' })}
                     >
-                        <span className="text-xl font-bold group-hover:text-primary transition-colors">{progress}%</span>
+                        <span className="text-xl font-bold group-hover:text-primary transition-colors">{stats.success}%</span>
                         <span className="text-xs text-muted-foreground uppercase tracking-wider">Success Rate</span>
                     </div>
                     <div 
                         className="flex flex-col cursor-pointer p-2 rounded-lg hover:bg-white/5 transition-colors group"
                         onClick={() => uiEmitter.emit('open-attendance-dialog')}
                     >
-                        <span className="text-xl font-bold group-hover:text-primary transition-colors">93%</span>
+                        <span className="text-xl font-bold group-hover:text-primary transition-colors">0%</span>
                         <span className="text-xs text-muted-foreground uppercase tracking-wider">Attendance</span>
                     </div>
                     <div 
                         className="flex flex-col cursor-pointer p-2 rounded-lg hover:bg-white/5 transition-colors group"
                         onClick={() => uiEmitter.emit('open-tasks-dialog')}
                     >
-                        <span className="text-xl font-bold group-hover:text-primary transition-colors">65%</span>
+                        <span className="text-xl font-bold group-hover:text-primary transition-colors">{stats.management}%</span>
                         <span className="text-xs text-muted-foreground uppercase tracking-wider">Management</span>
                     </div>
                     <div 
                         className="flex flex-col cursor-pointer p-2 rounded-lg hover:bg-white/5 transition-colors group"
                         onClick={() => uiEmitter.emit('open-reports-dialog', { tab: 'team-reports' })}
                     >
-                        <span className="text-xl font-bold group-hover:text-primary transition-colors">20%</span>
+                        <span className="text-xl font-bold group-hover:text-primary transition-colors">0%</span>
                         <span className="text-xs text-muted-foreground uppercase tracking-wider">Reporting</span>
                     </div>
                 </div>
