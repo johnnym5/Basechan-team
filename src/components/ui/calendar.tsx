@@ -14,7 +14,6 @@ function Calendar({
   showOutsideDays = true,
   ...props
 }: CalendarProps) {
-  const currentYear = new Date().getFullYear();
   return (
     <DayPicker
       showOutsideDays={showOutsideDays}
@@ -22,35 +21,38 @@ function Calendar({
       classNames={{
         months: "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0",
         month: "space-y-4",
-        month_caption: "flex justify-center pt-1 relative items-center mb-4",
-        caption_label: "hidden",
-        caption_dropdowns: "flex gap-2",
-        nav: "hidden",
+        month_caption: "flex justify-center pt-1 relative items-center mb-6",
+        caption_label: "text-sm font-bold tracking-tight",
+        nav: "flex items-center",
+        button_previous: cn(
+          buttonVariants({ variant: "outline" }),
+          "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100 absolute left-1 rounded-lg border-gray-800 transition-all"
+        ),
+        button_next: cn(
+          buttonVariants({ variant: "outline" }),
+          "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100 absolute right-1 rounded-lg border-gray-800 transition-all"
+        ),
         month_grid: "w-full border-collapse space-y-1",
         weekdays: "flex",
         weekday:
-          "text-muted-foreground rounded-md w-9 font-normal text-[0.8rem]",
+          "text-muted-foreground rounded-md w-9 font-semibold text-[0.625rem] uppercase tracking-widest text-center",
         weeks: "w-full",
         week: "flex w-full mt-2",
-        day: "h-9 w-9 text-center text-sm p-0 relative [&:has([aria-selected])]:bg-accent first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md focus-within:relative focus-within:z-20",
+        day: "h-9 w-9 text-center text-sm p-0 relative [&:has([aria-selected])]:bg-transparent focus-within:relative focus-within:z-20",
         day_button: cn(
           buttonVariants({ variant: "ghost" }),
-          "h-9 w-9 p-0 font-normal aria-selected:opacity-100"
+          "h-9 w-9 p-0 font-normal aria-selected:opacity-100 rounded-lg transition-all hover:bg-white/5 active:scale-95"
         ),
         selected:
-          "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground",
-        today: "bg-accent text-accent-foreground",
-        outside:
-          "outside text-muted-foreground opacity-50 aria-selected:bg-accent/50",
-        disabled: "text-muted-foreground opacity-30 cursor-not-allowed line-through",
+          "bg-[#9ec38d] text-[#1c1d26] hover:bg-[#9ec38d]/90 focus:bg-[#9ec38d] font-bold !opacity-100 shadow-lg shadow-[#9ec38d]/20",
+        today: "text-primary font-bold underline underline-offset-4 decoration-2",
+        outside: "outside text-muted-foreground/20 opacity-30",
+        disabled: "text-muted-foreground/10 opacity-20 cursor-not-allowed",
         range_middle:
           "aria-selected:bg-accent aria-selected:text-accent-foreground",
         hidden: "invisible",
         ...classNames,
       }}
-      captionLayout="dropdown"
-      fromYear={currentYear - 80}
-      toYear={currentYear + 5}
       {...props}
     />
   )
