@@ -9,6 +9,10 @@ import {
   Building,
   Briefcase,
   LogOut,
+  Coffee,
+  Play,
+  MapPin,
+  AlertTriangle,
 } from 'lucide-react';
 import type {
   UserProfile,
@@ -24,9 +28,9 @@ import {
   updateDocumentNonBlocking,
   useMemoFirebase,
 } from '@/firebase';
-import { collection, query, where, limit, doc } from 'firebase/firestore';
+import { collection, query, where, limit, doc, increment, arrayUnion } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
-import { cn } from '@/lib/utils';
+import { cn, getDistanceInMeters } from '@/lib/utils';
 
 interface ClockControlProps {
   userProfile: UserProfile | null;
@@ -47,10 +51,28 @@ export function ClockControl({
   const [shiftDuration, setShiftDuration] = useState('00:00:00');
   const [location, setLocation] = useState<AttendanceLocation>('OFFICE');
   const [today, setToday] = useState('');
+  const [distanceFromOffice, setDistanceFromOffice] = useState<number | null>(null);
 
   useEffect(() => {
     setToday(format(new Date(), 'yyyy-MM-dd'));
   }, []);
+
+  // Proximity Check for Geofencing
+  useEffect(() => {
+    if (systemConfig?.attendance_strict && systemConfig.office_coordinates && location === 'OFFICE') {
+        navigator.geolocation.getCurrentPosition((pos) => {
+            const dist = getDistanceInMeters(
+                pos.coords.latitude, 
+                pos.coords.longitude, 
+                systemConfig.office_coordinates!.lat, 
+                systemConfig.office_coordinates!.lng
+            );
+            setDistanceFromOffice(dist);
+        });
+    } else {
+        setDistanceFromOffice(null);
+    }
+  }, [location, systemConfig]);
 
   const attendanceQuery = useMemoFirebase(() => {
     if (!userProfile || !today) return null;
@@ -67,10 +89,11 @@ export function ClockControl({
   const attendanceRecord = attendanceData?.[0] || null;
 
   const isClockedIn = !!attendanceRecord && !attendanceRecord.clockOut;
+  const isOnBreak = !!attendanceRecord?.onBreak;
 
   useEffect(() => {
     let timer: NodeJS.Timeout | undefined;
-    if (isClockedIn && attendanceRecord?.clockIn) {
+    if (isClockedIn && !isOnBreak && attendanceRecord?.clockIn) {
       timer = setInterval(() => {
         const now = new Date();
         const clockInTime = new Date(attendanceRecord.clockIn);
@@ -83,10 +106,20 @@ export function ClockControl({
       }, 1000);
     }
     return () => clearInterval(timer);
-  }, [isClockedIn, attendanceRecord]);
+  }, [isClockedIn, isOnBreak, attendanceRecord]);
 
   const handleClockIn = async () => {
     if (!userProfile || !firestore) return;
+    
+    if (systemConfig?.attendance_strict && location === 'OFFICE' && distanceFromOffice !== null && distanceFromOffice > 200) {
+        toast({
+            variant: "destructive",
+            title: "Outside Geofence",
+            description: `You are ${Math.round(distanceFromOffice)}m away. You must be within 200m of the office to clock in.`
+        });
+        return;
+    }
+
     setIsSubmitting(true);
     try {
       const now = new Date();
@@ -100,6 +133,9 @@ export function ClockControl({
         location,
         remarks: [],
         idleTime: 0,
+        totalBreak: 0,
+        onBreak: false,
+        breaks: [],
       };
       await addDocumentNonBlocking(collection(firestore, 'attendance'), newRecord);
       toast({ title: 'Shift Started', description: 'Your request is pending HR approval.' });
@@ -110,16 +146,68 @@ export function ClockControl({
     }
   };
 
+  const handleToggleBreak = async () => {
+      if (!attendanceRecord || !firestore) return;
+      setIsSubmitting(true);
+      const now = new Date().toISOString();
+      const attendanceRef = doc(firestore, 'attendance', attendanceRecord.id);
+
+      try {
+          if (!isOnBreak) {
+              // Starting break
+              updateDocumentNonBlocking(attendanceRef, {
+                  onBreak: true,
+                  breaks: arrayUnion({ start: now })
+              });
+              toast({ title: 'Break Started', description: 'Enjoy your rest.' });
+          } else {
+              // Ending break
+              const lastBreak = attendanceRecord.breaks?.[attendanceRecord.breaks.length - 1];
+              if (lastBreak) {
+                  const breakSeconds = differenceInSeconds(new Date(now), new Date(lastBreak.start));
+                  const updatedBreaks = [...(attendanceRecord.breaks || [])];
+                  updatedBreaks[updatedBreaks.length - 1].end = now;
+
+                  updateDocumentNonBlocking(attendanceRef, {
+                      onBreak: false,
+                      breaks: updatedBreaks,
+                      totalBreak: increment(breakSeconds)
+                  });
+                  toast({ title: 'Break Ended', description: 'Welcome back to the mission.' });
+              }
+          }
+      } catch (e: any) {
+          toast({ variant: 'destructive', title: 'Error', description: e.message });
+      } finally {
+          setIsSubmitting(false);
+      }
+  }
+
   const handleClockOut = async () => {
      if (!userProfile || !attendanceRecord || !firestore) return;
      setIsSubmitting(true);
      try {
        const now = new Date();
        const attendanceRef = doc(firestore, 'attendance', attendanceRecord.id);
-       updateDocumentNonBlocking(attendanceRef, {
+       
+       const updateData: any = {
          clockOut: now.toISOString(),
-         status: 'APPROVED', // Auto approve for demo
-       });
+         status: 'APPROVED',
+       };
+
+       if (isOnBreak) {
+           updateData.onBreak = false;
+           const lastBreak = attendanceRecord.breaks?.[attendanceRecord.breaks.length - 1];
+           if (lastBreak) {
+              const breakSeconds = differenceInSeconds(now, new Date(lastBreak.start));
+              const updatedBreaks = [...(attendanceRecord.breaks || [])];
+              updatedBreaks[updatedBreaks.length - 1].end = now.toISOString();
+              updateData.breaks = updatedBreaks;
+              updateData.totalBreak = increment(breakSeconds);
+           }
+       }
+
+       updateDocumentNonBlocking(attendanceRef, updateData);
        toast({ title: 'Shift Ended', description: 'Work session logged successfully.' });
      } catch (e: any) {
        toast({ variant: 'destructive', title: 'Error', description: e.message });
@@ -131,49 +219,97 @@ export function ClockControl({
   if (isLoading) return <div className="card-bg rounded-2xl h-80 flex items-center justify-center"><Loader2 className="animate-spin" /></div>;
 
   return (
-    <section className={cn("card-bg rounded-2xl p-8 flex flex-col items-center justify-center text-center shadow-lg", className)}>
-      <h3 className="text-4xl font-bold mb-8">{isClockedIn ? shiftDuration : 'Time Clock'}</h3>
-      
-      {isClockedIn ? (
-          <Button 
-            className="w-full py-8 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xl font-bold tracking-wider uppercase mb-8"
-            onClick={handleClockOut}
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? <Loader2 className="animate-spin" /> : <LogOut className="mr-2" />}
-            End Shift
-          </Button>
-      ) : (
-          <Button 
-            className="w-full py-8 bg-green-500 hover:bg-green-600 text-white rounded-xl text-xl font-bold tracking-wider uppercase mb-8"
-            onClick={handleClockIn}
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? <Loader2 className="animate-spin" /> : 'Start Shift'}
-          </Button>
+    <section className={cn("card-bg rounded-2xl p-8 flex flex-col items-center justify-center text-center shadow-lg relative overflow-hidden", className)}>
+      {isOnBreak && (
+          <div className="absolute top-0 left-0 w-full h-1 bg-amber-500 animate-pulse" />
       )}
+      
+      <div className="mb-2 flex items-center gap-2 text-muted-foreground uppercase tracking-widest text-[0.625rem] font-bold">
+        <Clock className="w-3 h-3" />
+        {isClockedIn ? (isOnBreak ? 'On Break' : 'Active Duty') : 'Ready to Start'}
+      </div>
 
-      <div className="flex items-center space-x-8">
-        <div className="flex items-center space-x-3">
-          <Building className={cn("w-5 h-5", location === 'OFFICE' ? "text-primary" : "text-gray-400")} />
-          <span className="text-sm font-medium">OFFICE</span>
-          <div 
-            onClick={() => setLocation('OFFICE')}
-            className={cn("w-10 h-5 rounded-full relative cursor-pointer", location === 'OFFICE' ? "bg-primary" : "bg-gray-600")}
-          >
-            <div className={cn("absolute top-0.5 w-4 h-4 bg-white rounded-full transition-all", location === 'OFFICE' ? "right-0.5" : "left-0.5")}></div>
-          </div>
+      <h3 className="text-5xl font-bold mb-8 font-headline tracking-tighter">
+        {isClockedIn ? (isOnBreak ? 'RESTE' : shiftDuration) : '00:00:00'}
+      </h3>
+      
+      <div className="w-full space-y-4 mb-8">
+        {isClockedIn ? (
+            <div className="grid grid-cols-2 gap-4">
+                <Button 
+                    variant={isOnBreak ? 'default' : 'outline'}
+                    className={cn(
+                        "py-8 rounded-xl text-lg font-bold uppercase transition-all",
+                        isOnBreak ? "bg-emerald-600 hover:bg-emerald-700" : "border-amber-500/50 text-amber-500 hover:bg-amber-500/10"
+                    )}
+                    onClick={handleToggleBreak}
+                    disabled={isSubmitting}
+                >
+                    {isSubmitting ? <Loader2 className="animate-spin" /> : (isOnBreak ? <><Play className="mr-2" /> Resume</> : <><Coffee className="mr-2" /> Break</>)}
+                </Button>
+                <Button 
+                    className="py-8 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-lg font-bold uppercase"
+                    onClick={handleClockOut}
+                    disabled={isSubmitting}
+                >
+                    {isSubmitting ? <Loader2 className="animate-spin" /> : <><LogOut className="mr-2" /> End</>}
+                </Button>
+            </div>
+        ) : (
+            <Button 
+                className="w-full py-8 bg-green-500 hover:bg-green-600 text-white rounded-xl text-2xl font-bold tracking-wider uppercase shadow-xl shadow-green-500/20"
+                onClick={handleClockIn}
+                disabled={isSubmitting}
+            >
+                {isSubmitting ? <Loader2 className="animate-spin" /> : 'Start Shift'}
+            </Button>
+        )}
+      </div>
+
+      <div className="flex flex-col items-center gap-4 w-full pt-4 border-t border-white/5">
+        <div className="flex items-center justify-center space-x-8">
+            <div 
+                onClick={() => !isClockedIn && setLocation('OFFICE')}
+                className={cn(
+                    "flex flex-col items-center gap-2 cursor-pointer transition-all group",
+                    location === 'OFFICE' ? "text-primary scale-110" : "text-gray-500 opacity-50 hover:opacity-100",
+                    isClockedIn && "cursor-not-allowed"
+                )}
+            >
+                <Building className="w-6 h-6" />
+                <span className="text-[0.625rem] font-bold tracking-widest uppercase">Office</span>
+            </div>
+            <div className="h-8 w-px bg-white/10" />
+            <div 
+                onClick={() => !isClockedIn && setLocation('REMOTE')}
+                className={cn(
+                    "flex flex-col items-center gap-2 cursor-pointer transition-all group",
+                    location === 'REMOTE' ? "text-primary scale-110" : "text-gray-500 opacity-50 hover:opacity-100",
+                    isClockedIn && "cursor-not-allowed"
+                )}
+            >
+                <Briefcase className="w-6 h-6" />
+                <span className="text-[0.625rem] font-bold tracking-widest uppercase">Remote</span>
+            </div>
         </div>
-        <div className="flex items-center space-x-3">
-          <div 
-            onClick={() => setLocation('REMOTE')}
-            className={cn("w-10 h-5 rounded-full relative cursor-pointer", location === 'REMOTE' ? "bg-primary" : "bg-gray-600")}
-          >
-            <div className={cn("absolute top-0.5 w-4 h-4 bg-white rounded-full transition-all", location === 'REMOTE' ? "right-0.5" : "left-0.5")}></div>
-          </div>
-          <span className="text-sm font-medium">REMOTE</span>
-          <Briefcase className={cn("w-5 h-5", location === 'REMOTE' ? "text-primary" : "text-gray-400")} />
-        </div>
+
+        {systemConfig?.attendance_strict && location === 'OFFICE' && (
+            <div className={cn(
+                "flex items-center gap-2 px-3 py-1.5 rounded-full text-[0.625rem] font-bold uppercase transition-colors",
+                distanceFromOffice === null ? "bg-secondary text-muted-foreground" :
+                distanceFromOffice <= 200 ? "bg-emerald-500/10 text-emerald-500" : "bg-rose-500/10 text-rose-500"
+            )}>
+                {distanceFromOffice === null ? (
+                    <Loader2 className="w-3 h-3 animate-spin" />
+                ) : distanceFromOffice <= 200 ? (
+                    <MapPin className="w-3 h-3" />
+                ) : (
+                    <AlertTriangle className="w-3 h-3" />
+                )}
+                {distanceFromOffice === null ? 'Locating...' : 
+                 distanceFromOffice <= 200 ? 'Within Office Range' : `${Math.round(distanceFromOffice)}m Outside Range`}
+            </div>
+        )}
       </div>
     </section>
   );
