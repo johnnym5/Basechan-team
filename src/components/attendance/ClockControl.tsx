@@ -31,6 +31,7 @@ import {
 import { collection, query, where, limit, doc, increment, arrayUnion } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { cn, getDistanceInMeters } from '@/lib/utils';
+import { Progress } from '../ui/progress';
 
 interface ClockControlProps {
   userProfile: UserProfile | null;
@@ -38,6 +39,8 @@ interface ClockControlProps {
   systemConfig: SystemConfig | null;
   className?: string;
 }
+
+const STANDARD_SHIFT_SECONDS = 28800; // 8 hours
 
 export function ClockControl({
   userProfile,
@@ -49,6 +52,7 @@ export function ClockControl({
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [shiftDuration, setShiftDuration] = useState('00:00:00');
+  const [progress, setProgress] = useState(0);
   const [location, setLocation] = useState<AttendanceLocation>('OFFICE');
   const [today, setToday] = useState('');
   const [distanceFromOffice, setDistanceFromOffice] = useState<number | null>(null);
@@ -68,14 +72,14 @@ export function ClockControl({
                 systemConfig.office_coordinates!.lng
             );
             setDistanceFromOffice(dist);
-        });
+        }, () => setDistanceFromOffice(null), { timeout: 10000 });
     } else {
         setDistanceFromOffice(null);
     }
   }, [location, systemConfig]);
 
   const attendanceQuery = useMemoFirebase(() => {
-    if (!userProfile || !today) return null;
+    if (!userProfile || !today || !firestore) return null;
     return query(
       collection(firestore, 'attendance'),
       where('userId', '==', userProfile.id),
@@ -103,7 +107,13 @@ export function ClockControl({
         const m = String(Math.floor((workedSeconds % 3600) / 60)).padStart(2, '0');
         const s = String(Math.floor(workedSeconds % 60)).padStart(2, '0');
         setShiftDuration(`${h}:${m}:${s}`);
+        
+        const currentProgress = Math.min(100, (workedSeconds / STANDARD_SHIFT_SECONDS) * 100);
+        setProgress(currentProgress);
       }, 1000);
+    } else {
+        setShiftDuration('00:00:00');
+        setProgress(0);
     }
     return () => clearInterval(timer);
   }, [isClockedIn, isOnBreak, attendanceRecord]);
@@ -208,6 +218,10 @@ export function ClockControl({
        }
 
        updateDocumentNonBlocking(attendanceRef, updateData);
+       
+       const userRef = doc(firestore, 'users', userProfile.id);
+       updateDocumentNonBlocking(userRef, { status: 'OFFLINE', lastSeen: now.toISOString() });
+
        toast({ title: 'Shift Ended', description: 'Work session logged successfully.' });
      } catch (e: any) {
        toast({ variant: 'destructive', title: 'Error', description: e.message });
@@ -229,11 +243,21 @@ export function ClockControl({
         {isClockedIn ? (isOnBreak ? 'On Break' : 'Active Duty') : 'Ready to Start'}
       </div>
 
-      <h3 className="text-5xl font-bold mb-8 font-headline tracking-tighter">
-        {isClockedIn ? (isOnBreak ? 'RESTE' : shiftDuration) : '00:00:00'}
+      <h3 className="text-5xl font-bold mb-4 font-headline tracking-tighter">
+        {isClockedIn ? (isOnBreak ? 'REST' : shiftDuration) : '00:00:00'}
       </h3>
       
-      <div className="w-full space-y-4 mb-8">
+      {isClockedIn && (
+          <div className="w-full max-w-[200px] mb-8 space-y-1.5">
+             <div className="flex justify-between text-[0.625rem] font-bold text-muted-foreground uppercase tracking-widest">
+                <span>Progress</span>
+                <span>{Math.round(progress)}%</span>
+             </div>
+             <Progress value={progress} className="h-1.5" indicatorClassName={cn(progress >= 100 ? "bg-emerald-500" : "bg-primary")} />
+          </div>
+      )}
+
+      <div className={cn("w-full space-y-4 mb-8", !isClockedIn && "mt-4")}>
         {isClockedIn ? (
             <div className="grid grid-cols-2 gap-4">
                 <Button 
@@ -245,14 +269,14 @@ export function ClockControl({
                     onClick={handleToggleBreak}
                     disabled={isSubmitting}
                 >
-                    {isSubmitting ? <Loader2 className="animate-spin" /> : (isOnBreak ? <><Play className="mr-2" /> Resume</> : <><Coffee className="mr-2" /> Break</>)}
+                    {isSubmitting ? <Loader2 className="animate-spin" /> : (isOnBreak ? <><Play className="mr-2 h-6 w-6" /> Resume</> : <><Coffee className="mr-2 h-6 w-6" /> Break</>)}
                 </Button>
                 <Button 
                     className="py-8 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-lg font-bold uppercase"
                     onClick={handleClockOut}
                     disabled={isSubmitting}
                 >
-                    {isSubmitting ? <Loader2 className="animate-spin" /> : <><LogOut className="mr-2" /> End</>}
+                    {isSubmitting ? <Loader2 className="animate-spin" /> : <><LogOut className="mr-2 h-6 w-6" /> End</>}
                 </Button>
             </div>
         ) : (
