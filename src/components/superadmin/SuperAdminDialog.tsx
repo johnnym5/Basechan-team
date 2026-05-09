@@ -32,7 +32,7 @@ export function SuperAdminDialog({ open, onOpenChange }: SuperAdminDialogProps) 
     return (
         <>
             <Dialog open={open} onOpenChange={onOpenChange}>
-                <DialogContent position="left" className="flex flex-col p-0">
+                <DialogContent position="top" className="flex flex-col p-0">
                     <DialogHeader className="p-6 pb-4 border-b">
                         <DialogTitle className="flex items-center gap-2 text-2xl font-bold font-headline">
                             <Shield className="h-6 w-6 text-primary" />
