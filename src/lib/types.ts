@@ -1,3 +1,4 @@
+
 import { PREDEFINED_ROLES } from './roles-and-departments';
 
 export type UserPosition = (typeof PREDEFINED_ROLES)[number];
@@ -63,6 +64,7 @@ export interface UserProfile {
     canAccessAllWorkbooks?: boolean;
     canManageAnnouncements?: boolean;
     canManageLibrary?: boolean;
+    canViewAudit?: boolean;
   };
 }
 
@@ -316,6 +318,18 @@ export interface Feedback {
   status: 'NEW' | 'READ';
 }
 
+export interface AuditLog {
+  id: string;
+  orgId: string;
+  userId: string;
+  userName: string;
+  action: string;
+  details: string;
+  resourceId?: string;
+  resourceType?: string;
+  timestamp: string;
+}
+
 export interface Permissions {
   canApproveHR: boolean;
   canApproveFinance: boolean;
@@ -335,6 +349,7 @@ export interface Permissions {
   canAccessLibrary: boolean;
   canManageLibrary: boolean;
   canViewFiles: boolean;
+  canViewAudit: boolean;
 }
 
 export type LeaveType = "ANNUAL" | "SICK" | "UNPAID" | "MATERNITY" | "PATERNITY";

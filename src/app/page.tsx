@@ -1,3 +1,4 @@
+
 'use client';
 
 import { BookCopy, Shield } from 'lucide-react';
@@ -13,6 +14,7 @@ import { ClockControl } from "@/components/attendance/ClockControl";
 import { useSystemConfig } from "@/hooks/useSystemConfig";
 import { PerformanceCard } from '@/components/dashboard/PerformanceCard';
 import { DashboardRecentChats } from '@/components/dashboard/DashboardRecentChats';
+import { MaintenanceCard } from '@/components/dashboard/MaintenanceCard';
 import { useSuperAdmin } from '@/hooks/useSuperAdmin';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -94,6 +96,7 @@ function DashboardGrid() {
                 </section>
 
                 <div className="col-span-12 lg:col-span-3 space-y-6">
+                    {userProfile && <MaintenanceCard userProfile={userProfile} />}
                     <DashboardRecentChats />
                     <Announcements />
                 </div>

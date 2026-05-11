@@ -94,6 +94,21 @@
         "status": { "type": "string", "enum": ["ONLINE", "OFFLINE", "ON_LEAVE"] }
       },
       "required": ["orgId", "email", "fullName", "role", "username", "joinedDate"]
+    },
+    "AuditLog": {
+      "title": "Audit Log",
+      "type": "object",
+      "description": "A record of a security-relevant or operational event.",
+      "properties": {
+        "orgId": { "type": "string" },
+        "userId": { "type": "string" },
+        "userName": { "type": "string" },
+        "action": { "type": "string" },
+        "details": { "type": "string" },
+        "resourceId": { "type": "string" },
+        "resourceType": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      }
     }
   },
   "auth": { "providers": ["password"] },
@@ -102,7 +117,8 @@
       { "path": "/attendance/{id}", "definition": { "entityName": "Attendance", "schema": { "$ref": "#/entities/Attendance" } } },
       { "path": "/tasks/{id}", "definition": { "entityName": "Task", "schema": { "$ref": "#/entities/Task" } } },
       { "path": "/library_items/{id}", "definition": { "entityName": "LibraryItem", "schema": { "$ref": "#/entities/LibraryItem" } } },
-      { "path": "/users/{id}", "definition": { "entityName": "UserProfile", "schema": { "$ref": "#/entities/UserProfile" } } }
+      { "path": "/users/{id}", "definition": { "entityName": "UserProfile", "schema": { "$ref": "#/entities/UserProfile" } } },
+      { "path": "/audit_logs/{id}", "definition": { "entityName": "AuditLog", "schema": { "$ref": "#/entities/AuditLog" } } }
     ]
   }
 }

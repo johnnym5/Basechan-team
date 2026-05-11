@@ -6,6 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { UserProfile } from '@/lib/types';
 import { TeamPane } from './TeamPane';
 import { SystemPane } from './SystemPane';
+import { AuditPane } from './AuditPane';
 import { usePermissions } from '@/hooks/usePermissions';
 import { ShieldAlert, Shield } from 'lucide-react';
 import { Button } from '../ui/button';
@@ -53,23 +54,31 @@ export function SettingsDialog({ open, onOpenChange, userProfile }: SettingsDial
     uiEmitter.emit('open-superadmin-dialog');
   }
 
+  const tabCount = [
+    true, // team is always visible
+    permissions.canManageCompany,
+    permissions.canViewAudit,
+    isSuperAdmin
+  ].filter(Boolean).length;
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex flex-col p-0">
+      <DialogContent className="flex flex-col p-0 sm:max-w-4xl">
         <DialogHeader className="p-6 pb-0">
-          <DialogTitle>Settings</DialogTitle>
+          <DialogTitle>Management Console</DialogTitle>
           <DialogDescription>
-            Manage your organization's team members and system configuration.
+            Administer personnel, system policies, and inspect the organizational audit trail.
           </DialogDescription>
         </DialogHeader>
         <Tabs defaultValue="team" className="w-full flex-1 flex flex-col overflow-hidden">
           <div className="px-6">
             <TabsList className={cn(
                 "grid w-full",
-                isSuperAdmin ? "grid-cols-3" : permissions.canManageCompany ? "grid-cols-2" : "grid-cols-1"
+                tabCount === 4 ? "grid-cols-4" : tabCount === 3 ? "grid-cols-3" : tabCount === 2 ? "grid-cols-2" : "grid-cols-1"
             )}>
                 <TabsTrigger value="team">Team</TabsTrigger>
                 {permissions.canManageCompany && <TabsTrigger value="system">System</TabsTrigger>}
+                {permissions.canViewAudit && <TabsTrigger value="audit">Audit Trail</TabsTrigger>}
                 {isSuperAdmin && <TabsTrigger value="superadmin">Super Admin</TabsTrigger>}
             </TabsList>
           </div>
@@ -79,6 +88,11 @@ export function SettingsDialog({ open, onOpenChange, userProfile }: SettingsDial
           {permissions.canManageCompany && (
             <TabsContent value="system" className="flex-1 overflow-y-auto mt-4 px-6 pb-6">
                 <SystemPane currentUserProfile={userProfile} />
+            </TabsContent>
+          )}
+          {permissions.canViewAudit && (
+             <TabsContent value="audit" className="flex-1 overflow-y-auto mt-4 px-6 pb-6">
+                <AuditPane currentUserProfile={userProfile} />
             </TabsContent>
           )}
           {isSuperAdmin && (

@@ -1,9 +1,11 @@
+
 'use client';
 
 import { Firestore, collection, doc, query, where, getDocs, writeBatch, increment } from 'firebase/firestore';
 import { addDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase';
 import type { Account, JournalEntry, UserProfile, JournalEntryStatus, JournalEntryLine } from '@/lib/types';
 import { sanitizeInput } from '@/lib/utils';
+import { auditService } from './audit-service';
 
 /**
  * Service to handle organization-wide financial accounting logic.
@@ -25,7 +27,11 @@ export const accountingService = {
       description: sanitizeInput(values.description),
       isActive: true,
     };
-    return await addDocumentNonBlocking(accountsRef, newAccount);
+    const docRef = await addDocumentNonBlocking(accountsRef, newAccount);
+    if (docRef) {
+        auditService.logAction(db, user, 'ACCOUNT_CREATE', `Registered new GL account: ${values.code} - ${values.name}`, { id: docRef.id, type: 'ACCOUNT' });
+    }
+    return docRef;
   },
 
   /**
@@ -44,13 +50,17 @@ export const accountingService = {
       createdAt: new Date().toISOString(),
       lines: values.lines,
     };
-    return await addDocumentNonBlocking(journalRef, newEntry);
+    const docRef = await addDocumentNonBlocking(journalRef, newEntry);
+    if (docRef) {
+        auditService.logAction(db, user, 'JOURNAL_DRAFT', `Created draft journal entry: ${values.reference}`, { id: docRef.id, type: 'JOURNAL' });
+    }
+    return docRef;
   },
 
   /**
    * Atomically posts a journal entry to the ledger and updates account balances.
    */
-  async postJournalEntry(db: Firestore, entry: JournalEntry) {
+  async postJournalEntry(db: Firestore, entry: JournalEntry, user: UserProfile) {
     if (entry.status === 'POSTED') return;
 
     const batch = writeBatch(db);
@@ -71,5 +81,6 @@ export const accountingService = {
     }
 
     await batch.commit();
+    auditService.logAction(db, user, 'JOURNAL_POST', `Posted journal entry ${entry.reference} to General Ledger.`, { id: entry.id, type: 'JOURNAL' });
   }
 };

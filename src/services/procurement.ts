@@ -1,8 +1,10 @@
+
 'use client';
 import { Firestore, doc, arrayUnion, collection, query, where, getDocs } from 'firebase/firestore';
 import { updateDocumentNonBlocking, addDocumentNonBlocking } from '@/firebase';
 import type { Requisition, UserProfile, ActivityEntry, RequisitionStatus, PurchaseOrder, Notification } from '@/lib/types';
 import { sanitizeInput } from '@/lib/utils';
+import { auditService } from './audit-service';
 
 export const PROCUREMENT_WORKFLOW: Record<RequisitionStatus, { next: RequisitionStatus; role: string }> = {
     'PENDING_HR': { next: 'PENDING_FINANCE', role: 'HR_MANAGER' },
@@ -51,7 +53,11 @@ export const procurementService = {
             attachmentName: values.attachment ? values.attachment.name : null,
         };
 
-        return await addDocumentNonBlocking(reqsCollection, newRequisition);
+        const docRef = await addDocumentNonBlocking(reqsCollection, newRequisition);
+        if (docRef) {
+            auditService.logAction(db, user, 'PROCUREMENT_CREATE', `Created requisition ${newSerialNo} for ${values.amount}`, { id: docRef.id, type: 'REQUISITION' });
+        }
+        return docRef;
     },
 
     async advanceRequisition(
@@ -92,6 +98,8 @@ export const procurementService = {
             activity: arrayUnion(activityEntry)
         });
 
+        auditService.logAction(db, actor, `PROCUREMENT_${action}`, `Updated ${requisition.serialNo} status to ${nextStatus}`, { id: requisition.id, type: 'REQUISITION' });
+
         if (nextStatus === 'APPROVED' && requisition.vendorId) {
             await this.generatePurchaseOrder(db, requisition, actor);
         }
@@ -130,7 +138,11 @@ export const procurementService = {
             createdBy: actor.id
         };
 
-        return await addDocumentNonBlocking(poRef, newPO);
+        const docRef = await addDocumentNonBlocking(poRef, newPO);
+        if (docRef) {
+            auditService.logAction(db, actor, 'PO_GENERATE', `System generated ${serialNo} from ${requisition.serialNo}`, { id: docRef.id, type: 'PO' });
+        }
+        return docRef;
     }
 };
 

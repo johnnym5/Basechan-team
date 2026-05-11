@@ -1,9 +1,11 @@
+
 'use client';
 
 import { Firestore, collection, doc, query, where, getDocs, arrayUnion } from 'firebase/firestore';
 import { addDocumentNonBlocking, updateDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase';
 import type { Task, UserProfile, ActivityEntry, TaskStatus, Notification, TaskPriority } from '@/lib/types';
 import { sanitizeInput } from '@/lib/utils';
+import { auditService } from './audit-service';
 
 export const taskService = {
   /**
@@ -78,18 +80,22 @@ export const taskService = {
 
     const taskDocRef = await addDocumentNonBlocking(tasksRef, newTask);
 
-    // 4. Notify Assignee
-    if (taskDocRef && currentUser.id !== assignee.id) {
-        const notification: Omit<Notification, 'id'> = {
-            orgId: currentUser.orgId,
-            userId: assignee.id,
-            title: 'New Task Assigned',
-            description: `"${newTask.title}"`,
-            href: `/tasks?taskId=${taskDocRef.id}`,
-            isRead: false,
-            createdAt: now,
-        };
-        addDocumentNonBlocking(collection(db, 'notifications'), notification);
+    // 4. Audit & Notify
+    if (taskDocRef) {
+        auditService.logAction(db, currentUser, 'TASK_CREATE', `Assigned mission "${newTask.title}" to ${assignee.fullName}`, { id: taskDocRef.id, type: 'TASK' });
+        
+        if (currentUser.id !== assignee.id) {
+            const notification: Omit<Notification, 'id'> = {
+                orgId: currentUser.orgId,
+                userId: assignee.id,
+                title: 'New Task Assigned',
+                description: `"${newTask.title}"`,
+                href: `/tasks?taskId=${taskDocRef.id}`,
+                isRead: false,
+                createdAt: now,
+            };
+            addDocumentNonBlocking(collection(db, 'notifications'), notification);
+        }
     }
 
     return taskDocRef;
@@ -124,5 +130,7 @@ export const taskService = {
 
     updatePayload.activity = arrayUnion(...activity);
     updateDocumentNonBlocking(taskRef, updatePayload);
+    
+    auditService.logAction(db, currentUser, 'TASK_STATUS_CHANGE', `Moved task "${task.title}" from ${task.status} to ${newStatus}`, { id: task.id, type: 'TASK' });
   }
 };

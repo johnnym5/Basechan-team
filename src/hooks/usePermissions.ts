@@ -1,3 +1,4 @@
+
 'use client';
 import type { UserProfile, UserRole } from '@/lib/types';
 import { useSuperAdmin } from './useSuperAdmin';
@@ -24,6 +25,7 @@ export interface Permissions {
   canAccessLibrary: boolean;
   canManageLibrary: boolean;
   canViewFiles: boolean;
+  canViewAudit: boolean;
 }
 
 const rolePermissions: Record<UserRole, Partial<Permissions>> = {
@@ -38,6 +40,7 @@ const rolePermissions: Record<UserRole, Partial<Permissions>> = {
     canAccessLibrary: true,
     canManageLibrary: true,
     canViewFiles: true,
+    canViewAudit: true,
   },
   'FINANCE_MANAGER': {
     canApproveFinance: true,
@@ -53,6 +56,7 @@ const rolePermissions: Record<UserRole, Partial<Permissions>> = {
     canAccessLibrary: true,
     canManageLibrary: true,
     canViewFiles: true,
+    canViewAudit: true,
   },
   'ORG_ADMIN': {
     canApproveHR: true,
@@ -66,6 +70,7 @@ const rolePermissions: Record<UserRole, Partial<Permissions>> = {
     canAccessLibrary: true,
     canManageLibrary: true,
     canViewFiles: true,
+    canViewAudit: true,
   },
 };
 
@@ -88,6 +93,7 @@ const defaultPermissions: Permissions = {
   canAccessLibrary: false,
   canManageLibrary: false,
   canViewFiles: false,
+  canViewAudit: false,
 };
 
 export function usePermissions(userProfile: UserProfile | null): Permissions {
@@ -117,6 +123,7 @@ export function usePermissions(userProfile: UserProfile | null): Permissions {
           canAccessLibrary: true,
           canManageLibrary: true,
           canViewFiles: true,
+          canViewAudit: true,
       };
     }
     
@@ -166,6 +173,9 @@ export function usePermissions(userProfile: UserProfile | null): Permissions {
     }
     if (typeof customPerms.canManageLibrary === 'boolean') {
         perms.canManageLibrary = customPerms.canManageLibrary;
+    }
+    if (typeof customPerms.canViewAudit === 'boolean') {
+        perms.canViewAudit = customPerms.canViewAudit;
     }
     
     // 4. Special cases

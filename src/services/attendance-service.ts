@@ -1,9 +1,11 @@
+
 'use client';
 
 import { Firestore, collection, doc, query, where, limit, getDocs, increment, arrayUnion } from 'firebase/firestore';
 import { addDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase';
 import type { UserProfile, Attendance, AttendanceLocation, SystemConfig } from '@/lib/types';
 import { differenceInSeconds } from 'date-fns';
+import { auditService } from './audit-service';
 
 export const attendanceService = {
   async clockIn(db: Firestore, user: UserProfile, location: AttendanceLocation, today: string) {
@@ -21,7 +23,11 @@ export const attendanceService = {
       onBreak: false,
       breaks: [],
     };
-    return await addDocumentNonBlocking(collection(db, 'attendance'), newRecord);
+    const docRef = await addDocumentNonBlocking(collection(db, 'attendance'), newRecord);
+    if (docRef) {
+        auditService.logAction(db, user, 'ATTENDANCE_CLOCK_IN', `Started shift from ${location}`, { id: docRef.id, type: 'ATTENDANCE' });
+    }
+    return docRef;
   },
 
   async toggleBreak(db: Firestore, record: Attendance) {
@@ -61,5 +67,7 @@ export const attendanceService = {
 
     updateDocumentNonBlocking(attendanceRef, updateData);
     updateDocumentNonBlocking(userRef, { status: 'OFFLINE', lastSeen: now.toISOString() });
+    
+    auditService.logAction(db, user, 'ATTENDANCE_CLOCK_OUT', `Ended shift session.`, { id: record.id, type: 'ATTENDANCE' });
   }
 };
