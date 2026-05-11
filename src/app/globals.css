@@ -147,6 +147,6 @@
     }
 
     .interactive-element {
-      @apply transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-1 hover:shadow-lg active:scale-[0.98] active:shadow-sm;
+      @apply transition-all duration-300 ease-apple-ease hover:-translate-y-1 hover:shadow-lg active:scale-[0.98] active:shadow-sm;
     }
 }
