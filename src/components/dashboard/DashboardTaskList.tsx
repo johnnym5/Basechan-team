@@ -22,8 +22,6 @@ export function DashboardTaskList({ userProfile, permissions }: DashboardTaskLis
         
         const tasksRef = collection(firestore, 'tasks');
         
-        // For the dashboard, we either show all active tasks in the org (managers)
-        // or just the tasks assigned to the current user.
         if (permissions.canAccessAllTasks || isSuperAdmin) {
             return query(
                 tasksRef,
@@ -47,45 +45,46 @@ export function DashboardTaskList({ userProfile, permissions }: DashboardTaskLis
     const tasks = allTasks?.filter(t => t.status !== 'ARCHIVED').slice(0, 10);
 
   return (
-    <section className="card-bg rounded-2xl p-6 shadow-lg h-full">
-        <h3 className="text-lg font-semibold mb-6">Active Tasks</h3>
+    <section className="card-bg rounded-2xl p-6 shadow-lg h-full animate-slide-up-fade" style={{ animationDelay: '100ms' }}>
+        <h3 className="text-lg font-bold font-headline tracking-tight mb-6">Active Tasks</h3>
         <div className="overflow-x-auto">
             <table className="w-full text-left">
                 <thead>
-                    <tr className="text-gray-500 text-sm border-b border-gray-800">
-                        <th className="pb-4 font-medium">Priority</th>
-                        <th className="pb-4 font-medium">Task Name</th>
-                        <th className="pb-4 font-medium">Assignee</th>
-                        <th className="pb-4 font-medium">Due Date</th>
+                    <tr className="text-muted-foreground text-[0.625rem] uppercase tracking-widest border-b">
+                        <th className="pb-4 font-bold">Priority</th>
+                        <th className="pb-4 font-bold">Task Name</th>
+                        <th className="pb-4 font-bold">Assignee</th>
+                        <th className="pb-4 font-bold">Due Date</th>
                     </tr>
                 </thead>
                 <tbody className="text-sm">
                     {isLoading && Array.from({length: 5}).map((_, i) => (
                         <tr key={i}><td colSpan={4} className="py-4"><Skeleton className="h-6 w-full" /></td></tr>
                     ))}
-                    {!isLoading && tasks?.map((task) => (
+                    {!isLoading && tasks?.map((task, idx) => (
                         <tr 
                             key={task.id} 
-                            className="border-b border-gray-800/50 hover:bg-gray-800/20 transition-colors cursor-pointer group"
+                            className="border-b border-border/50 hover:bg-primary/5 transition-all cursor-pointer group interactive-element"
                             onClick={() => uiEmitter.emit('open-tasks-dialog', { taskId: task.id })}
+                            style={{ animationDelay: `${150 + (idx * 50)}ms` }}
                         >
                             <td className="py-4">
                                 <span className={cn(
-                                    "px-3 py-1 rounded-md text-xs font-semibold uppercase",
-                                    task.priority === 'LEVEL_3' ? "bg-red-500/20 text-red-500" :
-                                    task.priority === 'LEVEL_2' ? "bg-orange-500/20 text-orange-400" :
-                                    "bg-blue-500/20 text-blue-400"
+                                    "px-3 py-1 rounded-md text-[0.625rem] font-bold uppercase tracking-wider",
+                                    task.priority === 'LEVEL_3' ? "bg-destructive/20 text-destructive" :
+                                    task.priority === 'LEVEL_2' ? "bg-amber-500/20 text-amber-500" :
+                                    "bg-primary/20 text-primary"
                                 )}>
                                     {task.priority === 'LEVEL_3' ? 'High' : task.priority === 'LEVEL_2' ? 'Medium' : 'Low'}
                                 </span>
                             </td>
-                            <td className="py-4 font-medium text-gray-200 group-hover:text-primary transition-colors">{task.title}</td>
-                            <td className="py-4 text-gray-400">{task.assignedToName}</td>
-                            <td className="py-4 text-gray-400">{task.dueDate ? format(new Date(task.dueDate), 'MMM d') : 'N/A'}</td>
+                            <td className="py-4 font-semibold text-foreground group-hover:text-primary transition-colors">{task.title}</td>
+                            <td className="py-4 text-muted-foreground">{task.assignedToName}</td>
+                            <td className="py-4 text-muted-foreground font-mono text-xs">{task.dueDate ? format(new Date(task.dueDate), 'MMM d') : 'N/A'}</td>
                         </tr>
                     ))}
                     {!isLoading && (!tasks || tasks.length === 0) && (
-                        <tr><td colSpan={4} className="py-10 text-center text-gray-500">No active tasks found.</td></tr>
+                        <tr><td colSpan={4} className="py-10 text-center text-muted-foreground">No active tasks found.</td></tr>
                     )}
                 </tbody>
             </table>

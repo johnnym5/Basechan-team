@@ -49,28 +49,29 @@ export function Announcements() {
 
     return (
         <>
-            <section className="card-bg rounded-2xl p-6 shadow-lg">
-                <h3 className="text-lg font-semibold mb-6">Announcements</h3>
+            <section className="card-bg rounded-2xl p-6 shadow-lg animate-slide-up-fade" style={{ animationDelay: '300ms' }}>
+                <h3 className="text-lg font-bold font-headline tracking-tight mb-6">Announcements</h3>
                 <div className="space-y-6">
                     {isLoading ? (
                         Array.from({length: 2}).map((_, i) => <Skeleton key={i} className="h-20 w-full rounded-lg" />)
-                    ) : sortedAnnouncements.map(ann => (
+                    ) : sortedAnnouncements.map((ann, idx) => (
                         <div 
                             key={ann.id} 
-                            className="pb-6 border-b border-gray-800 last:border-0 last:pb-0 cursor-pointer group"
+                            className="pb-6 border-b last:border-0 last:pb-0 cursor-pointer group interactive-element"
                             onClick={() => handleViewAnnouncement(ann)}
+                            style={{ animationDelay: `${350 + (idx * 50)}ms` }}
                         >
-                            <span className="text-[0.625rem] text-primary font-bold uppercase tracking-wider mb-1 block group-hover:text-blue-400 transition-colors">
+                            <span className="text-[0.625rem] text-primary font-bold uppercase tracking-widest mb-1 block group-hover:text-blue-400 transition-colors">
                                 {ann.isPinned ? '📌 Pinned Update' : 'Recent Update'}
                             </span>
-                            <h4 className="text-sm font-medium mb-1 text-gray-200 group-hover:text-white transition-colors">{ann.title}</h4>
-                            <p className="text-xs text-gray-400 leading-relaxed mb-2 line-clamp-2">{ann.content}</p>
+                            <h4 className="text-sm font-bold mb-1 text-foreground group-hover:text-primary transition-colors">{ann.title}</h4>
+                            <p className="text-xs text-muted-foreground leading-relaxed mb-2 line-clamp-2">{ann.content}</p>
                             <div className="flex items-center justify-between">
-                                <span className="text-[0.625rem] text-gray-500 uppercase tracking-widest">
+                                <span className="text-[0.625rem] text-muted-foreground uppercase tracking-widest font-bold">
                                     {formatDistanceToNow(new Date(ann.createdAt), { addSuffix: true })}
                                 </span>
                                 {isAdmin && (
-                                    <span className="text-[0.625rem] text-muted-foreground flex items-center gap-1 bg-white/5 px-1.5 py-0.5 rounded">
+                                    <span className="text-[0.625rem] text-muted-foreground flex items-center gap-1 bg-primary/5 px-1.5 py-0.5 rounded font-bold">
                                         <span className="material-symbols-outlined text-[0.75rem]">visibility</span>
                                         {ann.viewedBy?.length || 0}
                                     </span>
@@ -79,7 +80,7 @@ export function Announcements() {
                         </div>
                     ))}
                     {!isLoading && sortedAnnouncements.length === 0 && (
-                        <p className="text-center text-xs text-gray-500 py-4">No active broadcasts.</p>
+                        <p className="text-center text-xs text-muted-foreground py-4 italic">No active broadcasts.</p>
                     )}
                 </div>
             </section>

@@ -71,26 +71,29 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
   const { config } = useSystemConfig(userProfile?.orgId);
 
   return (
-    <div className="flex h-screen overflow-hidden bg-background">
-      <AppSidebar 
-        isLoggedIn={isLoggedIn} 
-        isAuthLoading={isUserLoading} 
-      />
-
-      <div className="flex-1 flex flex-col min-w-0">
-        <AppHeader
-            userProfile={userProfile || null}
-            onMenuClick={() => {}}
-            isLoggedIn={isLoggedIn}
-            attendanceRecord={attendanceRecord}
-            systemConfig={config || null}
+    <div className="min-h-screen-safe w-full bg-muted/30 flex justify-center p-0 md:p-4 lg:p-6 transition-all duration-500">
+      <div className="flex w-full max-w-[1600px] bg-background md:rounded-[2rem] md:shadow-2xl md:border border-border/50 overflow-hidden relative">
+        <AppSidebar 
+          isLoggedIn={isLoggedIn} 
+          isAuthLoading={isUserLoading} 
         />
-        
-        <main className="flex-1 overflow-y-auto p-4 md:p-8">
-            <div className="max-w-[1600px] mx-auto">
-                {children}
-            </div>
-        </main>
+
+        <div className="flex-1 flex flex-col min-w-0 h-[100dvh] md:h-[calc(100vh-3rem)] overflow-hidden">
+          <AppHeader
+              userProfile={userProfile || null}
+              onMenuClick={() => {}}
+              isLoggedIn={isLoggedIn}
+              attendanceRecord={attendanceRecord}
+              systemConfig={config || null}
+              className="apple-glass z-10 sticky top-0"
+          />
+          
+          <main className="flex-1 overflow-y-auto p-4 md:p-8 scroll-smooth">
+              <div className="max-w-[1600px] mx-auto">
+                  {children}
+              </div>
+          </main>
+        </div>
       </div>
 
       {isLoggedIn && (
