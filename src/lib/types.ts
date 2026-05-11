@@ -79,7 +79,7 @@ export interface Attendance {
     approvedAt?: string;
     remarks?: Array<'EARLY' | 'LATE' | 'OVERTIME' | 'UNDERTIME'>;
     duration?: number;
-    idleTime?: number; // Accumulated seconds of inactivity
+    idleTime?: number;
     overtime?: number;
     undertime?: number;
     onBreak?: boolean;
@@ -174,7 +174,7 @@ export interface Task {
   assignedToName: string;
   priority: TaskPriority;
   estimatedHours?: number;
-  actualHours?: number; // Time taken from ACTIVE to ARCHIVED in hours
+  actualHours?: number;
   status: TaskStatus;
   dueDate?: string | null;
   createdBy: string;
