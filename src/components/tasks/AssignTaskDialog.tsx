@@ -10,17 +10,18 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2, Paperclip, CalendarIcon } from "lucide-react";
 import { useState, useEffect } from "react";
-import { useFirestore, useCollection, addDocumentNonBlocking, useMemoFirebase } from "@/firebase";
-import { collection, query, where, doc, getDocs } from "firebase/firestore";
+import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
+import { collection, query, where } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
-import type { Task, UserProfile, ActivityEntry, Permissions, Notification, Workbook, Sheet, TaskPriority } from "@/lib/types";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { sanitizeInput, cn } from "@/lib/utils";
+import type { Task, UserProfile, Permissions, Workbook, Sheet, TaskPriority } from "@/lib/types";
+import { ResponsiveDialog } from "@/components/shared/ResponsiveDialog";
+import { cn } from "@/lib/utils";
 import { useFileUpload } from "@/hooks/useFileUpload";
 import { Progress } from "@/components/ui/progress";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import { Calendar } from "../ui/calendar";
 import { format } from "date-fns";
+import { taskService } from "@/services/task-service";
 
 const formSchema = z.object({
   title: z.string().min(5, { message: "Title must be at least 5 characters." }),
@@ -61,12 +62,12 @@ export function AssignTaskDialog({ open, onOpenChange, initialData, currentUserP
   const isBusy = isLoading || isUploading;
 
   const usersQuery = useMemoFirebase(() => 
-    currentUserProfile ? query(collection(firestore, 'users'), where('orgId', '==', currentUserProfile.orgId)) : null
+    currentUserProfile ? query(collection(firestore!, 'users'), where('orgId', '==', currentUserProfile.orgId)) : null
   , [firestore, currentUserProfile]);
   const { data: users, isLoading: areUsersLoading } = useCollection<UserProfile>(usersQuery);
 
   const workbooksQuery = useMemoFirebase(() => 
-    currentUserProfile ? query(collection(firestore, 'workbooks'), where('orgId', '==', currentUserProfile.orgId)) : null
+    currentUserProfile ? query(collection(firestore!, 'workbooks'), where('orgId', '==', currentUserProfile.orgId)) : null
   , [firestore, currentUserProfile]);
   const { data: workbooks, isLoading: areWorkbooksLoading } = useCollection<Workbook>(workbooksQuery);
 
@@ -85,23 +86,9 @@ export function AssignTaskDialog({ open, onOpenChange, initialData, currentUserP
   const selectedWorkbookId = form.watch('workbookId');
 
   const sheetsQuery = useMemoFirebase(() =>
-      selectedWorkbookId ? query(collection(firestore, `workbooks/${selectedWorkbookId}/sheets`)) : null
+      selectedWorkbookId ? query(collection(firestore!, `workbooks/${selectedWorkbookId}/sheets`)) : null
   , [firestore, selectedWorkbookId]);
   const { data: sheets, isLoading: areSheetsLoading } = useCollection<Sheet>(sheetsQuery);
-
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      form.setValue('attachment', file);
-      setFileName(file.name);
-    }
-  };
-
-  const handleDialogClose = () => {
-    form.reset();
-    setFileName(null);
-    onOpenChange(false);
-  }
 
   useEffect(() => {
     if (open) {
@@ -130,178 +117,44 @@ export function AssignTaskDialog({ open, onOpenChange, initialData, currentUserP
         return;
     }
 
-    const dueDateISO = values.dueDate ? values.dueDate.toISOString() : null;
-    
-    if (values.priority === 'LEVEL_3' || values.priority === 'LEVEL_2') {
-        const tasksRef = collection(firestore, 'tasks');
-        const q = query(
-            tasksRef,
-            where('assignedTo', '==', assigneeId),
-            where('status', 'in', ['QUEUED', 'ACTIVE', 'AWAITING_REVIEW'])
-        );
-        const existingTasksSnapshot = await getDocs(q);
-        const existingTasks = existingTasksSnapshot.docs.map(doc => doc.data() as Task);
-
-        if (values.priority === 'LEVEL_3') {
-            const level3Tasks = existingTasks.filter(t => t.priority === 'LEVEL_3');
-            if (level3Tasks.length > 0) {
-                toast({ 
-                    variant: 'destructive', 
-                    title: 'Assignment Failed', 
-                    description: `${assignedUser.fullName} already has a High Priority (Level 3) task. Only one is allowed.` 
-                });
-                return;
-            }
-        }
-
-        if (values.priority === 'LEVEL_2') {
-            const level2Tasks = existingTasks.filter(t => t.priority === 'LEVEL_2');
-            if (level2Tasks.length >= 2) {
-                toast({ 
-                    variant: 'destructive', 
-                    title: 'Assignment Failed', 
-                    description: `${assignedUser.fullName} already has two Medium Priority (Level 2) tasks. Only two are allowed.` 
-                });
-                return;
-            }
-        }
-    }
-
-
     setIsLoading(true);
 
     try {
         let attachmentUrl: string | undefined;
-        let attachmentName: string | undefined;
         if (values.attachment) {
             const filePath = `tasks/${currentUserProfile.orgId}/${Date.now()}_${values.attachment.name}`;
             attachmentUrl = await uploadFile(values.attachment, filePath);
-            attachmentName = values.attachment.name;
         }
 
-        const tasksRef = collection(firestore, 'tasks');
-        const q = query(tasksRef, where('orgId', '==', assignedUser.orgId));
-        const orgTasksSnapshot = await getDocs(q);
-        const newSerialNo = `TSK-${String(orgTasksSnapshot.size + 1).padStart(5, '0')}`;
+        await taskService.createTask(firestore, currentUserProfile, assignedUser, values, attachmentUrl);
         
-        const now = new Date().toISOString();
-        const initialActivity: ActivityEntry = {
-            type: 'LOG',
-            actorId: currentUserProfile.id,
-            actorName: currentUserProfile.fullName,
-            timestamp: now,
-            text: `created the task and assigned it to ${assignedUser.fullName}.`,
-            fromStatus: 'N/A',
-            toStatus: 'QUEUED',
-        };
-        
-        const newTask: Omit<Task, 'id'> = {
-            serialNo: newSerialNo,
-            orgId: assignedUser.orgId,
-            title: sanitizeInput(values.title),
-            description: sanitizeInput(values.description),
-            assignedTo: assigneeId,
-            assignedToName: assignedUser.fullName,
-            priority: values.priority,
-            estimatedHours: values.estimatedHours,
-            status: 'QUEUED',
-            dueDate: dueDateISO,
-            createdBy: currentUserProfile.id,
-            activity: [initialActivity],
-            createdAt: now,
-            workbookId: values.workbookId || initialData?.workbookId || undefined,
-            sheetId: values.sheetId || initialData?.sheetId || undefined,
-            attachmentUrl: attachmentUrl || undefined,
-            attachmentName: attachmentName || undefined,
-            sharedWith: [],
-            subTasks: [],
-            type: 'STANDARD',
-        };
-
-        const taskDocRef = await addDocumentNonBlocking(collection(firestore, 'tasks'), newTask);
-        
-        if (taskDocRef && currentUserProfile.id !== assigneeId) {
-            const notification: Omit<Notification, 'id'> = {
-                orgId: currentUserProfile.orgId,
-                userId: assigneeId,
-                title: 'New Task Assigned',
-                description: `"${sanitizeInput(values.title)}"`,
-                href: `/tasks?taskId=${taskDocRef.id}`,
-                isRead: false,
-                createdAt: now,
-            };
-            addDocumentNonBlocking(collection(firestore, 'notifications'), notification);
-        }
-        
-        toast({ title: "Task Assigned", description: `${values.title} has been assigned to ${assignedUser.fullName}.`});
-        handleDialogClose();
+        toast({ title: "Task Assigned", description: `${values.title} has been delegated.`});
+        onOpenChange(false);
+        form.reset();
     } catch (error: any) {
-        toast({ variant: "destructive", title: "Error", description: error.message });
+        toast({ variant: "destructive", title: "Assignment Failed", description: error.message });
     } finally {
         setIsLoading(false);
     }
   }
 
   return (
-    <Dialog open={open} onOpenChange={handleDialogClose}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Assign New Task</DialogTitle>
-          <DialogDescription>
-            Delegate a new task to a member of your team.
-          </DialogDescription>
-        </DialogHeader>
+    <ResponsiveDialog 
+        open={open} 
+        onOpenChange={onOpenChange} 
+        title="Assign New Task" 
+        description="Delegate a new mission to a member of your team."
+    >
         <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                 <FormField control={form.control} name="title" render={({ field }) => (
                     <FormItem><FormLabel>Title</FormLabel><FormControl><Input placeholder="e.g., Finalize Q3 Report" {...field} /></FormControl><FormMessage /></FormItem>
                 )} />
                 <FormField control={form.control} name="description" render={({ field }) => (
-                    <FormItem><FormLabel>Description (Optional)</FormLabel><FormControl><Textarea placeholder="Add more context about the task..." {...field} /></FormControl><FormMessage /></FormItem>
+                    <FormItem><FormLabel>Description (Optional)</FormLabel><FormControl><Textarea placeholder="Add more context..." {...field} /></FormControl><FormMessage /></FormItem>
                 )} />
                 
-                {!initialData?.workbookId && (
-                     <div className="space-y-2">
-                        <FormField control={form.control} name="workbookId" render={({ field }) => (
-                            <FormItem><FormLabel>Attach Workbook (Optional)</FormLabel>
-                            <Select onValueChange={field.onChange} value={field.value}>
-                                <FormControl><SelectTrigger disabled={areWorkbooksLoading}><SelectValue placeholder="Select a workbook" /></SelectTrigger></FormControl>
-                                <SelectContent>{workbooks?.map(wb => <SelectItem key={wb.id} value={wb.id}>{wb.title}</SelectItem>)}</SelectContent>
-                            </Select>
-                            <FormMessage /></FormItem>
-                        )} />
-                        {selectedWorkbookId && (
-                             <FormField control={form.control} name="sheetId" render={({ field }) => (
-                                <FormItem>
-                                <Select onValueChange={field.onChange} value={field.value}>
-                                    <FormControl><SelectTrigger disabled={areSheetsLoading}><SelectValue placeholder="Select a sheet" /></SelectTrigger></FormControl>
-                                    <SelectContent>{sheets?.map(sh => <SelectItem key={sh.id} value={sh.id}>{sh.name}</SelectItem>)}</SelectContent>
-                                </Select>
-                                <FormMessage /></FormItem>
-                            )} />
-                        )}
-                     </div>
-                )}
-                 <FormField
-                    control={form.control}
-                    name="attachment"
-                    render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Attachment (Optional)</FormLabel>
-                            <FormControl>
-                                <Input id="task-attachment-file" type="file" className="hidden" onChange={handleFileChange} disabled={isBusy} />
-                            </FormControl>
-                            <label htmlFor="task-attachment-file" className="flex items-center gap-2 text-sm text-muted-foreground cursor-pointer border p-2 rounded-md hover:bg-accent transition-colors">
-                                <Paperclip className="h-4 w-4" />
-                                <span className="truncate">{fileName || 'Upload a file'}</span>
-                            </label>
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                 />
-                 {isUploading && <Progress value={uploadProgress} className="w-full h-2" />}
-
-                <div className="grid grid-cols-2 gap-4">
+                 <div className="grid grid-cols-2 gap-4">
                     {permissions.canManageStaff && (
                       <FormField control={form.control} name="assignedTo" render={({ field }) => (
                           <FormItem><FormLabel>Assign To</FormLabel>
@@ -325,58 +178,42 @@ export function AssignTaskDialog({ open, onOpenChange, initialData, currentUserP
                          <FormMessage /></FormItem>
                     )} />
                 </div>
-                
-                 <div className="grid grid-cols-2 gap-4">
-                    <FormField control={form.control} name="estimatedHours" render={({ field }) => (
-                        <FormItem><FormLabel>Estimated Hours</FormLabel>
-                        <FormControl><Input type="number" placeholder="e.g., 8" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : e.target.value)} /></FormControl>
-                        <FormMessage /></FormItem>
-                    )} />
-                 </div>
 
-                <FormField
-                    control={form.control}
-                    name="dueDate"
-                    render={({ field }) => (
-                        <FormItem className="flex flex-col">
-                            <FormLabel>Due Date (Optional)</FormLabel>
-                            <Popover>
-                                <PopoverTrigger asChild>
-                                    <FormControl>
-                                        <Button
-                                            variant={"outline"}
-                                            className={cn(
-                                                "w-full pl-3 text-left font-normal",
-                                                !field.value && "text-muted-foreground"
-                                            )}
-                                        >
-                                            {field.value ? format(field.value, "PPP") : <span>Pick a date</span>}
-                                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                        </Button>
-                                    </FormControl>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-auto p-0" align="start">
-                                    <Calendar
-                                        mode="single"
-                                        selected={field.value}
-                                        onSelect={field.onChange}
-                                        disabled={(date) => date < new Date(new Date().setHours(0,0,0,0))}
-                                        initialFocus
-                                    />
-                                </PopoverContent>
-                            </Popover>
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                />
+                <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                        control={form.control}
+                        name="dueDate"
+                        render={({ field }) => (
+                            <FormItem className="flex flex-col">
+                                <FormLabel>Due Date</FormLabel>
+                                <Popover>
+                                    <PopoverTrigger asChild>
+                                        <FormControl>
+                                            <Button variant={"outline"} className={cn("w-full pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>
+                                                {field.value ? format(field.value, "PPP") : <span>Pick a date</span>}
+                                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                            </Button>
+                                        </FormControl>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-auto p-0" align="start">
+                                        <Calendar mode="single" selected={field.value} onSelect={field.onChange} disabled={(date) => date < new Date()} initialFocus />
+                                    </PopoverContent>
+                                </Popover>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                    <FormField control={form.control} name="estimatedHours" render={({ field }) => (
+                        <FormItem><FormLabel>Est. Hours</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
+                    )} />
+                </div>
 
                 <Button type="submit" className="w-full" disabled={isBusy}>
                     {isBusy && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    {permissions.canManageStaff ? 'Assign Task' : 'Create Task'}
+                    {permissions.canManageStaff ? 'Assign Mission' : 'Create Task'}
                 </Button>
             </form>
         </Form>
-      </DialogContent>
-    </Dialog>
+    </ResponsiveDialog>
   );
 }

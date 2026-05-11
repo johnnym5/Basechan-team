@@ -10,15 +10,15 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2, Paperclip, PlusCircle } from "lucide-react";
 import { useState } from "react";
-import { useFirestore, addDocumentNonBlocking, useCollection, useMemoFirebase } from "@/firebase";
-import { collection, query, where, getDocs } from "firebase/firestore";
+import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
+import { collection, query, where } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
-import type { Requisition, UserProfile, ActivityEntry, Vendor } from "@/lib/types";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import type { Requisition, UserProfile, Vendor } from "@/lib/types";
+import { ResponsiveDialog } from "@/components/shared/ResponsiveDialog";
 import { useSystemConfig } from "@/hooks/useSystemConfig";
 import { useFileUpload } from "@/hooks/useFileUpload";
 import { Progress } from "@/components/ui/progress";
-import { sanitizeInput } from "@/lib/utils";
+import { procurementService } from "@/services/procurement";
 
 const formSchema = z.object({
   title: z.string().min(5, { message: "Title must be at least 5 characters." }),
@@ -53,13 +53,7 @@ export function NewRequisitionDialog({ open, onOpenChange, userProfile }: NewReq
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
-      title: "",
-      amount: 0,
-      vendorId: "",
-      description: "",
-      attachment: undefined,
-    },
+    defaultValues: { title: "", amount: 0, vendorId: "", description: "" },
   });
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -70,63 +64,23 @@ export function NewRequisitionDialog({ open, onOpenChange, userProfile }: NewReq
     }
   };
 
-  const handleDialogClose = () => {
-    form.reset();
-    setFileName(null);
-    onOpenChange(false);
-  }
-
   async function onSubmit(values: FormData) {
     if (!firestore || !userProfile) return;
     setIsLoading(true);
 
     try {
-        let attachmentUrl: string | undefined = undefined;
+        let attachmentUrl: string | undefined;
         if (values.attachment) {
             const filePath = `requisitions/${userProfile.orgId}/${Date.now()}_${values.attachment.name}`;
             attachmentUrl = await uploadFile(values.attachment, filePath);
         }
 
         const vendor = vendors?.find(v => v.id === values.vendorId);
-        const reqsCollection = collection(firestore, 'requisitions');
-        
-        const q = query(reqsCollection, where('orgId', '==', userProfile.orgId));
-        const orgReqsSnapshot = await getDocs(q);
-        const newSerialNo = `REQ-${String(orgReqsSnapshot.size + 1).padStart(4, '0')}`;
+        await procurementService.createRequisition(firestore, userProfile, { ...values, vendorName: vendor?.name }, attachmentUrl);
 
-        const now = new Date().toISOString();
-        const nextStatus = 'PENDING_HR';
-
-        const initialActivity: ActivityEntry = {
-            type: 'LOG',
-            actorId: userProfile.id,
-            actorName: userProfile.fullName,
-            timestamp: now,
-            text: `created the requisition and sent for HR approval.`,
-            fromStatus: 'N/A',
-            toStatus: nextStatus,
-        };
-
-        const newRequisition: Omit<Requisition, 'id'> = {
-            serialNo: newSerialNo,
-            orgId: userProfile.orgId,
-            createdBy: userProfile.id,
-            creatorName: userProfile.fullName,
-            title: sanitizeInput(values.title),
-            amount: values.amount,
-            vendorId: values.vendorId,
-            vendorName: vendor?.name || 'Unknown Vendor',
-            description: sanitizeInput(values.description),
-            status: nextStatus,
-            createdAt: now,
-            activity: [initialActivity],
-            attachmentUrl: attachmentUrl || null,
-            attachmentName: values.attachment ? values.attachment.name : null,
-        };
-
-        await addDocumentNonBlocking(reqsCollection, newRequisition);
-        toast({ title: "Requisition Submitted", description: `Request ${newSerialNo} is pending approval.` });
-        handleDialogClose();
+        toast({ title: "Requisition Submitted", description: "Pending HR approval." });
+        onOpenChange(false);
+        form.reset();
     } catch (error: any) {
         toast({ variant: "destructive", title: "Submission Failed", description: error.message });
     } finally {
@@ -135,14 +89,14 @@ export function NewRequisitionDialog({ open, onOpenChange, userProfile }: NewReq
   }
 
   return (
-    <Dialog open={open} onOpenChange={handleDialogClose}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>New Requisition</DialogTitle>
-          <DialogDescription>Submit a new financial request for procurement.</DialogDescription>
-        </DialogHeader>
+    <ResponsiveDialog 
+        open={open} 
+        onOpenChange={onOpenChange} 
+        title="New Requisition" 
+        description="Submit a new financial request for procurement."
+    >
         <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                 <FormField control={form.control} name="title" render={({ field }) => (
                     <FormItem><FormLabel>Title</FormLabel><FormControl><Input placeholder="e.g., Office Hardware Upgrade" {...field} /></FormControl><FormMessage /></FormItem>
                 )}/>
@@ -154,32 +108,29 @@ export function NewRequisitionDialog({ open, onOpenChange, userProfile }: NewReq
                         <FormItem><FormLabel>Vendor</FormLabel>
                             <Select onValueChange={field.onChange} value={field.value}>
                                 <FormControl><SelectTrigger><SelectValue placeholder="Select Supplier" /></SelectTrigger></FormControl>
-                                <SelectContent>
-                                    {vendors?.map(v => <SelectItem key={v.id} value={v.id}>{v.name}</SelectItem>)}
-                                </SelectContent>
+                                <SelectContent>{vendors?.map(v => <SelectItem key={v.id} value={v.id}>{v.name}</SelectItem>)}</SelectContent>
                             </Select>
                         <FormMessage /></FormItem>
                     )}/>
                 </div>
                  <FormField control={form.control} name="description" render={({ field }) => (
-                    <FormItem><FormLabel>Business Justification</FormLabel><FormControl><Textarea placeholder="Detailed reason for this expenditure..." {...field} /></FormControl><FormMessage /></FormItem>
+                    <FormItem><FormLabel>Business Justification</FormLabel><FormControl><Textarea placeholder="Detailed reason..." {...field} /></FormControl><FormMessage /></FormItem>
                 )}/>
                 <FormField control={form.control} name="attachment" render={({ field }) => (
                     <FormItem><FormLabel>Supporting Documents</FormLabel>
                         <FormControl><Input id="req-attachment" type="file" className="hidden" onChange={handleFileChange} disabled={isBusy} /></FormControl>
-                        <label htmlFor="req-attachment" className="flex items-center gap-2 text-sm text-muted-foreground cursor-pointer border p-2 rounded-md hover:bg-accent transition-colors">
-                            <Paperclip className="h-4 w-4" /><span className="truncate">{fileName || 'Upload Quote/Invoice'}</span>
+                        <label htmlFor="req-attachment" className="flex items-center gap-2 text-sm text-muted-foreground cursor-pointer border p-2 rounded-md hover:bg-accent">
+                            <Paperclip className="h-4 w-4" /><span className="truncate">{fileName || 'Upload Quote'}</span>
                         </label>
                     <FormMessage /></FormItem>
                 )}/>
                  {isUploading && <Progress value={uploadProgress} className="w-full h-2" />}
                 <Button type="submit" className="w-full" disabled={isBusy}>
                     {isBusy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <PlusCircle className="mr-2 h-4 w-4" />}
-                    Confirm & Submit
+                    Submit Requisition
                 </Button>
             </form>
         </Form>
-      </DialogContent>
-    </Dialog>
+    </ResponsiveDialog>
   );
 }
