@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect } from 'react';
@@ -22,6 +23,12 @@ export function FirebaseErrorListener() {
 
   useEffect(() => {
     const handleError = (error: FirestorePermissionError) => {
+      // Avoid infinite loop if the error is about error_logs itself
+      if (error.request.path.includes('error_logs')) {
+        console.error("Critical: Could not log error to Firestore due to permission error on error_logs:", error);
+        return;
+      }
+
       // Log the full error to the backend for admin review
       if (firestore) {
         logErrorToFirestore(firestore, error, null, userProfile);

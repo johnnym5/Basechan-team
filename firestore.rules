@@ -6,6 +6,11 @@ service cloud.firestore {
 
     // ===== Helper Functions =====
     
+    function isSuperAdmin() {
+      return request.auth != null && 
+             (request.auth.token.email == 'jegbase@gmail.com' || request.auth.uid == 'nMObbwaybEQP95OPKUyQ97iAm3u2');
+    }
+
     function getUserData() {
       return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
     }
@@ -19,11 +24,11 @@ service cloud.firestore {
     }
 
     function isRequestingUserInOrg(docOrgId) {
-      return request.auth != null && getUserOrgId() == docOrgId;
+      return request.auth != null && (isSuperAdmin() || getUserOrgId() == docOrgId);
     }
 
     function isCreatingInOwnOrg() {
-      return request.auth != null && getUserOrgId() == request.resource.data.orgId;
+      return request.auth != null && (isSuperAdmin() || getUserOrgId() == request.resource.data.orgId);
     }
 
     function isHRManager() {
@@ -40,75 +45,78 @@ service cloud.firestore {
     
     // ===== Root Collections =====
 
+    match /organizations/{orgId} {
+      allow read: if isRequestingUserInOrg(orgId);
+      allow write: if isSuperAdmin();
+    }
+
     match /accounts/{accountId} {
       allow read: if isRequestingUserInOrg(resource.data.orgId);
-      allow write: if isFinanceManager() && isRequestingUserInOrg(resource.data.orgId);
+      allow write: if (isFinanceManager() || isSuperAdmin()) && isRequestingUserInOrg(resource.data.orgId);
     }
 
     match /vendors/{vendorId} {
         allow read: if isRequestingUserInOrg(resource.data.orgId);
-        allow write: if isHRManager() || isFinanceManager() || isManagingDirector();
+        allow write: if isHRManager() || isFinanceManager() || isManagingDirector() || isSuperAdmin();
     }
 
     match /purchase_orders/{poId} {
         allow read: if isRequestingUserInOrg(resource.data.orgId);
-        allow create: if isManagingDirector() || isFinanceManager();
-        allow update: if isFinanceManager() || isManagingDirector();
-        allow delete: if false;
+        allow create: if isManagingDirector() || isFinanceManager() || isSuperAdmin();
+        allow update: if isFinanceManager() || isManagingDirector() || isSuperAdmin();
+        allow delete: if isSuperAdmin();
     }
 
     match /requisitions/{reqId} {
       allow read: if isRequestingUserInOrg(resource.data.orgId);
-      allow create: if isCreatingInOwnOrg();
+      allow create: if isCreatingInOwnOrg() || isSuperAdmin();
       
-      // Approval workflow enforcement
-      allow update: if isRequestingUserInOrg(resource.data.orgId) && (
+      allow update: if isSuperAdmin() || (isRequestingUserInOrg(resource.data.orgId) && (
         (request.resource.data.status == 'PENDING_FINANCE' && isHRManager()) ||
         (request.resource.data.status == 'PENDING_MD' && isFinanceManager()) ||
         (request.resource.data.status == 'APPROVED' && isManagingDirector()) ||
         (request.resource.data.status == 'PAID' && isFinanceManager()) ||
         (request.resource.data.status == 'REJECTED' && (isHRManager() || isFinanceManager() || isManagingDirector())) ||
         (request.auth.uid == resource.data.createdBy && resource.data.status == 'PENDING_HR')
-      );
+      ));
     }
 
-    // User Profiles: Anyone in the org can read, but only the user can edit their own profile.
     match /users/{userId} {
-      allow read: if isRequestingUserInOrg(resource.data.orgId);
-      allow create: if isCreatingInOwnOrg();
-      allow update: if request.auth.uid == userId || isHRManager();
-      allow delete: if false;
+      allow read: if isSuperAdmin() || isRequestingUserInOrg(resource.data.orgId);
+      allow create: if isSuperAdmin() || request.auth.uid == userId;
+      allow update: if isSuperAdmin() || request.auth.uid == userId || isHRManager();
+      allow delete: if isSuperAdmin();
     }
     
-    // Generic rule for collections with an orgId field.
     match /{collection}/{docId} 
         where collection in ['departments', 'attendance', 'tasks', 'system_configs', 'announcements', 'workbooks', 'notifications', 'leave_requests', 'daily_reports', 'chats', 'journal_entries'] {
       
-      allow read, delete: if isRequestingUserInOrg(resource.data.orgId);
-      allow create: if isCreatingInOwnOrg();
-      allow update: if isRequestingUserInOrg(resource.data.orgId);
+      allow read, delete: if isRequestingUserInOrg(resource.data.orgId) || isSuperAdmin();
+      allow create: if isCreatingInOwnOrg() || isSuperAdmin();
+      allow update: if isRequestingUserInOrg(resource.data.orgId) || isSuperAdmin();
     }
 
     match /feedback/{feedbackId} {
       allow create: if true;
-      allow read, update, delete: if false;
+      allow read: if isSuperAdmin();
+      allow update: if isSuperAdmin();
+      allow delete: if isSuperAdmin();
     }
     match /error_logs/{errorId} {
       allow create: if true;
-      allow read, update, delete: if false;
+      allow read: if isSuperAdmin();
+      allow update, delete: if isSuperAdmin();
     }
 
-    // ===== Subcollections =====
-
     match /workbooks/{workbookId}/sheets/{sheetId} {
-      allow read, write: if isRequestingUserInOrg(get(/databases/$(database)/documents/workbooks/$(workbookId)).data.orgId);
+      allow read, write: if isSuperAdmin() || isRequestingUserInOrg(get(/databases/$(database)/documents/workbooks/$(workbookId)).data.orgId);
     }
 
     match /chats/{chatId}/messages/{messageId} {
-      allow read: if request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants;
-      allow create: if request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants
-                      && request.resource.data.senderId == request.auth.uid;
-      allow update, delete: if false;
+      allow read: if isSuperAdmin() || request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants;
+      allow create: if isSuperAdmin() || (request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants
+                      && request.resource.data.senderId == request.auth.uid);
+      allow update, delete: if isSuperAdmin();
     }
   }
 }
