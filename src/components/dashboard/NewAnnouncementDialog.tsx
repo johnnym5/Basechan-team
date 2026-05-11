@@ -11,9 +11,9 @@ import { Switch } from "@/components/ui/switch";
 import { Loader2, Megaphone } from "lucide-react";
 import { useState } from "react";
 import { useFirestore, addDocumentNonBlocking, useCollection, useMemoFirebase } from "@/firebase";
-import { collection, query, where } from "firebase/firestore";
+import { collection, query, where, getDocs } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
-import type { Announcement, UserProfile } from "@/lib/types";
+import type { Announcement, UserProfile, Notification } from "@/lib/types";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { RadioGroup, RadioGroupItem } from "../ui/radio-group";
 import { ScrollArea } from "../ui/scroll-area";
@@ -61,6 +61,7 @@ export function NewAnnouncementDialog({ open, onOpenChange, userProfile }: NewAn
   const visibility = form.watch("visibility");
 
   async function onSubmit(values: FormData) {
+    if (!firestore) return;
     setIsLoading(true);
 
     const visibleToArray = values.visibility === 'ALL'
@@ -78,6 +79,7 @@ export function NewAnnouncementDialog({ open, onOpenChange, userProfile }: NewAn
     }
 
     try {
+      const now = new Date().toISOString();
       const newAnnouncement: Omit<Announcement, 'id'> = {
         orgId: userProfile.orgId,
         title: sanitizeInput(values.title),
@@ -85,12 +87,32 @@ export function NewAnnouncementDialog({ open, onOpenChange, userProfile }: NewAn
         isPinned: values.isPinned,
         authorId: userProfile.id,
         authorName: userProfile.fullName,
-        createdAt: new Date().toISOString(),
+        createdAt: now,
         viewedBy: [],
         visibleTo: visibleToArray,
       };
 
-      await addDocumentNonBlocking(collection(firestore, 'announcements'), newAnnouncement);
+      const annRef = await addDocumentNonBlocking(collection(firestore, 'announcements'), newAnnouncement);
+
+      // BROADCAST NOTIFICATIONS
+      if (annRef) {
+          const targetUserIds = values.visibility === 'ALL' 
+            ? users?.map(u => u.id).filter(id => id !== userProfile.id) || []
+            : values.visibleTo?.filter(id => id !== userProfile.id) || [];
+
+          for (const userId of targetUserIds) {
+              const notification: Omit<Notification, 'id'> = {
+                  orgId: userProfile.orgId,
+                  userId: userId,
+                  title: `Broadcast: ${newAnnouncement.title}`,
+                  description: newAnnouncement.content.substring(0, 100) + '...',
+                  href: `/?panel=announcement&id=${annRef.id}`,
+                  isRead: false,
+                  createdAt: now,
+              };
+              addDocumentNonBlocking(collection(firestore, 'notifications'), notification);
+          }
+      }
 
       toast({
         title: "Announcement Posted",
