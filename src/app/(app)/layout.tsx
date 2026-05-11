@@ -11,6 +11,7 @@ import { format } from 'date-fns';
 import { useIdleTimer } from '@/hooks/useIdleTimer';
 import dynamic from 'next/dynamic';
 import { useSyncDialogsWithUrl } from '@/hooks/useSyncDialogsWithUrl';
+import { hexToHslString } from '@/lib/utils';
 
 const GlobalDialogs = dynamic(() => import('@/components/layout/GlobalDialogs').then(m => m.GlobalDialogs), { 
   ssr: false,
@@ -69,6 +70,20 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
 
   const permissions = usePermissions(userProfile || null);
   const { config } = useSystemConfig(userProfile?.orgId);
+
+  // Apply organization theme
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const root = document.documentElement;
+    if (config?.branding_color) {
+      const hsl = hexToHslString(config.branding_color);
+      if (hsl) root.style.setProperty('--primary', hsl);
+    }
+    if (config?.accent_color) {
+      const hsl = hexToHslString(config.accent_color);
+      if (hsl) root.style.setProperty('--accent', hsl);
+    }
+  }, [config]);
 
   return (
     <div className="min-h-screen-safe w-full bg-muted/30 flex justify-center p-0 md:p-4 lg:p-6 transition-all duration-500">

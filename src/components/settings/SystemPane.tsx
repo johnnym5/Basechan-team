@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
-import { Loader2, MapPin, Clock } from "lucide-react";
+import { Loader2, MapPin, Clock, Palette } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useFirestore, updateDocumentNonBlocking } from "@/firebase";
 import { doc } from "firebase/firestore";
@@ -97,7 +97,6 @@ export function SystemPane({ currentUserProfile }: SystemPaneProps) {
     if (!firestore || !config) return;
     setIsSubmitting(true);
     
-    // Convert empty strings to null for colors
     const updateData: Partial<SystemConfig> & { office_coordinates?: any } = {
         finance_access: values.finance_access,
         chat_enabled: values.chat_enabled,
@@ -150,35 +149,47 @@ export function SystemPane({ currentUserProfile }: SystemPaneProps) {
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
         <Card className="apple-glass border-none">
             <CardHeader>
-                <CardTitle>Branding</CardTitle>
-                <CardDescription>Customize the look and feel of the application.</CardDescription>
+                <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-xl bg-primary/20"><Palette className="h-5 w-5 text-primary" /></div>
+                    <div>
+                        <CardTitle>Branding & Identity</CardTitle>
+                        <CardDescription>Customize the visual signature of the secure terminal.</CardDescription>
+                    </div>
+                </div>
             </CardHeader>
-            <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <CardContent className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <FormField control={form.control} name="branding_color" render={({ field }) => (
-                        <FormItem><FormLabel>Primary Color</FormLabel>
+                        <FormItem>
+                            <FormLabel>Primary Color</FormLabel>
                             <FormControl>
-                                <div className="relative">
-                                    <Input {...field} className="pl-12 rounded-xl" />
-                                    <Input type="color" value={field.value || '#000000'} onChange={field.onChange} className="absolute left-1 top-1/2 -translate-y-1/2 h-8 w-10 p-1 border-none bg-transparent"/>
+                                <div className="flex items-center gap-3">
+                                    <div className="h-10 w-10 rounded-full border shadow-inner shrink-0" style={{ backgroundColor: field.value }} />
+                                    <Input {...field} placeholder="#3b82f6" className="rounded-xl font-mono" />
+                                    <Input type="color" value={field.value || '#000000'} onChange={field.onChange} className="w-12 h-10 p-0 border-none bg-transparent cursor-pointer shrink-0"/>
                                 </div>
                             </FormControl>
+                            <FormDescription className="text-[10px]">Controls main buttons, gauges, and active states.</FormDescription>
                         <FormMessage /></FormItem>
                     )}/>
                      <FormField control={form.control} name="accent_color" render={({ field }) => (
-                        <FormItem><FormLabel>Accent Color</FormLabel>
+                        <FormItem>
+                            <FormLabel>Accent Color</FormLabel>
                              <FormControl>
-                                <div className="relative">
-                                    <Input {...field} className="pl-12 rounded-xl" />
-                                    <Input type="color" value={field.value || '#000000'} onChange={field.onChange} className="absolute left-1 top-1/2 -translate-y-1/2 h-8 w-10 p-1 border-none bg-transparent"/>
+                                <div className="flex items-center gap-3">
+                                    <div className="h-10 w-10 rounded-full border shadow-inner shrink-0" style={{ backgroundColor: field.value }} />
+                                    <Input {...field} placeholder="#1e293b" className="rounded-xl font-mono" />
+                                    <Input type="color" value={field.value || '#000000'} onChange={field.onChange} className="w-12 h-10 p-0 border-none bg-transparent cursor-pointer shrink-0"/>
                                 </div>
                             </FormControl>
+                            <FormDescription className="text-[10px]">Controls highlights and secondary visual elements.</FormDescription>
                         <FormMessage /></FormItem>
                     )}/>
                 </div>
                  <FormField control={form.control} name="currency_symbol" render={({ field }) => (
-                    <FormItem><FormLabel>Currency Symbol</FormLabel>
-                        <FormControl><Input {...field} className="w-24 rounded-xl" /></FormControl>
+                    <FormItem><FormLabel>Fiscal Symbol</FormLabel>
+                        <FormControl><Input {...field} placeholder="$" className="w-24 rounded-xl text-center font-bold text-lg" /></FormControl>
+                        <FormDescription className="text-[10px]">Prefix for all financial data.</FormDescription>
                     <FormMessage /></FormItem>
                 )}/>
             </CardContent>
@@ -210,7 +221,7 @@ export function SystemPane({ currentUserProfile }: SystemPaneProps) {
                 )}/>
                 
                 <div className="pt-4 space-y-4">
-                    <h4 className="text-xs font-bold uppercase tracking-widest text-primary">Automated Reporting</h4>
+                    <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">Automated Reporting</h4>
                     <FormField control={form.control} name="reporting_required" render={({ field }) => (
                         <FormItem className="flex flex-row items-center justify-between rounded-2xl border p-4 shadow-sm bg-secondary/10 border-white/5">
                             <div className="space-y-0.5"><FormLabel>Daily Activity Reports</FormLabel><FormDescription className="text-xs">Require staff to submit EOD summaries.</FormDescription></div>
@@ -252,8 +263,8 @@ export function SystemPane({ currentUserProfile }: SystemPaneProps) {
             </CardContent>
         </Card>
 
-        <Button type="submit" disabled={isSubmitting || isConfigLoading} className="w-full h-12 text-base font-bold rounded-xl interactive-element">
-            {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Authorize & Save Configuration"}
+        <Button type="submit" disabled={isSubmitting || isConfigLoading} className="w-full h-14 text-base font-black uppercase tracking-widest rounded-2xl interactive-element">
+            {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Authorize & Apply Configuration"}
         </Button>
       </form>
     </Form>
