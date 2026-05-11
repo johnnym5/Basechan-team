@@ -5,62 +5,72 @@
 @layer base {
   html {
     font-size: 75%; /* Scale the whole app by 75% (12px base) */
+    scroll-behavior: smooth;
   }
 
   :root {
-    --background: 225 15% 7%; /* #0f1014 */
-    --foreground: 210 40% 98%;
+    /* Sophisticated Light Mode */
+    --background: 210 20% 98%;
+    --foreground: 225 15% 7%;
 
-    --card: 232 15% 13%; /* #1c1d26 */
-    --card-foreground: 210 40% 98%;
+    --card: 0 0% 100%;
+    --card-foreground: 225 15% 7%;
 
-    --popover: 232 15% 10%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 225 15% 7%;
 
     --primary: 217 91% 60%; /* #3b82f6 */
     --primary-foreground: 210 40% 98%;
 
-    --secondary: 215 28% 23%; /* #1d3557 matching active nav */
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 215 28% 92%;
+    --secondary-foreground: 215 28% 23%;
 
-    --muted: 220 15% 20%;
-    --muted-foreground: 215 20% 65%;
+    --muted: 220 15% 95%;
+    --muted-foreground: 215 20% 45%;
 
     --accent: 217 91% 60%;
     --accent-foreground: 210 40% 98%;
 
-    --destructive: 0 62.8% 30.6%;
+    --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 220 15% 15%;
-    --input: 220 15% 15%;
+    --border: 220 15% 90%;
+    --input: 220 15% 90%;
     --ring: 217 91% 60%;
-    --radius: 0.5625rem; /* Scaled from 0.75rem (75%) */
+    --radius: 1.25rem; /* Larger, smoother border radii */
 
-    --sidebar-background: 230 15% 10%; /* #17181f */
+    --sidebar-background: 230 15% 10%; 
     --sidebar-foreground: 210 40% 98%;
   }
 
   .dark {
-    --background: 225 15% 7%;
+    /* Deep, OLED-friendly Dark Mode */
+    --background: 225 15% 4%; /* #090a0c */
     --foreground: 210 40% 98%;
-    --card: 232 15% 13%;
+
+    --card: 232 15% 8%; /* #121318 */
     --card-foreground: 210 40% 98%;
-    --popover: 232 15% 10%;
+
+    --popover: 232 15% 6%;
     --popover-foreground: 210 40% 98%;
+
     --primary: 217 91% 60%;
     --primary-foreground: 210 40% 98%;
-    --secondary: 215 28% 23%;
+
+    --secondary: 215 28% 15%;
     --secondary-foreground: 210 40% 98%;
-    --muted: 220 15% 20%;
+
+    --muted: 220 15% 12%;
     --muted-foreground: 215 20% 65%;
+
     --accent: 217 91% 60%;
     --accent-foreground: 210 40% 98%;
+
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
-    --border: 220 15% 15%;
-    --input: 220 15% 15%;
-    --ring: 217 91% 60%;
+
+    --border: 220 15% 12%;
+    --input: 220 15% 12%;
   }
 }
 
@@ -69,15 +79,15 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground overflow-x-hidden;
+    @apply bg-background text-foreground overflow-x-hidden font-body;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
 
   /* Custom System-Wide Scrollbar */
   ::-webkit-scrollbar {
-    width: 0.625rem; /* 10px @ 16px -> scaled to 7.5px @ 12px base */
-    height: 0.625rem;
+    width: 0.5rem;
+    height: 0.5rem;
   }
 
   ::-webkit-scrollbar-track {
@@ -91,29 +101,35 @@
   ::-webkit-scrollbar-thumb:hover {
     @apply bg-primary/60;
   }
-
-  /* Firefox Support */
-  * {
-    scrollbar-width: thin;
-    scrollbar-color: hsl(var(--muted-foreground) / 0.2) transparent;
-  }
 }
 
 @layer utilities {
-    .sidebar-bg { background-color: #17181f; }
-    .card-bg { background-color: #1c1d26; }
-    .active-nav { background-color: #1d3557; color: #3b82f6; }
+    .apple-glass {
+        @apply bg-card/60 backdrop-blur-2xl border border-white/5 shadow-[0_8px_32px_0_rgba(0,0,0,0.1)];
+    }
+    
+    .apple-glass-darker {
+        @apply bg-card/80 backdrop-blur-3xl border border-white/5 shadow-2xl;
+    }
+
+    .min-h-screen-safe {
+        min-height: 100dvh;
+    }
+
+    .sidebar-bg { background-color: #121318; }
+    .card-bg { @apply bg-card/50 backdrop-blur-xl border border-white/5; }
+    .active-nav { @apply bg-primary/10 text-primary border-r-2 border-primary; }
     
     .gauge-container {
       position: relative;
-      width: 12.5rem; /* 200px -> scaled (150px at 12px base) */
-      height: 6.25rem; /* 100px -> scaled (75px at 12px base) */
+      width: 12.5rem; 
+      height: 6.25rem; 
       overflow: hidden;
     }
     .gauge-track {
       width: 12.5rem;
       height: 12.5rem;
-      border: 1.5rem solid #2d2f39; 
+      border: 1.5rem solid hsl(var(--muted) / 0.3); 
       border-radius: 50%;
     }
     .gauge-fill {
@@ -122,10 +138,15 @@
       left: 0;
       width: 12.5rem;
       height: 12.5rem;
-      border: 1.5rem solid #3b82f6;
+      border: 1.5rem solid hsl(var(--primary));
       border-radius: 50%;
       border-bottom-color: transparent;
       border-left-color: transparent;
       transform: rotate(45deg);
+      transition: transform 1s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .interactive-element {
+      @apply transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-1 hover:shadow-lg active:scale-[0.98] active:shadow-sm;
     }
 }

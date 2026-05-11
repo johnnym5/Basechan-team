@@ -128,11 +128,11 @@ export function RequestLeaveDialog({ open, onOpenChange, userProfile }: RequestL
 
   return (
     <Dialog open={open} onOpenChange={handleDialogClose}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md apple-glass-darker border-none animate-pop-in">
         <DialogHeader>
-          <DialogTitle>Request Exclusive Time Off</DialogTitle>
+          <DialogTitle className="text-2xl font-bold tracking-tight">Request Time Off</DialogTitle>
           <DialogDescription>
-            Submit a leave request. Dates can only be occupied by one staff member at a time.
+            Dates can only be occupied by one staff member at a time to ensure operational coverage.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -144,7 +144,7 @@ export function RequestLeaveDialog({ open, onOpenChange, userProfile }: RequestL
                     <FormItem>
                         <FormLabel>Leave Type</FormLabel>
                          <Select onValueChange={field.onChange} value={field.value}>
-                            <FormControl><SelectTrigger><SelectValue placeholder="Select a type of leave" /></SelectTrigger></FormControl>
+                            <FormControl><SelectTrigger className="rounded-xl"><SelectValue placeholder="Select a type of leave" /></SelectTrigger></FormControl>
                             <SelectContent>
                                 {LEAVE_TYPES.map(type => <SelectItem key={type} value={type} className="capitalize">{type.toLowerCase()}</SelectItem>)}
                             </SelectContent>
@@ -164,13 +164,13 @@ export function RequestLeaveDialog({ open, onOpenChange, userProfile }: RequestL
                                 <Popover>
                                     <PopoverTrigger asChild>
                                         <FormControl>
-                                            <Button variant={"outline"} className={cn("pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>
+                                            <Button variant={"outline"} className={cn("rounded-xl pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>
                                                 {field.value ? format(field.value, "PPP") : <span>Pick a date</span>}
                                                 <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                                             </Button>
                                         </FormControl>
                                     </PopoverTrigger>
-                                    <PopoverContent className="w-auto p-0" align="start">
+                                    <PopoverContent className="w-auto p-0 apple-glass" align="start">
                                         <Calendar
                                             mode="single"
                                             selected={field.value}
@@ -197,13 +197,13 @@ export function RequestLeaveDialog({ open, onOpenChange, userProfile }: RequestL
                                 <Popover>
                                     <PopoverTrigger asChild>
                                         <FormControl>
-                                            <Button variant={"outline"} className={cn("pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>
+                                            <Button variant={"outline"} className={cn("rounded-xl pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>
                                                 {field.value ? format(field.value, "PPP") : <span>Pick a date</span>}
                                                 <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                                             </Button>
                                         </FormControl>
                                     </PopoverTrigger>
-                                    <PopoverContent className="w-auto p-0" align="start">
+                                    <PopoverContent className="w-auto p-0 apple-glass" align="start">
                                         <Calendar
                                             mode="single"
                                             selected={field.value}
@@ -224,9 +224,9 @@ export function RequestLeaveDialog({ open, onOpenChange, userProfile }: RequestL
                     />
                 </div>
 
-                <div className="p-3 rounded-lg bg-amber-500/5 border border-amber-500/20 text-[10px] text-amber-600 flex gap-2">
-                    <ShieldAlert className="h-3 w-3 shrink-0 mt-0.5" />
-                    <p>Occupied dates and public holidays are disabled for selection. Our policy requires unique leave assignments per day.</p>
+                <div className="p-3 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-[10px] text-amber-600 flex gap-3">
+                    <ShieldAlert className="h-4 w-4 shrink-0 mt-0.5" />
+                    <p className="leading-relaxed">Occupied dates and public holidays are disabled. Our policy requires unique leave assignments to maintain service continuity.</p>
                 </div>
 
                  <FormField
@@ -234,15 +234,15 @@ export function RequestLeaveDialog({ open, onOpenChange, userProfile }: RequestL
                     name="reason"
                     render={({ field }) => (
                     <FormItem>
-                        <FormLabel>Reason</FormLabel>
-                        <FormControl><Textarea placeholder="Provide a brief reason for your leave..." {...field} /></FormControl>
+                        <FormLabel>Business Memo</FormLabel>
+                        <FormControl><Textarea placeholder="Provide justification for your request..." className="rounded-xl min-h-[100px]" {...field} /></FormControl>
                         <FormMessage />
                     </FormItem>
                     )}
                 />
-                <Button type="submit" className="w-full" disabled={isLoading}>
+                <Button type="submit" className="w-full h-12 text-base rounded-xl font-bold interactive-element" disabled={isLoading}>
                     {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Submit Request
+                    Confirm Request
                 </Button>
             </form>
         </Form>
