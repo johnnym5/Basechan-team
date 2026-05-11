@@ -27,6 +27,10 @@ export interface SystemConfig {
     start: string;
     end: string;
   };
+  reporting_schedule?: {
+    required: boolean;
+    deadline: string; // HH:mm format
+  };
   currency_symbol: string;
   branding_color?: string | null;
   accent_color?: string | null;

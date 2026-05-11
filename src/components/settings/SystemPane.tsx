@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
-import { Loader2, MapPin } from "lucide-react";
+import { Loader2, MapPin, Clock } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useFirestore, updateDocumentNonBlocking } from "@/firebase";
 import { doc } from "firebase/firestore";
@@ -26,6 +26,8 @@ const formSchema = z.object({
   chat_enabled: z.boolean(),
   attendance_strict: z.boolean(),
   allow_self_edit: z.boolean(),
+  reporting_required: z.boolean(),
+  reporting_deadline: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, "Invalid time format (HH:mm)"),
   office_lat: z.coerce.number().optional().nullable(),
   office_lng: z.coerce.number().optional().nullable(),
 });
@@ -50,6 +52,8 @@ export function SystemPane({ currentUserProfile }: SystemPaneProps) {
       chat_enabled: true,
       attendance_strict: false,
       allow_self_edit: true,
+      reporting_required: true,
+      reporting_deadline: "17:30",
     }
   });
 
@@ -63,6 +67,8 @@ export function SystemPane({ currentUserProfile }: SystemPaneProps) {
             chat_enabled: config.chat_enabled,
             attendance_strict: config.attendance_strict,
             allow_self_edit: config.allow_self_edit,
+            reporting_required: config.reporting_schedule?.required ?? true,
+            reporting_deadline: config.reporting_schedule?.deadline ?? "17:30",
             office_lat: config.office_coordinates?.lat,
             office_lng: config.office_coordinates?.lng,
         });
@@ -93,19 +99,21 @@ export function SystemPane({ currentUserProfile }: SystemPaneProps) {
     
     // Convert empty strings to null for colors
     const updateData: Partial<SystemConfig> & { office_coordinates?: any } = {
-        ...values,
+        finance_access: values.finance_access,
+        chat_enabled: values.chat_enabled,
+        attendance_strict: values.attendance_strict,
+        allow_self_edit: values.allow_self_edit,
+        currency_symbol: values.currency_symbol || '$',
         branding_color: values.branding_color || null,
         accent_color: values.accent_color || null,
+        reporting_schedule: {
+            required: values.reporting_required,
+            deadline: values.reporting_deadline,
+        },
         office_coordinates: (values.office_lat != null && values.office_lng != null) 
             ? { lat: values.office_lat, lng: values.office_lng } 
             : null,
     };
-    
-    // @ts-ignore
-    delete updateData.office_lat;
-    // @ts-ignore
-    delete updateData.office_lng;
-
 
     try {
       const configRef = doc(firestore, 'system_configs', config.id);
@@ -140,10 +148,10 @@ export function SystemPane({ currentUserProfile }: SystemPaneProps) {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-        <Card>
+        <Card className="apple-glass border-none">
             <CardHeader>
                 <CardTitle>Branding</CardTitle>
-                <CardDescription>Customize the look and feel of the application for your organization.</CardDescription>
+                <CardDescription>Customize the look and feel of the application.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -151,8 +159,8 @@ export function SystemPane({ currentUserProfile }: SystemPaneProps) {
                         <FormItem><FormLabel>Primary Color</FormLabel>
                             <FormControl>
                                 <div className="relative">
-                                    <Input {...field} className="pl-12" />
-                                    <Input type="color" value={field.value || '#000000'} onChange={field.onChange} className="absolute left-1 top-1/2 -translate-y-1/2 h-8 w-10 p-1"/>
+                                    <Input {...field} className="pl-12 rounded-xl" />
+                                    <Input type="color" value={field.value || '#000000'} onChange={field.onChange} className="absolute left-1 top-1/2 -translate-y-1/2 h-8 w-10 p-1 border-none bg-transparent"/>
                                 </div>
                             </FormControl>
                         <FormMessage /></FormItem>
@@ -161,8 +169,8 @@ export function SystemPane({ currentUserProfile }: SystemPaneProps) {
                         <FormItem><FormLabel>Accent Color</FormLabel>
                              <FormControl>
                                 <div className="relative">
-                                    <Input {...field} className="pl-12" />
-                                    <Input type="color" value={field.value || '#000000'} onChange={field.onChange} className="absolute left-1 top-1/2 -translate-y-1/2 h-8 w-10 p-1"/>
+                                    <Input {...field} className="pl-12 rounded-xl" />
+                                    <Input type="color" value={field.value || '#000000'} onChange={field.onChange} className="absolute left-1 top-1/2 -translate-y-1/2 h-8 w-10 p-1 border-none bg-transparent"/>
                                 </div>
                             </FormControl>
                         <FormMessage /></FormItem>
@@ -170,72 +178,82 @@ export function SystemPane({ currentUserProfile }: SystemPaneProps) {
                 </div>
                  <FormField control={form.control} name="currency_symbol" render={({ field }) => (
                     <FormItem><FormLabel>Currency Symbol</FormLabel>
-                        <FormControl><Input {...field} className="w-24" /></FormControl>
+                        <FormControl><Input {...field} className="w-24 rounded-xl" /></FormControl>
                     <FormMessage /></FormItem>
                 )}/>
             </CardContent>
         </Card>
         
-         <Card>
+         <Card className="apple-glass border-none">
             <CardHeader>
-                <CardTitle>Feature Flags</CardTitle>
-                <CardDescription>Enable or disable specific modules and behaviors across the application.</CardDescription>
+                <CardTitle>Operating Policies</CardTitle>
+                <CardDescription>Enable or disable specific modules and compliance behaviors.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
                 <FormField control={form.control} name="finance_access" render={({ field }) => (
-                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
-                        <div className="space-y-0.5"><FormLabel>Requisitions Module</FormLabel><FormDescription>Enable the financial requisitions module for all users.</FormDescription></div>
+                    <FormItem className="flex flex-row items-center justify-between rounded-2xl border p-4 shadow-sm bg-secondary/10 border-white/5">
+                        <div className="space-y-0.5"><FormLabel>Requisitions Module</FormLabel><FormDescription className="text-xs">Enable procurement workflows.</FormDescription></div>
                         <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
                     </FormItem>
                 )}/>
                  <FormField control={form.control} name="chat_enabled" render={({ field }) => (
-                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
-                        <div className="space-y-0.5"><FormLabel>Internal Chat</FormLabel><FormDescription>Allow users to send direct messages to each other.</FormDescription></div>
+                    <FormItem className="flex flex-row items-center justify-between rounded-2xl border p-4 shadow-sm bg-secondary/10 border-white/5">
+                        <div className="space-y-0.5"><FormLabel>Secure Messaging</FormLabel><FormDescription className="text-xs">Allow encrypted staff communication.</FormDescription></div>
                         <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
                     </FormItem>
                 )}/>
                 <FormField control={form.control} name="attendance_strict" render={({ field }) => (
-                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
-                        <div className="space-y-0.5"><FormLabel>Strict Attendance</FormLabel><FormDescription>Enable geofencing for office clock-ins.</FormDescription></div>
+                    <FormItem className="flex flex-row items-center justify-between rounded-2xl border p-4 shadow-sm bg-secondary/10 border-white/5">
+                        <div className="space-y-0.5"><FormLabel>Strict Geofencing</FormLabel><FormDescription className="text-xs">Enforce location-based clock-ins.</FormDescription></div>
                         <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
                     </FormItem>
                 )}/>
-                <FormField control={form.control} name="allow_self_edit" render={({ field }) => (
-                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
-                        <div className="space-y-0.5"><FormLabel>Profile Self-Editing</FormLabel><FormDescription>Allow staff-level users to edit their own profiles.</FormDescription></div>
-                        <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
-                    </FormItem>
-                )}/>
+                
+                <div className="pt-4 space-y-4">
+                    <h4 className="text-xs font-bold uppercase tracking-widest text-primary">Automated Reporting</h4>
+                    <FormField control={form.control} name="reporting_required" render={({ field }) => (
+                        <FormItem className="flex flex-row items-center justify-between rounded-2xl border p-4 shadow-sm bg-secondary/10 border-white/5">
+                            <div className="space-y-0.5"><FormLabel>Daily Activity Reports</FormLabel><FormDescription className="text-xs">Require staff to submit EOD summaries.</FormDescription></div>
+                            <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                        </FormItem>
+                    )}/>
+                    <FormField control={form.control} name="reporting_deadline" render={({ field }) => (
+                        <FormItem><FormLabel className="flex items-center gap-2"><Clock className="h-3 w-3" /> Submission Deadline (HH:mm)</FormLabel>
+                            <FormControl><Input placeholder="17:00" {...field} className="rounded-xl w-32" /></FormControl>
+                            <FormDescription className="text-xs">KPIs will flag overdue reports after this time.</FormDescription>
+                        <FormMessage /></FormItem>
+                    )}/>
+                </div>
             </CardContent>
         </Card>
 
-        <Card>
+        <Card className="apple-glass border-none">
             <CardHeader>
-                <CardTitle>Geofencing</CardTitle>
-                <CardDescription>Set the office coordinates for strict attendance mode. This requires user location permission.</CardDescription>
+                <CardTitle>Site Coordinates</CardTitle>
+                <CardDescription>Set the office location for geofencing enforcement.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <FormField control={form.control} name="office_lat" render={({ field }) => (
-                        <FormItem><FormLabel>Office Latitude</FormLabel>
-                        <FormControl><Input type="number" step="any" placeholder="e.g., 34.0522" {...field} value={field.value ?? ''} /></FormControl>
+                        <FormItem><FormLabel>Latitude</FormLabel>
+                        <FormControl><Input type="number" step="any" {...field} value={field.value ?? ''} className="rounded-xl" /></FormControl>
                         <FormMessage /></FormItem>
                     )}/>
                     <FormField control={form.control} name="office_lng" render={({ field }) => (
-                        <FormItem><FormLabel>Office Longitude</FormLabel>
-                        <FormControl><Input type="number" step="any" placeholder="e.g., -118.2437" {...field} value={field.value ?? ''}/></FormControl>
+                        <FormItem><FormLabel>Longitude</FormLabel>
+                        <FormControl><Input type="number" step="any" {...field} value={field.value ?? ''} className="rounded-xl" /></FormControl>
                         <FormMessage /></FormItem>
                     )}/>
                 </div>
-                <Button type="button" variant="outline" onClick={handleGetCurrentLocation} disabled={isGettingLocation}>
+                <Button type="button" variant="outline" onClick={handleGetCurrentLocation} disabled={isGettingLocation} className="rounded-xl">
                     {isGettingLocation ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <MapPin className="mr-2 h-4 w-4" />}
-                    Get Current Location
+                    Capture Device Location
                 </Button>
             </CardContent>
         </Card>
 
-        <Button type="submit" disabled={isSubmitting || isConfigLoading} className="w-full">
-            {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Save All Settings"}
+        <Button type="submit" disabled={isSubmitting || isConfigLoading} className="w-full h-12 text-base font-bold rounded-xl interactive-element">
+            {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Authorize & Save Configuration"}
         </Button>
       </form>
     </Form>

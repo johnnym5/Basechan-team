@@ -9,7 +9,7 @@ import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
-import { Plus, Trash2, Search, Download, Edit, Settings } from 'lucide-react';
+import { Plus, Trash2, Search, Download, Edit, Settings, ScanLine } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -19,7 +19,6 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { AddRowDialog } from './AddRowDialog';
 import { EditRowDialog } from './EditRowDialog';
@@ -154,6 +153,8 @@ export function SheetDataTable({ sheet, permissions }: SheetDataTableProps) {
     const handleSelectAll = (checked: boolean | 'indeterminate') => {
         setSelectedRows(checked === true ? filteredData.map((row) => row.__originalIndex) : []);
     };
+    
+    const hasBarcodeSupport = headers.some(h => ['barcode', 'sku', 'serial', 'id', 'tag'].some(k => h.toLowerCase().includes(k)));
 
 
     if (headers.length === 0) {
@@ -180,33 +181,33 @@ export function SheetDataTable({ sheet, permissions }: SheetDataTableProps) {
                     <Input
                         type="search"
                         placeholder={`Search ${sheet.name}...`}
-                        className="pl-9 h-9 w-full"
+                        className="pl-9 h-9 w-full rounded-xl"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                     />
                 </div>
                 <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
                     {permissions.canEdit && (
-                        <Button variant="outline" size="sm" onClick={() => setIsManageHeadersOpen(true)}>
+                        <Button variant="outline" size="sm" onClick={() => setIsManageHeadersOpen(true)} className="rounded-xl">
                             <Settings className="mr-2 h-4 w-4" />
-                            Manage Headers
+                            Headers
                         </Button>
                     )}
-                    <Button variant="outline" size="sm" onClick={handleExport}>
+                    <Button variant="outline" size="sm" onClick={handleExport} className="rounded-xl">
                         <Download className="mr-2 h-4 w-4" />
                         Export
                     </Button>
                     {permissions.canEdit && (
                         <AddRowDialog open={isAddRowOpen} onOpenChange={setIsAddRowOpen} sheet={sheet}>
-                            <Button size="sm">
-                                <Plus className="mr-2 h-4 w-4" />
-                                New Asset
+                            <Button size="sm" className="rounded-xl">
+                                {hasBarcodeSupport ? <ScanLine className="mr-2 h-4 w-4" /> : <Plus className="mr-2 h-4 w-4" />}
+                                {hasBarcodeSupport ? 'Scan Asset' : 'New Row'}
                             </Button>
                         </AddRowDialog>
                     )}
                 </div>
             </div>
-             <div className="flex-shrink-0 px-2 pb-2 flex items-center justify-start gap-2">
+             <div className="flex-shrink-0 px-2 pb-2 flex items-center justify-start gap-4">
                  {permissions.canEdit && (
                      <>
                          <div className="flex items-center space-x-2">
@@ -225,27 +226,27 @@ export function SheetDataTable({ sheet, permissions }: SheetDataTableProps) {
                              />
                              <label
                                  htmlFor="select-all-rows"
-                                 className="text-sm font-medium leading-none cursor-pointer peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                                 className="text-[10px] font-bold uppercase tracking-widest leading-none cursor-pointer text-muted-foreground"
                              >
                                  Select All
                              </label>
                          </div>
                         <AlertDialog>
                             <AlertDialogTrigger asChild>
-                                    <Button variant="destructive" size="sm" disabled={selectedRows.length === 0}>
-                                    <Trash2 className="mr-2 h-4 w-4" /> Delete ({selectedRows.length})
+                                    <Button variant="destructive" size="sm" disabled={selectedRows.length === 0} className="h-7 px-3 rounded-lg text-[10px] font-bold">
+                                    <Trash2 className="mr-1.5 h-3 w-3" /> Delete ({selectedRows.length})
                                 </Button>
                             </AlertDialogTrigger>
-                            <AlertDialogContent>
-                                <AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle><AlertDialogDescription>This will delete {selectedRows.length} selected row(s).</AlertDialogDescription></AlertDialogHeader>
-                                <AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={handleDeleteSelectedRows} className="bg-destructive hover:bg-destructive/90">Delete</AlertDialogAction></AlertDialogFooter>
+                            <AlertDialogContent className="apple-glass-darker border-none">
+                                <AlertDialogHeader><AlertDialogTitle>Confirm Removal</AlertDialogTitle><AlertDialogDescription>This will delete {selectedRows.length} selected row(s). This is an absolute transaction and cannot be reverted.</AlertDialogDescription></AlertDialogHeader>
+                                <AlertDialogFooter><AlertDialogCancel>Abort</AlertDialogCancel><AlertDialogAction onClick={handleDeleteSelectedRows} className="bg-destructive hover:bg-destructive/90">Delete Records</AlertDialogAction></AlertDialogFooter>
                             </AlertDialogContent>
                         </AlertDialog>
                      </>
                  )}
             </div>
             
-            <ScrollArea className="flex-grow bg-muted/20 rounded-md border">
+            <ScrollArea className="flex-grow bg-muted/20 rounded-2xl border border-white/5 overflow-hidden">
                 {isMobile ? (
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4">
                         {filteredData.map((row) => (
@@ -266,8 +267,8 @@ export function SheetDataTable({ sheet, permissions }: SheetDataTableProps) {
                     </div>
                 ) : (
                     <Table>
-                        <TableHeader>
-                            <TableRow>
+                        <TableHeader className="bg-secondary/30">
+                            <TableRow className="border-white/5">
                                 {permissions.canEdit && (
                                     <TableHead className="w-12">
                                         <Checkbox
@@ -284,21 +285,21 @@ export function SheetDataTable({ sheet, permissions }: SheetDataTableProps) {
                                     </TableHead>
                                 )}
                                 {visibleHeaders.map(header => (
-                                    <TableHead key={header}>{header}</TableHead>
+                                    <TableHead key={header} className="text-[10px] font-bold uppercase tracking-widest">{header}</TableHead>
                                 ))}
-                                {permissions.canEdit && <TableHead className="w-20 text-right">Actions</TableHead>}
+                                {permissions.canEdit && <TableHead className="w-20 text-right"></TableHead>}
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {filteredData.length === 0 ? (
                                 <TableRow>
-                                    <TableCell colSpan={visibleHeaders.length + (permissions.canEdit ? 2 : 1)} className="h-24 text-center">
-                                        {searchTerm ? "No rows match your search." : "No rows yet. Click 'New Asset' to start."}
+                                    <TableCell colSpan={visibleHeaders.length + (permissions.canEdit ? 2 : 1)} className="h-48 text-center text-muted-foreground">
+                                        {searchTerm ? "No results found for your query." : "Inventory grid is currently empty."}
                                     </TableCell>
                                 </TableRow>
                             ) : (
                                 filteredData.map((row) => (
-                                    <TableRow key={row.__originalIndex} onDoubleClick={() => setRowToEdit({ rowIndex: row.__originalIndex, data: row })} className="cursor-pointer">
+                                    <TableRow key={row.__originalIndex} onDoubleClick={() => setRowToEdit({ rowIndex: row.__originalIndex, data: row })} className="cursor-pointer hover:bg-primary/5 transition-colors border-white/5">
                                         {permissions.canEdit && (
                                             <TableCell>
                                                 <Checkbox
@@ -308,13 +309,13 @@ export function SheetDataTable({ sheet, permissions }: SheetDataTableProps) {
                                             </TableCell>
                                         )}
                                         {visibleHeaders.map(header => (
-                                            <TableCell key={header} className="max-w-xs truncate">
+                                            <TableCell key={header} className="max-w-xs truncate text-sm">
                                                 {String(row[header] ?? '')}
                                             </TableCell>
                                         ))}
                                         {permissions.canEdit && (
                                             <TableCell className="text-right">
-                                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setRowToEdit({ rowIndex: row.__originalIndex, data: row })}>
+                                                <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg" onClick={() => setRowToEdit({ rowIndex: row.__originalIndex, data: row })}>
                                                     <Edit className="h-4 w-4" />
                                                 </Button>
                                             </TableCell>
@@ -341,13 +342,13 @@ export function SheetDataTable({ sheet, permissions }: SheetDataTableProps) {
             
             {rowToDelete !== null && (
                  <AlertDialog open={rowToDelete !== null} onOpenChange={(isOpen) => !isOpen && setRowToDelete(null)}>
-                    <AlertDialogContent>
+                    <AlertDialogContent className="apple-glass-darker border-none">
                         <AlertDialogHeader>
-                            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                            <AlertDialogDescription>This action will permanently delete this row.</AlertDialogDescription>
+                            <AlertDialogTitle>Delete Record?</AlertDialogTitle>
+                            <AlertDialogDescription>This action will permanently delete this asset record from the workbook grid.</AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogCancel>Abort</AlertDialogCancel>
                             <AlertDialogAction onClick={handleDeleteRow} className="bg-destructive hover:bg-destructive/90">
                                 Delete Row
                             </AlertDialogAction>

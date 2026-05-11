@@ -24,7 +24,7 @@ export function useSystemConfig(orgId: string | null | undefined) {
     if (!isCollectionLoading && (!configData || configData.length === 0) && orgId && !isCreating) {
       setIsCreating(true);
       
-      const configCollection = collection(firestore, "system_configs");
+      const configCollection = collection(firestore!, "system_configs");
       const defaultConfig: Omit<SystemConfig, 'id'> = {
           orgId: orgId,
           finance_access: true,
@@ -34,6 +34,7 @@ export function useSystemConfig(orgId: string | null | undefined) {
           allow_self_edit: true,
           office_coordinates: null,
           work_hours: { start: '09:00', end: '17:00' },
+          reporting_schedule: { required: true, deadline: '17:30' },
           currency_symbol: '$',
           branding_color: null,
       };
