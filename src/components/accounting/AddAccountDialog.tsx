@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useForm } from "react-hook-form";
@@ -12,12 +11,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Loader2 } from "lucide-react";
 import { useState, useEffect } from "react";
-import { useFirestore, addDocumentNonBlocking, updateDocumentNonBlocking } from "@/firebase";
-import { collection, doc } from "firebase/firestore";
+import { useFirestore, updateDocumentNonBlocking } from "@/firebase";
+import { doc } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import type { Account, AccountType, UserProfile } from "@/lib/types";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { sanitizeInput } from "@/lib/utils";
+import { accountingService } from "@/services/accounting-service";
 
 const formSchema = z.object({
   name: z.string().min(3, "Account name is required."),
@@ -69,7 +69,7 @@ export function AddAccountDialog({ open, onOpenChange, userProfile, accountToEdi
         isDebitNormal: accountToEdit.isDebitNormal,
         isActive: accountToEdit.isActive,
       });
-    } else {
+    } else if (open) {
         form.reset({
             name: "",
             code: "",
@@ -108,19 +108,10 @@ export function AddAccountDialog({ open, onOpenChange, userProfile, accountToEdi
             category: sanitizeInput(values.category),
             description: sanitizeInput(values.description),
         });
-        toast({ title: "Account Updated", description: `"${values.name}" has been updated.` });
+        toast({ title: "Account Updated", description: `"${values.name}" has been modified.` });
       } else {
-        const newAccount: Omit<Account, 'id'> = {
-            orgId: userProfile.orgId,
-            ...values,
-            balance: 0,
-            name: sanitizeInput(values.name),
-            code: sanitizeInput(values.code),
-            category: sanitizeInput(values.category),
-            description: sanitizeInput(values.description),
-        };
-        await addDocumentNonBlocking(collection(firestore, 'accounts'), newAccount);
-        toast({ title: "Account Created", description: `"${values.name}" is now active in your CoA.` });
+        await accountingService.createAccount(firestore, userProfile, values);
+        toast({ title: "Account Created", description: `"${values.name}" is now active in your Chart of Accounts.` });
       }
       onOpenChange(false);
     } catch (error: any) {
@@ -134,9 +125,9 @@ export function AddAccountDialog({ open, onOpenChange, userProfile, accountToEdi
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>{accountToEdit ? 'Edit Account' : 'Add New Account'}</DialogTitle>
+          <DialogTitle>{accountToEdit ? 'Configure Account' : 'Register New Account'}</DialogTitle>
           <DialogDescription>
-            Configure a financial account for your organization's General Ledger.
+            Financial identity configuration for the General Ledger.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -144,12 +135,12 @@ export function AddAccountDialog({ open, onOpenChange, userProfile, accountToEdi
             <div className="grid grid-cols-3 gap-4">
                 <div className="col-span-1">
                     <FormField control={form.control} name="code" render={({ field }) => (
-                        <FormItem><FormLabel>Code</FormLabel><FormControl><Input placeholder="10100" {...field} /></FormControl><FormMessage /></FormItem>
+                        <FormItem><FormLabel>GL Code</FormLabel><FormControl><Input placeholder="1010" {...field} /></FormControl><FormMessage /></FormItem>
                     )}/>
                 </div>
                 <div className="col-span-2">
                     <FormField control={form.control} name="name" render={({ field }) => (
-                        <FormItem><FormLabel>Account Name</FormLabel><FormControl><Input placeholder="Cash at Bank" {...field} /></FormControl><FormMessage /></FormItem>
+                        <FormItem><FormLabel>Account Name</FormLabel><FormControl><Input placeholder="Petty Cash" {...field} /></FormControl><FormMessage /></FormItem>
                     )}/>
                 </div>
             </div>
@@ -157,7 +148,7 @@ export function AddAccountDialog({ open, onOpenChange, userProfile, accountToEdi
             <div className="grid grid-cols-2 gap-4">
                 <FormField control={form.control} name="type" render={({ field }) => (
                     <FormItem><FormLabel>Type</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
+                        <Select onValueChange={field.onChange} value={field.value}>
                             <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
                             <SelectContent>{ACCOUNT_TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
                         </Select>
@@ -169,27 +160,27 @@ export function AddAccountDialog({ open, onOpenChange, userProfile, accountToEdi
             </div>
 
             <FormField control={form.control} name="description" render={({ field }) => (
-                <FormItem><FormLabel>Description</FormLabel><FormControl><Textarea placeholder="Purpose of this account..." {...field} /></FormControl><FormMessage /></FormItem>
+                <FormItem><FormLabel>Operational Memo</FormLabel><FormControl><Textarea placeholder="Purpose of this account..." {...field} /></FormControl><FormMessage /></FormItem>
             )}/>
 
             <div className="flex items-center justify-between gap-4 pt-2">
                 <FormField control={form.control} name="isDebitNormal" render={({ field }) => (
-                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm flex-1">
+                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm flex-1 bg-secondary/10">
                         <div className="space-y-0.5"><FormLabel className="text-xs">Debit Normal</FormLabel><FormDescription className="text-[10px]">Increases on Debit</FormDescription></div>
                         <FormControl><Switch checked={field.value} onCheckedChange={field.onChange}/></FormControl>
                     </FormItem>
                 )}/>
                 <FormField control={form.control} name="isActive" render={({ field }) => (
-                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm flex-1">
-                        <div className="space-y-0.5"><FormLabel className="text-xs">Active</FormLabel><FormDescription className="text-[10px]">Allow entries</FormDescription></div>
+                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm flex-1 bg-secondary/10">
+                        <div className="space-y-0.5"><FormLabel className="text-xs">Active</FormLabel><FormDescription className="text-[10px]">Allow GL entries</FormDescription></div>
                         <FormControl><Switch checked={field.value} onCheckedChange={field.onChange}/></FormControl>
                     </FormItem>
                 )}/>
             </div>
 
-            <Button type="submit" className="w-full" disabled={isLoading}>
+            <Button type="submit" className="w-full h-12 text-base font-bold" disabled={isLoading}>
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {accountToEdit ? 'Save Changes' : 'Create Account'}
+              {accountToEdit ? 'Save Changes' : 'Confirm Registration'}
             </Button>
           </form>
         </Form>

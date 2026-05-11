@@ -1,4 +1,3 @@
-
 'use client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -8,12 +7,14 @@ import type { Permissions } from "@/hooks/usePermissions";
 import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
 import { collection, query, where, orderBy, limit } from "firebase/firestore";
 import { Button } from "../ui/button";
-import { PlusCircle, FileText, CheckCircle2, Clock } from "lucide-react";
+import { PlusCircle, CheckCircle2, Clock, Play } from "lucide-react";
 import { useState } from "react";
 import { format } from "date-fns";
 import { Badge } from "../ui/badge";
 import { useSystemConfig } from "@/hooks/useSystemConfig";
 import { NewJournalEntryDialog } from "./NewJournalEntryDialog";
+import { accountingService } from "@/services/accounting-service";
+import { useToast } from "@/hooks/use-toast";
 
 interface JournalEntriesProps {
   userProfile: UserProfile;
@@ -22,8 +23,10 @@ interface JournalEntriesProps {
 
 export function JournalEntries({ userProfile, permissions }: JournalEntriesProps) {
   const firestore = useFirestore();
+  const { toast } = useToast();
   const { config: systemConfig } = useSystemConfig(userProfile.orgId);
   const [isNewOpen, setIsNewOpen] = useState(false);
+  const [isPosting, setIsPosting] = useState<string | null>(null);
 
   const journalQuery = useMemoFirebase(() => {
     if (!firestore || !userProfile) return null;
@@ -38,6 +41,19 @@ export function JournalEntries({ userProfile, permissions }: JournalEntriesProps
   const { data: entries, isLoading } = useCollection<JournalEntry>(journalQuery);
 
   const currencySymbol = systemConfig?.currency_symbol || '$';
+
+  const handlePostEntry = async (entry: JournalEntry) => {
+    if (!firestore) return;
+    setIsPosting(entry.id);
+    try {
+      await accountingService.postJournalEntry(firestore, entry);
+      toast({ title: "Entry Posted", description: "Ledger updated successfully." });
+    } catch (e: any) {
+      toast({ variant: "destructive", title: "Posting Failed", description: e.message });
+    } finally {
+      setIsPosting(null);
+    }
+  };
 
   return (
     <>
@@ -63,7 +79,7 @@ export function JournalEntries({ userProfile, permissions }: JournalEntriesProps
               <TableHead>Description</TableHead>
               <TableHead>Status</TableHead>
               <TableHead className="text-right">Total Amount</TableHead>
-              <TableHead className="w-[50px]"></TableHead>
+              <TableHead className="w-[100px]"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -74,7 +90,7 @@ export function JournalEntries({ userProfile, permissions }: JournalEntriesProps
             ))}
             {!isLoading && entries?.length === 0 && (
               <TableRow>
-                  <TableCell colSpan={6} className="h-24 text-center">
+                  <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
                       No journal entries found.
                   </TableCell>
               </TableRow>
@@ -84,21 +100,24 @@ export function JournalEntries({ userProfile, permissions }: JournalEntriesProps
                 return (
                     <TableRow key={entry.id}>
                         <TableCell className="whitespace-nowrap">{format(new Date(entry.date), 'PP')}</TableCell>
-                        <TableCell className="font-mono text-xs">{entry.reference}</TableCell>
+                        <TableCell className="font-mono text-[10px] text-muted-foreground">{entry.reference}</TableCell>
                         <TableCell className="font-medium max-w-xs truncate">{entry.description}</TableCell>
                         <TableCell>
-                            <Badge variant={entry.status === 'POSTED' ? 'default' : 'secondary'} className="gap-1">
+                            <Badge variant={entry.status === 'POSTED' ? 'default' : 'secondary'} className="gap-1 text-[10px]">
                                 {entry.status === 'POSTED' ? <CheckCircle2 className="h-3 w-3" /> : <Clock className="h-3 w-3" />}
                                 {entry.status}
                             </Badge>
                         </TableCell>
-                        <TableCell className="text-right font-mono">
+                        <TableCell className="text-right font-mono font-bold">
                             {currencySymbol}{totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </TableCell>
                         <TableCell className="text-right">
-                             <Button variant="ghost" size="icon">
-                                <FileText className="h-4 w-4" />
-                            </Button>
+                             {entry.status === 'DRAFT' && permissions.canManageAccounting && (
+                                <Button size="sm" variant="outline" className="h-7 px-2 text-[10px]" onClick={() => handlePostEntry(entry)} disabled={isPosting === entry.id}>
+                                    {isPosting === entry.id ? <Clock className="h-3 w-3 animate-spin mr-1" /> : <Play className="h-3 w-3 mr-1" />}
+                                    POST
+                                </Button>
+                             )}
                         </TableCell>
                     </TableRow>
                 )
