@@ -1,3 +1,4 @@
+
 {
   "entities": {
     "Attendance": {
@@ -45,6 +46,8 @@
         "dueDate": { "type": "string", "format": "date-time" },
         "workbookId": { "type": "string" },
         "sheetId": { "type": "string" },
+        "estimatedHours": { "type": "number" },
+        "actualHours": { "type": "number" },
         "subTasks": {
           "type": "array",
           "items": {
@@ -58,46 +61,21 @@
         }
       }
     },
-    "Vendor": {
-      "title": "Vendor",
+    "LibraryItem": {
+      "title": "Library Item",
       "type": "object",
-      "description": "Represents an external supplier or service provider.",
+      "description": "A file or folder in the organizational knowledge base.",
       "properties": {
         "orgId": { "type": "string" },
         "name": { "type": "string" },
-        "email": { "type": "string", "format": "email" },
-        "isActive": { "type": "boolean" }
-      }
-    },
-    "PurchaseOrder": {
-      "title": "Purchase Order",
-      "type": "object",
-      "properties": {
-        "serialNo": { "type": "string" },
-        "orgId": { "type": "string" },
-        "vendorName": { "type": "string" },
-        "totalAmount": { "type": "number" },
-        "status": { "type": "string", "enum": ["DRAFT", "SENT", "DELIVERED", "CANCELLED"] }
-      }
-    },
-    "Account": {
-      "title": "Account",
-      "type": "object",
-      "properties": {
-        "orgId": { "type": "string" },
-        "name": { "type": "string" },
-        "code": { "type": "string" },
-        "balance": { "type": "number" }
-      }
-    },
-    "JournalEntry": {
-      "title": "Journal Entry",
-      "type": "object",
-      "properties": {
-        "orgId": { "type": "string" },
-        "description": { "type": "string" },
-        "status": { "type": "string", "enum": ["DRAFT", "POSTED"] },
-        "lines": { "type": "array", "items": { "type": "object" } }
+        "type": { "type": "string", "enum": ["FILE", "FOLDER"] },
+        "parentFolderId": { "type": "string", "nullable": true },
+        "url": { "type": "string", "nullable": true },
+        "mimeType": { "type": "string", "nullable": true },
+        "size": { "type": "number", "nullable": true },
+        "createdBy": { "type": "string" },
+        "creatorName": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
       }
     },
     "UserProfile": {
@@ -107,16 +85,13 @@
       "properties": {
         "orgId": { "type": "string" },
         "email": { "type": "string", "format": "email" },
-        "username": { "type": "string", "description": "Unique organizational identifier." },
+        "username": { "type": "string" },
         "fullName": { "type": "string" },
-        "phoneNumber": { "type": "string", "nullable": true },
-        "avatarUrl": { "type": "string", "nullable": true },
         "role": { "type": "string", "enum": ["ORG_ADMIN", "MANAGING_DIRECTOR", "HR_MANAGER", "FINANCE_MANAGER", "STAFF"] },
         "position": { "type": "string" },
         "departmentName": { "type": "string" },
         "joinedDate": { "type": "string", "format": "date-time" },
-        "status": { "type": "string", "enum": ["ONLINE", "OFFLINE", "ON_LEAVE"] },
-        "lastSeen": { "type": "string", "format": "date-time" }
+        "status": { "type": "string", "enum": ["ONLINE", "OFFLINE", "ON_LEAVE"] }
       },
       "required": ["orgId", "email", "fullName", "role", "username", "joinedDate"]
     }
@@ -126,10 +101,7 @@
     "structure": [
       { "path": "/attendance/{id}", "definition": { "entityName": "Attendance", "schema": { "$ref": "#/entities/Attendance" } } },
       { "path": "/tasks/{id}", "definition": { "entityName": "Task", "schema": { "$ref": "#/entities/Task" } } },
-      { "path": "/vendors/{id}", "definition": { "entityName": "Vendor", "schema": { "$ref": "#/entities/Vendor" } } },
-      { "path": "/purchase_orders/{id}", "definition": { "entityName": "PurchaseOrder", "schema": { "$ref": "#/entities/PurchaseOrder" } } },
-      { "path": "/accounts/{id}", "definition": { "entityName": "Account", "schema": { "$ref": "#/entities/Account" } } },
-      { "path": "/journal_entries/{id}", "definition": { "entityName": "JournalEntry", "schema": { "$ref": "#/entities/JournalEntry" } } },
+      { "path": "/library_items/{id}", "definition": { "entityName": "LibraryItem", "schema": { "$ref": "#/entities/LibraryItem" } } },
       { "path": "/users/{id}", "definition": { "entityName": "UserProfile", "schema": { "$ref": "#/entities/UserProfile" } } }
     ]
   }

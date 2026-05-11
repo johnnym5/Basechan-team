@@ -1,7 +1,8 @@
+
 'use client';
 
 import { useState, useMemo } from 'react';
-import { useUser, useDoc, useFirestore, useMemoFirebase, useCollection } from '@/firebase';
+import { useUser, useDoc, useFirestore, useMemoFirebase, useCollection, addDocumentNonBlocking } from '@/firebase';
 import { collection, query, where, orderBy, doc, deleteDoc } from 'firebase/firestore';
 import type { UserProfile, LibraryItem } from '@/lib/types';
 import { usePermissions } from '@/hooks/usePermissions';
@@ -18,15 +19,16 @@ import {
     ArrowLeft, 
     Search,
     BookOpen,
-    Download
+    Download,
+    Loader2
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
 import { useFileUpload } from '@/hooks/useFileUpload';
 import { Progress } from '@/components/ui/progress';
-import { addDocumentNonBlocking } from '@/firebase';
 import Link from 'next/link';
+import { cn } from '@/lib/utils';
 
 export function LibraryPageContent() {
     const { user: authUser } = useUser();
@@ -50,7 +52,7 @@ export function LibraryPageContent() {
         return query(
             collection(firestore, 'library_items'),
             where('orgId', '==', userProfile.orgId),
-            orderBy('name', 'asc')
+            orderBy('createdAt', 'desc')
         );
     }, [firestore, userProfile]);
 
@@ -58,15 +60,18 @@ export function LibraryPageContent() {
 
     const currentItems = useMemo(() => {
         if (!allItems) return [];
-        return allItems.filter(item => item.parentFolderId === currentFolderId);
+        return allItems.filter(item => (item.parentFolderId || null) === currentFolderId);
     }, [allItems, currentFolderId]);
 
     const filteredItems = useMemo(() => {
         if (!searchTerm) return currentItems;
-        return currentItems.filter(item => 
-            item.name.toLowerCase().includes(searchTerm.toLowerCase())
+        const term = searchTerm.toLowerCase();
+        // If searching, search globally across all items, not just current folder
+        return (allItems || []).filter(item => 
+            item.name.toLowerCase().includes(term) ||
+            item.creatorName.toLowerCase().includes(term)
         );
-    }, [currentItems, searchTerm]);
+    }, [currentItems, allItems, searchTerm]);
 
     const currentFolder = useMemo(() => {
         if (!currentFolderId || !allItems) return null;
@@ -79,7 +84,7 @@ export function LibraryPageContent() {
         try {
             const newItem: Omit<LibraryItem, 'id'> = {
                 orgId: userProfile.orgId,
-                name: newFolderName,
+                name: newFolderName.trim(),
                 type: 'FOLDER',
                 parentFolderId: currentFolderId,
                 createdBy: userProfile.id,
@@ -92,6 +97,7 @@ export function LibraryPageContent() {
             toast({ title: 'Folder Created', description: `"${newFolderName}" has been added.` });
         } catch (e: any) {
             toast({ variant: 'destructive', title: 'Error', description: e.message });
+        } finally {
             setIsCreatingFolder(false);
         }
     };
@@ -118,9 +124,12 @@ export function LibraryPageContent() {
             };
 
             await addDocumentNonBlocking(collection(firestore, 'library_items'), newItem);
-            toast({ title: 'File Uploaded', description: `"${file.name}" is now available in the library.` });
+            toast({ title: 'File Uploaded', description: `"${file.name}" is now available.` });
         } catch (e: any) {
             toast({ variant: 'destructive', title: 'Upload Failed', description: e.message });
+        } finally {
+            // Reset input
+            e.target.value = '';
         }
     };
 
@@ -128,25 +137,35 @@ export function LibraryPageContent() {
         if (!firestore || !permissions.canManageLibrary) return;
         try {
             await deleteDoc(doc(firestore, 'library_items', item.id));
-            toast({ title: 'Item Removed', description: `${item.name} has been deleted.` });
+            toast({ title: 'Item Removed', description: `${item.name} deleted.` });
         } catch (e: any) {
             toast({ variant: 'destructive', title: 'Error', description: e.message });
         }
     };
 
     if (isProfileLoading || isItemsLoading) {
-        return <Skeleton className="h-[600px] w-full" />;
+        return (
+            <div className="space-y-6">
+                <div className="flex justify-between items-center">
+                    <Skeleton className="h-10 w-64" />
+                    <Skeleton className="h-10 w-32" />
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    {Array.from({length: 8}).map((_, i) => <Skeleton key={i} className="h-40 w-full rounded-xl" />)}
+                </div>
+            </div>
+        );
     }
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-6 pb-20">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-3xl font-bold font-headline tracking-tight flex items-center gap-3">
                         <BookOpen className="h-8 w-8 text-primary" />
                         Knowledge Base
                     </h1>
-                    <p className="text-muted-foreground">Organization onboarding, resources, and shared documents.</p>
+                    <p className="text-muted-foreground">Standard Operating Procedures, policies, and onboarding resources.</p>
                 </div>
                 {permissions.canManageLibrary && (
                     <div className="flex items-center gap-2">
@@ -158,13 +177,14 @@ export function LibraryPageContent() {
                                 onChange={handleFileUpload}
                                 disabled={isUploading}
                             />
-                            <Button asChild disabled={isUploading} variant="outline">
+                            <Button asChild disabled={isUploading} variant="outline" className="rounded-xl">
                                 <label htmlFor="library-upload" className="cursor-pointer">
-                                    <Upload className="mr-2 h-4 w-4" /> Upload
+                                    {isUploading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Upload className="mr-2 h-4 w-4" />}
+                                    Upload Document
                                 </label>
                             </Button>
                         </div>
-                        <Button onClick={() => setIsCreatingFolder(true)} disabled={isCreatingFolder}>
+                        <Button onClick={() => setIsCreatingFolder(true)} disabled={isCreatingFolder} className="rounded-xl">
                             <Plus className="mr-2 h-4 w-4" /> New Folder
                         </Button>
                     </div>
@@ -172,47 +192,50 @@ export function LibraryPageContent() {
             </div>
 
             {isUploading && (
-                <div className="space-y-2">
-                    <div className="flex justify-between text-xs">
-                        <span>Uploading...</span>
+                <div className="space-y-2 p-4 bg-primary/5 border border-primary/20 rounded-xl animate-in fade-in slide-in-from-top-2">
+                    <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest text-primary">
+                        <span>Uploading Resource...</span>
                         <span>{Math.round(uploadProgress)}%</span>
                     </div>
-                    <Progress value={uploadProgress} className="h-1" />
+                    <Progress value={uploadProgress} className="h-1.5" />
                 </div>
             )}
 
-            <Card className="bg-card/50 backdrop-blur-xl">
-                <CardHeader className="pb-4">
+            <Card className="bg-card/50 backdrop-blur-xl border-white/5">
+                <CardHeader className="pb-4 border-b border-white/5">
                     <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                         <div className="flex items-center gap-2">
                             {currentFolderId && (
-                                <Button variant="ghost" size="icon" onClick={() => setCurrentFolderId(currentFolder?.parentFolderId || null)}>
+                                <Button variant="ghost" size="icon" className="rounded-lg" onClick={() => setCurrentFolderId(currentFolder?.parentFolderId || null)}>
                                     <ArrowLeft className="h-4 w-4" />
                                 </Button>
                             )}
-                            <div className="font-semibold text-lg">
-                                {currentFolder ? currentFolder.name : 'Root Directory'}
+                            <div className="flex flex-col">
+                                <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Directory</span>
+                                <span className="font-bold text-lg leading-none">
+                                    {currentFolder ? currentFolder.name : 'Root Repository'}
+                                </span>
                             </div>
                         </div>
                         <div className="relative w-full sm:max-w-xs">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                             <Input 
-                                placeholder="Search resources..." 
-                                className="pl-10 bg-background/50"
+                                placeholder="Search library..." 
+                                className="pl-10 h-10 rounded-full bg-background/50 border-white/5"
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                             />
                         </div>
                     </div>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="pt-6">
                     {isCreatingFolder && (
-                        <div className="flex items-center gap-2 p-2 mb-4 border rounded-lg bg-secondary/20">
-                            <Folder className="h-5 w-5 text-primary" />
+                        <div className="flex items-center gap-3 p-3 mb-6 border border-primary/20 rounded-xl bg-primary/5 animate-in zoom-in-95">
+                            <Folder className="h-6 w-6 text-primary" />
                             <Input 
-                                placeholder="Folder name..." 
+                                placeholder="Enter folder name..." 
                                 autoFocus
-                                className="h-8"
+                                className="h-10 border-none bg-transparent focus-visible:ring-0"
                                 value={newFolderName}
                                 onChange={(e) => setNewFolderName(e.target.value)}
                                 onKeyDown={(e) => {
@@ -220,40 +243,45 @@ export function LibraryPageContent() {
                                     if (e.key === 'Escape') setIsCreatingFolder(false);
                                 }}
                             />
-                            <Button size="sm" variant="ghost" onClick={() => setIsCreatingFolder(false)}>Cancel</Button>
-                            <Button size="sm" onClick={handleCreateFolder}>Create</Button>
+                            <div className="flex items-center gap-2">
+                                <Button size="sm" variant="ghost" className="h-8" onClick={() => setIsCreatingFolder(false)}>Cancel</Button>
+                                <Button size="sm" className="h-8 rounded-lg" onClick={handleCreateFolder}>Create</Button>
+                            </div>
                         </div>
                     )}
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                         {filteredItems.length === 0 && !isCreatingFolder && (
-                            <div className="col-span-full py-20 text-center text-muted-foreground">
-                                <div className="rounded-full bg-secondary/50 p-6 w-fit mx-auto mb-4">
-                                    <BookOpen className="h-10 w-10 opacity-20" />
+                            <div className="col-span-full py-24 text-center text-muted-foreground">
+                                <div className="rounded-full bg-secondary/30 p-8 w-fit mx-auto mb-6">
+                                    <BookOpen className="h-12 w-12 opacity-20" />
                                 </div>
-                                <p className="font-semibold">No resources here</p>
-                                <p className="text-sm">Explore other folders or search for documents.</p>
+                                <p className="font-bold text-lg text-foreground">No resources found</p>
+                                <p className="text-sm max-w-xs mx-auto">This directory is currently empty. Use the buttons above to populate your knowledge base.</p>
                             </div>
                         )}
                         {filteredItems.map(item => (
                             <div 
                                 key={item.id}
-                                className="group relative flex flex-col p-4 rounded-xl border bg-background/50 hover:bg-background transition-all hover:shadow-md cursor-pointer overflow-hidden"
+                                className={cn(
+                                    "group relative flex flex-col p-5 rounded-2xl border border-white/5 bg-background/40 hover:bg-background/80 transition-all hover:shadow-2xl cursor-pointer overflow-hidden",
+                                    item.type === 'FOLDER' && "hover:border-primary/20"
+                                )}
                                 onClick={() => item.type === 'FOLDER' ? setCurrentFolderId(item.id) : null}
                             >
-                                <div className="flex items-start justify-between mb-4">
+                                <div className="flex items-start justify-between mb-5">
                                     {item.type === 'FOLDER' ? (
-                                        <div className="rounded-lg bg-primary/10 p-3">
-                                            <Folder className="h-6 w-6 text-primary" />
+                                        <div className="rounded-xl bg-primary/10 p-3 shadow-inner">
+                                            <Folder className="h-7 w-7 text-primary" />
                                         </div>
                                     ) : (
-                                        <div className="rounded-lg bg-secondary p-3">
-                                            <FileText className="h-6 w-6 text-muted-foreground" />
+                                        <div className="rounded-xl bg-secondary/50 p-3">
+                                            <FileText className="h-7 w-7 text-muted-foreground" />
                                         </div>
                                     )}
                                     <div className="flex items-center gap-1">
                                         {item.type === 'FILE' && item.url && (
-                                            <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity" asChild onClick={(e) => e.stopPropagation()}>
+                                            <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg" asChild onClick={(e) => e.stopPropagation()}>
                                                 <Link href={item.url} target="_blank" rel="noopener noreferrer">
                                                     <Download className="h-4 w-4" />
                                                 </Link>
@@ -262,31 +290,45 @@ export function LibraryPageContent() {
                                         {permissions.canManageLibrary && (
                                             <DropdownMenu>
                                                 <DropdownMenuTrigger asChild>
-                                                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => e.stopPropagation()}>
+                                                    <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg" onClick={(e) => e.stopPropagation()}>
                                                         <MoreVertical className="h-4 w-4" />
                                                     </Button>
                                                 </DropdownMenuTrigger>
-                                                <DropdownMenuContent align="end">
-                                                    <DropdownMenuItem className="text-destructive focus:bg-destructive/10 focus:text-destructive" onClick={(e) => {
+                                                <DropdownMenuContent align="end" className="rounded-xl">
+                                                    <DropdownMenuItem className="text-destructive focus:bg-destructive/10 focus:text-destructive rounded-lg" onClick={(e) => {
                                                         e.stopPropagation();
                                                         handleDeleteItem(item);
                                                     }}>
-                                                        <Trash2 className="mr-2 h-4 w-4" /> Delete
+                                                        <Trash2 className="mr-2 h-4 w-4" /> Delete Item
                                                     </DropdownMenuItem>
                                                 </DropdownMenuContent>
                                             </DropdownMenu>
                                         )}
                                     </div>
                                 </div>
-                                <div className="space-y-1">
-                                    <h4 className="font-semibold text-sm truncate pr-6" title={item.name}>{item.name}</h4>
-                                    <div className="flex items-center justify-between text-[10px] text-muted-foreground uppercase tracking-widest">
-                                        <span>{item.type}</span>
-                                        {item.size && <span>{(item.size / 1024 / 1024).toFixed(2)} MB</span>}
+                                <div className="space-y-1.5 flex-1">
+                                    <h4 className="font-bold text-sm truncate pr-4 text-gray-200 group-hover:text-white transition-colors" title={item.name}>
+                                        {item.name}
+                                    </h4>
+                                    <div className="flex items-center gap-3 text-[9px] font-bold text-muted-foreground uppercase tracking-widest">
+                                        <span className={cn(item.type === 'FOLDER' ? "text-primary/70" : "text-slate-500")}>
+                                            {item.type}
+                                        </span>
+                                        {item.size && (
+                                            <>
+                                                <span className="h-1 w-1 rounded-full bg-muted-foreground/30" />
+                                                <span>{(item.size / 1024 / 1024).toFixed(2)} MB</span>
+                                            </>
+                                        )}
                                     </div>
                                 </div>
-                                <div className="mt-4 pt-4 border-t text-[10px] text-muted-foreground flex justify-between">
-                                    <span>By {item.creatorName.split(' ')[0]}</span>
+                                <div className="mt-5 pt-4 border-t border-white/5 flex items-center justify-between text-[10px] text-muted-foreground">
+                                    <div className="flex items-center gap-1.5">
+                                        <div className="h-4 w-4 rounded-full bg-secondary flex items-center justify-center text-[8px] font-bold">
+                                            {item.creatorName.charAt(0)}
+                                        </div>
+                                        <span>{item.creatorName.split(' ')[0]}</span>
+                                    </div>
                                     <span>{new Date(item.createdAt).toLocaleDateString()}</span>
                                 </div>
                             </div>
