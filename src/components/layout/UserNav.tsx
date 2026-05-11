@@ -15,12 +15,13 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useUser, useAuth } from "@/firebase";
-import { LogOut, User as UserIcon, Settings, Eye, Shield } from "lucide-react";
+import { LogOut, User as UserIcon, Settings, Eye, Shield, Terminal } from "lucide-react";
 import { signOut } from "firebase/auth";
 import { uiEmitter } from "@/lib/ui-emitter";
 import type { UserProfile } from "@/lib/types";
 import { useImpersonation } from "@/context/ImpersonationProvider";
 import { useSuperAdmin } from "@/hooks/useSuperAdmin";
+import { cn } from "@/lib/utils";
 
 
 export function UserNav({ userProfile }: { userProfile: UserProfile | null }) {
@@ -29,13 +30,9 @@ export function UserNav({ userProfile }: { userProfile: UserProfile | null }) {
   const { isImpersonating, setIsImpersonating } = useImpersonation();
   const { isSuperAdmin } = useSuperAdmin();
 
-  if (!user) {
-    return null;
-  }
+  if (!user) return null;
   
-  const handleLogout = () => {
-    signOut(auth);
-  };
+  const handleLogout = () => signOut(auth!);
 
   const userInitials = user.displayName?.split(' ').map(n => n[0]).join('') || user.email?.charAt(0).toUpperCase();
 
@@ -43,57 +40,67 @@ export function UserNav({ userProfile }: { userProfile: UserProfile | null }) {
     <>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" className="relative h-10 w-10 rounded-full">
-            <Avatar className="h-10 w-10">
+          <Button variant="ghost" className="relative h-10 w-10 rounded-full interactive-element">
+            <Avatar className={cn("h-10 w-10 border-2 transition-colors", isImpersonating ? "border-amber-500" : "border-primary/20")}>
               <AvatarImage src={userProfile?.avatarUrl || user.photoURL || ''} alt={user.displayName || ''} />
-              <AvatarFallback>{userInitials}</AvatarFallback>
+              <AvatarFallback className="font-bold">{userInitials}</AvatarFallback>
             </Avatar>
+            {isImpersonating && (
+                <div className="absolute -top-1 -right-1 bg-amber-500 rounded-full p-0.5 border-2 border-background">
+                    <Eye className="h-2 w-2 text-white" />
+                </div>
+            )}
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent className="w-56" align="end" forceMount>
-          <DropdownMenuLabel className="font-normal">
+        <DropdownMenuContent className="w-64 apple-glass border-none shadow-3xl" align="end" forceMount>
+          <DropdownMenuLabel className="font-normal p-4">
             <div className="flex flex-col space-y-1">
-              <p className="text-sm font-medium leading-none">{user.displayName}</p>
-              <p className="text-xs leading-none text-muted-foreground">
+              <p className="text-sm font-black font-headline leading-none uppercase tracking-tight">{user.displayName || userProfile?.fullName}</p>
+              <p className="text-[10px] font-bold leading-none text-muted-foreground uppercase tracking-widest opacity-60">
                 {user.email}
               </p>
             </div>
           </DropdownMenuLabel>
-          <DropdownMenuSeparator />
-           <DropdownMenuItem onSelect={() => uiEmitter.emit('open-profile-dialog')}>
-            <UserIcon className="mr-2 h-4 w-4" />
-            <span>My Profile</span>
+          <DropdownMenuSeparator className="bg-white/5" />
+           <DropdownMenuItem className="p-3 cursor-pointer" onSelect={() => uiEmitter.emit('open-profile-dialog')}>
+            <UserIcon className="mr-3 h-4 w-4 text-primary" />
+            <span className="font-bold text-xs uppercase tracking-widest">My Identity</span>
           </DropdownMenuItem>
-          <DropdownMenuItem onSelect={() => uiEmitter.emit('open-settings-dialog')}>
-            <Settings className="mr-2 h-4 w-4" />
-            <span>Settings</span>
+          <DropdownMenuItem className="p-3 cursor-pointer" onSelect={() => uiEmitter.emit('open-settings-dialog')}>
+            <Settings className="mr-3 h-4 w-4 text-primary" />
+            <span className="font-bold text-xs uppercase tracking-widest">Global Config</span>
           </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          {isSuperAdmin && !isImpersonating && (
-            <DropdownMenuItem onSelect={() => uiEmitter.emit('open-superadmin-dialog')}>
-                <Shield className="mr-2 h-4 w-4" />
-                <span>Super Admin</span>
-            </DropdownMenuItem>
-          )}
+          
           {isSuperAdmin && (
-            <DropdownMenuSub>
-              <DropdownMenuSubTrigger>
-                  <Eye className="mr-2 h-4 w-4" />
-                  <span>View Mode</span>
-              </DropdownMenuSubTrigger>
-              <DropdownMenuPortal>
-                  <DropdownMenuSubContent>
-                      <DropdownMenuRadioGroup value={isImpersonating ? 'normal' : 'admin'} onValueChange={(value) => setIsImpersonating(value === 'normal')}>
-                          <DropdownMenuRadioItem value="admin">Admin View</DropdownMenuRadioItem>
-                          <DropdownMenuRadioItem value="normal">Normal View</DropdownMenuRadioItem>
-                      </DropdownMenuRadioGroup>
-                  </DropdownMenuSubContent>
-              </DropdownMenuPortal>
-            </DropdownMenuSub>
+            <>
+                <DropdownMenuSeparator className="bg-white/5" />
+                <DropdownMenuLabel className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground px-4 py-2">Super Admin Access</DropdownMenuLabel>
+                <DropdownMenuItem className="p-3 cursor-pointer text-amber-500" onSelect={() => uiEmitter.emit('open-superadmin-dialog')}>
+                    <Shield className="mr-3 h-4 w-4" />
+                    <span className="font-bold text-xs uppercase tracking-widest">Master Console</span>
+                </DropdownMenuItem>
+                
+                <DropdownMenuSub>
+                <DropdownMenuSubTrigger className="p-3 cursor-pointer">
+                    <Eye className="mr-3 h-4 w-4 text-amber-500" />
+                    <span className="font-bold text-xs uppercase tracking-widest">View Mode</span>
+                </DropdownMenuSubTrigger>
+                <DropdownMenuPortal>
+                    <DropdownMenuSubContent className="apple-glass border-none shadow-2xl">
+                        <DropdownMenuRadioGroup value={isImpersonating ? 'staff' : 'admin'} onValueChange={(v) => setIsImpersonating(v === 'staff')}>
+                            <DropdownMenuRadioItem value="admin" className="text-xs font-bold uppercase tracking-widest p-3">Administrator</DropdownMenuRadioItem>
+                            <DropdownMenuRadioItem value="staff" className="text-xs font-bold uppercase tracking-widest p-3">Normal Staff</DropdownMenuRadioItem>
+                        </DropdownMenuRadioGroup>
+                    </DropdownMenuSubContent>
+                </DropdownMenuPortal>
+                </DropdownMenuSub>
+            </>
           )}
-          <DropdownMenuItem onClick={handleLogout}>
-            <LogOut className="mr-2 h-4 w-4" />
-            <span>Log out</span>
+
+          <DropdownMenuSeparator className="bg-white/5" />
+          <DropdownMenuItem className="p-3 cursor-pointer text-destructive focus:bg-destructive/10 focus:text-destructive" onClick={handleLogout}>
+            <LogOut className="mr-3 h-4 w-4" />
+            <span className="font-bold text-xs uppercase tracking-widest">Terminate Session</span>
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

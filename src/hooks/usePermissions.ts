@@ -1,4 +1,3 @@
-
 'use client';
 import type { UserProfile, UserRole } from '@/lib/types';
 import { useSuperAdmin } from './useSuperAdmin';
@@ -102,7 +101,7 @@ export function usePermissions(userProfile: UserProfile | null): Permissions {
   const { isImpersonating } = useImpersonation();
 
   const permissions = useMemo(() => {
-    // If user is super admin AND not impersonating, they get all permissions.
+    // If user is super admin AND not impersonating, they get absolute clearance.
     if (isSuperAdmin && !isImpersonating) {
       return { 
           canApproveHR: true,
@@ -132,15 +131,14 @@ export function usePermissions(userProfile: UserProfile | null): Permissions {
       return defaultPermissions;
     }
     
-    const isSuperAdminImpersonating = isSuperAdmin && isImpersonating;
-
-    // If super admin is impersonating, force their role to 'Staff'. Otherwise, use their actual role.
-    const effectiveRole = isSuperAdminImpersonating
+    // If super admin is impersonating, force their role to 'STAFF' to test restrictive UI.
+    const effectiveRole = (isSuperAdmin && isImpersonating)
         ? 'STAFF'
         : userProfile.role;
 
     const rolePerms = rolePermissions[effectiveRole] || {};
-    const customPerms = isSuperAdminImpersonating ? {} : (userProfile.customPermissions || {});
+    // When impersonating, ignore custom permissions to see the "pure" staff experience.
+    const customPerms = (isSuperAdmin && isImpersonating) ? {} : (userProfile.customPermissions || {});
 
     const perms: Permissions = {
         ...defaultPermissions,
