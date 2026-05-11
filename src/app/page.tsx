@@ -21,6 +21,7 @@ import { Button } from '@/components/ui/button';
 import { uiEmitter } from '@/lib/ui-emitter';
 import { useImpersonation } from '@/context/ImpersonationProvider';
 import { LoginForm } from '@/components/auth/LoginForm';
+import { DashboardQuickActions } from '@/components/dashboard/DashboardQuickActions';
 
 function DashboardGrid() {
     const { user: authUser, isUserLoading: isAuthLoading } = useUser();
@@ -96,6 +97,7 @@ function DashboardGrid() {
                 </section>
 
                 <div className="col-span-12 lg:col-span-3 space-y-6">
+                    <DashboardQuickActions />
                     {userProfile && <MaintenanceCard userProfile={userProfile} />}
                     <DashboardRecentChats />
                     <Announcements />
