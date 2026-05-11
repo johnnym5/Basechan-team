@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LogOut, BookCopy, ChevronRight, ChevronLeft } from "lucide-react";
+import { LogOut, BookCopy, User } from "lucide-react";
 import { mainNavItems } from "@/lib/nav-items";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback } from "../ui/avatar";
@@ -69,7 +69,7 @@ export default function AppSidebar({
         </div>
       </div>
       
-      <nav className="flex-1 px-3 space-y-2 mt-4">
+      <nav className="flex-1 px-3 space-y-2 mt-4 overflow-y-auto no-scrollbar">
         {isLoggedIn && mainNavItems.map((item, index) => {
           if ('isSeparator' in item) return <div key={index} className={cn("h-px bg-gray-800/50 my-4 mx-2", !isExpanded && "opacity-0")} />;
           
@@ -110,17 +110,21 @@ export default function AppSidebar({
       <div className={cn("p-4 border-t border-gray-800 transition-all duration-300", !isExpanded && "flex flex-col items-center")}>
         {isAuthLoading ? (
             <Skeleton className="h-10 w-10 rounded-full" />
-        ) : isLoggedIn && userProfile ? (
+        ) : isLoggedIn ? (
             <div className="flex flex-col gap-4 w-full">
                 <div className={cn("flex items-center gap-3", !isExpanded && "justify-center")}>
                     {isProfileLoading ? (
                       <Skeleton className="h-10 w-10 rounded-full" />
-                    ) : (
+                    ) : userProfile ? (
                       <Avatar className="h-10 w-10 border border-gray-700 hover:border-primary transition-colors cursor-pointer" onClick={() => handleDialogClick('profile')}>
                           <AvatarFallback>{userProfile?.fullName?.split(' ').map(n => n[0]).join('')}</AvatarFallback>
                       </Avatar>
+                    ) : (
+                        <div className="h-10 w-10 rounded-full bg-gray-800 flex items-center justify-center text-gray-400">
+                             <User className="h-5 w-5" />
+                        </div>
                     )}
-                    {isExpanded && (
+                    {isExpanded && userProfile && (
                         <div className="flex-1 truncate animate-in fade-in slide-in-from-left-2 duration-300">
                             <p className="font-semibold text-sm truncate">{userProfile?.fullName}</p>
                             <p className="text-[0.625rem] text-gray-500 uppercase tracking-widest truncate">{userProfile?.position}</p>
