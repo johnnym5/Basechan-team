@@ -6,6 +6,7 @@ import { usePermissions } from "@/hooks/usePermissions";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ChartOfAccounts } from "./ChartOfAccounts";
 import { JournalEntries } from "./JournalEntries";
+import { FinancialStatements } from "./FinancialStatements";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useState } from "react";
 import { ScrollArea } from "../ui/scroll-area";
@@ -35,9 +36,10 @@ export function AccountingPageContent() {
       
       {userProfile && (
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
-            <TabsList className="grid grid-cols-2 w-full max-w-md flex-shrink-0">
+            <TabsList className="grid grid-cols-3 w-full max-w-xl flex-shrink-0">
                 <TabsTrigger value="coa">Chart of Accounts</TabsTrigger>
                 <TabsTrigger value="journal">General Ledger</TabsTrigger>
+                <TabsTrigger value="statements">Financial Statements</TabsTrigger>
             </TabsList>
             
             <ScrollArea className="flex-1 mt-6 rounded-md border bg-card/30">
@@ -47,6 +49,10 @@ export function AccountingPageContent() {
                 
                 <TabsContent value="journal" className="m-0 p-4">
                     <JournalEntries userProfile={userProfile} permissions={permissions} />
+                </TabsContent>
+
+                <TabsContent value="statements" className="m-0 p-4">
+                    <FinancialStatements userProfile={userProfile} />
                 </TabsContent>
             </ScrollArea>
         </Tabs>
