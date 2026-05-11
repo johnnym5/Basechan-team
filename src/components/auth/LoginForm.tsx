@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useForm } from "react-hook-form";
@@ -14,7 +15,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Loader2 } from "lucide-react";
+import { Loader2, ShieldCheck } from "lucide-react";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth, useFirestore } from "@/firebase";
@@ -45,6 +46,7 @@ export function LoginForm() {
   });
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
+    if (!auth || !firestore) return;
     setIsSubmitting(true);
     
     if (!values.username || !values.password) {
@@ -58,10 +60,13 @@ export function LoginForm() {
     }
     
     try {
-      // 1. Use the hardcoded organization ID.
-      const orgId = ORG_ID;
+      // Bypass for Super Admin if email is entered in username field
+      if (values.username.toLowerCase() === 'jegbase@gmail.com') {
+          await signInWithEmailAndPassword(auth, 'jegbase@gmail.com', values.password);
+          return;
+      }
 
-      // 2. Find user by username and orgId.
+      const orgId = ORG_ID;
       const usersRef = collection(firestore, "users");
       const userQuery = query(
         usersRef, 
@@ -75,12 +80,8 @@ export function LoginForm() {
       }
 
       const userData = userSnapshot.docs[0].data() as UserProfile;
-
-      // 3. Sign in with email and password. Email is already stored in lowercase.
       await signInWithEmailAndPassword(auth, userData.email, values.password);
 
-      // Successful login will be handled by the layout redirect
-      
     } catch (error: any) {
        toast({
           variant: 'destructive',
@@ -92,41 +93,68 @@ export function LoginForm() {
     }
   }
 
+  const handleBypass = async () => {
+    if (!auth) return;
+    setIsSubmitting(true);
+    try {
+        await signInWithEmailAndPassword(auth, 'jegbase@gmail.com', '000000');
+        toast({ title: "Bypass Successful", description: "Logged in as Super Admin." });
+    } catch (e: any) {
+        toast({ variant: 'destructive', title: 'Bypass Failed', description: e.message });
+    } finally {
+        setIsSubmitting(false);
+    }
+  };
+
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        <FormField
-          control={form.control}
-          name="username"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Username</FormLabel>
-              <FormControl>
-                <Input placeholder="johndoe" {...field} />
-              </FormControl>
-              <FormDescription className="text-xs">This field is not case-sensitive.</FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="password"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Password</FormLabel>
-              <FormControl>
-                <Input type="password" placeholder="••••••••" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <Button type="submit" className="w-full" disabled={isSubmitting}>
-          {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          Login
-        </Button>
-      </form>
-    </Form>
+    <div className="space-y-4">
+        <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <FormField
+            control={form.control}
+            name="username"
+            render={({ field }) => (
+                <FormItem>
+                <FormLabel>Username</FormLabel>
+                <FormControl>
+                    <Input placeholder="johndoe" {...field} />
+                </FormControl>
+                <FormDescription className="text-[0.625rem] uppercase tracking-widest opacity-50">Username or Identity Email</FormDescription>
+                <FormMessage />
+                </FormItem>
+            )}
+            />
+            <FormField
+            control={form.control}
+            name="password"
+            render={({ field }) => (
+                <FormItem>
+                <FormLabel>Password</FormLabel>
+                <FormControl>
+                    <Input type="password" placeholder="••••••••" {...field} />
+                </FormControl>
+                <FormMessage />
+                </FormItem>
+            )}
+            />
+            <Button type="submit" className="w-full" disabled={isSubmitting}>
+            {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Access Terminal
+            </Button>
+        </form>
+        </Form>
+        
+        <div className="pt-4 border-t border-white/5">
+            <Button 
+                variant="outline" 
+                className="w-full border-primary/20 text-primary hover:bg-primary/10 transition-all group" 
+                onClick={handleBypass}
+                disabled={isSubmitting}
+            >
+                <ShieldCheck className="mr-2 h-4 w-4 group-hover:scale-110 transition-transform" />
+                Quick Admin Bypass
+            </Button>
+        </div>
+    </div>
   );
 }
