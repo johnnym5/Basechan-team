@@ -1,7 +1,7 @@
 'use client';
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams, useRouter } from "next/navigation";
 import { LogOut, BookCopy, User } from "lucide-react";
 import { mainNavItems } from "@/lib/nav-items";
 import { cn } from "@/lib/utils";
@@ -12,7 +12,6 @@ import type { UserProfile } from "@/lib/types";
 import { signOut } from "firebase/auth";
 import { Skeleton } from "../ui/skeleton";
 import { usePermissions } from "@/hooks/usePermissions";
-import { uiEmitter } from "@/lib/ui-emitter";
 import { Button } from "../ui/button";
 import { useState } from "react";
 
@@ -22,10 +21,10 @@ export default function AppSidebar({
 }: { 
     isLoggedIn: boolean,
     isAuthLoading: boolean,
-    isCollapsed?: boolean,
-    onSignInClick?: () => void
 }) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const router = useRouter();
   const auth = useAuth();
   const { user: authUser } = useUser();
   const firestore = useFirestore();
@@ -41,14 +40,21 @@ export default function AppSidebar({
     if (auth) {
         try {
             await signOut(auth);
+            router.push('/');
         } catch (error) {
             console.error("Logout failed:", error);
         }
     }
   };
 
-  const handleDialogClick = (dialog: string) => {
-    uiEmitter.emit(`open-${dialog}-dialog` as any);
+  const handleNavClick = (item: any) => {
+    if (item.href) {
+        router.push(item.href);
+    } else if (item.dialog) {
+        const params = new URLSearchParams();
+        params.set('panel', item.dialog);
+        router.replace(`${pathname}?${params.toString()}`);
+    }
   };
 
   const isExpanded = isHovered;
@@ -75,14 +81,14 @@ export default function AppSidebar({
           
           if ('permission' in item && userProfile && !permissions[item.permission as keyof typeof permissions]) return null;
 
-          const isActive = pathname === ('href' in item && item.href);
-          const Component = 'href' in item ? Link : 'button';
-          const action = 'href' in item ? { href: item.href } : { onClick: () => handleDialogClick(item.dialog!) };
+          const isCurrentPanel = searchParams.get('panel') === item.dialog;
+          const isCurrentPath = pathname === item.href;
+          const isActive = isCurrentPath || isCurrentPanel;
 
           return (
-            <Component
+            <button
               key={item.label}
-              {...action as any}
+              onClick={() => handleNavClick(item)}
               className={cn(
                 "w-full flex items-center rounded-xl transition-all duration-200 text-sm font-medium h-12 group relative",
                 isExpanded ? "px-4" : "justify-center px-0",
@@ -102,7 +108,7 @@ export default function AppSidebar({
                       {item.label}
                   </div>
               )}
-            </Component>
+            </button>
           );
         })}
       </nav>
@@ -116,7 +122,7 @@ export default function AppSidebar({
                     {isProfileLoading ? (
                       <Skeleton className="h-10 w-10 rounded-full" />
                     ) : userProfile ? (
-                      <Avatar className="h-10 w-10 border border-gray-700 hover:border-primary transition-colors cursor-pointer" onClick={() => handleDialogClick('profile')}>
+                      <Avatar className="h-10 w-10 border border-gray-700 hover:border-primary transition-colors cursor-pointer" onClick={() => handleNavClick({ dialog: 'profile' })}>
                           <AvatarFallback>{userProfile?.fullName?.split(' ').map(n => n[0]).join('')}</AvatarFallback>
                       </Avatar>
                     ) : (

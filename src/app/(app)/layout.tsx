@@ -1,27 +1,30 @@
 'use client';
 import { useUser, useDoc, useFirestore, useMemoFirebase, useCollection } from '@/firebase';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { doc, collection, query, where, limit } from 'firebase/firestore';
 import type { UserProfile, Attendance } from '@/lib/types';
 import { useSystemConfig } from '@/hooks/useSystemConfig';
-import { cn } from '@/lib/utils';
 import AppHeader from '@/components/layout/AppHeader';
 import AppSidebar from '@/components/layout/AppSidebar';
 import { usePermissions } from '@/hooks/usePermissions';
 import { format } from 'date-fns';
 import { useIdleTimer } from '@/hooks/useIdleTimer';
 import dynamic from 'next/dynamic';
+import { useSyncDialogsWithUrl } from '@/hooks/useSyncDialogsWithUrl';
 
 const GlobalDialogs = dynamic(() => import('@/components/layout/GlobalDialogs').then(m => m.GlobalDialogs), { 
   ssr: false,
   loading: () => null
 });
 
-export default function AppLayout({ children }: { children: React.ReactNode }) {
+function AppLayoutContent({ children }: { children: React.ReactNode }) {
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
   const [isAnyDialogOpen, setIsAnyDialogOpen] = useState(false);
   const [today, setToday] = useState('');
+
+  // Sync URL parameters with dialog panel state
+  useSyncDialogsWithUrl();
 
   const isLoggedIn = !!user;
 
@@ -99,4 +102,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       )}
     </div>
   );
+}
+
+export default function AppLayout({ children }: { children: React.ReactNode }) {
+    return (
+        <Suspense fallback={null}>
+            <AppLayoutContent>{children}</AppLayoutContent>
+        </Suspense>
+    )
 }
