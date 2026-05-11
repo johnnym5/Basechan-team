@@ -27,8 +27,8 @@ import { ORG_ID } from "@/lib/config";
 
 
 const formSchema = z.object({
-  username: z.string(),
-  password: z.string(),
+  username: z.string().min(1, "Identity is required."),
+  password: z.string().min(1, "Password is required."),
 });
 
 export function LoginForm() {
@@ -49,44 +49,46 @@ export function LoginForm() {
     if (!auth || !firestore) return;
     setIsSubmitting(true);
     
-    if (!values.username || !values.password) {
-        toast({
-            variant: 'destructive',
-            title: 'Login Failed',
-            description: "Username and password are required.",
-        });
-        setIsSubmitting(false);
-        return;
-    }
+    const identity = values.username.toLowerCase();
     
     try {
-      // Bypass for Super Admin if email is entered in username field
-      if (values.username.toLowerCase() === 'jegbase@gmail.com') {
-          await signInWithEmailAndPassword(auth, 'jegbase@gmail.com', values.password);
+      // 1. Check if it's an email (Direct Auth)
+      if (identity.includes('@')) {
+          await signInWithEmailAndPassword(auth, identity, values.password);
+          toast({ title: "Authorized", description: "Access granted to secure terminal." });
           return;
       }
 
+      // 2. Check if it's a username (Lookup then Auth)
       const orgId = ORG_ID;
       const usersRef = collection(firestore, "users");
       const userQuery = query(
         usersRef, 
         where("orgId", "==", orgId),
-        where("username", "==", sanitizeInput(values.username.toLowerCase()))
+        where("username", "==", sanitizeInput(identity))
       );
       const userSnapshot = await getDocs(userQuery);
       
       if (userSnapshot.empty) {
-          throw new Error("Invalid credentials.");
+          throw new Error("Identity not found in organization records.");
       }
 
       const userData = userSnapshot.docs[0].data() as UserProfile;
       await signInWithEmailAndPassword(auth, userData.email, values.password);
+      toast({ title: "Authorized", description: `Welcome back, ${userData.fullName}.` });
 
     } catch (error: any) {
+       let message = "Please check your credentials and try again.";
+       if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+           message = "Invalid identity or access key.";
+       } else if (error.message) {
+           message = error.message;
+       }
+
        toast({
           variant: 'destructive',
           title: 'Login Failed',
-          description: "Please check your credentials and try again.",
+          description: message,
       });
     } finally {
         setIsSubmitting(false);
@@ -100,7 +102,7 @@ export function LoginForm() {
         await signInWithEmailAndPassword(auth, 'jegbase@gmail.com', '000000');
         toast({ title: "Bypass Successful", description: "Logged in as Super Admin." });
     } catch (e: any) {
-        toast({ variant: 'destructive', title: 'Bypass Failed', description: e.message });
+        toast({ variant: 'destructive', title: 'Bypass Failed', description: "Ensure the admin user is created in Firebase Auth." });
     } finally {
         setIsSubmitting(false);
     }
@@ -115,11 +117,11 @@ export function LoginForm() {
             name="username"
             render={({ field }) => (
                 <FormItem>
-                <FormLabel>Username</FormLabel>
+                <FormLabel>Identity</FormLabel>
                 <FormControl>
-                    <Input placeholder="johndoe" {...field} />
+                    <Input placeholder="Username or Email" {...field} />
                 </FormControl>
-                <FormDescription className="text-[0.625rem] uppercase tracking-widest opacity-50">Username or Identity Email</FormDescription>
+                <FormDescription className="text-[0.625rem] uppercase tracking-widest opacity-50">Enter your organizational ID or email</FormDescription>
                 <FormMessage />
                 </FormItem>
             )}
@@ -129,7 +131,7 @@ export function LoginForm() {
             name="password"
             render={({ field }) => (
                 <FormItem>
-                <FormLabel>Password</FormLabel>
+                <FormLabel>Access Key</FormLabel>
                 <FormControl>
                     <Input type="password" placeholder="••••••••" {...field} />
                 </FormControl>
