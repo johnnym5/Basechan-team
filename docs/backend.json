@@ -103,12 +103,22 @@
     "UserProfile": {
       "title": "UserProfile",
       "type": "object",
+      "description": "The primary user identity within the organization.",
       "properties": {
         "orgId": { "type": "string" },
         "email": { "type": "string", "format": "email" },
+        "username": { "type": "string", "description": "Unique organizational identifier." },
         "fullName": { "type": "string" },
-        "role": { "type": "string", "enum": ["ORG_ADMIN", "MANAGING_DIRECTOR", "HR_MANAGER", "FINANCE_MANAGER", "STAFF"] }
-      }
+        "phoneNumber": { "type": "string", "nullable": true },
+        "avatarUrl": { "type": "string", "nullable": true },
+        "role": { "type": "string", "enum": ["ORG_ADMIN", "MANAGING_DIRECTOR", "HR_MANAGER", "FINANCE_MANAGER", "STAFF"] },
+        "position": { "type": "string" },
+        "departmentName": { "type": "string" },
+        "joinedDate": { "type": "string", "format": "date-time" },
+        "status": { "type": "string", "enum": ["ONLINE", "OFFLINE", "ON_LEAVE"] },
+        "lastSeen": { "type": "string", "format": "date-time" }
+      },
+      "required": ["orgId", "email", "fullName", "role", "username", "joinedDate"]
     }
   },
   "auth": { "providers": ["password"] },
