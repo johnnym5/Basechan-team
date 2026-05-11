@@ -1,6 +1,6 @@
 {
   "hosting": {
-    "site": "basechanstaff",
+    "site": "basechan",
     "source": ".",
     "ignore": [
       "firebase.json",
