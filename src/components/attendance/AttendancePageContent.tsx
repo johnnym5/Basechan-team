@@ -1,3 +1,4 @@
+
 'use client';
 import { ClockControl } from "@/components/attendance/ClockControl";
 import { StatusFeed } from "@/components/attendance/StatusFeed";
@@ -11,6 +12,7 @@ import { PendingApprovals } from "@/components/attendance/PendingApprovals";
 import { useSystemConfig } from "@/hooks/useSystemConfig";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TeamAttendanceHistory } from "@/components/attendance/TeamAttendanceHistory";
+import { WorkforceRoster } from "@/components/attendance/WorkforceRoster";
 import { useState, useEffect } from "react";
 
 export function AttendancePageContent() {
@@ -62,6 +64,7 @@ export function AttendancePageContent() {
         <TabsList className="w-full justify-start border-b rounded-none h-auto p-0 bg-transparent gap-8 mb-6 overflow-x-auto overflow-y-hidden">
             <TabsTrigger value="clock" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-0 pb-3 text-sm font-semibold uppercase tracking-wider">Time Clock</TabsTrigger>
             <TabsTrigger value="history" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-0 pb-3 text-sm font-semibold uppercase tracking-wider">My History</TabsTrigger>
+            <TabsTrigger value="roster" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-0 pb-3 text-sm font-semibold uppercase tracking-wider">Workforce Roster</TabsTrigger>
             <TabsTrigger value="online" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-0 pb-3 text-sm font-semibold uppercase tracking-wider">Who's Online</TabsTrigger>
             {permissions.canApproveHR && <TabsTrigger value="approvals" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-0 pb-3 text-sm font-semibold uppercase tracking-wider">Approvals</TabsTrigger>}
             {permissions.canManageStaff && <TabsTrigger value="team-history" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-0 pb-3 text-sm font-semibold uppercase tracking-wider">Team Reports</TabsTrigger>}
@@ -75,6 +78,10 @@ export function AttendancePageContent() {
         
         <TabsContent value="history" className="mt-0">
             <AttendanceHistory userProfile={userProfile || null} />
+        </TabsContent>
+
+        <TabsContent value="roster" className="mt-0">
+            {userProfile && <WorkforceRoster userProfile={userProfile} permissions={permissions} />}
         </TabsContent>
         
         <TabsContent value="online" className="mt-0">

@@ -30,6 +30,20 @@
         "remarks": { "type": "array", "items": { "type": "string" } }
       }
     },
+    "Roster": {
+      "title": "Workforce Roster",
+      "type": "object",
+      "description": "Scheduled shift assignments for personnel.",
+      "properties": {
+        "orgId": { "type": "string" },
+        "userId": { "type": "string" },
+        "userName": { "type": "string" },
+        "date": { "type": "string", "format": "date" },
+        "shiftType": { "type": "string", "enum": ["MORNING", "AFTERNOON", "NIGHT", "ON_CALL"] },
+        "notes": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      }
+    },
     "Task": {
       "title": "Task",
       "type": "object",
@@ -115,6 +129,7 @@
   "firestore": {
     "structure": [
       { "path": "/attendance/{id}", "definition": { "entityName": "Attendance", "schema": { "$ref": "#/entities/Attendance" } } },
+      { "path": "/rosters/{id}", "definition": { "entityName": "Roster", "schema": { "$ref": "#/entities/Roster" } } },
       { "path": "/tasks/{id}", "definition": { "entityName": "Task", "schema": { "$ref": "#/entities/Task" } } },
       { "path": "/library_items/{id}", "definition": { "entityName": "LibraryItem", "schema": { "$ref": "#/entities/LibraryItem" } } },
       { "path": "/users/{id}", "definition": { "entityName": "UserProfile", "schema": { "$ref": "#/entities/UserProfile" } } },

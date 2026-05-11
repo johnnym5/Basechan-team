@@ -96,6 +96,19 @@ export interface Attendance {
     totalBreak?: number;
 }
 
+export type ShiftType = "MORNING" | "AFTERNOON" | "NIGHT" | "ON_CALL";
+
+export interface Roster {
+  id: string;
+  orgId: string;
+  userId: string;
+  userName: string;
+  date: string; // ISO string (just date)
+  shiftType: ShiftType;
+  notes?: string;
+  createdAt: string;
+}
+
 export type RequisitionStatus = "PENDING_HR" | "PENDING_FINANCE" | "PENDING_MD" | "APPROVED" | "PAID" | "REJECTED";
 export type TaskStatus = "QUEUED" | "ACTIVE" | "AWAITING_REVIEW" | "ARCHIVED";
 export type ActivityType = 'LOG' | 'COMMENT';
