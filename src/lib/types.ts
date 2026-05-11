@@ -219,6 +219,9 @@ export interface Chat {
             fullName: string;
         }
     };
+    readReceipts?: {
+        [userId: string]: string; // ISO timestamp of last view
+    };
     lastMessage?: {
         text: string;
         senderId: string;
