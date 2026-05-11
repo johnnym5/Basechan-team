@@ -15,7 +15,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Loader2, ShieldCheck } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth, useFirestore } from "@/firebase";
@@ -95,19 +95,6 @@ export function LoginForm() {
     }
   }
 
-  const handleBypass = async () => {
-    if (!auth) return;
-    setIsSubmitting(true);
-    try {
-        await signInWithEmailAndPassword(auth, 'jegbase@gmail.com', '000000');
-        toast({ title: "Bypass Successful", description: "Logged in as Super Admin." });
-    } catch (e: any) {
-        toast({ variant: 'destructive', title: 'Bypass Failed', description: "Ensure the admin user is created in Firebase Auth." });
-    } finally {
-        setIsSubmitting(false);
-    }
-  };
-
   return (
     <div className="space-y-4">
         <Form {...form}>
@@ -145,18 +132,6 @@ export function LoginForm() {
             </Button>
         </form>
         </Form>
-        
-        <div className="pt-4 border-t border-white/5">
-            <Button 
-                variant="outline" 
-                className="w-full border-primary/20 text-primary hover:bg-primary/10 transition-all group" 
-                onClick={handleBypass}
-                disabled={isSubmitting}
-            >
-                <ShieldCheck className="mr-2 h-4 w-4 group-hover:scale-110 transition-transform" />
-                Quick Admin Bypass
-            </Button>
-        </div>
     </div>
   );
 }
