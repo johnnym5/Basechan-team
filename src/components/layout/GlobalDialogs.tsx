@@ -26,7 +26,7 @@ const NewAnnouncementDialog = dynamic(() => import('@/components/dashboard/NewAn
 const SuperAdminDialog = dynamic(() => import('@/components/superadmin/SuperAdminDialog').then(m => m.SuperAdminDialog), { ssr: false });
 
 interface GlobalDialogsProps {
-  userProfile: UserProfile;
+  userProfile: UserProfile | null;
   permissions: Permissions;
   onAnyDialogOpenChange: (isOpen: boolean) => void;
 }
@@ -220,9 +220,9 @@ export function GlobalDialogs({ userProfile, permissions, onAnyDialogOpenChange 
       {isLibraryOpen && <LibraryDialog open={isLibraryOpen} onOpenChange={setIsLibraryOpen} />}
       {isSuperAdminOpen && <SuperAdminDialog open={isSuperAdminOpen} onOpenChange={setIsSuperAdminOpen} />}
       
-      {isProfileOpen && <ProfileDialog open={isProfileOpen} onOpenChange={setIsProfileOpen} userProfile={userProfile} />}
+      {isProfileOpen && userProfile && <ProfileDialog open={isProfileOpen} onOpenChange={setIsProfileOpen} userProfile={userProfile} />}
       {isSettingsOpen && <SettingsDialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen} userProfile={userProfile} />}
-      {isChatOpen && (
+      {isChatOpen && userProfile && (
           <ChatDialog
           open={isChatOpen}
           onOpenChange={(isOpen) => {
@@ -235,12 +235,12 @@ export function GlobalDialogs({ userProfile, permissions, onAnyDialogOpenChange 
           />
       )}
 
-      {isAssignTaskOpen && <AssignTaskDialog open={isAssignTaskOpen} onOpenChange={setIsAssignTaskOpen} currentUserProfile={userProfile} permissions={permissions} initialData={null} />}
-      {isNewRequisitionOpen && <NewRequisitionDialog open={isNewRequisitionOpen} onOpenChange={setIsNewRequisitionOpen} userProfile={userProfile} />}
-      {isRequestLeaveOpen && <RequestLeaveDialog open={isRequestLeaveOpen} onOpenChange={setIsRequestLeaveOpen} userProfile={userProfile} />}
-      {isNewWorkbookOpen && <NewWorkbookDialog open={isNewWorkbookOpen} onOpenChange={setIsNewWorkbookOpen} userProfile={userProfile} />}
-      {isInviteUserOpen && <InviteUserDialog open={isInviteUserOpen} onOpenChange={setIsInviteUserOpen} currentUserProfile={userProfile} />}
-      {permissions.canManageAnnouncements && isNewAnnouncementOpen && (
+      {isAssignTaskOpen && userProfile && <AssignTaskDialog open={isAssignTaskOpen} onOpenChange={setIsAssignTaskOpen} currentUserProfile={userProfile} permissions={permissions} initialData={null} />}
+      {isNewRequisitionOpen && userProfile && <NewRequisitionDialog open={isNewRequisitionOpen} onOpenChange={setIsNewRequisitionOpen} userProfile={userProfile} />}
+      {isRequestLeaveOpen && userProfile && <RequestLeaveDialog open={isRequestLeaveOpen} onOpenChange={setIsRequestLeaveOpen} userProfile={userProfile} />}
+      {isNewWorkbookOpen && userProfile && <NewWorkbookDialog open={isNewWorkbookOpen} onOpenChange={setIsNewWorkbookOpen} userProfile={userProfile} />}
+      {isInviteUserOpen && userProfile && <InviteUserDialog open={isInviteUserOpen} onOpenChange={setIsInviteUserOpen} currentUserProfile={userProfile} />}
+      {permissions.canManageAnnouncements && isNewAnnouncementOpen && userProfile && (
           <NewAnnouncementDialog 
               open={isNewAnnouncementOpen}
               onOpenChange={setIsNewAnnouncementOpen}

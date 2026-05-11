@@ -64,7 +64,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   const { isIdle } = useIdleTimer(attendanceRecord);
 
-  const permissions = usePermissions(userProfile);
+  const permissions = usePermissions(userProfile || null);
   const { config } = useSystemConfig(userProfile?.orgId);
 
   return (
@@ -90,9 +90,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         </main>
       </div>
 
-      {isLoggedIn && userProfile && (
+      {isLoggedIn && (
         <GlobalDialogs 
-            userProfile={userProfile} 
+            userProfile={userProfile || null} 
             permissions={permissions} 
             onAnyDialogOpenChange={setIsAnyDialogOpen}
         />
