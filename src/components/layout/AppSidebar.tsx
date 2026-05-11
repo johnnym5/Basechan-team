@@ -14,7 +14,7 @@ import { Skeleton } from "../ui/skeleton";
 import { usePermissions } from "@/hooks/usePermissions";
 import { uiEmitter } from "@/lib/ui-emitter";
 import { Button } from "../ui/button";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 
 export default function AppSidebar({ 
     isLoggedIn,
@@ -37,8 +37,14 @@ export default function AppSidebar({
   const { data: userProfile, isLoading: isProfileLoading } = useDoc<UserProfile>(userProfileRef);
   const permissions = usePermissions(userProfile);
   
-  const handleLogout = () => {
-    signOut(auth!);
+  const handleLogout = async () => {
+    if (auth) {
+        try {
+            await signOut(auth);
+        } catch (error) {
+            console.error("Logout failed:", error);
+        }
+    }
   };
 
   const handleDialogClick = (dialog: string) => {
