@@ -13,16 +13,20 @@ import { UniversalSearch } from '@/components/layout/UniversalSearch';
 import { playNotificationSound, showBrowserNotification } from '@/lib/notifications';
 import { useRouter } from 'next/navigation';
 
+interface AppHeaderProps {
+  userProfile: UserProfile | null;
+  onMenuClick: () => void;
+  isLoggedIn: boolean;
+  attendanceRecord: Attendance | null;
+  systemConfig: SystemConfig | null;
+  className?: string;
+}
+
 export default function AppHeader({ 
   userProfile, 
   isLoggedIn,
-} : { 
-  userProfile: UserProfile | null, 
-  onMenuClick: () => void, 
-  isLoggedIn: boolean,
-  attendanceRecord: Attendance | null,
-  systemConfig: SystemConfig | null
-}) {
+  className,
+} : AppHeaderProps) {
   const { user } = useUser();
   const firestore = useFirestore();
   const router = useRouter();
@@ -71,22 +75,24 @@ export default function AppHeader({
   };
 
   return (
-    <header className="h-20 flex items-center justify-between px-8 bg-transparent shrink-0">
+    <header className={cn("h-20 flex items-center justify-between px-8 shrink-0 bg-transparent transition-all", className)}>
         <div className="flex flex-col">
-            <h2 className="text-2xl font-bold font-headline tracking-tight">Mission Control</h2>
+            <h2 className="text-2xl font-bold font-headline tracking-tight text-foreground">Mission Control</h2>
             {userProfile && (
-                <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground animate-in fade-in duration-500">
                     Secured Node: {userProfile.orgId}
                 </p>
             )}
         </div>
         
         <div className="flex items-center space-x-6">
-            {isLoggedIn && userProfile && (
+            {isLoggedIn && (
                 <>
-                    <div className="relative">
-                        <UniversalSearch userProfile={userProfile} />
-                    </div>
+                    {userProfile && (
+                        <div className="relative animate-in fade-in zoom-in-95 duration-300">
+                            <UniversalSearch userProfile={userProfile} />
+                        </div>
+                    )}
 
                     <Popover open={isNotificationsOpen} onOpenChange={setIsNotificationsOpen}>
                         <PopoverTrigger asChild>
