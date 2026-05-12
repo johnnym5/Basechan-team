@@ -1,13 +1,12 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useFirestore, useMemoFirebase, useDatabase } from '@/firebase';
-import { collection, getDocs, query, where, writeBatch, doc, setDoc, deleteDoc } from 'firebase/firestore';
-import { ref, get, set, onValue, remove } from 'firebase/database';
+import { useFirestore, useDatabase } from '@/firebase';
+import { collection, getDocs, query, where, writeBatch, doc } from 'firebase/firestore';
+import { ref, get, set, onValue } from 'firebase/database';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, Download, Upload, CloudCog, Trash2, ShieldAlert, PlusCircle, Server, ChevronDown, DatabaseBackup, RefreshCcw } from 'lucide-react';
+import { Loader2, Download, CloudCog, Trash2, PlusCircle, Server, ChevronDown, DatabaseBackup, RefreshCcw } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -27,6 +26,7 @@ import {
 import { DatabaseExplorer } from './DatabaseExplorer';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { ScrollArea } from '../ui/scroll-area';
+import { Separator } from '../ui/separator';
 import { demoDataService } from '@/services/demo-data';
 
 export const COLLECTIONS = [
