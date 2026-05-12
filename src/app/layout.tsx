@@ -4,6 +4,8 @@ import { Toaster } from '@/components/ui/toaster';
 import { FirebaseClientProvider } from '@/firebase';
 import { ThemeProvider } from '@/components/ThemeProvider';
 import { ImpersonationProvider } from '@/context/ImpersonationProvider';
+import { MainAppLayout } from '@/components/layout/MainAppLayout';
+import { Suspense } from 'react';
 
 export const metadata: Metadata = {
   title: 'Basechan Staff',
@@ -38,7 +40,11 @@ export default function RootLayout({
         >
             <FirebaseClientProvider>
               <ImpersonationProvider>
-                {children}
+                <Suspense fallback={<div className="min-h-screen bg-background" />}>
+                  <MainAppLayout>
+                    {children}
+                  </MainAppLayout>
+                </Suspense>
                 <Toaster />
               </ImpersonationProvider>
             </FirebaseClientProvider>

@@ -100,7 +100,7 @@ const DialogContent = React.forwardRef<
     </DialogPortal>
   )
 })
-DialogContent.displayName = DialogPrimitive.Content.displayName
+DialogContent.displayName = "DialogContent"
 
 const DialogHeader = ({
   className,
@@ -145,7 +145,7 @@ const DialogTitle = React.forwardRef<
     {props.children}
   </DialogPrimitive.Title>
 ))
-DialogTitle.displayName = DialogPrimitive.Title.displayName
+DialogTitle.displayName = "DialogTitle"
 
 const DialogDescription = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Description>,
@@ -159,7 +159,7 @@ const DialogDescription = React.forwardRef<
     {props.children}
   </DialogPrimitive.Description>
 ))
-DialogDescription.displayName = DialogPrimitive.Description.displayName
+DialogDescription.displayName = "DialogDescription"
 
 export {
   Dialog,
