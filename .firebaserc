@@ -1,5 +1,8 @@
 {
   "projects": {
-    "default": "palilious"
-  }
+    "default": "palilious",
+    "basechanteam": "bsihub"
+  },
+  "targets": {},
+  "etags": {}
 }
