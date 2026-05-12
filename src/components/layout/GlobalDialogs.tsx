@@ -202,6 +202,8 @@ export function GlobalDialogs({ userProfile, permissions, onAnyDialogOpenChange 
                 if (!isOpen) setInitialTaskPayload(undefined);
             }}
             initialPayload={initialTaskPayload}
+            userProfile={userProfile}
+            permissions={permissions}
         />
       )}
       {isAttendanceOpen && <AttendanceDialog open={isAttendanceOpen} onOpenChange={setIsAttendanceOpen} />}

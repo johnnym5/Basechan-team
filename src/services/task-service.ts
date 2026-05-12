@@ -5,6 +5,8 @@ import { addDocumentNonBlocking, updateDocumentNonBlocking, deleteDocumentNonBlo
 import type { Task, UserProfile, ActivityEntry, TaskStatus, Notification, TaskPriority } from '@/lib/types';
 import { sanitizeInput } from '@/lib/utils';
 import { auditService } from './audit-service';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
 
 export const taskService = {
   /**
@@ -78,8 +80,17 @@ export const taskService = {
         type: 'STANDARD',
     };
 
-    // 4. Initiate Non-Blocking Write
-    setDoc(newTaskRef, newTask);
+    // 4. Initiate Non-Blocking Write with Error Handling
+    setDoc(newTaskRef, newTask).catch(async (error) => {
+        if (error.code === 'permission-denied') {
+            const permissionError = new FirestorePermissionError({
+                path: newTaskRef.path,
+                operation: 'create',
+                requestResourceData: newTask,
+            } satisfies SecurityRuleContext);
+            errorEmitter.emit('permission-error', permissionError);
+        }
+    });
 
     // 5. Audit & Notify (Non-blocking)
     auditService.logAction(db, currentUser, 'TASK_CREATE', `Assigned mission "${newTask.title}" to ${assignee.fullName}`, { id: newTaskRef.id, type: 'TASK' });

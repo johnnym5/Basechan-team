@@ -3,14 +3,17 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { TasksPageContent } from './TasksPageContent';
+import type { UserProfile, Permissions } from '@/lib/types';
 
 interface TasksDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   initialPayload?: { taskId?: string };
+  userProfile: UserProfile | null;
+  permissions: Permissions;
 }
 
-export function TasksDialog({ open, onOpenChange, initialPayload }: TasksDialogProps) {
+export function TasksDialog({ open, onOpenChange, initialPayload, userProfile, permissions }: TasksDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent position="left" className="flex flex-col p-0">
@@ -22,7 +25,11 @@ export function TasksDialog({ open, onOpenChange, initialPayload }: TasksDialogP
         </div>
         <ScrollArea className="flex-1">
             <div className="p-6">
-                <TasksPageContent initialPayload={initialPayload} />
+                <TasksPageContent 
+                  initialPayload={initialPayload} 
+                  currentUserProfile={userProfile} 
+                  permissions={permissions} 
+                />
             </div>
         </ScrollArea>
       </DialogContent>
