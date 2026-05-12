@@ -6,38 +6,40 @@ import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
 import { collection, query, where } from "firebase/firestore";
 import { format } from "date-fns";
 import { useSystemConfig } from "@/hooks/useSystemConfig";
+import { ORG_ID } from "@/lib/config";
 
 interface PerformanceCardProps {
-    userProfile: UserProfile;
+    userProfile: UserProfile | null;
 }
 
 export function PerformanceCard({ userProfile }: PerformanceCardProps) {
     const firestore = useFirestore();
-    const { config: systemConfig } = useSystemConfig(userProfile.orgId);
+    const orgId = userProfile?.orgId || ORG_ID;
+    const { config: systemConfig } = useSystemConfig(orgId);
     const today = format(new Date(), 'yyyy-MM-dd');
 
     const tasksQuery = useMemoFirebase(() => {
-        if (!firestore || !userProfile) return null;
+        if (!firestore) return null;
         return query(
             collection(firestore, 'tasks'),
-            where('orgId', '==', userProfile.orgId)
+            where('orgId', '==', orgId)
         );
-    }, [firestore, userProfile]);
+    }, [firestore, orgId]);
     const { data: allTasks } = useCollection<Task>(tasksQuery);
 
     const reportsQuery = useMemoFirebase(() => {
-        if (!firestore || !userProfile) return null;
+        if (!firestore) return null;
         return query(
             collection(firestore, 'daily_reports'),
-            where('orgId', '==', userProfile.orgId),
+            where('orgId', '==', orgId),
             where('reportDate', '==', today)
         );
-    }, [firestore, userProfile, today]);
+    }, [firestore, orgId, today]);
     const { data: dailyReports } = useCollection<DailyReport>(reportsQuery);
 
     const usersQuery = useMemoFirebase(() => 
-        firestore ? query(collection(firestore, 'users'), where('orgId', '==', userProfile.orgId)) : null
-    , [firestore, userProfile.orgId]);
+        firestore ? query(collection(firestore, 'users'), where('orgId', '==', orgId)) : null
+    , [firestore, orgId]);
     const { data: orgUsers } = useCollection<UserProfile>(usersQuery);
 
     const stats = useMemo(() => {

@@ -7,25 +7,27 @@ import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { uiEmitter } from "@/lib/ui-emitter";
 import { useSuperAdmin } from "@/hooks/useSuperAdmin";
+import { ORG_ID } from "@/lib/config";
 
 interface DashboardTaskListProps {
-    userProfile: UserProfile;
+    userProfile: UserProfile | null;
     permissions: Permissions;
 }
 
 export function DashboardTaskList({ userProfile, permissions }: DashboardTaskListProps) {
     const firestore = useFirestore();
     const { isSuperAdmin } = useSuperAdmin();
+    const orgId = userProfile?.orgId || ORG_ID;
 
     const tasksQuery = useMemoFirebase(() => {
-        if (!firestore || !userProfile) return null;
+        if (!firestore) return null;
         
         const tasksRef = collection(firestore, 'tasks');
         
-        if (permissions.canAccessAllTasks || isSuperAdmin) {
+        if (permissions.canAccessAllTasks || isSuperAdmin || !userProfile) {
             return query(
                 tasksRef,
-                where('orgId', '==', userProfile.orgId),
+                where('orgId', '==', orgId),
                 orderBy('createdAt', 'desc'),
                 limit(20)
             );
@@ -37,7 +39,7 @@ export function DashboardTaskList({ userProfile, permissions }: DashboardTaskLis
                 limit(20)
             );
         }
-    }, [firestore, userProfile, permissions.canAccessAllTasks, isSuperAdmin]);
+    }, [firestore, userProfile, permissions.canAccessAllTasks, isSuperAdmin, orgId]);
 
     const { data: allTasks, isLoading } = useCollection<Task>(tasksQuery);
     

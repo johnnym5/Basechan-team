@@ -9,6 +9,7 @@ import { Skeleton } from "../ui/skeleton";
 import { formatDistanceToNow } from 'date-fns';
 import { uiEmitter } from "@/lib/ui-emitter";
 import { Avatar, AvatarFallback } from "../ui/avatar";
+import { ORG_ID } from "@/lib/config";
 
 export function DashboardRecentReports() {
     const { user: authUser } = useUser();
@@ -19,16 +20,17 @@ export function DashboardRecentReports() {
         [firestore, authUser]
     );
     const { data: userProfile } = useDoc<UserProfile>(userProfileRef);
+    const orgId = userProfile?.orgId || ORG_ID;
 
     const reportsQuery = useMemoFirebase(() => {
-        if (!userProfile) return null;
+        if (!firestore) return null;
         return query(
             collection(firestore, 'daily_reports'),
-            where('orgId', '==', userProfile.orgId),
+            where('orgId', '==', orgId),
             orderBy('createdAt', 'desc'),
             limit(4)
         );
-    }, [firestore, userProfile]);
+    }, [firestore, orgId]);
 
     const { data: reports, isLoading } = useCollection<DailyReport>(reportsQuery);
 

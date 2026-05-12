@@ -7,6 +7,7 @@ import { Skeleton } from "../ui/skeleton";
 import { formatDistanceToNow } from 'date-fns';
 import { uiEmitter } from "@/lib/ui-emitter";
 import { Avatar, AvatarFallback } from "../ui/avatar";
+import { ORG_ID } from "@/lib/config";
 
 export function DashboardRecentChats() {
     const { user: authUser } = useUser();
@@ -17,22 +18,23 @@ export function DashboardRecentChats() {
         [firestore, authUser]
     );
     const { data: userProfile } = useDoc<UserProfile>(userProfileRef);
+    const orgId = userProfile?.orgId || ORG_ID;
 
     const chatsQuery = useMemoFirebase(() => {
-        if (!userProfile) return null;
+        if (!firestore || !authUser) return null;
         return query(
             collection(firestore, 'chats'),
-            where('participants', 'array-contains', userProfile.id),
+            where('participants', 'array-contains', authUser.uid),
             orderBy('updatedAt', 'desc'),
             limit(4)
         );
-    }, [firestore, userProfile]);
+    }, [firestore, authUser]);
 
     const { data: chats, isLoading } = useCollection<Chat>(chatsQuery);
 
     const getChatTitle = (chat: Chat) => {
         if (chat.type === 'CHANNEL') return `# ${chat.name}`;
-        const otherParticipantId = chat.participants.find(p => p !== userProfile?.id);
+        const otherParticipantId = chat.participants.find(p => p !== authUser?.uid);
         if (!otherParticipantId) return "Unknown User";
         return chat.participantProfiles[otherParticipantId]?.fullName || "Unknown User";
     }

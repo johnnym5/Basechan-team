@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
@@ -11,9 +10,10 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { uiEmitter } from '@/lib/ui-emitter';
 import { isBefore, addDays, parseISO } from 'date-fns';
+import { ORG_ID } from '@/lib/config';
 
 interface MaintenanceCardProps {
-    userProfile: UserProfile;
+    userProfile: UserProfile | null;
 }
 
 interface MaintenanceAlert {
@@ -26,6 +26,7 @@ interface MaintenanceAlert {
 
 export function MaintenanceCard({ userProfile }: MaintenanceCardProps) {
     const firestore = useFirestore();
+    const orgId = userProfile?.orgId || ORG_ID;
     const [alerts, setMaintenanceAlerts] = useState<MaintenanceAlert[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -33,9 +34,9 @@ export function MaintenanceCard({ userProfile }: MaintenanceCardProps) {
         if (!firestore) return null;
         return query(
             collection(firestore, 'workbooks'),
-            where('orgId', '==', userProfile.orgId)
+            where('orgId', '==', orgId)
         );
-    }, [firestore, userProfile.orgId]);
+    }, [firestore, orgId]);
 
     const { data: workbooks } = useCollection<Workbook>(workbooksQuery);
 

@@ -85,20 +85,20 @@ function DashboardGrid() {
 
             <div className="grid grid-cols-12 gap-6">
                 <section className="col-span-12 lg:col-span-5">
-                    <ClockControl userProfile={userProfile} permissions={permissions} systemConfig={systemConfig} />
+                    <ClockControl userProfile={userProfile || null} permissions={permissions} systemConfig={systemConfig} />
                 </section>
 
                 <section className="col-span-12 lg:col-span-7">
-                    {userProfile && <PerformanceCard userProfile={userProfile} />}
+                    <PerformanceCard userProfile={userProfile || null} />
                 </section>
 
                 <section className="col-span-12 lg:col-span-9">
-                    {userProfile && <DashboardTaskList userProfile={userProfile} permissions={permissions} />}
+                    <DashboardTaskList userProfile={userProfile || null} permissions={permissions} />
                 </section>
 
                 <div className="col-span-12 lg:col-span-3 space-y-6">
                     <DashboardQuickActions />
-                    {userProfile && <MaintenanceCard userProfile={userProfile} />}
+                    <MaintenanceCard userProfile={userProfile || null} />
                     <DashboardRecentReports />
                     <DashboardRecentChats />
                     <Announcements />
