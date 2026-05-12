@@ -24,6 +24,7 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
   const firestore = useFirestore();
   const [isAnyDialogOpen, setIsAnyDialogOpen] = useState(false);
   const [today, setToday] = useState('');
+  const [mounted, setMounted] = useState(false);
 
   // Sync URL parameters with dialog panel state
   useSyncDialogsWithUrl();
@@ -32,6 +33,7 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     setToday(format(new Date(), 'yyyy-MM-dd'));
+    setMounted(true);
   }, []);
 
   const userProfileRef = useMemoFirebase(() => 
@@ -69,6 +71,11 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
       if (hsl) root.style.setProperty('--accent', hsl);
     }
   }, [config]);
+
+  // Hydration safety
+  if (!mounted) {
+      return <div className="min-h-screen bg-background" />;
+  }
 
   return (
     <div className="min-h-screen-safe w-full bg-muted/30 flex justify-center p-0 md:p-4 lg:p-6 transition-all duration-500">

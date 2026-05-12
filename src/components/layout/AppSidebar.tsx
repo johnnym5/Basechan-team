@@ -13,7 +13,7 @@ import { signOut } from "firebase/auth";
 import { Skeleton } from "../ui/skeleton";
 import { usePermissions } from "@/hooks/usePermissions";
 import { Button } from "../ui/button";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { uiEmitter } from "@/lib/ui-emitter";
 
 export default function AppSidebar({ 
@@ -30,6 +30,11 @@ export default function AppSidebar({
   const { user: authUser } = useUser();
   const firestore = useFirestore();
   const [isHovered, setIsHovered] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const userProfileRef = useMemoFirebase(() => 
     firestore && authUser ? doc(firestore, "users", authUser.uid) : null,
@@ -64,6 +69,13 @@ export default function AppSidebar({
 
   const isExpanded = isHovered;
 
+  // Hydration safety: render a shell during SSR and initial client pass
+  if (!mounted) {
+    return (
+        <aside className="sidebar-bg flex-shrink-0 flex flex-col border-r border-gray-800 h-screen w-20 transition-all duration-300 z-50 relative" />
+    );
+  }
+
   return (
     <aside 
         onMouseEnter={() => setIsHovered(true)}
@@ -85,8 +97,9 @@ export default function AppSidebar({
           if ('isSeparator' in item) return <div key={index} className={cn("h-px bg-gray-800/50 my-4 mx-2", !isExpanded && "opacity-0")} />;
           
           if ('permission' in item) {
-              // Hide items if still loading or if permissions explicitly forbid access
-              if (isProfileLoading || !userProfile) return null;
+              // Hide items ONLY if loading. We check permissions even if userProfile is null 
+              // because usePermissions handles Super Admin logic.
+              if (isProfileLoading) return null;
               if (!permissions[item.permission as keyof typeof permissions]) return null;
           }
 
