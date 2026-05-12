@@ -121,3 +121,86 @@ Import trace for requested module:
 ./src/components/layout/MainAppLayout.tsx
 
 
+[info]  ⚠ Compiled with warnings
+
+
+[info] ./src/components/workbook/WorkbookDialog.tsx
+Attempted import error: 'AlertDialog' is not exported from '@/components/ui/dialog' (imported as 'AlertDialog').
+
+Import trace for requested module:
+./src/components/workbook/WorkbookDialog.tsx
+./src/components/layout/GlobalDialogs.tsx
+./src/components/layout/MainAppLayout.tsx
+
+./src/components/workbook/WorkbookDialog.tsx
+Attempted import error: 'AlertDialogContent' is not exported from '@/components/ui/dialog' (imported as 'AlertDialogContent').
+
+Import trace for requested module:
+./src/components/workbook/WorkbookDialog.tsx
+./src/components/layout/GlobalDialogs.tsx
+./src/components/layout/MainAppLayout.tsx
+
+./src/components/workbook/WorkbookDialog.tsx
+Attempted import error: 'AlertDialogHeader' is not exported from '@/components/ui/dialog' (imported as 'AlertDialogHeader').
+
+Import trace for requested module:
+./src/components/workbook/WorkbookDialog.tsx
+./src/components/layout/GlobalDialogs.tsx
+./src/components/layout/MainAppLayout.tsx
+
+./src/components/workbook/WorkbookDialog.tsx
+Attempted import error: 'AlertDialogTitle' is not exported from '@/components/ui/dialog' (imported as 'AlertDialogTitle').
+
+Import trace for requested module:
+./src/components/workbook/WorkbookDialog.tsx
+./src/components/layout/GlobalDialogs.tsx
+./src/components/layout/MainAppLayout.tsx
+
+./src/components/workbook/WorkbookDialog.tsx
+Attempted import error: 'AlertDialogDescription' is not exported from '@/components/ui/dialog' (imported as 'AlertDialogDescription').
+
+Import trace for requested module:
+./src/components/workbook/WorkbookDialog.tsx
+./src/components/layout/GlobalDialogs.tsx
+./src/components/layout/MainAppLayout.tsx
+
+./src/components/workbook/WorkbookDialog.tsx
+Attempted import error: 'AlertDialogFooter' is not exported from '@/components/ui/dialog' (imported as 'AlertDialogFooter').
+
+Import trace for requested module:
+./src/components/workbook/WorkbookDialog.tsx
+./src/components/layout/GlobalDialogs.tsx
+./src/components/layout/MainAppLayout.tsx
+
+./src/components/workbook/WorkbookDialog.tsx
+Attempted import error: 'AlertDialogCancel' is not exported from '@/components/ui/dialog' (imported as 'AlertDialogCancel').
+
+Import trace for requested module:
+./src/components/workbook/WorkbookDialog.tsx
+./src/components/layout/GlobalDialogs.tsx
+./src/components/layout/MainAppLayout.tsx
+
+./src/components/workbook/WorkbookDialog.tsx
+Attempted import error: 'AlertDialogAction' is not exported from '@/components/ui/dialog' (imported as 'AlertDialogAction').
+
+Import trace for requested module:
+./src/components/workbook/WorkbookDialog.tsx
+./src/components/layout/GlobalDialogs.tsx
+./src/components/layout/MainAppLayout.tsx
+
+
+[info]  ✓ Compiled successfully
+
+[info]    Skipping validation of types
+   Skipping linting
+
+[info]    Collecting page data ...
+
+[info] unhandledRejection [Error [PageNotFoundError]: Cannot find module for page: /_document] {
+  type: 'PageNotFoundError',
+  code: 'ENOENT'
+}
+
+[debug] [2026-05-12T11:28:11.296Z] Error: ENOENT: no such file or directory, open '/home/user/studio/.next/export-marker.json'
+[error] 
+[error] Error: An unexpected error has occurred.
