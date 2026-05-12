@@ -3,8 +3,6 @@
 import { Dialog, DialogContent, DialogHeader, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { AccountingPageContent } from './AccountingPageContent';
-import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
-
 
 interface AccountingDialogProps {
   open: boolean;
@@ -12,16 +10,15 @@ interface AccountingDialogProps {
 }
 
 export function AccountingDialog({ open, onOpenChange }: AccountingDialogProps) {
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent position="top" className="flex flex-col p-0">
-        <VisuallyHidden>
+      <DialogContent position="left" className="flex flex-col p-0">
+        <div className="sr-only">
           <DialogHeader>
-              <DialogTitle>Accounting</DialogTitle>
+              <DialogTitle>Financial Accounting</DialogTitle>
               <DialogDescription>Manage your organization's finances, chart of accounts, and ledgers.</DialogDescription>
           </DialogHeader>
-        </VisuallyHidden>
+        </div>
         <ScrollArea className="flex-1">
             <div className="p-6">
                 <AccountingPageContent />

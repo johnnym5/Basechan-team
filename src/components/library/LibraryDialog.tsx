@@ -3,7 +3,6 @@
 import { Dialog, DialogContent, DialogHeader, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { LibraryPageContent } from './LibraryPageContent';
-import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
 
 interface LibraryDialogProps {
   open: boolean;
@@ -13,13 +12,13 @@ interface LibraryDialogProps {
 export function LibraryDialog({ open, onOpenChange }: LibraryDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent position="top" className="flex flex-col p-0">
-        <VisuallyHidden>
+      <DialogContent position="left" className="flex flex-col p-0">
+        <div className="sr-only">
           <DialogHeader>
             <DialogTitle>Knowledge Base & Library</DialogTitle>
             <DialogDescription>Centralized repository for onboarding documents and policies.</DialogDescription>
           </DialogHeader>
-        </VisuallyHidden>
+        </div>
         <ScrollArea className="flex-1">
             <div className="p-6">
                 <LibraryPageContent />

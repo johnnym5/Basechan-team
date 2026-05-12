@@ -3,8 +3,6 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { RequisitionsPageContent } from './RequisitionsPageContent';
-import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
-
 
 interface RequisitionsDialogProps {
   open: boolean;
@@ -13,16 +11,15 @@ interface RequisitionsDialogProps {
 }
 
 export function RequisitionsDialog({ open, onOpenChange, initialPayload }: RequisitionsDialogProps) {
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent position="top" className="flex flex-col p-0">
-        <VisuallyHidden>
+      <DialogContent position="left" className="flex flex-col p-0">
+        <div className="sr-only">
           <DialogHeader>
-            <DialogTitle>Requisitions</DialogTitle>
-            <DialogDescription>Manage all financial requisitions.</DialogDescription>
+            <DialogTitle>Procurement & Requisitions</DialogTitle>
+            <DialogDescription>Manage organizational financial requests and external vendor procurement.</DialogDescription>
           </DialogHeader>
-        </VisuallyHidden>
+        </div>
         <ScrollArea className="flex-1">
             <div className="p-6">
                 <RequisitionsPageContent initialPayload={initialPayload} />

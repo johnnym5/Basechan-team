@@ -6,7 +6,7 @@ import { uiEmitter } from '@/lib/ui-emitter';
 
 /**
  * Synchronizes the application's panel (dialog) state with the URL search parameters.
- * This enables deep linking and standard browser navigation for modal workstations.
+ * This enables deep linking and standard browser navigation for full-screen workstations.
  */
 export function useSyncDialogsWithUrl() {
     const searchParams = useSearchParams();
@@ -40,28 +40,37 @@ export function useSyncDialogsWithUrl() {
     useEffect(() => {
         const updateUrl = (panel: string | null, payload?: any) => {
             isInternalUpdate.current = true;
-            const params = new URLSearchParams(window.location.search);
-            
-            if (panel) {
-                params.set('panel', panel);
-                if (payload) {
-                    Object.entries(payload).forEach(([key, val]) => {
-                        if (val) params.set(key, String(val));
-                    });
-                }
-            } else {
-                // Clear all search params when closing
-                const newParams = new URLSearchParams();
-                router.replace(pathname);
+            const currentParams = new URLSearchParams(window.location.search);
+            const currentPanel = currentParams.get('panel');
+
+            // Avoid redundant navigation if state matches current URL
+            if (panel === currentPanel && !payload) {
+                isInternalUpdate.current = false;
                 return;
             }
+
+            const nextParams = new URLSearchParams();
             
-            router.replace(`${pathname}?${params.toString()}`);
+            if (panel) {
+                nextParams.set('panel', panel);
+                if (payload) {
+                    Object.entries(payload).forEach(([key, val]) => {
+                        if (val) nextParams.set(key, String(val));
+                    });
+                }
+                router.replace(`${pathname}?${nextParams.toString()}`);
+            } else {
+                // Only replace if there are actually params to clear
+                if (window.location.search) {
+                    router.replace(pathname);
+                } else {
+                    isInternalUpdate.current = false;
+                }
+            }
         };
 
         const handlers: any[] = [];
         
-        // Listen for all possible dialog opening events
         const panelNames = [
             'profile', 'settings', 'chat', 'tasks', 'workbooks', 
             'requisitions', 'attendance', 'leave', 'reports', 

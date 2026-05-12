@@ -18,12 +18,10 @@ import { Input } from '@/components/ui/input';
 import { NewWorkbookDialog } from './NewWorkbookDialog';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
 import { Progress } from '@/components/ui/progress';
 import { usePermissions, type Permissions } from '@/hooks/usePermissions';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-
 
 function WorkbookCard({ 
     workbook, 
@@ -162,7 +160,6 @@ function WorkbookList({ userProfile, onSelectSheet }: { userProfile: UserProfile
         const sheetsRef = collection(firestore, `workbooks/${workbookToDelete.id}/sheets`);
 
         try {
-            // Get all sheets to delete them in a batch
             const sheetsSnapshot = await getDocs(sheetsRef);
             const batch = writeBatch(firestore);
 
@@ -170,7 +167,6 @@ function WorkbookList({ userProfile, onSelectSheet }: { userProfile: UserProfile
                 batch.delete(sheetDoc.ref);
             });
             
-            // Delete the main workbook document
             batch.delete(workbookRef);
 
             await batch.commit();
@@ -218,7 +214,7 @@ function WorkbookList({ userProfile, onSelectSheet }: { userProfile: UserProfile
                  <div className="flex flex-col items-center justify-center w-full p-8 border-2 border-dashed rounded-lg text-center h-64">
                     <BookCopy className="w-12 h-12 text-muted-foreground" />
                     <p className="mt-4 text-lg font-semibold">{searchTerm ? 'No Workbooks Found' : 'No Workbooks Yet'}</p>
-                    <p className="mt-1 text-sm text-muted-foreground">{searchTerm ? 'Try a different search term.' : 'Get started by creating your first workbook or ask a colleague to share one.'}</p>
+                    <p className="mt-1 text-sm text-muted-foreground">{searchTerm ? 'Try a different search term.' : 'Get started by creating your first workbook.'}</p>
                 </div>
             ) : (
                  <Accordion type="multiple" className="w-full space-y-4" defaultValue={Object.keys(groupedWorkbooks)}>
@@ -365,24 +361,18 @@ function WorkbookDialogContent({ initialPayload }: { initialPayload?: { workbook
   );
 }
 
-interface WorkbookDialogProps {
-    open: boolean;
-    onOpenChange: (open: boolean) => void;
-    initialPayload?: { workbookId?: string; sheetId?: string | null; };
-}
-
-export function WorkbookDialog({ open, onOpenChange, initialPayload }: WorkbookDialogProps) {
+export function WorkbookDialog({ open, onOpenChange, initialPayload }: { open: boolean, onOpenChange: (open: boolean) => void, initialPayload?: any }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent position="top" className="flex flex-col p-0">
-        <VisuallyHidden>
+      <DialogContent position="left" className="flex flex-col p-0">
+        <div className="sr-only">
           <DialogHeader>
-            <DialogTitle>Workbooks</DialogTitle>
+            <DialogTitle>Data Grid Workstation</DialogTitle>
             <DialogDescription>
-              Create, manage, and distribute work from master documents.
+              Analyze and manage organizational data units.
             </DialogDescription>
           </DialogHeader>
-        </VisuallyHidden>
+        </div>
         <ScrollArea className="flex-1">
             <WorkbookDialogContent initialPayload={initialPayload} />
         </ScrollArea>

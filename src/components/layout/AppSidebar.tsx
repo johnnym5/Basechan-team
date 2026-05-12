@@ -1,4 +1,3 @@
-
 'use client';
 
 import Link from "next/link";
@@ -50,13 +49,16 @@ export default function AppSidebar({
   };
 
   const handleNavClick = (item: any) => {
+    // Force reset current modal state before navigating/opening new dialog
+    uiEmitter.emit('close-all-dialogs');
+    
     if (item.href) {
-        uiEmitter.emit('close-all-dialogs');
         router.push(item.href);
     } else if (item.dialog) {
-        // Use the emitter directly to trigger the dialog. 
-        // useSyncDialogsWithUrl will catch this and update the URL.
-        uiEmitter.emit(`open-${item.dialog}-dialog` as any);
+        // Small delay to ensure the reset above processes
+        setTimeout(() => {
+            uiEmitter.emit(`open-${item.dialog}-dialog` as any);
+        }, 50);
     }
   };
 
@@ -83,7 +85,7 @@ export default function AppSidebar({
           if ('isSeparator' in item) return <div key={index} className={cn("h-px bg-gray-800/50 my-4 mx-2", !isExpanded && "opacity-0")} />;
           
           if ('permission' in item) {
-              // Strict check: if profile is loading or missing, hide gated items to prevent "nothing happened" clicks
+              // Hide items if still loading or if permissions explicitly forbid access
               if (isProfileLoading || !userProfile) return null;
               if (!permissions[item.permission as keyof typeof permissions]) return null;
           }

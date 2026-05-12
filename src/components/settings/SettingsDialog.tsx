@@ -1,4 +1,3 @@
-
 "use client";
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
@@ -24,15 +23,21 @@ export function SettingsDialog({ open, onOpenChange, userProfile }: SettingsDial
   const permissions = usePermissions(userProfile);
   const { isSuperAdmin } = useSuperAdmin();
 
+  // If the user profile is absolutely missing, we can't show settings.
+  // Sidebar handles most of this gating, but we check here for security.
   if (!userProfile) {
     return null;
   }
 
-  if (!permissions.canViewTeam) {
+  // Check if the user has organizational clearance.
+  // Note: We use canViewTeam as the primary gate for the console.
+  const hasAccess = permissions.canViewTeam || userProfile.role === 'ORG_ADMIN' || isSuperAdmin;
+
+  if (!hasAccess) {
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent>
-                 <DialogHeader className="items-center text-center">
+            <DialogContent position="left" className="items-center justify-center text-center">
+                 <DialogHeader className="items-center">
                     <div className="p-3 rounded-full bg-destructive/10 mb-4">
                         <ShieldAlert className="w-10 h-10 text-destructive" />
                     </div>
@@ -42,7 +47,7 @@ export function SettingsDialog({ open, onOpenChange, userProfile }: SettingsDial
                     </DialogDescription>
                  </DialogHeader>
                  <DialogFooter>
-                    <Button onClick={() => onOpenChange(false)} className="w-full">Close</Button>
+                    <Button onClick={() => onOpenChange(false)} className="w-full">Close Console</Button>
                  </DialogFooter>
             </DialogContent>
         </Dialog>
@@ -50,12 +55,12 @@ export function SettingsDialog({ open, onOpenChange, userProfile }: SettingsDial
   }
 
   const handleOpenSuperAdmin = () => {
-    onOpenChange(false); // Close current dialog
+    onOpenChange(false);
     uiEmitter.emit('open-superadmin-dialog');
   }
 
   const tabCount = [
-    true, // team is always visible
+    true, // Team pane is always visible if they have console access
     permissions.canManageCompany,
     permissions.canViewAudit,
     isSuperAdmin
@@ -63,7 +68,7 @@ export function SettingsDialog({ open, onOpenChange, userProfile }: SettingsDial
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex flex-col p-0 sm:max-w-4xl">
+      <DialogContent position="left" className="flex flex-col p-0">
         <DialogHeader className="p-6 pb-0">
           <DialogTitle>Management Console</DialogTitle>
           <DialogDescription>
@@ -97,12 +102,12 @@ export function SettingsDialog({ open, onOpenChange, userProfile }: SettingsDial
           )}
           {isSuperAdmin && (
              <TabsContent value="superadmin" className="flex-1 overflow-y-auto mt-4 px-6 pb-6">
-                <div className="flex flex-col items-center justify-center h-full text-center p-8 border-2 border-dashed rounded-lg">
+                <div className="flex flex-col items-center justify-center h-full text-center p-8 border-2 border-dashed rounded-[2.5rem] bg-secondary/10">
                     <Shield className="w-16 h-16 text-primary mb-4" />
                     <h2 className="text-xl font-bold">Super Admin Access</h2>
-                    <p className="text-muted-foreground mt-2 max-sm">You have super administrative privileges. Access the main console for advanced data management and system oversight.</p>
-                    <Button onClick={handleOpenSuperAdmin} className="mt-6">
-                        Go to Super Admin Console
+                    <p className="text-muted-foreground mt-2 max-w-sm">You have absolute infrastructure control. Access the master console for global telemetry and disaster recovery.</p>
+                    <Button onClick={handleOpenSuperAdmin} className="mt-6 rounded-xl">
+                        Go to Master Console
                     </Button>
                 </div>
             </TabsContent>
