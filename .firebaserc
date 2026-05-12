@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 {
   "projects": {
     "default": "palilious",
@@ -6,3 +7,10 @@
   "targets": {},
   "etags": {}
 }
+=======
+{
+  "projects": {
+    "default": "palilious"
+  }
+}
+>>>>>>> e46f2e1ad97486affb300b626ff5055ece21f529
