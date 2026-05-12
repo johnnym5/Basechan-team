@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from "next/link";
@@ -14,6 +15,7 @@ import { Skeleton } from "../ui/skeleton";
 import { usePermissions } from "@/hooks/usePermissions";
 import { Button } from "../ui/button";
 import { useState } from "react";
+import { uiEmitter } from "@/lib/ui-emitter";
 
 export default function AppSidebar({ 
     isLoggedIn,
@@ -49,11 +51,12 @@ export default function AppSidebar({
 
   const handleNavClick = (item: any) => {
     if (item.href) {
+        uiEmitter.emit('close-all-dialogs');
         router.push(item.href);
     } else if (item.dialog) {
-        const params = new URLSearchParams();
-        params.set('panel', item.dialog);
-        router.replace(`${pathname}?${params.toString()}`);
+        // Use the emitter directly to trigger the dialog. 
+        // useSyncDialogsWithUrl will catch this and update the URL.
+        uiEmitter.emit(`open-${item.dialog}-dialog` as any);
     }
   };
 
@@ -79,7 +82,11 @@ export default function AppSidebar({
         {isLoggedIn && mainNavItems.map((item, index) => {
           if ('isSeparator' in item) return <div key={index} className={cn("h-px bg-gray-800/50 my-4 mx-2", !isExpanded && "opacity-0")} />;
           
-          if ('permission' in item && userProfile && !permissions[item.permission as keyof typeof permissions]) return null;
+          if ('permission' in item) {
+              // Strict check: if profile is loading or missing, hide gated items to prevent "nothing happened" clicks
+              if (isProfileLoading || !userProfile) return null;
+              if (!permissions[item.permission as keyof typeof permissions]) return null;
+          }
 
           const isCurrentPanel = searchParams.get('panel') === item.dialog;
           const isCurrentPath = pathname === item.href;
