@@ -1,7 +1,7 @@
 'use client';
 
 import { useUser, useDoc, useFirestore, useMemoFirebase, useCollection } from '@/firebase';
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, Suspense, useMemo } from 'react';
 import { doc, collection, query, where, limit } from 'firebase/firestore';
 import type { UserProfile, Attendance } from '@/lib/types';
 import { useSystemConfig } from '@/hooks/useSystemConfig';
@@ -12,6 +12,7 @@ import { format } from 'date-fns';
 import { useIdleTimer } from '@/hooks/useIdleTimer';
 import { useSyncDialogsWithUrl } from '@/hooks/useSyncDialogsWithUrl';
 import { hexToHslString } from '@/lib/utils';
+import { ORG_ID } from '@/lib/config';
 import dynamic from 'next/dynamic';
 
 const GlobalDialogs = dynamic(() => import('@/components/layout/GlobalDialogs').then(m => m.GlobalDialogs), { 
@@ -41,6 +42,22 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
   , [firestore, user]);
   const { data: userProfile } = useDoc<UserProfile>(userProfileRef);
   
+  // Stable Profile Fallback for reliability
+  const stableProfile = useMemo(() => {
+    if (!user) return null;
+    return {
+        id: user.uid,
+        orgId: userProfile?.orgId || ORG_ID,
+        email: user.email || '',
+        fullName: userProfile?.fullName || user.displayName || 'Personnel',
+        username: userProfile?.username || user.email?.split('@')[0] || 'anonymous',
+        role: userProfile?.role || 'STAFF',
+        position: userProfile?.position || 'Staff',
+        joinedDate: userProfile?.joinedDate || new Date().toISOString(),
+        ...userProfile
+    } as UserProfile;
+  }, [user, userProfile]);
+
   const attendanceQuery = useMemoFirebase(() => {
     if (!user || !firestore || !today) return null;
     return query(
@@ -55,8 +72,8 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
 
   const { isIdle } = useIdleTimer(attendanceRecord);
 
-  const permissions = usePermissions(userProfile || null);
-  const { config } = useSystemConfig(userProfile?.orgId);
+  const permissions = usePermissions(stableProfile);
+  const { config } = useSystemConfig(stableProfile?.orgId);
 
   // Apply organization theme
   useEffect(() => {
@@ -87,7 +104,7 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
 
         <div className="flex-1 flex flex-col min-w-0 h-[100dvh] md:h-[calc(100vh-3rem)] overflow-hidden">
           <AppHeader
-              userProfile={userProfile || null}
+              userProfile={stableProfile}
               onMenuClick={() => {}}
               isLoggedIn={isLoggedIn}
               attendanceRecord={attendanceRecord}
@@ -106,7 +123,7 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
       {isLoggedIn && (
         <Suspense fallback={null}>
           <GlobalDialogs 
-              userProfile={userProfile || null} 
+              userProfile={stableProfile} 
               permissions={permissions} 
               onAnyDialogOpenChange={setIsAnyDialogOpen}
           />

@@ -221,7 +221,7 @@ export function GlobalDialogs({ userProfile, permissions, onAnyDialogOpenChange 
       {isSuperAdminOpen && <SuperAdminDialog open={isSuperAdminOpen} onOpenChange={setIsSuperAdminOpen} />}
       
       {isProfileOpen && userProfile && <ProfileDialog open={isProfileOpen} onOpenChange={setIsProfileOpen} userProfile={userProfile} />}
-      {isSettingsOpen && <SettingsDialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen} userProfile={userProfile} />}
+      {isSettingsOpen && userProfile && <SettingsDialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen} userProfile={userProfile} />}
       {isChatOpen && userProfile && (
           <ChatDialog
           open={isChatOpen}

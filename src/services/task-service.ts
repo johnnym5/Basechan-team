@@ -1,7 +1,6 @@
-
 'use client';
 
-import { Firestore, collection, doc, query, where, getDocs, arrayUnion } from 'firebase/firestore';
+import { Firestore, collection, doc, query, where, getDocs, arrayUnion, setDoc } from 'firebase/firestore';
 import { addDocumentNonBlocking, updateDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase';
 import type { Task, UserProfile, ActivityEntry, TaskStatus, Notification, TaskPriority } from '@/lib/types';
 import { sanitizeInput } from '@/lib/utils';
@@ -39,10 +38,11 @@ export const taskService = {
         }
     }
 
-    // 2. Generate Serial Number
+    // 2. Pre-generate ID and Serial Number to avoid blocking
     const qOrg = query(tasksRef, where('orgId', '==', assignee.orgId));
     const orgTasksSnapshot = await getDocs(qOrg);
     const newSerialNo = `TSK-${String(orgTasksSnapshot.size + 1).padStart(5, '0')}`;
+    const newTaskRef = doc(tasksRef);
 
     // 3. Construct Payload
     const initialActivity: ActivityEntry = {
@@ -78,27 +78,26 @@ export const taskService = {
         type: 'STANDARD',
     };
 
-    const taskDocRef = await addDocumentNonBlocking(tasksRef, newTask);
+    // 4. Initiate Non-Blocking Write
+    setDoc(newTaskRef, newTask);
 
-    // 4. Audit & Notify
-    if (taskDocRef) {
-        auditService.logAction(db, currentUser, 'TASK_CREATE', `Assigned mission "${newTask.title}" to ${assignee.fullName}`, { id: taskDocRef.id, type: 'TASK' });
-        
-        if (currentUser.id !== assignee.id) {
-            const notification: Omit<Notification, 'id'> = {
-                orgId: currentUser.orgId,
-                userId: assignee.id,
-                title: 'New Task Assigned',
-                description: `"${newTask.title}"`,
-                href: `/tasks?taskId=${taskDocRef.id}`,
-                isRead: false,
-                createdAt: now,
-            };
-            addDocumentNonBlocking(collection(db, 'notifications'), notification);
-        }
+    // 5. Audit & Notify (Non-blocking)
+    auditService.logAction(db, currentUser, 'TASK_CREATE', `Assigned mission "${newTask.title}" to ${assignee.fullName}`, { id: newTaskRef.id, type: 'TASK' });
+    
+    if (currentUser.id !== assignee.id) {
+        const notification: Omit<Notification, 'id'> = {
+            orgId: currentUser.orgId,
+            userId: assignee.id,
+            title: 'New Task Assigned',
+            description: `"${newTask.title}"`,
+            href: `/tasks?taskId=${newTaskRef.id}`,
+            isRead: false,
+            createdAt: now,
+        };
+        addDocumentNonBlocking(collection(db, 'notifications'), notification);
     }
 
-    return taskDocRef;
+    return newTaskRef;
   },
 
   async updateTaskStatus(db: Firestore, task: Task, currentUser: UserProfile, newStatus: TaskStatus, comment?: string) {
