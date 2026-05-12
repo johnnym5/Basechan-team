@@ -40,12 +40,21 @@ export default function AppHeader({
     if (hour >= 12 && hour < 17) timeGreeting = 'Good Afternoon';
     else if (hour >= 17) timeGreeting = 'Good Evening';
     
-    if (userProfile?.fullName) {
-      setGreeting(`${timeGreeting}, ${userProfile.fullName.split(' ')[0]}`);
-    } else {
-      setGreeting(timeGreeting);
-    }
-  }, [userProfile]);
+    // Determine the name to use, avoiding the generic 'Personnel' fallback if possible.
+    const rawName = (userProfile?.fullName && userProfile.fullName !== 'Personnel')
+        ? userProfile.fullName
+        : user?.displayName
+        ? user.displayName
+        : user?.email
+        ? user.email.split('@')[0].split(/[._-]/).join(' ')
+        : 'Personnel';
+
+    // Extract first name and capitalize for professional display
+    const firstName = rawName.split(' ')[0];
+    const formattedName = firstName.charAt(0).toUpperCase() + firstName.slice(1).toLowerCase();
+
+    setGreeting(`${timeGreeting}, ${formattedName}`);
+  }, [userProfile, user]);
 
   const notificationsQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;

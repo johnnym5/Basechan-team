@@ -49,7 +49,7 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
         id: user.uid,
         orgId: userProfile?.orgId || ORG_ID,
         email: user.email || '',
-        fullName: userProfile?.fullName || user.displayName || 'Personnel',
+        fullName: userProfile?.fullName || user.displayName || user.email?.split('@')[0] || 'Personnel',
         username: userProfile?.username || user.email?.split('@')[0] || 'anonymous',
         role: userProfile?.role || 'STAFF',
         position: userProfile?.position || 'Staff',
