@@ -94,7 +94,7 @@ export function MaintenanceCard({ userProfile }: MaintenanceCardProps) {
                         }
                     });
                 }
-                setMaintenanceAlerts(foundAlerts.slice(0, 5)); // Show max 5 top alerts
+                setMaintenanceAlerts(foundAlerts.slice(0, 3)); // Compacted view: max 3 alerts
             } catch (error) {
                 console.error("Maintenance scan failed:", error);
             } finally {
@@ -111,36 +111,35 @@ export function MaintenanceCard({ userProfile }: MaintenanceCardProps) {
 
     if (isLoading) {
         return (
-            <section className="card-bg rounded-2xl p-6 shadow-lg h-full animate-slide-up-fade">
-                <Skeleton className="h-8 w-1/2 mb-6" />
-                <div className="space-y-4">
-                    <Skeleton className="h-16 w-full rounded-xl" />
-                    <Skeleton className="h-16 w-full rounded-xl" />
+            <section className="card-bg rounded-2xl p-4 shadow-lg animate-slide-up-fade">
+                <Skeleton className="h-6 w-1/2 mb-4" />
+                <div className="space-y-3">
+                    <Skeleton className="h-12 w-full rounded-xl" />
+                    <Skeleton className="h-12 w-full rounded-xl" />
                 </div>
             </section>
         );
     }
 
     return (
-        <section className="card-bg rounded-2xl p-6 shadow-lg h-full animate-slide-up-fade" style={{ animationDelay: '150ms' }}>
-            <div className="flex items-center justify-between mb-6">
-                <h3 className="text-lg font-bold font-headline flex items-center gap-2">
-                    <Hammer className="h-5 w-5 text-primary" />
+        <section className="card-bg rounded-2xl p-4 shadow-lg animate-slide-up-fade" style={{ animationDelay: '150ms' }}>
+            <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-bold font-headline flex items-center gap-2">
+                    <Hammer className="h-4 w-4 text-primary" />
                     Maintenance Radar
                 </h3>
                 {alerts.length > 0 && (
-                    <span className="text-[10px] font-black bg-rose-500/20 text-rose-500 px-2 py-0.5 rounded-full animate-pulse uppercase tracking-tighter">
-                        {alerts.length} Critical Events
+                    <span className="text-[8px] font-black bg-rose-500/20 text-rose-500 px-1.5 py-0.5 rounded-full animate-pulse uppercase tracking-tighter">
+                        {alerts.length} Critical
                     </span>
                 )}
             </div>
 
-            <div className="space-y-3">
+            <div className="space-y-2">
                 {alerts.length === 0 ? (
-                    <div className="py-12 flex flex-col items-center justify-center text-center opacity-50">
-                        <CheckCircle2 className="h-10 w-10 text-emerald-500 mb-3" />
-                        <p className="font-bold text-sm">All Systems Operational</p>
-                        <p className="text-[10px] uppercase tracking-widest">Next scan in 24 hours</p>
+                    <div className="py-6 flex flex-col items-center justify-center text-center opacity-50">
+                        <CheckCircle2 className="h-6 w-6 text-emerald-500 mb-1.5" />
+                        <p className="font-bold text-xs">All Systems Operational</p>
                     </div>
                 ) : (
                     alerts.map((alert, idx) => (
@@ -148,36 +147,36 @@ export function MaintenanceCard({ userProfile }: MaintenanceCardProps) {
                             key={idx}
                             onClick={() => handleJumpToSheet(alert)}
                             className={cn(
-                                "flex items-center justify-between p-4 rounded-2xl border border-white/5 bg-background/50 hover:bg-white/5 transition-all cursor-pointer interactive-element group",
+                                "flex items-center justify-between p-2.5 rounded-xl border border-white/5 bg-background/50 hover:bg-white/5 transition-all cursor-pointer interactive-element group",
                                 alert.status === 'OVERDUE' ? "border-rose-500/20 bg-rose-500/5" : "border-amber-500/20 bg-amber-500/5"
                             )}
                         >
-                            <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-2.5">
                                 <div className={cn(
-                                    "p-2 rounded-xl",
+                                    "p-1.5 rounded-lg",
                                     alert.status === 'OVERDUE' ? "bg-rose-500/10 text-rose-500" : "bg-amber-500/10 text-amber-500"
                                 )}>
-                                    <Settings2 className="h-4 w-4" />
+                                    <Settings2 className="h-3.5 w-3.5" />
                                 </div>
                                 <div className="min-w-0">
-                                    <p className="font-bold text-sm truncate">{alert.assetName}</p>
-                                    <div className="flex items-center gap-2 mt-0.5">
-                                        <AlertTriangle className="h-3 w-3 opacity-50" />
-                                        <span className="text-[9px] font-black uppercase tracking-widest opacity-60">
+                                    <p className="font-bold text-xs truncate">{alert.assetName}</p>
+                                    <div className="flex items-center gap-1.5 mt-0.5 opacity-60">
+                                        <AlertTriangle className="h-2.5 w-2.5" />
+                                        <span className="text-[8px] font-black uppercase tracking-widest">
                                             {alert.status} — {new Date(alert.date).toLocaleDateString()}
                                         </span>
                                     </div>
                                 </div>
                             </div>
-                            <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-foreground group-hover:translate-x-1 transition-all" />
+                            <ChevronRight className="h-3.5 w-3.5 text-muted-foreground group-hover:text-foreground group-hover:translate-x-0.5 transition-all" />
                         </div>
                     ))
                 )}
             </div>
             
-            <div className="mt-6 pt-4 border-t border-white/5">
-                <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest text-center">
-                    Radar active across {workbooks?.length || 0} organizational data units
+            <div className="mt-3 pt-2.5 border-t border-white/5">
+                <p className="text-[8px] font-bold text-muted-foreground uppercase tracking-widest text-center">
+                    Radar active: {workbooks?.length || 0} organizational units
                 </p>
             </div>
         </section>

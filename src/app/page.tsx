@@ -99,7 +99,7 @@ export default function DashboardPage() {
                     <DashboardTaskList userProfile={userProfile || null} permissions={permissions} />
                 </section>
 
-                <div className="col-span-12 lg:col-span-3 space-y-6">
+                <div className="col-span-12 lg:col-span-3 space-y-4">
                     <DashboardQuickActions />
                     <MaintenanceCard userProfile={userProfile || null} />
                     <DashboardRecentReports />
