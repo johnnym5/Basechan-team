@@ -31,7 +31,21 @@ export default function AppHeader({
   const firestore = useFirestore();
   const router = useRouter();
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const [greeting, setGreeting] = useState('Mission Control');
   const prevUnreadCount = useRef(0);
+
+  useEffect(() => {
+    const hour = new Date().getHours();
+    let timeGreeting = 'Good Morning';
+    if (hour >= 12 && hour < 17) timeGreeting = 'Good Afternoon';
+    else if (hour >= 17) timeGreeting = 'Good Evening';
+    
+    if (userProfile?.fullName) {
+      setGreeting(`${timeGreeting}, ${userProfile.fullName.split(' ')[0]}`);
+    } else {
+      setGreeting(timeGreeting);
+    }
+  }, [userProfile]);
 
   const notificationsQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
@@ -77,7 +91,7 @@ export default function AppHeader({
   return (
     <header className={cn("h-20 flex items-center justify-between px-8 shrink-0 bg-transparent transition-all", className)}>
         <div className="flex flex-col">
-            <h2 className="text-2xl font-bold font-headline tracking-tight text-foreground">Mission Control</h2>
+            <h2 className="text-2xl font-bold font-headline tracking-tight text-foreground">{greeting}</h2>
             {userProfile && (
                 <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground animate-in fade-in duration-500">
                     Secured Node: {userProfile.orgId}
