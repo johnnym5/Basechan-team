@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useFirestore } from '@/firebase';
 import { collection, getDocs, doc, getDoc, writeBatch, setDoc, query } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { Database, FileJson, FileText, ChevronRight, Loader2, Save, Trash2, PlusCircle, ChevronLeft } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
@@ -314,134 +314,142 @@ export function DatabaseExplorer() {
     }
 
     return (
-        <div className="grid grid-cols-1 md:grid-cols-3 border rounded-lg h-[600px] overflow-hidden">
-            <div className={cn("flex flex-col border-r", mobileView !== 'collections' && "hidden md:flex")}>
-                 <div className="p-3 border-b font-semibold text-sm flex items-center justify-between">
+        <div className="grid grid-cols-1 md:grid-cols-3 border rounded-2xl h-[650px] overflow-hidden bg-background/50 shadow-inner">
+            <div className={cn("flex flex-col border-r bg-secondary/5", mobileView !== 'collections' && "hidden md:flex")}>
+                 <div className="p-4 border-b font-bold text-xs uppercase tracking-widest flex items-center justify-between bg-background/80">
                      <div className="flex items-center gap-2">
-                        <Database className="h-4 w-4 text-muted-foreground" /> Collections
+                        <Database className="h-4 w-4 text-primary" /> Collections
                     </div>
                     <div className="flex items-center gap-2">
                         <Checkbox id="select-all-collections" onCheckedChange={handleSelectAllCollections} checked={collections.length > 0 && selectedCollections.length === collections.length} />
-                        <label htmlFor="select-all-collections" className="text-xs">All</label>
+                        <label htmlFor="select-all-collections" className="text-[10px] font-black">All</label>
                     </div>
                 </div>
                 <ScrollArea className="flex-1">
-                    {collections.map(c => (
-                        <div
-                            key={c.id}
-                            onClick={() => {setSelectedCollection(c.id); setMobileView('documents');}}
-                            className={cn(
-                                "flex items-center justify-between p-3 text-sm cursor-pointer hover:bg-accent border-b",
-                                selectedCollection === c.id && "bg-accent"
-                            )}
-                        >
-                            <div className="flex items-center gap-3">
-                                 <Checkbox 
-                                    id={`select-collection-${c.id}`}
-                                    checked={selectedCollections.includes(c.id)} 
-                                    onCheckedChange={(checked) => {
-                                        setSelectedCollections(prev => 
-                                            checked ? [...prev, c.id] : prev.filter(id => id !== c.id)
-                                        )
-                                    }} 
-                                    onClick={e => e.stopPropagation()} 
-                                />
-                                <label htmlFor={`select-collection-${c.id}`} className="cursor-pointer">{c.name}</label>
+                    <div className="divide-y divide-white/5">
+                        {collections.map(c => (
+                            <div
+                                key={c.id}
+                                onClick={() => {setSelectedCollection(c.id); setMobileView('documents');}}
+                                className={cn(
+                                    "flex items-center justify-between p-4 text-sm cursor-pointer hover:bg-primary/5 transition-colors",
+                                    selectedCollection === c.id && "bg-primary/10 text-primary border-r-2 border-primary"
+                                )}
+                            >
+                                <div className="flex items-center gap-3">
+                                    <Checkbox 
+                                        id={`select-collection-${c.id}`}
+                                        checked={selectedCollections.includes(c.id)} 
+                                        onCheckedChange={(checked) => {
+                                            setSelectedCollections(prev => 
+                                                checked ? [...prev, c.id] : prev.filter(id => id !== c.id)
+                                            )
+                                        }} 
+                                        onClick={e => e.stopPropagation()} 
+                                    />
+                                    <label htmlFor={`select-collection-${c.id}`} className="cursor-pointer font-medium">{c.name}</label>
+                                </div>
+                                <ChevronRight className="h-4 w-4 opacity-50" />
                             </div>
-                            <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                        </div>
-                    ))}
+                        ))}
+                    </div>
+                    <ScrollBar />
                 </ScrollArea>
             </div>
 
-            <div className={cn("flex flex-col border-r", mobileView !== 'documents' && 'hidden md:flex')}>
-                <div className="p-3 border-b font-semibold text-sm flex items-center gap-2 justify-between">
+            <div className={cn("flex flex-col border-r bg-secondary/5", mobileView !== 'documents' && 'hidden md:flex')}>
+                <div className="p-4 border-b font-bold text-xs uppercase tracking-widest flex items-center gap-2 justify-between bg-background/80">
                     <div className="flex items-center gap-2">
-                         <Button variant="ghost" size="icon" className="md:hidden -ml-2" onClick={() => setMobileView('collections')}>
-                            <ChevronLeft />
+                         <Button variant="ghost" size="icon" className="md:hidden -ml-2 h-7 w-7" onClick={() => setMobileView('collections')}>
+                            <ChevronLeft className="h-4 w-4" />
                         </Button>
-                        <FileText className="h-4 w-4 text-muted-foreground" /> Documents ({documents.length})
+                        <FileText className="h-4 w-4 text-primary" /> Documents ({documents.length})
                     </div>
                      <div className="flex items-center gap-2">
                         <Checkbox id="select-all" onCheckedChange={handleSelectAll} checked={documents.length > 0 && selectedDocIds.length === documents.length} />
-                        <label htmlFor="select-all" className="text-xs">All</label>
+                        <label htmlFor="select-all" className="text-[10px] font-black">All</label>
                     </div>
                 </div>
                 <ScrollArea className="flex-1">
-                    {isLoadingDocs ? (
-                        <div className="p-3 space-y-2">
-                            {Array.from({ length: 10 }).map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}
-                        </div>
-                    ) : documents.length > 0 ? (
-                        documents.map(d => (
-                             <div
-                                key={d.id}
-                                onClick={() => {handleSelectDocument(d.id); setMobileView('editor')}}
-                                className={cn(
-                                    "p-3 text-sm cursor-pointer hover:bg-accent border-b flex items-center gap-3",
-                                    editedDocument?.id === d.id && "bg-accent"
-                                )}
-                            >
-                                <Checkbox checked={selectedDocIds.includes(d.id)} onCheckedChange={(checked) => handleSingleSelect(d.id, !!checked)} onClick={e => e.stopPropagation()} />
-                                <div className="flex-1 truncate">
-                                    <p className="font-medium">{getDisplayName(d)}</p>
-                                    <p className="text-xs text-muted-foreground font-mono">{d.id}</p>
-                                </div>
-                                 <ChevronRight className="h-4 w-4 text-muted-foreground ml-auto" />
+                    <div className="divide-y divide-white/5">
+                        {isLoadingDocs ? (
+                            <div className="p-4 space-y-3">
+                                {Array.from({ length: 8 }).map((_, i) => <Skeleton key={i} className="h-12 w-full rounded-xl" />)}
                             </div>
-                        ))
-                    ) : (
-                        <div className="p-4 text-center text-xs text-muted-foreground">
-                            {selectedCollection ? "No documents in this collection." : "Select a collection to view documents."}
-                        </div>
-                    )}
+                        ) : documents.length > 0 ? (
+                            documents.map(d => (
+                                <div
+                                    key={d.id}
+                                    onClick={() => {handleSelectDocument(d.id); setMobileView('editor')}}
+                                    className={cn(
+                                        "p-4 text-sm cursor-pointer hover:bg-primary/5 transition-colors flex items-center gap-3",
+                                        editedDocument?.id === d.id && "bg-primary/10 text-primary border-r-2 border-primary"
+                                    )}
+                                >
+                                    <Checkbox checked={selectedDocIds.includes(d.id)} onCheckedChange={(checked) => handleSingleSelect(d.id, !!checked)} onClick={e => e.stopPropagation()} />
+                                    <div className="flex-1 truncate">
+                                        <p className="font-bold text-xs truncate">{getDisplayName(d)}</p>
+                                        <p className="text-[10px] text-muted-foreground font-mono truncate">{d.id}</p>
+                                    </div>
+                                    <ChevronRight className="h-4 w-4 opacity-50 ml-auto" />
+                                </div>
+                            ))
+                        ) : (
+                            <div className="p-12 text-center text-xs text-muted-foreground uppercase tracking-widest opacity-40">
+                                {selectedCollection ? "Collection Empty" : "Select Scope"}
+                            </div>
+                        )}
+                    </div>
+                    <ScrollBar />
                 </ScrollArea>
-                <div className="p-2 border-t flex gap-2">
+                <div className="p-4 border-t flex gap-2 bg-background/80 flex-shrink-0">
                      <AlertDialog>
                         <AlertDialogTrigger asChild>
-                             <Button variant="destructive" className="flex-1" disabled={selectedDocIds.length === 0 || isDeleting}>
-                                {isDeleting ? <Loader2 className="mr-2 animate-spin" /> : <Trash2 className="mr-2" />}
-                                Delete ({selectedDocIds.length})
+                             <Button variant="destructive" size="sm" className="flex-1 h-9 rounded-xl font-bold uppercase text-[10px] tracking-widest" disabled={selectedDocIds.length === 0 || isDeleting}>
+                                {isDeleting ? <Loader2 className="mr-2 animate-spin h-3 w-3" /> : <Trash2 className="mr-2 h-3 w-3" />}
+                                Terminate ({selectedDocIds.length})
                             </Button>
                         </AlertDialogTrigger>
-                        <AlertDialogContent>
+                        <AlertDialogContent className="apple-glass-darker border-none">
                             <AlertDialogHeader>
-                                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                <AlertDialogTitle className="text-xl font-black text-rose-500 uppercase">Confirm Termination</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                    This action cannot be undone. This will permanently delete the selected {selectedDocIds.length} document(s).
+                                    This operation will permanently remove {selectedDocIds.length} document(s) from the infrastructure. This action is irreversible.
                                 </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction onClick={handleDeleteSelected} className="bg-destructive hover:bg-destructive/90">
-                                    Yes, delete
+                                <AlertDialogCancel>Abort</AlertDialogCancel>
+                                <AlertDialogAction onClick={handleDeleteSelected} className="bg-rose-600 hover:bg-rose-700">
+                                    Execute
                                 </AlertDialogAction>
                             </AlertDialogFooter>
                         </AlertDialogContent>
                     </AlertDialog>
                     <AlertDialog open={isAddDocOpen} onOpenChange={setIsAddDocOpen}>
                         <AlertDialogTrigger asChild>
-                            <Button variant="outline" className="flex-1" disabled={!selectedCollection}>
-                                <PlusCircle className="mr-2" /> Add New
+                            <Button variant="outline" size="sm" className="flex-1 h-9 rounded-xl font-bold uppercase text-[10px] tracking-widest" disabled={!selectedCollection}>
+                                <PlusCircle className="mr-2 h-3 w-3" /> Add Doc
                             </Button>
                         </AlertDialogTrigger>
-                         <AlertDialogContent>
+                         <AlertDialogContent className="apple-glass-darker border-none">
                             <AlertDialogHeader>
-                                <AlertDialogTitle>Add New Document</AlertDialogTitle>
+                                <AlertDialogTitle className="text-xl font-bold">New Node Entry</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                    Enter a unique ID for the new document or leave it blank to auto-generate one.
-                                    The document will be created with a blank schema.
+                                    Assign a specific ID for the new document or leave blank for auto-generation.
                                 </AlertDialogDescription>
                             </AlertDialogHeader>
-                            <Input 
-                                placeholder="Optional: Enter document ID" 
-                                value={newDocId}
-                                onChange={(e) => setNewDocId(e.target.value)}
-                            />
+                            <div className="py-4">
+                                <Input 
+                                    placeholder="Unique Identifier..." 
+                                    value={newDocId}
+                                    onChange={(e) => setNewDocId(e.target.value)}
+                                    className="h-12 rounded-xl bg-background/50"
+                                />
+                            </div>
                             <AlertDialogFooter>
-                                <AlertDialogCancel onClick={() => setNewDocId('')}>Cancel</AlertDialogCancel>
+                                <AlertDialogCancel onClick={() => setNewDocId('')}>Abort</AlertDialogCancel>
                                 <AlertDialogAction onClick={handleAddNewDocument} disabled={isSaving}>
-                                    {isSaving ? <Loader2 className="animate-spin" /> : "Create & Edit"}
+                                    {isSaving ? <Loader2 className="mr-2 animate-spin h-4 w-4" /> : "Deploy Entry"}
                                 </AlertDialogAction>
                             </AlertDialogFooter>
                         </AlertDialogContent>
@@ -449,32 +457,39 @@ export function DatabaseExplorer() {
                 </div>
             </div>
 
-            <div className={cn("flex flex-col", mobileView !== 'editor' && "hidden md:flex")}>
-                 <div className="p-3 border-b font-semibold text-sm flex items-center gap-2">
-                    <Button variant="ghost" size="icon" className="md:hidden -ml-2" onClick={() => setMobileView('documents')}>
-                        <ChevronLeft />
+            <div className={cn("flex flex-col bg-background/30", mobileView !== 'editor' && "hidden md:flex")}>
+                 <div className="p-4 border-b font-bold text-xs uppercase tracking-widest flex items-center gap-2 bg-background/80">
+                    <Button variant="ghost" size="icon" className="md:hidden -ml-2 h-7 w-7" onClick={() => setMobileView('documents')}>
+                        <ChevronLeft className="h-4 w-4" />
                     </Button>
-                    <FileJson className="h-4 w-4 text-muted-foreground" /> Data Editor
+                    <FileJson className="h-4 w-4 text-primary" /> Data Editor
                 </div>
-                <ScrollArea className="flex-1 bg-muted/30">
-                    {isLoadingDoc ? (
-                         <div className="p-4 flex justify-center items-center h-full">
-                            <Loader2 className="animate-spin text-muted-foreground" />
-                         </div>
-                    ) : editedDocument && !editedDocument.error ? (
-                        <div className="p-4 space-y-3">
-                             {Object.keys(editedDocument).map(key => renderField(key, editedDocument[key]))}
-                        </div>
-                    ) : (
-                         <div className="p-4 text-center text-xs text-muted-foreground h-full flex items-center justify-center">
-                           {!isLoadingDoc && (editedDocument?.error || "Select a document to edit its data.")}
-                        </div>
-                    )}
+                <ScrollArea className="flex-1">
+                    <div className="p-4">
+                        {isLoadingDoc ? (
+                             <div className="flex flex-col items-center justify-center h-48 gap-4 opacity-40">
+                                <Loader2 className="animate-spin text-primary h-8 w-8" />
+                                <p className="text-[10px] font-black uppercase tracking-widest">Retrieving Telemetry...</p>
+                             </div>
+                        ) : editedDocument && !editedDocument.error ? (
+                            <div className="space-y-4">
+                                 {Object.keys(editedDocument).map(key => renderField(key, editedDocument[key]))}
+                            </div>
+                        ) : (
+                             <div className="flex flex-col items-center justify-center h-96 gap-4 opacity-30 p-12 text-center">
+                                <FileJson className="h-12 w-12" />
+                                <p className="text-[10px] font-black uppercase tracking-widest">
+                                   {!isLoadingDoc && (editedDocument?.error || "Select Document to View Telemetry")}
+                                </p>
+                            </div>
+                        )}
+                    </div>
+                    <ScrollBar />
                 </ScrollArea>
-                <div className="p-2 border-t">
-                    <Button className="w-full" onClick={handleSave} disabled={isSaving || isLoadingDoc || !editedDocument || !!editedDocument.error}>
-                        {isSaving ? <Loader2 className="animate-spin" /> : <Save className="mr-2" />}
-                        Save Changes
+                <div className="p-4 border-t bg-background/80 flex-shrink-0">
+                    <Button className="w-full h-11 rounded-xl font-black uppercase text-[10px] tracking-[0.2em] shadow-lg shadow-primary/20" onClick={handleSave} disabled={isSaving || isLoadingDoc || !editedDocument || !!editedDocument.error}>
+                        {isSaving ? <Loader2 className="mr-2 animate-spin h-4 w-4" /> : <Save className="mr-2 h-4 w-4" />}
+                        Apply Mutation
                     </Button>
                 </div>
             </div>

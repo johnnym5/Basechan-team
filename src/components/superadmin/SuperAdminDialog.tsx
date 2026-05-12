@@ -11,7 +11,6 @@ import { DataManagement } from '@/components/superadmin/DataManagement';
 import { ErrorLogViewer } from '@/components/superadmin/ErrorLogViewer';
 import { InviteUserDialog } from '@/components/settings/InviteUserDialog';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface SuperAdminDialogProps {
   open: boolean;
@@ -32,8 +31,8 @@ export function SuperAdminDialog({ open, onOpenChange }: SuperAdminDialogProps) 
     return (
         <>
             <Dialog open={open} onOpenChange={onOpenChange}>
-                <DialogContent position="top" className="flex flex-col p-0">
-                    <DialogHeader className="p-6 pb-4 border-b">
+                <DialogContent position="top" className="flex flex-col p-0 h-[92vh] md:h-[96vh] overflow-hidden">
+                    <DialogHeader className="p-6 pb-4 border-b flex-shrink-0">
                         <DialogTitle className="flex items-center gap-2 text-2xl font-bold font-headline">
                             <Shield className="h-6 w-6 text-primary" />
                             Super Admin Console
@@ -43,28 +42,28 @@ export function SuperAdminDialog({ open, onOpenChange }: SuperAdminDialogProps) 
                         </DialogDescription>
                     </DialogHeader>
                     
-                    <div className="px-6 py-2 flex items-center gap-2">
-                        <Button variant="outline" onClick={() => setIsInviteOpen(true)}>
+                    <div className="px-6 py-4 flex items-center gap-2 border-b bg-secondary/10 flex-shrink-0">
+                        <Button variant="outline" onClick={() => setIsInviteOpen(true)} className="rounded-xl">
                             <UserPlus className="mr-2 h-4 w-4"/>
                             Create User
                         </Button>
-                        <Button variant="outline" onClick={() => setShowFeedback(true)} className="relative">
+                        <Button variant="outline" onClick={() => setShowFeedback(true)} className="relative rounded-xl">
                             <Bell className="mr-2 h-4 w-4"/>
                             Feedback
                             {newFeedback && newFeedback.length > 0 && (
-                                <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-xs font-bold text-destructive-foreground">
+                                <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-[10px] font-black text-white ring-2 ring-background">
                                     {newFeedback.length}
                                 </span>
                             )}
                         </Button>
                     </div>
 
-                    <ScrollArea className="flex-1">
-                        <main className="p-6 space-y-8">
+                    <div className="flex-1 overflow-y-auto custom-scrollbar bg-background/50">
+                        <main className="p-6 space-y-12 pb-32">
                             <DataManagement />
                             <ErrorLogViewer />
                         </main>
-                    </ScrollArea>
+                    </div>
                 </DialogContent>
             </Dialog>
 
