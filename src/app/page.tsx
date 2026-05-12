@@ -5,16 +5,9 @@ import { useRouter } from 'next/navigation';
 
 /**
  * Root redirection component.
- * Ensures that users visiting the root domain are cleanly 
- * routed to the home page within the primary application group.
+ * Directs traffic to the application group to ensure 
+ * the dashboard inherits the correct layout and telemetry.
  */
-export default function RootRedirectionPage() {
-    const router = useRouter();
-
-    useEffect(() => {
-        // Redirection to the app group to avoid route collisions
-        router.replace('/');
-    }, [router]);
-
+export default function RootPage() {
     return null;
 }
