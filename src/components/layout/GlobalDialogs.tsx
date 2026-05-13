@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
@@ -14,6 +15,7 @@ const LeaveDialog = dynamic(() => import('@/components/leave/LeaveDialog').then(
 const ReportsDialog = dynamic(() => import('@/components/reports/ReportsDialog').then(m => m.ReportsDialog), { ssr: false });
 const AccountingDialog = dynamic(() => import('@/components/accounting/AccountingDialog').then(m => m.AccountingDialog), { ssr: false });
 const LibraryDialog = dynamic(() => import('@/components/library/LibraryDialog').then(m => m.LibraryDialog), { ssr: false });
+const DisplaysDialog = dynamic(() => import('@/components/dashboards/WebDashboardDialog').then(m => m.WebDashboardDialog), { ssr: false });
 const AssignTaskDialog = dynamic(() => import('@/components/tasks/AssignTaskDialog').then(m => m.AssignTaskDialog), { ssr: false });
 const NewRequisitionDialog = dynamic(() => import('@/components/requisitions/NewRequisitionDialog').then(m => m.NewRequisitionDialog), { ssr: false });
 const RequestLeaveDialog = dynamic(() => import('@/components/leave/RequestLeaveDialog').then(m => m.RequestLeaveDialog), { ssr: false });
@@ -44,6 +46,8 @@ export function GlobalDialogs({ userProfile, permissions, onAnyDialogOpenChange 
   const [initialReportsPayload, setInitialReportsPayload] = useState<{ tab?: string } | undefined>();
   const [isAccountingOpen, setIsAccountingOpen] = useState(false);
   const [isLibraryOpen, setIsLibraryOpen] = useState(false);
+  const [isDisplaysOpen, setIsDisplaysOpen] = useState(false);
+  const [initialDisplaysPayload, setInitialDisplaysPayload] = useState<{ displayId?: string } | undefined>();
   const [isAssignTaskOpen, setIsAssignTaskOpen] = useState(false);
   const [isNewRequisitionOpen, setIsNewRequisitionOpen] = useState(false);
   const [isRequestLeaveOpen, setIsRequestLeaveOpen] = useState(false);
@@ -65,6 +69,7 @@ export function GlobalDialogs({ userProfile, permissions, onAnyDialogOpenChange 
     setIsReportsOpen(false);
     setIsAccountingOpen(false);
     setIsLibraryOpen(false);
+    setIsDisplaysOpen(false);
     setIsAssignTaskOpen(false);
     setIsNewRequisitionOpen(false);
     setIsRequestLeaveOpen(false);
@@ -80,14 +85,14 @@ export function GlobalDialogs({ userProfile, permissions, onAnyDialogOpenChange 
   useEffect(() => {
     const isOpen = 
         isWorkbookOpen || isRequisitionsOpen || isTasksOpen || isAttendanceOpen || 
-        isLeaveOpen || isReportsOpen || isAccountingOpen || isLibraryOpen || 
+        isLeaveOpen || isReportsOpen || isAccountingOpen || isLibraryOpen || isDisplaysOpen || 
         isAssignTaskOpen || isNewRequisitionOpen || isRequestLeaveOpen || 
         isNewWorkbookOpen || isProfileOpen || isSettingsOpen || isChatOpen || 
         isInviteUserOpen || isNewAnnouncementOpen || isSuperAdminOpen;
     onAnyDialogOpenChange(isOpen);
   }, [
     isWorkbookOpen, isRequisitionsOpen, isTasksOpen, isAttendanceOpen, 
-    isLeaveOpen, isReportsOpen, isAccountingOpen, isLibraryOpen, 
+    isLeaveOpen, isReportsOpen, isAccountingOpen, isLibraryOpen, isDisplaysOpen, 
     isAssignTaskOpen, isNewRequisitionOpen, isRequestLeaveOpen, 
     isNewWorkbookOpen, isProfileOpen, isSettingsOpen, isChatOpen, 
     isInviteUserOpen, isNewAnnouncementOpen, isSuperAdminOpen,
@@ -121,6 +126,10 @@ export function GlobalDialogs({ userProfile, permissions, onAnyDialogOpenChange 
     };
     const openAccounting = () => setIsAccountingOpen(true);
     const openLibrary = () => setIsLibraryOpen(true);
+    const openDisplays = (payload?: any) => {
+        if (payload) setInitialDisplaysPayload(payload);
+        setIsDisplaysOpen(true);
+    };
     const openAssignTask = () => setIsAssignTaskOpen(true);
     const openNewRequisition = () => setIsNewRequisitionOpen(true);
     const openRequestLeave = () => setIsRequestLeaveOpen(true);
@@ -140,6 +149,7 @@ export function GlobalDialogs({ userProfile, permissions, onAnyDialogOpenChange 
     uiEmitter.on('open-reports-dialog', openReports);
     uiEmitter.on('open-accounting-dialog', openAccounting);
     uiEmitter.on('open-library-dialog', openLibrary);
+    uiEmitter.on('open-displays-dialog', openDisplays);
     uiEmitter.on('open-assign-task-dialog', openAssignTask);
     uiEmitter.on('open-new-requisition-dialog', openNewRequisition);
     uiEmitter.on('open-request-leave-dialog', openRequestLeave);
@@ -161,6 +171,7 @@ export function GlobalDialogs({ userProfile, permissions, onAnyDialogOpenChange 
       uiEmitter.off('open-reports-dialog', openReports);
       uiEmitter.off('open-accounting-dialog', openAccounting);
       uiEmitter.off('open-library-dialog', openLibrary);
+      uiEmitter.off('open-displays-dialog', openDisplays);
       uiEmitter.off('open-assign-task-dialog', openAssignTask);
       uiEmitter.off('open-new-requisition-dialog', openNewRequisition);
       uiEmitter.off('open-request-leave-dialog', openRequestLeave);
@@ -220,6 +231,16 @@ export function GlobalDialogs({ userProfile, permissions, onAnyDialogOpenChange 
       )}
       {isAccountingOpen && <AccountingDialog open={isAccountingOpen} onOpenChange={setIsAccountingOpen} />}
       {isLibraryOpen && <LibraryDialog open={isLibraryOpen} onOpenChange={setIsLibraryOpen} />}
+      {isDisplaysOpen && (
+          <DisplaysDialog 
+            open={isDisplaysOpen} 
+            onOpenChange={(isOpen) => {
+                setIsDisplaysOpen(isOpen);
+                if (!isOpen) setInitialDisplaysPayload(undefined);
+            }} 
+            initialPayload={initialDisplaysPayload}
+          />
+      )}
       {isSuperAdminOpen && <SuperAdminDialog open={isSuperAdminOpen} onOpenChange={setIsSuperAdminOpen} />}
       
       {isProfileOpen && userProfile && <ProfileDialog open={isProfileOpen} onOpenChange={setIsProfileOpen} userProfile={userProfile} />}

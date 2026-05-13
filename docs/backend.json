@@ -1,3 +1,4 @@
+
 {
   "entities": {
     "Attendance": {
@@ -122,6 +123,21 @@
         "resourceType": { "type": "string" },
         "timestamp": { "type": "string", "format": "date-time" }
       }
+    },
+    "ExternalDisplay": {
+      "title": "External Display",
+      "type": "object",
+      "description": "A link to an external dashboard or embedded web content.",
+      "properties": {
+        "orgId": { "type": "string" },
+        "title": { "type": "string" },
+        "url": { "type": "string" },
+        "description": { "type": "string" },
+        "icon": { "type": "string" },
+        "createdBy": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["orgId", "title", "url", "createdBy", "createdAt"]
     }
   },
   "auth": { "providers": ["password"] },
@@ -132,7 +148,8 @@
       { "path": "/tasks/{id}", "definition": { "entityName": "Task", "schema": { "$ref": "#/entities/Task" } } },
       { "path": "/library_items/{id}", "definition": { "entityName": "LibraryItem", "schema": { "$ref": "#/entities/LibraryItem" } } },
       { "path": "/users/{id}", "definition": { "entityName": "UserProfile", "schema": { "$ref": "#/entities/UserProfile" } } },
-      { "path": "/audit_logs/{id}", "definition": { "entityName": "AuditLog", "schema": { "$ref": "#/entities/AuditLog" } } }
+      { "path": "/audit_logs/{id}", "definition": { "entityName": "AuditLog", "schema": { "$ref": "#/entities/AuditLog" } } },
+      { "path": "/external_displays/{id}", "definition": { "entityName": "ExternalDisplay", "schema": { "$ref": "#/entities/ExternalDisplay" } } }
     ]
   }
 }

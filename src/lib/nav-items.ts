@@ -1,3 +1,4 @@
+
 import {
   LayoutDashboard,
   CalendarCheck2,
@@ -11,6 +12,7 @@ import {
   User,
   Landmark,
   Library,
+  MonitorDot,
 } from "lucide-react";
 
 export const mainNavItems = [
@@ -22,6 +24,7 @@ export const mainNavItems = [
   { isSeparator: true },
   { dialog: "tasks", icon: ListTodo, label: "Tasks" },
   { dialog: "workbooks", icon: BookOpenCheck, label: "Workbooks" },
+  { dialog: "displays", icon: MonitorDot, label: "Live Displays" },
   { dialog: "requisitions", icon: ReceiptText, label: "Requisitions", permission: 'canAccessRequisitions' },
   { dialog: "accounting", icon: Landmark, label: "Accounting", permission: 'canManageAccounting' },
   { dialog: "library", icon: Library, label: "Library", permission: 'canAccessLibrary' },

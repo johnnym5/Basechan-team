@@ -1,3 +1,4 @@
+
 import { PREDEFINED_ROLES } from './roles-and-departments';
 
 export type UserPosition = (typeof PREDEFINED_ROLES)[number];
@@ -64,6 +65,7 @@ export interface UserProfile {
     canManageAnnouncements?: boolean;
     canManageLibrary?: boolean;
     canViewAudit?: boolean;
+    canManageDisplays?: boolean;
   };
 }
 
@@ -362,6 +364,7 @@ export interface Permissions {
   canManageLibrary: boolean;
   canViewFiles: boolean;
   canViewAudit: boolean;
+  canManageDisplays: boolean;
 }
 
 export type LeaveType = "ANNUAL" | "SICK" | "UNPAID" | "MATERNITY" | "PATERNITY";
@@ -443,4 +446,15 @@ export interface JournalEntry {
     creatorName: string;
     createdAt: string;
     lines: JournalEntryLine[];
+}
+
+export interface ExternalDisplay {
+  id: string;
+  orgId: string;
+  title: string;
+  url: string;
+  description?: string;
+  icon?: string;
+  createdBy: string;
+  createdAt: string;
 }
