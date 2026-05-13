@@ -70,6 +70,7 @@ export const getRoleFromPosition = (position: UserPosition): UserRole => {
         case "Office Manager / Admin Lead":
             return "HR_MANAGER";
         case "Organization Administrator":
+        case "IT Manager / CTO":
             return "ORG_ADMIN";
         default:
             return "STAFF";
