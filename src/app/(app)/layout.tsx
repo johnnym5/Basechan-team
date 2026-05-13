@@ -1,10 +1,3 @@
-<<<<<<< HEAD
-'use client';
-// This layout is deprecated. The root layout now handles the MainAppLayout.
-export default function DeprecatedAppLayout({ children }: { children: React.ReactNode }) {
-  return <>{children}</>;
-}
-=======
 'use client';
 import { useUser, useDoc, useFirestore, useMemoFirebase, useCollection } from '@/firebase';
 import { useState, useEffect, Suspense } from 'react';
@@ -121,4 +114,3 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         </Suspense>
     )
 }
->>>>>>> e46f2e1ad97486affb300b626ff5055ece21f529
