@@ -103,7 +103,7 @@ export default function AppHeader({
             <h2 className="text-2xl font-bold font-headline tracking-tight text-foreground">{greeting}</h2>
             {userProfile && (
                 <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground animate-in fade-in duration-500">
-                    Secured Node: {userProfile.orgId}
+                    Organisation: {userProfile.orgId}
                 </p>
             )}
         </div>
