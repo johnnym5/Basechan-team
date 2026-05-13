@@ -1,7 +1,7 @@
 'use client';
 import { UserNav } from "@/components/layout/UserNav";
 import { useState, useEffect, useRef } from 'react';
-import { useUser, useFirestore, useMemoFirebase, useCollection, updateDocumentNonBlocking } from '@/firebase';
+import { useUser, useDoc, useMemoFirebase, useCollection, updateDocumentNonBlocking } from '@/firebase';
 import { collection, query, where, orderBy, limit, doc } from 'firebase/firestore';
 import type { UserProfile, Notification, Attendance, SystemConfig } from '@/lib/types';
 import { Bell, Search as SearchIcon, CheckCircle2, Circle } from 'lucide-react';
@@ -35,25 +35,40 @@ export default function AppHeader({
   const prevUnreadCount = useRef(0);
 
   useEffect(() => {
-    const hour = new Date().getHours();
-    let timeGreeting = 'Good Morning';
-    if (hour >= 12 && hour < 17) timeGreeting = 'Good Afternoon';
-    else if (hour >= 17) timeGreeting = 'Good Evening';
-    
-    // Determine the name to use, avoiding the generic 'Personnel' fallback if possible.
-    const rawName = (userProfile?.fullName && userProfile.fullName !== 'Personnel')
-        ? userProfile.fullName
-        : user?.displayName
-        ? user.displayName
-        : user?.email
-        ? user.email.split('@')[0].split(/[._-]/).join(' ')
-        : 'Personnel';
+    const updateGreeting = () => {
+      const hour = new Date().getHours();
+      let timeGreeting = 'Good Morning';
+      
+      if (hour >= 12 && hour < 17) {
+        timeGreeting = 'Good Afternoon';
+      } else if (hour >= 17 && hour < 22) {
+        timeGreeting = 'Good Evening';
+      } else if (hour >= 22 || hour < 5) {
+        timeGreeting = 'Good Night';
+      } else {
+        timeGreeting = 'Good Morning';
+      }
+      
+      // Determine the name to use, avoiding the generic 'Personnel' fallback if possible.
+      const rawName = (userProfile?.fullName && userProfile.fullName !== 'Personnel')
+          ? userProfile.fullName
+          : user?.displayName
+          ? user.displayName
+          : user?.email
+          ? user.email.split('@')[0].split(/[._-]/).join(' ')
+          : 'Personnel';
 
-    // Extract first name and capitalize for professional display
-    const firstName = rawName.split(' ')[0];
-    const formattedName = firstName.charAt(0).toUpperCase() + firstName.slice(1).toLowerCase();
+      // Extract first name and capitalize for professional display
+      const firstName = rawName.split(' ')[0];
+      const formattedName = firstName.charAt(0).toUpperCase() + firstName.slice(1).toLowerCase();
 
-    setGreeting(`${timeGreeting}, ${formattedName}`);
+      setGreeting(`${timeGreeting}, ${formattedName}`);
+    };
+
+    updateGreeting();
+    // Refresh every 5 minutes to stay accurate without excessive updates
+    const interval = setInterval(updateGreeting, 300000);
+    return () => clearInterval(interval);
   }, [userProfile, user]);
 
   const notificationsQuery = useMemoFirebase(() => {
