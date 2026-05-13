@@ -75,7 +75,7 @@ export function AddDashboardDialog({ open, onOpenChange, userProfile }: { open: 
             Integrate External Feed
           </DialogTitle>
           <DialogDescription>
-            Input the secure embed URL for your external dashboard.
+            Input the secure embed URL for any dashboard, document, or web tool.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -83,7 +83,7 @@ export function AddDashboardDialog({ open, onOpenChange, userProfile }: { open: 
                 <FormField control={form.control} name="title" render={({ field }) => (
                     <FormItem>
                         <FormLabel className="text-[10px] font-black uppercase tracking-widest opacity-60">Display Identity</FormLabel>
-                        <FormControl><Input placeholder="e.g., Executive Q4 Pipeline" {...field} className="rounded-xl h-12 bg-background/50 border-white/5" /></FormControl>
+                        <FormControl><Input placeholder="e.g., Q4 Word Strategy or Excel Pipeline" {...field} className="rounded-xl h-12 bg-background/50 border-white/5" /></FormControl>
                         <FormMessage />
                     </FormItem>
                 )}/>
@@ -91,14 +91,14 @@ export function AddDashboardDialog({ open, onOpenChange, userProfile }: { open: 
                     <FormItem>
                         <FormLabel className="text-[10px] font-black uppercase tracking-widest opacity-60">Transmission Node (URL)</FormLabel>
                         <FormControl><Input placeholder="https://..." {...field} className="rounded-xl h-12 bg-background/50 border-white/5 font-mono text-xs" /></FormControl>
-                        <FormDescription className="text-[9px] leading-tight">Drop the link from Excel Online, PowerBI, or any secure web dashboard.</FormDescription>
+                        <FormDescription className="text-[9px] leading-tight">Drop the link from Word Online, Excel, PowerBI, or any secure web dashboard.</FormDescription>
                         <FormMessage />
                     </FormItem>
                 )}/>
                 <FormField control={form.control} name="description" render={({ field }) => (
                     <FormItem>
                         <FormLabel className="text-[10px] font-black uppercase tracking-widest opacity-60">Contextual Memo</FormLabel>
-                        <FormControl><Textarea placeholder="What data does this feed provide?" {...field} className="rounded-xl bg-background/50 border-white/5" /></FormControl>
+                        <FormControl><Textarea placeholder="What data or tool does this feed provide?" {...field} className="rounded-xl bg-background/50 border-white/5" /></FormControl>
                         <FormMessage />
                     </FormItem>
                 )}/>

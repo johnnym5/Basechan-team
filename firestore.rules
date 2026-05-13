@@ -89,7 +89,7 @@ service cloud.firestore {
     }
     
     match /{collection}/{docId} 
-        where collection in ['departments', 'attendance', 'tasks', 'system_configs', 'announcements', 'workbooks', 'notifications', 'leave_requests', 'daily_reports', 'chats', 'journal_entries'] {
+        where collection in ['departments', 'attendance', 'tasks', 'system_configs', 'announcements', 'workbooks', 'notifications', 'leave_requests', 'daily_reports', 'chats', 'journal_entries', 'external_displays'] {
       
       allow read, delete: if isRequestingUserInOrg(resource.data.orgId) || isSuperAdmin();
       allow create: if isCreatingInOwnOrg() || isSuperAdmin();

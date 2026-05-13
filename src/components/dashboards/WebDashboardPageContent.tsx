@@ -19,7 +19,8 @@ import {
     Maximize2,
     RefreshCw,
     Loader2,
-    Layout
+    Layout,
+    Globe
 } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
@@ -126,14 +127,14 @@ export function WebDashboardPageContent({ initialPayload }: { initialPayload?: {
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-3xl font-bold font-headline tracking-tight flex items-center gap-3">
-                        <MonitorDot className="h-8 w-8 text-primary" />
+                        <Globe className="h-8 w-8 text-primary" />
                         Live Displays
                     </h1>
-                    <p className="text-muted-foreground">Monitor real-time Excel dashboards, PowerBI reports, and web metrics.</p>
+                    <p className="text-muted-foreground">Monitor real-time documents, dashboards, and web-based telemetry nodes.</p>
                 </div>
                 {permissions.canManageDisplays && (
                     <Button onClick={() => setIsAddOpen(true)} className="rounded-xl h-12 px-6 font-bold shadow-lg shadow-primary/20">
-                        <Plus className="mr-2 h-5 w-5" /> Integrate Display
+                        <Plus className="mr-2 h-5 w-5" /> Integrate Feed
                     </Button>
                 )}
             </div>
@@ -142,7 +143,7 @@ export function WebDashboardPageContent({ initialPayload }: { initialPayload?: {
                 <div className="flex flex-col items-center justify-center py-32 text-center opacity-40 border-2 border-dashed rounded-[3rem] bg-secondary/10">
                     <Layout className="h-20 w-20 mb-6" />
                     <h3 className="text-xl font-bold font-headline uppercase tracking-widest">No Active Feeds</h3>
-                    <p className="text-sm max-w-xs mt-2 font-medium">Integrate your published Excel Online dashboards or web reports to see them here.</p>
+                    <p className="text-sm max-w-xs mt-2 font-medium">Integrate your Word Online docs, Excel dashboards, or any secure web tool to see them here.</p>
                 </div>
             ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
