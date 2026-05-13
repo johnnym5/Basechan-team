@@ -89,8 +89,15 @@ service cloud.firestore {
       allow delete: if isSuperAdmin();
     }
     
+    // Live Displays: Only Admins or Managing Directors can manage links
+    match /external_displays/{displayId} {
+      allow read: if isRequestingUserInOrg(resource.data.orgId) || isSuperAdmin();
+      allow create: if (getUserRole() in ['ORG_ADMIN', 'MANAGING_DIRECTOR'] || isSuperAdmin()) && isCreatingInOwnOrg();
+      allow update, delete: if (getUserRole() in ['ORG_ADMIN', 'MANAGING_DIRECTOR'] || isSuperAdmin()) && isRequestingUserInOrg(resource.data.orgId);
+    }
+
     match /{collection}/{docId} 
-        where collection in ['departments', 'attendance', 'tasks', 'system_configs', 'announcements', 'workbooks', 'notifications', 'leave_requests', 'daily_reports', 'chats', 'journal_entries', 'external_displays'] {
+        where collection in ['departments', 'attendance', 'tasks', 'system_configs', 'announcements', 'workbooks', 'notifications', 'leave_requests', 'daily_reports', 'chats', 'journal_entries'] {
       
       allow read, delete: if isRequestingUserInOrg(resource.data.orgId) || isSuperAdmin();
       allow create: if isCreatingInOwnOrg() || isSuperAdmin();

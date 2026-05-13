@@ -20,12 +20,14 @@ import {
     RefreshCw,
     Loader2,
     Layout,
-    Globe
+    Globe,
+    Layers
 } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
 import { AddDashboardDialog } from './AddDashboardDialog';
 import { cn } from '@/lib/utils';
+import { ScrollArea } from '../ui/scroll-area';
 
 export function WebDashboardPageContent({ initialPayload }: { initialPayload?: { displayId?: string } }) {
     const { user: authUser } = useUser();
@@ -100,6 +102,35 @@ export function WebDashboardPageContent({ initialPayload }: { initialPayload?: {
                         </div>
                     </div>
                     <div className="flex items-center gap-2">
+                        {/* Display Switcher for easy jumping between feeds */}
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="outline" className="rounded-xl gap-2">
+                                    <Layers className="h-4 w-4" />
+                                    <span className="hidden sm:inline">Switch Feed</span>
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="apple-glass-darker border-none w-64">
+                                <ScrollArea className="h-64">
+                                    <div className="p-1 space-y-1">
+                                        {displays?.map(d => (
+                                            <DropdownMenuItem 
+                                                key={d.id} 
+                                                onClick={() => setSelectedDisplayId(d.id)}
+                                                className={cn(
+                                                    "rounded-lg cursor-pointer",
+                                                    d.id === selectedDisplayId && "bg-primary/10 text-primary font-bold"
+                                                )}
+                                            >
+                                                <MonitorDot className="h-4 w-4 mr-2" />
+                                                <span className="truncate">{d.title}</span>
+                                            </DropdownMenuItem>
+                                        ))}
+                                    </div>
+                                </ScrollArea>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+
                         <Button variant="outline" size="icon" className="rounded-xl" onClick={() => setIframeKey(k => k + 1)}>
                             <RefreshCw className="h-4 w-4" />
                         </Button>
@@ -143,7 +174,11 @@ export function WebDashboardPageContent({ initialPayload }: { initialPayload?: {
                 <div className="flex flex-col items-center justify-center py-32 text-center opacity-40 border-2 border-dashed rounded-[3rem] bg-secondary/10">
                     <Layout className="h-20 w-20 mb-6" />
                     <h3 className="text-xl font-bold font-headline uppercase tracking-widest">No Active Feeds</h3>
-                    <p className="text-sm max-w-xs mt-2 font-medium">Integrate your Word Online docs, Excel dashboards, or any secure web tool to see them here.</p>
+                    <p className="text-sm max-w-xs mt-2 font-medium">
+                        {permissions.canManageDisplays 
+                            ? "Integrate your Word Online docs, Excel dashboards, or any secure web tool to see them here."
+                            : "No dashboards have been published by the administration yet."}
+                    </p>
                 </div>
             ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
@@ -194,11 +229,13 @@ export function WebDashboardPageContent({ initialPayload }: { initialPayload?: {
                 </div>
             )}
 
-            <AddDashboardDialog 
-                open={isAddOpen} 
-                onOpenChange={setIsAddOpen} 
-                userProfile={userProfile!} 
-            />
+            {permissions.canManageDisplays && (
+                <AddDashboardDialog 
+                    open={isAddOpen} 
+                    onOpenChange={setIsAddOpen} 
+                    userProfile={userProfile!} 
+                />
+            )}
         </div>
     );
 }

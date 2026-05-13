@@ -1,3 +1,4 @@
+
 'use client';
 import type { UserProfile, UserRole } from '@/lib/types';
 import { useSuperAdmin } from './useSuperAdmin';
@@ -58,6 +59,7 @@ const rolePermissions: Record<UserRole, Partial<Permissions>> = {
     canManageLibrary: true,
     canViewFiles: true,
     canViewAudit: true,
+    canManageDisplays: true,
   },
   'ORG_ADMIN': {
     canApproveHR: true,
