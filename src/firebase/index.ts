@@ -3,7 +3,7 @@
 import { firebaseConfig } from '@/firebase/config';
 import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
-import { initializeFirestore, enableIndexedDbPersistence, getFirestore } from 'firebase/firestore';
+import { initializeFirestore, enableIndexedDbPersistence, getFirestore, CACHE_SIZE_UNLIMITED } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 import { getDatabase } from 'firebase/database';
 
@@ -40,22 +40,24 @@ export function getSdks(firebaseApp: FirebaseApp) {
   try {
     firestore = initializeFirestore(firebaseApp, {
       experimentalForceLongPolling: true,
+      cacheSizeBytes: CACHE_SIZE_UNLIMITED,
     });
   } catch (e) {
     // Fallback if already initialized
     firestore = getFirestore(firebaseApp);
   }
 
+  // Attempt persistence only in the browser and only once
   if (typeof window !== 'undefined' && !persistenceEnabled) {
-    persistenceEnabled = true; // Attempt only once
+    persistenceEnabled = true; 
     enableIndexedDbPersistence(firestore)
       .catch((err) => {
         if (err.code === 'failed-precondition') {
           // This means persistence is already enabled in another tab.
-          console.log('Firestore persistence already active in another tab.');
+          console.warn('Firestore persistence already active in another tab.');
         } else if (err.code === 'unimplemented') {
           // The current browser does not support all of the features.
-          console.log('Firestore persistence is not supported in this browser.');
+          console.warn('Firestore persistence is not supported in this browser.');
         }
       });
   }

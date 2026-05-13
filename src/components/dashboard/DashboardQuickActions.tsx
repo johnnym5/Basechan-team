@@ -15,7 +15,7 @@ export function DashboardQuickActions() {
     const firestore = useFirestore();
 
     const userProfileRef = useMemoFirebase(() =>
-        authUser ? doc(firestore, "users", authUser.uid) : null,
+        authUser ? doc(firestore!, "users", authUser.uid) : null,
         [firestore, authUser]
     );
     const { data: userProfile, isLoading } = useDoc<UserProfile>(userProfileRef);
@@ -42,9 +42,9 @@ export function DashboardQuickActions() {
             </CardHeader>
             <CardContent className="grid grid-cols-2 gap-4">
                 {actions.map(({ label, icon: Icon, action }) => (
-                    <Button key={label} variant="outline" className="flex flex-col h-auto py-3" onClick={action}>
+                    <Button key={label} variant="outline" className="flex flex-col h-auto py-3 rounded-xl interactive-element" onClick={action}>
                         <Icon className="h-5 w-5 mb-1" />
-                        <span className="text-xs">{label}</span>
+                        <span className="text-[10px] font-bold uppercase tracking-wider">{label}</span>
                     </Button>
                 ))}
             </CardContent>
