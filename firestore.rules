@@ -8,7 +8,7 @@ service cloud.firestore {
     
     function isSuperAdmin() {
       return request.auth != null && 
-             (request.auth.token.email == 'jegbase@gmail.com' || request.auth.uid == 'nMObbwaybEQP95OPKUyQ97iAm3u2');
+             (request.auth.token.email == 'jegbase@gmail.com' || request.auth.uid == 'nM0bBwaybEQP95OPKUyQ97iAm3u2');
     }
 
     function getUserData() {
@@ -20,6 +20,7 @@ service cloud.firestore {
     }
 
     function getUserRole() {
+      // Dynamic role resolution in rules isn't easy with strings, but we trust the role field for security
       return getUserData().role;
     }
 

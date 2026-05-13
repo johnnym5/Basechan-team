@@ -4,6 +4,7 @@ import { useSuperAdmin } from './useSuperAdmin';
 import { useSystemConfig } from './useSystemConfig';
 import { useMemo } from 'react';
 import { useImpersonation } from '@/context/ImpersonationProvider';
+import { getRoleFromPosition } from '@/lib/roles-and-departments';
 
 export interface Permissions {
   canApproveHR: boolean;
@@ -25,6 +26,7 @@ export interface Permissions {
   canManageLibrary: boolean;
   canViewFiles: boolean;
   canViewAudit: boolean;
+  canManageDisplays: boolean;
 }
 
 const rolePermissions: Record<UserRole, Partial<Permissions>> = {
@@ -70,6 +72,7 @@ const rolePermissions: Record<UserRole, Partial<Permissions>> = {
     canManageLibrary: true,
     canViewFiles: true,
     canViewAudit: true,
+    canManageDisplays: true,
   },
 };
 
@@ -93,6 +96,7 @@ const defaultPermissions: Permissions = {
   canManageLibrary: false,
   canViewFiles: false,
   canViewAudit: false,
+  canManageDisplays: false,
 };
 
 export function usePermissions(userProfile: UserProfile | null): Permissions {
@@ -101,7 +105,7 @@ export function usePermissions(userProfile: UserProfile | null): Permissions {
   const { isImpersonating } = useImpersonation();
 
   const permissions = useMemo(() => {
-    // If user is super admin AND not impersonating, they get absolute clearance.
+    // 1. Super Admin absolute clearance (Master Key)
     if (isSuperAdmin && !isImpersonating) {
       return { 
           canApproveHR: true,
@@ -123,21 +127,29 @@ export function usePermissions(userProfile: UserProfile | null): Permissions {
           canManageLibrary: true,
           canViewFiles: true,
           canViewAudit: true,
+          canManageDisplays: true,
       };
     }
     
-    // For all other cases (normal users, or an impersonating super admin), calculate permissions dynamically.
     if (!userProfile) {
       return defaultPermissions;
     }
     
-    // If super admin is impersonating, force their role to 'STAFF' to test restrictive UI.
-    const effectiveRole = (isSuperAdmin && isImpersonating)
-        ? 'STAFF'
-        : userProfile.role;
+    // 2. Position-aware role resolution
+    // Leadership roles are dynamically elevated regardless of database 'role' field
+    const derivedRole = getRoleFromPosition(userProfile.position);
+    let effectiveRole: UserRole = userProfile.role;
+    
+    if (derivedRole === 'ORG_ADMIN' || derivedRole === 'MANAGING_DIRECTOR') {
+        effectiveRole = derivedRole;
+    }
+
+    // Impersonation mode for testing restricted UI
+    if (isSuperAdmin && isImpersonating) {
+        effectiveRole = 'STAFF';
+    }
 
     const rolePerms = rolePermissions[effectiveRole] || {};
-    // When impersonating, ignore custom permissions to see the "pure" staff experience.
     const customPerms = (isSuperAdmin && isImpersonating) ? {} : (userProfile.customPermissions || {});
 
     const perms: Permissions = {
@@ -145,38 +157,24 @@ export function usePermissions(userProfile: UserProfile | null): Permissions {
         ...rolePerms,
     };
 
-    // 1. Base module access is gated by the org-wide SystemConfig
-    perms.canAccessRequisitions = systemConfig?.finance_access ?? false;
-    perms.canAccessChat = systemConfig?.chat_enabled ?? false;
+    // 3. Module level gating by SystemConfig
+    perms.canAccessRequisitions = (systemConfig?.finance_access ?? false) || (effectiveRole === 'ORG_ADMIN');
+    perms.canAccessChat = (systemConfig?.chat_enabled ?? false) || (effectiveRole === 'ORG_ADMIN');
 
-    // 2. "View All" permissions are typically tied to management roles
+    // 4. Visibility logic
     perms.canAccessAllTasks = !!rolePerms.canManageStaff;
     perms.canAccessAllWorkbooks = !!rolePerms.canManageStaff;
 
-    // 3. Apply user-specific custom permissions as overrides (but not during impersonation)
-    if (typeof customPerms.canAccessRequisitions === 'boolean') {
-        perms.canAccessRequisitions = customPerms.canAccessRequisitions && (systemConfig?.finance_access ?? true);
-    }
-    if (typeof customPerms.canAccessChat === 'boolean') {
-        perms.canAccessChat = customPerms.canAccessChat && (systemConfig?.chat_enabled ?? true);
-    }
-    if (typeof customPerms.canAccessAllTasks === 'boolean') {
-        perms.canAccessAllTasks = customPerms.canAccessAllTasks;
-    }
-     if (typeof customPerms.canAccessAllWorkbooks === 'boolean') {
-        perms.canAccessAllWorkbooks = customPerms.canAccessAllWorkbooks;
-    }
-    if (typeof customPerms.canManageAnnouncements === 'boolean') {
-        perms.canManageAnnouncements = customPerms.canManageAnnouncements;
-    }
-    if (typeof customPerms.canManageLibrary === 'boolean') {
-        perms.canManageLibrary = customPerms.canManageLibrary;
-    }
-    if (typeof customPerms.canViewAudit === 'boolean') {
-        perms.canViewAudit = customPerms.canViewAudit;
-    }
+    // 5. Apply user-specific custom overrides
+    if (typeof customPerms.canAccessRequisitions === 'boolean') perms.canAccessRequisitions = customPerms.canAccessRequisitions;
+    if (typeof customPerms.canAccessChat === 'boolean') perms.canAccessChat = customPerms.canAccessChat;
+    if (typeof customPerms.canAccessAllTasks === 'boolean') perms.canAccessAllTasks = customPerms.canAccessAllTasks;
+    if (typeof customPerms.canAccessAllWorkbooks === 'boolean') perms.canAccessAllWorkbooks = customPerms.canAccessAllWorkbooks;
+    if (typeof customPerms.canManageAnnouncements === 'boolean') perms.canManageAnnouncements = customPerms.canManageAnnouncements;
+    if (typeof customPerms.canManageLibrary === 'boolean') perms.canManageLibrary = customPerms.canManageLibrary;
+    if (typeof customPerms.canViewAudit === 'boolean') perms.canViewAudit = customPerms.canViewAudit;
+    if (typeof customPerms.canManageDisplays === 'boolean') perms.canManageDisplays = customPerms.canManageDisplays;
     
-    // 4. Special cases
     perms.canEditOwnProfile = effectiveRole !== 'STAFF' || (systemConfig?.allow_self_edit ?? true);
     perms.canViewTeam = perms.canManageStaff || (systemConfig?.admin_tools ?? false);
 
