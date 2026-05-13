@@ -1,7 +1,7 @@
 'use client';
 import { UserNav } from "@/components/layout/UserNav";
 import { useState, useEffect, useRef } from 'react';
-import { useUser, useDoc, useMemoFirebase, useCollection, updateDocumentNonBlocking } from '@/firebase';
+import { useUser, useDoc, useMemoFirebase, useCollection, updateDocumentNonBlocking, useFirestore } from '@/firebase';
 import { collection, query, where, orderBy, limit, doc } from 'firebase/firestore';
 import type { UserProfile, Notification, Attendance, SystemConfig } from '@/lib/types';
 import { Bell, Search as SearchIcon, CheckCircle2, Circle } from 'lucide-react';
