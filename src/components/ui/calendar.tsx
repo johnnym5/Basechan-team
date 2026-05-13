@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import { DayPicker } from "react-day-picker"
+import { ChevronLeft, ChevronRight } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 import { buttonVariants } from "@/components/ui/button"
@@ -26,11 +27,11 @@ function Calendar({
         nav: "flex items-center",
         button_previous: cn(
           buttonVariants({ variant: "outline" }),
-          "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100 absolute left-1 rounded-lg border-gray-800 transition-all"
+          "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100 absolute left-1 rounded-lg border-gray-800 transition-all z-10 flex items-center justify-center"
         ),
         button_next: cn(
           buttonVariants({ variant: "outline" }),
-          "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100 absolute right-1 rounded-lg border-gray-800 transition-all"
+          "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100 absolute right-1 rounded-lg border-gray-800 transition-all z-10 flex items-center justify-center"
         ),
         month_grid: "w-full border-collapse space-y-1",
         weekdays: "flex",
@@ -52,6 +53,12 @@ function Calendar({
           "aria-selected:bg-accent aria-selected:text-accent-foreground",
         hidden: "invisible",
         ...classNames,
+      }}
+      components={{
+        Chevron: ({ orientation }) => {
+          const Icon = orientation === "left" ? ChevronLeft : ChevronRight;
+          return <Icon className="h-4 w-4" />;
+        },
       }}
       {...props}
     />
