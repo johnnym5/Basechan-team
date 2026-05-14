@@ -34,11 +34,13 @@ export const attendanceService = {
     const attendanceRef = doc(db, 'attendance', record.id);
 
     if (!record.onBreak) {
+      // Start Break
       updateDocumentNonBlocking(attendanceRef, {
         onBreak: true,
         breaks: arrayUnion({ start: now })
       });
     } else {
+      // End Break
       const lastBreak = record.breaks?.[record.breaks.length - 1];
       if (lastBreak) {
         const breakSeconds = differenceInSeconds(new Date(now), new Date(lastBreak.start));
@@ -62,7 +64,20 @@ export const attendanceService = {
     const updateData: any = {
       clockOut: now.toISOString(),
       status: 'APPROVED',
+      onBreak: false,
     };
+
+    // If clocking out while on break, close the last break segment
+    if (record.onBreak && record.breaks?.length) {
+        const lastBreak = record.breaks[record.breaks.length - 1];
+        if (!lastBreak.end) {
+            const breakSeconds = differenceInSeconds(now, new Date(lastBreak.start));
+            const updatedBreaks = [...record.breaks];
+            updatedBreaks[updatedBreaks.length - 1].end = now.toISOString();
+            updateData.breaks = updatedBreaks;
+            updateData.totalBreak = increment(breakSeconds);
+        }
+    }
 
     updateDocumentNonBlocking(attendanceRef, updateData);
     updateDocumentNonBlocking(userRef, { status: 'OFFLINE', lastSeen: now.toISOString() });
