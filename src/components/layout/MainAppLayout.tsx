@@ -80,7 +80,7 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen-safe w-full bg-muted/30 flex justify-center p-0 md:p-3 lg:p-6 transition-all duration-500 overflow-hidden">
       <div className="flex w-full max-w-[1920px] bg-background md:rounded-[2rem] md:shadow-2xl md:border border-border/50 overflow-hidden relative">
-        {/* The Sidebar component internally handles hidden md:flex */}
+        {/* Sidebar handles its own responsive visibility (hidden on mobile) */}
         <AppSidebar isLoggedIn={isLoggedIn} isAuthLoading={isUserLoading} />
 
         <div className="flex-1 flex flex-col min-w-0 h-[100dvh] md:h-full overflow-hidden">

@@ -67,6 +67,7 @@ export default function AppSidebar({
 
   const isExpanded = isHovered;
 
+  // Ensure it's hidden on mobile even before hydration completes
   if (!mounted) {
     return (
         <aside className="sidebar-bg hidden md:flex flex-shrink-0 flex flex-col border-r border-gray-800 h-screen w-20 transition-all duration-300 z-50 relative" />
