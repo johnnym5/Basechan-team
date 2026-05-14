@@ -1,7 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: 'export',
-  distDir: 'public',
   typescript: {
     // Ensuring builds pass even if minor type inconsistencies exist during prototyping
     ignoreBuildErrors: true,
