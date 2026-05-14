@@ -4,16 +4,11 @@
 
 @layer base {
   html {
-    font-size: 65%; /* Smaller base for mobile */
+    /* Fluid typography: Scales between mobile and desktop based on viewport width */
+    font-size: clamp(60%, 0.75vw + 0.3rem, 75%);
     scroll-behavior: smooth;
   }
   
-  @media (min-width: 768px) {
-    html {
-      font-size: 75%; /* Scale up for tablet/desktop */
-    }
-  }
-
   :root {
     /* Sophisticated Light Mode */
     --background: 240 10% 98%;

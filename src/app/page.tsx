@@ -72,10 +72,10 @@ export default function DashboardPage() {
     }
 
     return (
-        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-700">
+        <div className="space-y-4 md:space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-700">
              {isSuperAdmin && !isImpersonating && (
-                <Card className="card-bg border-primary/20 mb-6">
-                    <CardHeader className="flex-row items-center justify-between py-4">
+                <Card className="card-bg border-primary/20 mb-4 md:mb-6">
+                    <CardHeader className="flex-row items-center justify-between py-3 md:py-4">
                         <div>
                             <CardTitle className="text-lg">Super Admin Console</CardTitle>
                         </div>
@@ -86,25 +86,29 @@ export default function DashboardPage() {
                 </Card>
             )}
 
-            <div className="grid grid-cols-12 gap-6">
-                <section className="col-span-12 lg:col-span-5">
+            <div className="grid grid-cols-12 gap-4 md:gap-6">
+                <section className="col-span-12 lg:col-span-5 xl:col-span-4">
                     <ClockControl userProfile={userProfile || null} permissions={permissions} systemConfig={systemConfig} />
                 </section>
 
-                <section className="col-span-12 lg:col-span-7">
+                <section className="col-span-12 lg:col-span-7 xl:col-span-8">
                     <PerformanceCard userProfile={userProfile || null} />
                 </section>
 
-                <section className="col-span-12 lg:col-span-9">
+                <section className="col-span-12 lg:col-span-8 xl:col-span-9">
                     <DashboardTaskList userProfile={userProfile || null} permissions={permissions} />
                 </section>
 
-                <div className="col-span-12 lg:col-span-3 space-y-4">
-                    <DashboardQuickActions />
-                    <DashboardLiveDisplays userProfile={userProfile || null} />
-                    <DashboardRecentReports />
-                    <DashboardRecentChats />
-                    <Announcements />
+                <div className="col-span-12 lg:col-span-4 xl:col-span-3">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 gap-4 md:gap-6 lg:gap-4">
+                        <DashboardQuickActions />
+                        <DashboardLiveDisplays userProfile={userProfile || null} />
+                        <DashboardRecentReports />
+                        <DashboardRecentChats />
+                        <div className="md:col-span-2 lg:col-span-1">
+                            <Announcements />
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

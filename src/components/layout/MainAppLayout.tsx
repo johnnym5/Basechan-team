@@ -96,14 +96,14 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="min-h-screen-safe w-full bg-muted/30 flex justify-center p-0 md:p-4 lg:p-6 transition-all duration-500">
-      <div className="flex w-full max-w-[1600px] bg-background md:rounded-[2rem] md:shadow-2xl md:border border-border/50 overflow-hidden relative">
+    <div className="min-h-screen-safe w-full bg-muted/30 flex justify-center p-0 md:p-3 lg:p-4 xl:p-6 transition-all duration-500">
+      <div className="flex w-full max-w-[1920px] bg-background md:rounded-[2rem] md:shadow-2xl md:border border-border/50 overflow-hidden relative">
         <AppSidebar 
           isLoggedIn={isLoggedIn} 
           isAuthLoading={isUserLoading} 
         />
 
-        <div className="flex-1 flex flex-col min-w-0 h-[100dvh] md:h-[calc(100vh-3rem)] overflow-hidden">
+        <div className="flex-1 flex flex-col min-w-0 h-[100dvh] md:h-[calc(100vh-2rem)] lg:h-[calc(100vh-3rem)] overflow-hidden">
           <AppHeader
               userProfile={stableProfile}
               onMenuClick={() => {}}
@@ -113,8 +113,8 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
               className="apple-glass z-10 md:sticky top-0"
           />
           
-          <main className="flex-1 overflow-y-auto p-3 md:p-8 scroll-smooth no-scrollbar">
-              <div className="max-w-[1600px] mx-auto pb-24 md:pb-0">
+          <main className="flex-1 overflow-y-auto p-3 md:p-6 lg:p-8 scroll-smooth no-scrollbar">
+              <div className="w-full mx-auto">
                   {children}
               </div>
           </main>

@@ -243,9 +243,7 @@ export default function AppHeader({
                     <span className="text-[8px] md:text-[10px] font-black uppercase tracking-[0.2em] whitespace-nowrap">{activeTickerAlert.label}</span>
                 </div>
                 <div className="relative flex-1 overflow-hidden h-full flex items-center">
-                    <p className="animate-marquee text-xs md:text-sm font-black uppercase tracking-tight">
-                        <span className="mx-8">{activeTickerAlert.title} — {activeTickerAlert.content}</span>
-                        <span className="mx-8 opacity-50">•</span>
+                    <p className="animate-marquee text-[10px] md:text-sm font-black uppercase tracking-tight">
                         <span className="mx-8">{activeTickerAlert.title} — {activeTickerAlert.content}</span>
                         <span className="mx-8 opacity-50">•</span>
                         <span className="mx-8">{activeTickerAlert.title} — {activeTickerAlert.content}</span>
@@ -259,33 +257,33 @@ export default function AppHeader({
             </div>
         )}
 
-        <div className="h-16 md:h-20 flex items-center justify-between px-4 md:px-8">
+        <div className="h-16 md:h-20 flex items-center justify-between px-3 md:px-6 lg:px-8">
             <div className="flex flex-col min-w-0">
-                <h2 className="text-lg md:text-2xl font-bold font-headline tracking-tight text-foreground truncate">{greeting}</h2>
+                <h2 className="text-base md:text-xl lg:text-2xl font-bold font-headline tracking-tight text-foreground truncate">{greeting}</h2>
                 {userProfile && (
-                    <p className="text-[8px] md:text-[10px] font-black uppercase tracking-widest text-muted-foreground truncate">
+                    <p className="text-[7px] md:text-[9px] lg:text-[10px] font-black uppercase tracking-widest text-muted-foreground truncate opacity-60">
                         Node: {userProfile.orgId}
                     </p>
                 )}
             </div>
             
-            <div className="flex items-center space-x-2 md:space-x-6">
+            <div className="flex items-center space-x-1.5 md:space-x-4 lg:space-x-6">
                 {isLoggedIn && (
                     <>
-                        {userProfile && <div className="hidden sm:block"><UniversalSearch userProfile={userProfile} /></div>}
+                        {userProfile && <div className="hidden lg:block"><UniversalSearch userProfile={userProfile} /></div>}
 
                         <Popover open={isNotificationsOpen} onOpenChange={setIsNotificationsOpen}>
                             <PopoverTrigger asChild>
                                 <button className="relative text-gray-400 hover:text-primary transition-all interactive-element p-1.5 md:p-2 rounded-full hover:bg-primary/5 group">
-                                    <Bell className={cn("w-5 h-5 md:w-6 md:h-6", unreadCount > 0 && "text-primary")} />
+                                    <Bell className={cn("w-4.5 h-4.5 md:w-5 md:h-5 lg:w-6 lg:h-6", unreadCount > 0 && "text-primary")} />
                                     {unreadCount > 0 && (
-                                        <span className="absolute top-1 right-1 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-destructive text-[8px] font-black text-white ring-2 ring-background">
+                                        <span className="absolute top-1 right-1 flex h-3 w-3 md:h-3.5 md:w-3.5 items-center justify-center rounded-full bg-destructive text-[7px] md:text-[8px] font-black text-white ring-2 ring-background">
                                             {unreadCount}
                                         </span>
                                     )}
                                 </button>
                             </PopoverTrigger>
-                            <PopoverContent align="end" className="w-[85vw] sm:w-96 p-0 apple-glass border-none shadow-2xl overflow-hidden mt-2">
+                            <PopoverContent align="end" className="w-[85vw] sm:w-96 p-0 apple-glass border-none shadow-3xl overflow-hidden mt-2">
                                 <div className="p-4 border-b border-white/5 bg-secondary/20 flex items-center justify-between">
                                     <h3 className="font-bold text-xs uppercase tracking-widest">Telemetry Alerts</h3>
                                     {unreadCount > 0 && (
