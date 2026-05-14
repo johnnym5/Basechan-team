@@ -1,6 +1,6 @@
 'use client';
 
-import { BookCopy, Shield } from 'lucide-react';
+import { BookCopy, Shield, Zap, Sparkles } from 'lucide-react';
 import { useUser, useFirestore, useDoc, useMemoFirebase } from '@/firebase';
 import { DashboardTaskList } from "@/components/dashboard/DashboardTaskList";
 import { doc } from "firebase/firestore";
@@ -21,16 +21,14 @@ import { useImpersonation } from '@/context/ImpersonationProvider';
 import { LoginForm } from '@/components/auth/LoginForm';
 import { DashboardQuickActions } from '@/components/dashboard/DashboardQuickActions';
 import { DashboardRecentReports } from '@/components/dashboard/DashboardRecentReports';
+import { useEffect, useState } from 'react';
 
-/**
- * Root Dashboard Page.
- * This is the primary entry point for authenticated personnel.
- */
 export default function DashboardPage() {
     const { user: authUser, isUserLoading: isAuthLoading } = useUser();
     const firestore = useFirestore();
     const { isSuperAdmin } = useSuperAdmin();
     const { isImpersonating } = useImpersonation();
+    const [greeting, setGreeting] = useState('');
 
     const userProfileRef = useMemoFirebase(() => 
         firestore && authUser ? doc(firestore, 'users', authUser.uid) : null, 
@@ -39,18 +37,27 @@ export default function DashboardPage() {
     const permissions = usePermissions(userProfile || null);
     const { config: systemConfig, isLoading: isConfigLoading } = useSystemConfig(userProfile?.orgId);
 
+    useEffect(() => {
+        const hour = new Date().getHours();
+        if (hour < 12) setGreeting('Morning');
+        else if (hour < 17) setGreeting('Afternoon');
+        else setGreeting('Evening');
+    }, []);
+
     if (!authUser && !isAuthLoading) {
       return (
-        <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-4 animate-in fade-in duration-700">
-            <div className="mb-8">
-                <BookCopy className="h-16 w-16 text-primary mx-auto" />
-                <h1 className="mt-4 text-3xl font-bold font-headline">Welcome to StaffPortal</h1>
-                <p className="mt-2 text-lg text-muted-foreground">Internal management redefined.</p>
+        <div className="flex flex-col items-center justify-center min-h-[70vh] text-center px-4 animate-in fade-in duration-700">
+            <div className="mb-12">
+                <div className="relative inline-block">
+                    <BookCopy className="h-20 w-20 text-primary mx-auto" />
+                    <Sparkles className="absolute -top-2 -right-2 h-8 w-8 text-amber-500 animate-pulse" />
+                </div>
+                <h1 className="mt-6 text-4xl font-black font-headline tracking-tighter">Basechan Staff</h1>
+                <p className="mt-2 text-lg text-muted-foreground uppercase tracking-widest font-bold">Operational Node [01]</p>
             </div>
-            <Card className="w-full max-w-md card-bg border-gray-800 shadow-2xl overflow-hidden">
-                <CardHeader>
-                    <CardTitle>LOGIN</CardTitle>
-                    <CardDescription>Enter your credentials to access the system.</CardDescription>
+            <Card className="w-full max-w-md apple-glass-darker border-none shadow-3xl overflow-hidden rounded-[2.5rem]">
+                <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-black uppercase tracking-widest opacity-50">Authorization Required</CardTitle>
                 </CardHeader>
                 <CardContent className="text-left">
                     <LoginForm />
@@ -62,36 +69,39 @@ export default function DashboardPage() {
     
     if (isAuthLoading || isConfigLoading) {
         return (
-             <div className="grid grid-cols-12 gap-6">
-                <div className="col-span-12 lg:col-span-5 h-64"><Skeleton className="h-full w-full rounded-2xl" /></div>
-                <div className="col-span-12 lg:col-span-7 h-64"><Skeleton className="h-full w-full rounded-2xl" /></div>
-                <div className="col-span-12 lg:col-span-9 h-96"><Skeleton className="h-full w-full rounded-2xl" /></div>
-                <div className="col-span-12 lg:col-span-3 space-y-6"><Skeleton className="h-48 w-full rounded-2xl" /><Skeleton className="h-48 w-full rounded-2xl" /></div>
+             <div className="grid grid-cols-12 gap-4 md:gap-6">
+                <div className="col-span-12 lg:col-span-5 h-64"><Skeleton className="h-full w-full rounded-[2rem]" /></div>
+                <div className="col-span-12 lg:col-span-7 h-64"><Skeleton className="h-full w-full rounded-[2rem]" /></div>
+                <div className="col-span-12 h-96"><Skeleton className="h-full w-full rounded-[2rem]" /></div>
             </div>
         )
     }
 
     return (
-        <div className="space-y-4 md:space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-700">
+        <div className="space-y-6 md:space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-1000">
+             {/* Mobile-only Greeting */}
+             <div className="md:hidden space-y-1 px-1">
+                 <h1 className="text-4xl font-black font-headline tracking-tighter">Good {greeting},</h1>
+                 <p className="text-lg font-bold text-muted-foreground">{userProfile?.fullName.split(' ')[0]}</p>
+             </div>
+
              {isSuperAdmin && !isImpersonating && (
-                <Card className="card-bg border-primary/20 mb-4 md:mb-6">
-                    <CardHeader className="flex-row items-center justify-between py-3 md:py-4">
-                        <div>
-                            <CardTitle className="text-lg">Super Admin Console</CardTitle>
-                        </div>
-                        <Button size="sm" onClick={() => uiEmitter.emit('open-superadmin-dialog')}>
-                            <Shield className="mr-2 h-4 w-4" /> Open Console
-                        </Button>
+                <Card className="apple-glass border-primary/20 bg-primary/5 rounded-[2rem] overflow-hidden">
+                    <CardHeader className="flex-row items-center justify-between py-4">
+                        <CardTitle className="text-sm font-black uppercase tracking-widest flex items-center gap-2">
+                            <Shield className="h-4 w-4 text-primary" /> Master Console
+                        </CardTitle>
+                        <Button size="sm" onClick={() => uiEmitter.emit('open-superadmin-dialog')} className="rounded-full h-8 px-4 text-[10px] font-black uppercase">Launch</Button>
                     </CardHeader>
                 </Card>
             )}
 
-            <div className="grid grid-cols-12 gap-4 md:gap-6">
-                <section className="col-span-12 lg:col-span-5 xl:col-span-4">
+            <div className="grid grid-cols-12 gap-4 md:gap-8">
+                <section className="col-span-12 lg:col-span-5 xl:col-span-4 interactive-element">
                     <ClockControl userProfile={userProfile || null} permissions={permissions} systemConfig={systemConfig} />
                 </section>
 
-                <section className="col-span-12 lg:col-span-7 xl:col-span-8">
+                <section className="col-span-12 lg:col-span-7 xl:col-span-8 interactive-element">
                     <PerformanceCard userProfile={userProfile || null} />
                 </section>
 
@@ -100,14 +110,12 @@ export default function DashboardPage() {
                 </section>
 
                 <div className="col-span-12 lg:col-span-4 xl:col-span-3">
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 gap-4 md:gap-6 lg:gap-4">
+                    <div className="flex flex-col gap-4 md:gap-8">
                         <DashboardQuickActions />
                         <DashboardLiveDisplays userProfile={userProfile || null} />
                         <DashboardRecentReports />
                         <DashboardRecentChats />
-                        <div className="md:col-span-2 lg:col-span-1">
-                            <Announcements />
-                        </div>
+                        <Announcements />
                     </div>
                 </div>
             </div>
