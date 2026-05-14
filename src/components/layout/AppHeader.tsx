@@ -38,7 +38,6 @@ export default function AppHeader({
   const [currentTime, setCurrentTime] = useState('');
   const prevUnreadCount = useRef(0);
 
-  // Hydration-safe clock and briefing timer
   useEffect(() => {
     const updateTime = () => setCurrentTime(format(new Date(), 'HH:mm'));
     updateTime();
@@ -52,7 +51,6 @@ export default function AppHeader({
     };
   }, []);
 
-  // Update Greeting
   useEffect(() => {
     const updateGreeting = () => {
       const hour = new Date().getHours();
@@ -85,7 +83,6 @@ export default function AppHeader({
     return () => clearInterval(interval);
   }, [userProfile, user]);
 
-  // Telemetry Queries for Debrief
   const notificationsQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
     return query(
@@ -125,7 +122,6 @@ export default function AppHeader({
       return !lastRead || (c.lastMessage && new Date(c.lastMessage.timestamp) > new Date(lastRead));
   }).length || 0;
 
-  // Announcements Query for Ticker
   const announcementsQuery = useMemoFirebase(() => {
     if (!firestore || !userProfile) return null;
     return query(
@@ -174,7 +170,6 @@ export default function AppHeader({
       setSelectedAnnouncement(ann);
   };
 
-  // UNIFIED TICKER FEED
   const activeTickerAlert = useMemo(() => {
     if (isBriefing) {
         return {
@@ -245,10 +240,10 @@ export default function AppHeader({
             >
                 <div className="flex-shrink-0 bg-white/10 h-full flex items-center px-4 z-10 shadow-lg gap-2 backdrop-blur-md">
                     {activeTickerAlert.icon}
-                    <span className="text-[10px] font-black uppercase tracking-[0.2em] whitespace-nowrap">{activeTickerAlert.label}</span>
+                    <span className="text-[8px] md:text-[10px] font-black uppercase tracking-[0.2em] whitespace-nowrap">{activeTickerAlert.label}</span>
                 </div>
                 <div className="relative flex-1 overflow-hidden h-full flex items-center">
-                    <p className="animate-marquee text-sm font-black uppercase tracking-tight">
+                    <p className="animate-marquee text-xs md:text-sm font-black uppercase tracking-tight">
                         <span className="mx-8">{activeTickerAlert.title} — {activeTickerAlert.content}</span>
                         <span className="mx-8 opacity-50">•</span>
                         <span className="mx-8">{activeTickerAlert.title} — {activeTickerAlert.content}</span>
@@ -257,40 +252,40 @@ export default function AppHeader({
                     </p>
                 </div>
                 <div className="flex-shrink-0 px-4 z-10 bg-gradient-to-l from-black/20 to-transparent h-full flex items-center">
-                    <span className="text-[9px] font-bold opacity-0 group-hover:opacity-100 transition-opacity uppercase tracking-widest">
+                    <span className="text-[9px] font-bold opacity-0 group-hover:opacity-100 transition-opacity uppercase tracking-widest hidden sm:inline">
                         Execute Node
                     </span>
                 </div>
             </div>
         )}
 
-        <div className="h-20 flex items-center justify-between px-8">
-            <div className="flex flex-col">
-                <h2 className="text-2xl font-bold font-headline tracking-tight text-foreground">{greeting}</h2>
+        <div className="h-16 md:h-20 flex items-center justify-between px-4 md:px-8">
+            <div className="flex flex-col min-w-0">
+                <h2 className="text-lg md:text-2xl font-bold font-headline tracking-tight text-foreground truncate">{greeting}</h2>
                 {userProfile && (
-                    <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                    <p className="text-[8px] md:text-[10px] font-black uppercase tracking-widest text-muted-foreground truncate">
                         Node: {userProfile.orgId}
                     </p>
                 )}
             </div>
             
-            <div className="flex items-center space-x-6">
+            <div className="flex items-center space-x-2 md:space-x-6">
                 {isLoggedIn && (
                     <>
-                        {userProfile && <UniversalSearch userProfile={userProfile} />}
+                        {userProfile && <div className="hidden sm:block"><UniversalSearch userProfile={userProfile} /></div>}
 
                         <Popover open={isNotificationsOpen} onOpenChange={setIsNotificationsOpen}>
                             <PopoverTrigger asChild>
-                                <button className="relative text-gray-400 hover:text-primary transition-all interactive-element p-2 rounded-full hover:bg-primary/5 group">
-                                    <Bell className={cn("w-6 h-6", unreadCount > 0 && "text-primary")} />
+                                <button className="relative text-gray-400 hover:text-primary transition-all interactive-element p-1.5 md:p-2 rounded-full hover:bg-primary/5 group">
+                                    <Bell className={cn("w-5 h-5 md:w-6 md:h-6", unreadCount > 0 && "text-primary")} />
                                     {unreadCount > 0 && (
-                                        <span className="absolute top-1.5 right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[9px] font-black text-white ring-2 ring-background">
+                                        <span className="absolute top-1 right-1 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-destructive text-[8px] font-black text-white ring-2 ring-background">
                                             {unreadCount}
                                         </span>
                                     )}
                                 </button>
                             </PopoverTrigger>
-                            <PopoverContent align="end" className="w-96 p-0 apple-glass border-none shadow-2xl overflow-hidden mt-2">
+                            <PopoverContent align="end" className="w-[85vw] sm:w-96 p-0 apple-glass border-none shadow-2xl overflow-hidden mt-2">
                                 <div className="p-4 border-b border-white/5 bg-secondary/20 flex items-center justify-between">
                                     <h3 className="font-bold text-xs uppercase tracking-widest">Telemetry Alerts</h3>
                                     {unreadCount > 0 && (
@@ -299,7 +294,7 @@ export default function AppHeader({
                                         </button>
                                     )}
                                 </div>
-                                <ScrollArea className="h-96">
+                                <ScrollArea className="h-[60vh] md:h-96">
                                     {!notifications || notifications.length === 0 ? (
                                         <div className="flex flex-col items-center justify-center py-20 opacity-30">
                                             <Bell className="h-10 w-10 mb-2" />

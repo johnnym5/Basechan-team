@@ -54,13 +54,11 @@ export default function AppSidebar({
   };
 
   const handleNavClick = (item: any) => {
-    // Force reset current modal state before navigating/opening new dialog
     uiEmitter.emit('close-all-dialogs');
     
     if (item.href) {
         router.push(item.href);
     } else if (item.dialog) {
-        // Small delay to ensure the reset above processes
         setTimeout(() => {
             uiEmitter.emit(`open-${item.dialog}-dialog` as any);
         }, 50);
@@ -69,10 +67,9 @@ export default function AppSidebar({
 
   const isExpanded = isHovered;
 
-  // Hydration safety: render a shell during SSR and initial client pass
   if (!mounted) {
     return (
-        <aside className="sidebar-bg flex-shrink-0 flex flex-col border-r border-gray-800 h-screen w-20 transition-all duration-300 z-50 relative" />
+        <aside className="sidebar-bg hidden md:flex flex-shrink-0 flex flex-col border-r border-gray-800 h-screen w-20 transition-all duration-300 z-50 relative" />
     );
   }
 
@@ -81,7 +78,7 @@ export default function AppSidebar({
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
         className={cn(
-            "sidebar-bg flex-shrink-0 flex flex-col border-r border-gray-800 h-screen transition-all duration-300 z-50 relative",
+            "sidebar-bg hidden md:flex flex-shrink-0 flex flex-col border-r border-gray-800 h-screen transition-all duration-300 z-50 relative",
             isExpanded ? "w-64 shadow-2xl" : "w-20"
         )}
     >
@@ -97,8 +94,6 @@ export default function AppSidebar({
           if ('isSeparator' in item) return <div key={index} className={cn("h-px bg-gray-800/50 my-4 mx-2", !isExpanded && "opacity-0")} />;
           
           if ('permission' in item) {
-              // Hide items ONLY if loading. We check permissions even if userProfile is null 
-              // because usePermissions handles Super Admin logic.
               if (isProfileLoading) return null;
               if (!permissions[item.permission as keyof typeof permissions]) return null;
           }

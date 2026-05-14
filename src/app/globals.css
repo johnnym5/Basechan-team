@@ -4,8 +4,14 @@
 
 @layer base {
   html {
-    font-size: 75%; /* Scale the whole app by 75% (12px base) */
+    font-size: 65%; /* Smaller base for mobile */
     scroll-behavior: smooth;
+  }
+  
+  @media (min-width: 768px) {
+    html {
+      font-size: 75%; /* Scale up for tablet/desktop */
+    }
   }
 
   :root {
@@ -37,7 +43,7 @@
     --border: 240 6% 90%;
     --input: 240 6% 90%;
     --ring: 217 91% 60%;
-    --radius: 1.5rem; /* Smoother border radii */
+    --radius: 1.5rem; 
 
     --sidebar-background: 230 15% 10%; 
     --sidebar-foreground: 210 40% 98%;
@@ -83,7 +89,7 @@
     height: 100%;
     margin: 0;
     padding: 0;
-    overflow: hidden; /* Force internal scrolling for Mission Control feel */
+    overflow: hidden; 
   }
 
   body {
@@ -92,7 +98,6 @@
     -moz-osx-font-smoothing: grayscale;
   }
 
-  /* Custom System-Wide Scrollbar */
   ::-webkit-scrollbar {
     width: 0.5rem;
     height: 0.5rem;
@@ -158,7 +163,6 @@
       @apply transition-all duration-300 ease-apple-ease hover:-translate-y-1 hover:shadow-lg active:scale-[0.98] active:shadow-sm;
     }
 
-    /* Scrolling Announcement Ticker */
     @keyframes marquee {
       0% { transform: translateX(100%); }
       100% { transform: translateX(-100%); }

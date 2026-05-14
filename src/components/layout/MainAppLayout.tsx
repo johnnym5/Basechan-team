@@ -27,7 +27,6 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
   const [today, setToday] = useState('');
   const [mounted, setMounted] = useState(false);
 
-  // Sync URL parameters with dialog panel state
   useSyncDialogsWithUrl();
 
   const isLoggedIn = !!user;
@@ -42,7 +41,6 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
   , [firestore, user]);
   const { data: userProfile } = useDoc<UserProfile>(userProfileRef);
   
-  // Stable Profile Fallback for reliability during deployment initialization
   const stableProfile = useMemo(() => {
     if (!user) return null;
     return {
@@ -75,7 +73,6 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
   const permissions = usePermissions(stableProfile);
   const { config } = useSystemConfig(stableProfile?.orgId);
 
-  // Apply organization theme with hydration safety
   useEffect(() => {
     if (!mounted) return;
     const root = document.documentElement;
@@ -89,7 +86,6 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
     }
   }, [config, mounted]);
 
-  // Hydration safety: ensure server-rendered content matches client initialization
   if (!mounted) {
       return <div className="min-h-screen bg-background flex items-center justify-center">
           <div className="animate-pulse flex flex-col items-center gap-4">
@@ -114,10 +110,10 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
               isLoggedIn={isLoggedIn}
               attendanceRecord={attendanceRecord}
               systemConfig={config || null}
-              className="apple-glass z-10 sticky top-0"
+              className="apple-glass z-10 md:sticky top-0"
           />
           
-          <main className="flex-1 overflow-y-auto p-4 md:p-8 scroll-smooth no-scrollbar">
+          <main className="flex-1 overflow-y-auto p-3 md:p-8 scroll-smooth no-scrollbar">
               <div className="max-w-[1600px] mx-auto pb-24 md:pb-0">
                   {children}
               </div>
