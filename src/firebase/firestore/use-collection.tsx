@@ -97,11 +97,10 @@ export function useCollection<T = any>(
             })
 
             setError(contextualError);
-            // trigger global error propagation
             errorEmitter.emit('permission-error', contextualError);
         } else {
-            console.error("Firestore (useCollection) Error:", error);
             setError(error);
+            errorEmitter.emit('firestore-error', error);
         }
         
         setData(null);

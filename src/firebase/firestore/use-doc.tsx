@@ -78,11 +78,10 @@ export function useDoc<T = any>(
               path: memoizedDocRef.path,
             })
             setError(contextualError);
-            // trigger global error propagation
             errorEmitter.emit('permission-error', contextualError);
         } else {
-            console.error("Firestore (useDoc) Error:", error);
             setError(error);
+            errorEmitter.emit('firestore-error', error);
         }
         
         setData(null);

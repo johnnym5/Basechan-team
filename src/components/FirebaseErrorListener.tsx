@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useEffect } from 'react';
@@ -9,7 +8,7 @@ import { useUser, useDoc, useMemoFirebase, useFirestore } from '@/firebase';
 import { doc } from 'firebase/firestore';
 import { logErrorToFirestore } from '@/lib/error-logger';
 import type { UserProfile } from '@/lib/types';
-
+import { ToastAction } from '@/components/ui/toast';
 
 export function FirebaseErrorListener() {
   const { toast } = useToast();
@@ -22,21 +21,13 @@ export function FirebaseErrorListener() {
   const { data: userProfile } = useDoc<UserProfile>(userProfileRef);
 
   useEffect(() => {
-    const handleError = (error: FirestorePermissionError) => {
-      // Avoid infinite loop if the error is about error_logs itself
-      if (error.request.path.includes('error_logs')) {
-        console.error("Critical: Could not log error to Firestore due to permission error on error_logs:", error);
-        return;
-      }
+    const handlePermissionError = (error: FirestorePermissionError) => {
+      if (error.request.path.includes('error_logs')) return;
 
-      // Log the full error to the backend for admin review
       if (firestore) {
         logErrorToFirestore(firestore, error, null, userProfile);
-      } else {
-        console.error("Firestore not available to log permission error:", error);
       }
 
-      // Show a generic, non-blocking toast to the user
       toast({
         variant: 'destructive',
         title: 'Action Denied',
@@ -44,13 +35,39 @@ export function FirebaseErrorListener() {
       });
     };
 
-    errorEmitter.on('permission-error', handleError);
+    const handleGenericError = (error: any) => {
+      // Check for missing index error
+      const message = error.message || '';
+      const indexMatch = message.match(/(https:\/\/console\.firebase\.google\.com\/v1\/r\/project\/[^\s]*)/);
+
+      if (indexMatch) {
+        const url = indexMatch[0];
+        toast({
+          variant: 'destructive',
+          title: 'Index Required',
+          description: 'This query requires a composite index. Link copied to clipboard.',
+          action: (
+            <ToastAction altText="Create Index" onClick={() => {
+                navigator.clipboard.writeText(url);
+                window.open(url, '_blank');
+            }}>
+              Fix in Console
+            </ToastAction>
+          ),
+        });
+      } else if (firestore) {
+        logErrorToFirestore(firestore, error, null, userProfile);
+      }
+    };
+
+    errorEmitter.on('permission-error', handlePermissionError);
+    errorEmitter.on('firestore-error', handleGenericError);
 
     return () => {
-      errorEmitter.off('permission-error', handleError);
+      errorEmitter.off('permission-error', handlePermissionError);
+      errorEmitter.off('firestore-error', handleGenericError);
     };
   }, [firestore, toast, userProfile]);
 
-  // This component now renders nothing, it only listens and acts.
   return null;
 }
