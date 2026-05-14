@@ -1,8 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: 'export',
+  trailingSlash: true,
   typescript: {
-    // Ensuring builds pass even if minor type inconsistencies exist during prototyping
     ignoreBuildErrors: true,
   },
   eslint: {
