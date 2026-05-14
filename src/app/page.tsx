@@ -53,7 +53,7 @@ export default function DashboardPage() {
                     <Sparkles className="absolute -top-2 -right-2 h-8 w-8 text-amber-500 animate-pulse" />
                 </div>
                 <h1 className="mt-6 text-4xl font-black font-headline tracking-tighter">Basechan Staff</h1>
-                <p className="mt-2 text-lg text-muted-foreground uppercase tracking-widest font-bold">Operational Node [01]</p>
+                <p className="mt-2 text-lg text-muted-foreground uppercase tracking-widest font-bold">Operational Organisation [01]</p>
             </div>
             <Card className="w-full max-w-md apple-glass-darker border-none shadow-3xl overflow-hidden rounded-[2.5rem]">
                 <CardHeader className="pb-2">

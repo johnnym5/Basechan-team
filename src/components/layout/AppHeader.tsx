@@ -159,7 +159,7 @@ export default function AppHeader({
                 <div className="md:hidden"><Logo /></div>
                 <div className="hidden md:flex flex-col min-w-0">
                     <h2 className="text-xl lg:text-2xl font-bold font-headline tracking-tight text-foreground truncate">{greeting}</h2>
-                    <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground opacity-60">Node: {userProfile?.orgId}</p>
+                    <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground opacity-60">Organisation: {userProfile?.orgId}</p>
                 </div>
             </div>
             
