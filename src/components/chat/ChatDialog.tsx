@@ -9,7 +9,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useState, useMemo, useRef, useEffect } from 'react';
 import { Input } from '../ui/input';
 import { Button } from '../ui/button';
-import { Send, Loader2, PlusCircle, Hash, MessageSquare, MoreVertical, Trash2, CheckCheck } from 'lucide-react';
+import { Send, Loader2, PlusCircle, Hash, MessageSquare, MoreVertical, Trash2, CheckCheck, History } from 'lucide-react';
 import { Skeleton } from '../ui/skeleton';
 import { cn, sanitizeInput } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
@@ -33,6 +33,7 @@ interface ChatDialogProps {
 function ChatMessages({ chat, currentUserProfile }: { chat: Chat, currentUserProfile: UserProfile }) {
     const firestore = useFirestore();
     const scrollAreaRef = useRef<HTMLDivElement>(null);
+    const [showAll, setShowAll] = useState(false);
 
     const messagesQuery = useMemoFirebase(() => 
         query(collection(firestore!, 'chats', chat.id, 'messages'), orderBy('timestamp', 'asc'))
@@ -46,7 +47,7 @@ function ChatMessages({ chat, currentUserProfile }: { chat: Chat, currentUserPro
                 behavior: 'smooth',
             });
         }
-    }, [messages]);
+    }, [messages, showAll]);
 
     if (isLoading) {
         return <div className="flex-1 flex items-center justify-center"><Loader2 className="animate-spin" /></div>
@@ -59,6 +60,9 @@ function ChatMessages({ chat, currentUserProfile }: { chat: Chat, currentUserPro
             </div>
         )
     }
+
+    const hasHiddenMessages = messages.length > 5 && !showAll;
+    const displayedMessages = hasHiddenMessages ? messages.slice(-5) : messages;
 
     const getReadStatus = (message: ChatMessage) => {
         if (message.senderId !== currentUserProfile.id) return null;
@@ -80,7 +84,20 @@ function ChatMessages({ chat, currentUserProfile }: { chat: Chat, currentUserPro
     return (
         <ScrollArea className="flex-1" ref={scrollAreaRef}>
             <div className="p-4 space-y-4">
-                {messages.map(message => {
+                {hasHiddenMessages && (
+                    <div className="flex justify-center pb-4">
+                        <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            onClick={() => setShowAll(true)}
+                            className="rounded-full text-[10px] font-black uppercase tracking-[0.2em] bg-secondary/30 hover:bg-primary/10 hover:text-primary transition-all group"
+                        >
+                            <History className="h-3 w-3 mr-2 group-hover:rotate-[-45deg] transition-transform" />
+                            Load {messages.length - 5} Previous Transmissions
+                        </Button>
+                    </div>
+                )}
+                {displayedMessages.map(message => {
                     const isCurrentUser = message.senderId === currentUserProfile.id;
                     return (
                         <div key={message.id} className={cn("flex items-end gap-2 animate-slide-up-fade", isCurrentUser ? "justify-end" : "justify-start")}>
