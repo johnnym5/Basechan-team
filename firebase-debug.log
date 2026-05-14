@@ -1,0 +1,56 @@
+[debug] [2026-05-14T01:48:47.805Z] ----------------------------------------------------------------------
+[debug] [2026-05-14T01:48:47.809Z] Command:       /nix/store/ws50yvm6vzlzf7jzz6n7xh4szddrack1-nodejs-20.19.1/bin/node /nix/store/gm9mcvzb17vv8cla08khrg29vxn3sq4r-firebase-tools-15.1.0/lib/node_modules/firebase-tools/lib/bin/firebase.js init
+[debug] [2026-05-14T01:48:47.810Z] CLI Version:   15.1.0
+[debug] [2026-05-14T01:48:47.810Z] Platform:      linux
+[debug] [2026-05-14T01:48:47.810Z] Node Version:  v20.19.1
+[debug] [2026-05-14T01:48:47.810Z] Time:          Thu May 14 2026 01:48:47 GMT+0000 (Coordinated Universal Time)
+[debug] [2026-05-14T01:48:47.812Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2026-05-14T01:48:51.747Z] No OAuth tokens found
+[debug] [2026-05-14T01:48:51.756Z] No OAuth tokens found
+[error] Failed to fetch Firebase Project from current Studio Workspace: Unable to refresh auth: not yet authenticated.
+[info] 
+     ######## #### ########  ######## ########     ###     ######  ########
+     ##        ##  ##     ## ##       ##     ##  ##   ##  ##       ##
+     ######    ##  ########  ######   ########  #########  ######  ######
+     ##        ##  ##    ##  ##       ##     ## ##     ##       ## ##
+     ##       #### ##     ## ######## ########  ##     ##  ######  ########
+
+You're about to initialize a Firebase project in this directory:
+
+  /home/user/studio/Basechan-team-1
+
+Before we get started, keep in mind:
+
+  * You are initializing within an existing Firebase project directory
+
+[info] 
+=== Project Setup
+[info] 
+[info] First, let's associate this project directory with a Firebase project.
+[info] You can create multiple project aliases by running firebase use --add, 
+[info] 
+[debug] [2026-05-14T01:48:55.864Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform","https://www.googleapis.com/auth/userinfo.email"]
+[debug] [2026-05-14T01:48:55.865Z] > authorizing via signed-in user (ithub@basechaninternational.com)
+[debug] [2026-05-14T01:48:55.871Z] No OAuth tokens found
+[debug] [2026-05-14T01:48:55.872Z] No OAuth tokens found
+[debug] [2026-05-14T01:48:55.872Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform","https://www.googleapis.com/auth/userinfo.email"]
+[debug] [2026-05-14T01:48:55.878Z] > authorizing via signed-in user (ithub@basechaninternational.com)
+[debug] [2026-05-14T01:48:55.892Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/basechanteam [none]
+[debug] [2026-05-14T01:48:56.358Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/basechanteam 200
+[debug] [2026-05-14T01:48:56.360Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects/basechanteam {"projectId":"basechanteam","projectNumber":"261796318440","displayName":"basechanteam","name":"projects/basechanteam","resources":{"hostingSite":"basechanteam"},"state":"ACTIVE","etag":"1_92ca087b-fb54-4da1-8935-4af03309fcfe"}
+[info] i  Using project basechanteam (basechanteam) . 
+[info] 
+=== Hosting Setup
+[debug] [2026-05-14T01:48:56.378Z] No OAuth tokens found
+[debug] [2026-05-14T01:48:56.378Z] No OAuth tokens found
+[debug] [2026-05-14T01:48:56.378Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform","https://www.googleapis.com/auth/userinfo.email"]
+[debug] [2026-05-14T01:48:56.379Z] > authorizing via signed-in user (ithub@basechaninternational.com)
+[debug] [2026-05-14T01:48:56.379Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/basechanteam [none]
+[debug] [2026-05-14T01:48:56.699Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/basechanteam 200
+[debug] [2026-05-14T01:48:56.701Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects/basechanteam {"projectId":"basechanteam","projectNumber":"261796318440","displayName":"basechanteam","name":"projects/basechanteam","resources":{"hostingSite":"basechanteam"},"state":"ACTIVE","etag":"1_92ca087b-fb54-4da1-8935-4af03309fcfe"}
+[info] 
+[info] Your public directory is the folder (relative to your project directory) that
+[info] will contain Hosting assets to be uploaded with firebase deploy. If you
+[info] have a build process for your assets, use your build's output directory.
+[info] 
