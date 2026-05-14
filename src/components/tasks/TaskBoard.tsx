@@ -8,6 +8,7 @@ import { useSuperAdmin } from '@/hooks/useSuperAdmin';
 import { useMemo } from 'react';
 import { Skeleton } from '../ui/skeleton';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
+import { cn } from '@/lib/utils';
 
 interface TaskBoardProps {
     userProfile: UserProfile;
@@ -67,7 +68,7 @@ export function TaskBoard({ userProfile, permissions, onTaskSelect }: TaskBoardP
 
     if (isLoading) {
         return (
-             <div className="grid grid-cols-4 gap-6">
+             <div className="grid grid-cols-4 gap-6 h-full p-4">
                 {Array.from({ length: 4 }).map((_, i) => (
                     <div key={i} className="space-y-4">
                         <Skeleton className="h-8 w-1/2" />
@@ -80,36 +81,38 @@ export function TaskBoard({ userProfile, permissions, onTaskSelect }: TaskBoardP
     }
 
     return (
-        <ScrollArea className="w-full">
-            <div className="flex gap-6 pb-4">
-                {KANBAN_COLUMNS.map(col => (
-                    <div key={col.status} className="w-72 flex-shrink-0">
-                        <h3 className="font-semibold text-lg mb-4 px-1">{col.title} ({tasksByStatus[col.status].length})</h3>
-                        <div className="space-y-4 bg-secondary/30 p-2 rounded-lg h-full">
-                           <ScrollArea className="h-[calc(100vh-22rem)]">
-                                <div className="p-2 space-y-3">
-                                {tasksByStatus[col.status].length === 0 ? (
-                                    <div className="text-center text-sm text-muted-foreground pt-16">
-                                        No tasks in this stage.
-                                    </div>
-                                ) : (
-                                    tasksByStatus[col.status].map(task => (
-                                        <TaskCard
-                                            key={task.id}
-                                            task={task}
-                                            userProfile={userProfile}
-                                            permissions={permissions}
-                                            onSelect={() => onTaskSelect(task)}
-                                        />
-                                    ))
-                                )}
+        <div className="h-full flex flex-col min-h-0">
+            <ScrollArea className="flex-1 w-full h-full">
+                <div className="flex h-full gap-6 p-4">
+                    {KANBAN_COLUMNS.map(col => (
+                        <div key={col.status} className="w-80 flex-shrink-0 flex flex-col h-full min-h-0">
+                            <h3 className="font-bold text-sm uppercase tracking-[0.2em] mb-4 px-1 text-muted-foreground">
+                                {col.title} ({tasksByStatus[col.status].length})
+                            </h3>
+                            <div className="flex-1 min-h-0 bg-secondary/20 p-2 rounded-2xl border border-white/5 overflow-y-auto no-scrollbar">
+                                <div className="space-y-3">
+                                    {tasksByStatus[col.status].length === 0 ? (
+                                        <div className="text-center text-[10px] font-black uppercase tracking-widest text-muted-foreground opacity-30 pt-20">
+                                            Stage Empty
+                                        </div>
+                                    ) : (
+                                        tasksByStatus[col.status].map(task => (
+                                            <TaskCard
+                                                key={task.id}
+                                                task={task}
+                                                userProfile={userProfile}
+                                                permissions={permissions}
+                                                onSelect={() => onTaskSelect(task)}
+                                            />
+                                        ))
+                                    )}
                                 </div>
-                           </ScrollArea>
+                            </div>
                         </div>
-                    </div>
-                ))}
-            </div>
-            <ScrollBar orientation="horizontal" />
-        </ScrollArea>
+                    ))}
+                </div>
+                <ScrollBar orientation="horizontal" />
+            </ScrollArea>
+        </div>
     );
 }

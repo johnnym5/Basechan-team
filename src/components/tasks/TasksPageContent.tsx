@@ -12,6 +12,7 @@ import { PlusCircle } from 'lucide-react';
 import { AssignTaskDialog } from '@/components/tasks/AssignTaskDialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '../ui/scroll-area';
+import { cn } from '@/lib/utils';
 
 interface TasksPageContentProps {
   initialPayload?: { taskId?: string };
@@ -44,7 +45,7 @@ export function TasksPageContent({ initialPayload, currentUserProfile, permissio
   };
 
   return (
-    <div className="space-y-6 h-full flex flex-col overflow-hidden">
+    <div className="p-6 space-y-6 h-full flex flex-col overflow-hidden">
       <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
         <div className="flex items-start justify-between gap-4 flex-wrap flex-shrink-0">
           <div>
@@ -71,7 +72,7 @@ export function TasksPageContent({ initialPayload, currentUserProfile, permissio
             <Skeleton className="flex-1 w-full mt-4" />
         ) : (
           <div className="flex-1 min-h-0 mt-4 overflow-hidden border rounded-xl bg-card/30">
-            <ScrollArea className="h-full p-4">
+            {activeTab === 'board' ? (
                 <TabsContent value="board" className="m-0 h-full">
                     <TaskBoard 
                         userProfile={currentUserProfile}
@@ -79,14 +80,17 @@ export function TasksPageContent({ initialPayload, currentUserProfile, permissio
                         onTaskSelect={setSelectedTask}
                     />
                 </TabsContent>
-                <TabsContent value="list" className="m-0 h-full">
-                    <TaskList
-                        userProfile={currentUserProfile}
-                        permissions={permissions}
-                        onTaskSelect={setSelectedTask}
-                    />
-                </TabsContent>
-            </ScrollArea>
+            ) : (
+                <ScrollArea className="h-full p-4">
+                    <TabsContent value="list" className="m-0 h-full">
+                        <TaskList
+                            userProfile={currentUserProfile}
+                            permissions={permissions}
+                            onTaskSelect={setSelectedTask}
+                        />
+                    </TabsContent>
+                </ScrollArea>
+            )}
           </div>
         )}
       </Tabs>
