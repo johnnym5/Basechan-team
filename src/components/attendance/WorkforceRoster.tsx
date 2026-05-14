@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -9,7 +8,7 @@ import type { Permissions } from '@/hooks/usePermissions';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Calendar } from '@/components/ui/calendar';
 import { Button } from '@/components/ui/button';
-import { Plus, Trash2, UserPlus, Clock, Info, ShieldAlert, Zap, Moon, Sun, PhoneCall } from 'lucide-react';
+import { Plus, Trash2, UserPlus, Clock, Info, ShieldAlert, Zap, Moon, Sun, PhoneCall, Loader2 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { format, isSameDay, eachDayOfInterval, startOfMonth, endOfMonth } from 'date-fns';
