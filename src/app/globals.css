@@ -157,4 +157,18 @@
     .interactive-element {
       @apply transition-all duration-300 ease-apple-ease hover:-translate-y-1 hover:shadow-lg active:scale-[0.98] active:shadow-sm;
     }
+
+    /* Scrolling Announcement Ticker */
+    @keyframes marquee {
+      0% { transform: translateX(100%); }
+      100% { transform: translateX(-100%); }
+    }
+    .animate-marquee {
+      display: inline-block;
+      white-space: nowrap;
+      animation: marquee 30s linear infinite;
+    }
+    .animate-marquee:hover {
+      animation-play-state: paused;
+    }
 }
