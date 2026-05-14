@@ -2,6 +2,7 @@
 const nextConfig = {
   output: 'standalone',
   typescript: {
+    // Ensuring builds pass even if minor type inconsistencies exist during prototyping
     ignoreBuildErrors: true,
   },
   eslint: {

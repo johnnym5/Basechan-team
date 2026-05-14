@@ -42,7 +42,7 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
   , [firestore, user]);
   const { data: userProfile } = useDoc<UserProfile>(userProfileRef);
   
-  // Stable Profile Fallback for reliability
+  // Stable Profile Fallback for reliability during deployment initialization
   const stableProfile = useMemo(() => {
     if (!user) return null;
     return {
@@ -75,9 +75,9 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
   const permissions = usePermissions(stableProfile);
   const { config } = useSystemConfig(stableProfile?.orgId);
 
-  // Apply organization theme
+  // Apply organization theme with hydration safety
   useEffect(() => {
-    if (typeof window === 'undefined') return;
+    if (!mounted) return;
     const root = document.documentElement;
     if (config?.branding_color) {
       const hsl = hexToHslString(config.branding_color);
@@ -87,11 +87,16 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
       const hsl = hexToHslString(config.accent_color);
       if (hsl) root.style.setProperty('--accent', hsl);
     }
-  }, [config]);
+  }, [config, mounted]);
 
-  // Hydration safety
+  // Hydration safety: ensure server-rendered content matches client initialization
   if (!mounted) {
-      return <div className="min-h-screen bg-background" />;
+      return <div className="min-h-screen bg-background flex items-center justify-center">
+          <div className="animate-pulse flex flex-col items-center gap-4">
+              <div className="w-12 h-12 rounded-full bg-primary/20" />
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-30">Initializing Secure Terminal</p>
+          </div>
+      </div>;
   }
 
   return (
@@ -112,8 +117,8 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
               className="apple-glass z-10 sticky top-0"
           />
           
-          <main className="flex-1 overflow-y-auto p-4 md:p-8 scroll-smooth">
-              <div className="max-w-[1600px] mx-auto">
+          <main className="flex-1 overflow-y-auto p-4 md:p-8 scroll-smooth no-scrollbar">
+              <div className="max-w-[1600px] mx-auto pb-24 md:pb-0">
                   {children}
               </div>
           </main>

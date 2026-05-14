@@ -35,12 +35,21 @@ export default function AppHeader({
   const [greeting, setGreeting] = useState('Mission Control');
   const [selectedAnnouncement, setSelectedAnnouncement] = useState<Announcement | null>(null);
   const [isBriefing, setIsBriefing] = useState(true);
+  const [currentTime, setCurrentTime] = useState('');
   const prevUnreadCount = useRef(0);
 
-  // Briefing Sequence Timer: Show for 5 seconds then revert to normal alert ticker
+  // Hydration-safe clock and briefing timer
   useEffect(() => {
-    const timer = setTimeout(() => setIsBriefing(false), 5000);
-    return () => clearTimeout(timer);
+    const updateTime = () => setCurrentTime(format(new Date(), 'HH:mm'));
+    updateTime();
+    const clockInterval = setInterval(updateTime, 10000);
+    
+    const briefingTimer = setTimeout(() => setIsBriefing(false), 5000);
+    
+    return () => {
+        clearInterval(clockInterval);
+        clearTimeout(briefingTimer);
+    };
   }, []);
 
   // Update Greeting
@@ -55,8 +64,6 @@ export default function AppHeader({
         timeGreeting = 'Good Evening';
       } else if (hour >= 22 || hour < 5) {
         timeGreeting = 'Good Night';
-      } else {
-        timeGreeting = 'Good Morning';
       }
       
       const rawName = (userProfile?.fullName && userProfile.fullName !== 'Personnel')
@@ -169,24 +176,20 @@ export default function AppHeader({
 
   // UNIFIED TICKER FEED
   const activeTickerAlert = useMemo(() => {
-    // 1. Priority Briefing Sequence
     if (isBriefing) {
         return {
             id: 'briefing',
-            timestamp: Date.now(),
             type: 'BRIEFING',
             label: 'DAILY DEBRIEF',
             icon: <Zap className="h-4 w-4 text-primary animate-pulse" />,
             title: greeting.toUpperCase(),
-            content: `MISSIONS: ${activeTasksCount} | TRANSMISSIONS: ${unreadChatsCount} | ALERTS: ${unreadCount} | STATUS: OPTIMAL | TIME: ${format(new Date(), 'HH:mm')}`,
+            content: `MISSIONS: ${activeTasksCount} | TRANSMISSIONS: ${unreadChatsCount} | ALERTS: ${unreadCount} | STATUS: OPTIMAL | TIME: ${currentTime}`,
             color: 'bg-slate-900 border-b border-primary/20',
             onClick: () => {}
         };
     }
 
     const items = [];
-    
-    // 2. Announcements (Broad Priority)
     if (latestAnnouncement) {
       items.push({
         id: latestAnnouncement.id,
@@ -201,13 +204,11 @@ export default function AppHeader({
       });
     }
     
-    // 3. Notifications (Operational Reality)
     const newestUnread = unreadNotifications[0];
     if (newestUnread) {
       const titleLower = newestUnread.title.toLowerCase();
-      const isSuccess = titleLower.includes('success') || titleLower.includes('approved') || titleLower.includes('paid') || titleLower.includes('verified');
-      const isWarning = titleLower.includes('pending') || titleLower.includes('assigned') || titleLower.includes('waiting');
       const isUrgent = titleLower.includes('urgent') || titleLower.includes('denied') || titleLower.includes('rejected') || titleLower.includes('action');
+      const isSuccess = titleLower.includes('success') || titleLower.includes('approved') || titleLower.includes('paid');
 
       items.push({
         id: newestUnread.id,
@@ -217,13 +218,13 @@ export default function AppHeader({
         icon: <Zap className="h-4 w-4 animate-pulse" />,
         title: newestUnread.title,
         content: newestUnread.description,
-        color: isUrgent ? 'bg-rose-600' : isSuccess ? 'bg-emerald-600' : isWarning ? 'bg-amber-600' : 'bg-slate-700',
+        color: isUrgent ? 'bg-rose-600' : isSuccess ? 'bg-emerald-600' : 'bg-slate-700',
         onClick: () => handleNotificationClick(newestUnread)
       });
     }
     
     return items.sort((a, b) => b.timestamp - a.timestamp)[0];
-  }, [isBriefing, activeTasksCount, unreadChatsCount, unreadCount, greeting, latestAnnouncement, unreadNotifications]);
+  }, [isBriefing, activeTasksCount, unreadChatsCount, unreadCount, greeting, latestAnnouncement, unreadNotifications, currentTime]);
 
   const markAllRead = () => {
     if (!firestore || !unreadNotifications.length) return;
@@ -234,7 +235,6 @@ export default function AppHeader({
 
   return (
     <header className={cn("flex flex-col shrink-0 bg-transparent transition-all", className)}>
-        {/* HIGH VISIBILITY TICKER - Daily Debrief & Alert Feed */}
         {activeTickerAlert && (
             <div 
                 className={cn(
@@ -258,7 +258,7 @@ export default function AppHeader({
                 </div>
                 <div className="flex-shrink-0 px-4 z-10 bg-gradient-to-l from-black/20 to-transparent h-full flex items-center">
                     <span className="text-[9px] font-bold opacity-0 group-hover:opacity-100 transition-opacity uppercase tracking-widest">
-                        {activeTickerAlert.type === 'BRIEFING' ? 'Sequence Active' : 'Execute Node'}
+                        Execute Node
                     </span>
                 </div>
             </div>
@@ -268,8 +268,8 @@ export default function AppHeader({
             <div className="flex flex-col">
                 <h2 className="text-2xl font-bold font-headline tracking-tight text-foreground">{greeting}</h2>
                 {userProfile && (
-                    <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground animate-in fade-in duration-500">
-                        Organisation: {userProfile.orgId}
+                    <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                        Node: {userProfile.orgId}
                     </p>
                 )}
             </div>
@@ -277,24 +277,17 @@ export default function AppHeader({
             <div className="flex items-center space-x-6">
                 {isLoggedIn && (
                     <>
-                        {userProfile && (
-                            <div className="relative animate-in fade-in zoom-in-95 duration-300">
-                                <UniversalSearch userProfile={userProfile} />
-                            </div>
-                        )}
+                        {userProfile && <UniversalSearch userProfile={userProfile} />}
 
                         <Popover open={isNotificationsOpen} onOpenChange={setIsNotificationsOpen}>
                             <PopoverTrigger asChild>
                                 <button className="relative text-gray-400 hover:text-primary transition-all interactive-element p-2 rounded-full hover:bg-primary/5 group">
                                     <Bell className={cn("w-6 h-6", unreadCount > 0 && "text-primary")} />
                                     {unreadCount > 0 && (
-                                        <span className="absolute top-1.5 right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[9px] font-black text-white ring-2 ring-background animate-pop-in">
+                                        <span className="absolute top-1.5 right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[9px] font-black text-white ring-2 ring-background">
                                             {unreadCount}
                                         </span>
                                     )}
-                                    <div className="absolute -bottom-10 left-1/2 -translate-x-1/2 apple-glass px-2 py-1 rounded text-[8px] font-black uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
-                                        Broadcast Node
-                                    </div>
                                 </button>
                             </PopoverTrigger>
                             <PopoverContent align="end" className="w-96 p-0 apple-glass border-none shadow-2xl overflow-hidden mt-2">
@@ -302,7 +295,7 @@ export default function AppHeader({
                                     <h3 className="font-bold text-xs uppercase tracking-widest">Telemetry Alerts</h3>
                                     {unreadCount > 0 && (
                                         <button onClick={markAllRead} className="text-[9px] font-bold text-primary hover:underline uppercase tracking-tighter">
-                                            Purge All Alerts
+                                            Purge All
                                         </button>
                                     )}
                                 </div>
@@ -310,7 +303,7 @@ export default function AppHeader({
                                     {!notifications || notifications.length === 0 ? (
                                         <div className="flex flex-col items-center justify-center py-20 opacity-30">
                                             <Bell className="h-10 w-10 mb-2" />
-                                            <p className="text-xs font-bold uppercase tracking-widest">Zero Alerts Detected</p>
+                                            <p className="text-xs font-bold uppercase tracking-widest">Zero Alerts</p>
                                         </div>
                                     ) : (
                                         <div className="divide-y divide-white/5">
@@ -319,7 +312,7 @@ export default function AppHeader({
                                                     key={n.id} 
                                                     className={cn(
                                                         "p-4 transition-colors cursor-pointer group flex items-start gap-4",
-                                                        n.isRead ? "opacity-60 grayscale-[50%]" : "bg-primary/5 hover:bg-primary/10"
+                                                        n.isRead ? "opacity-60" : "bg-primary/5 hover:bg-primary/10"
                                                     )}
                                                     onClick={() => handleNotificationClick(n)}
                                                 >
@@ -328,7 +321,7 @@ export default function AppHeader({
                                                     </div>
                                                     <div className="flex-1 min-w-0">
                                                         <p className="font-bold text-sm text-foreground group-hover:text-primary transition-colors">{n.title}</p>
-                                                        <p className="text-xs text-muted-foreground mt-1 line-clamp-2 leading-relaxed">{n.description}</p>
+                                                        <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{n.description}</p>
                                                         <p className="text-[9px] font-bold text-muted-foreground mt-2 uppercase tracking-tighter">
                                                             {formatDistanceToNow(new Date(n.createdAt), { addSuffix: true })}
                                                         </p>
