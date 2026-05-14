@@ -3,11 +3,11 @@ import { UserNav } from "@/components/layout/UserNav";
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useUser, useDoc, useMemoFirebase, useCollection, updateDocumentNonBlocking, useFirestore } from '@/firebase';
 import { collection, query, where, orderBy, limit, doc, arrayUnion } from 'firebase/firestore';
-import type { UserProfile, Notification, Attendance, SystemConfig, Announcement } from '@/lib/types';
-import { Bell, Search as SearchIcon, CheckCircle2, Circle, Megaphone, Info, AlertTriangle, Zap, Check } from 'lucide-react';
+import type { UserProfile, Notification, Attendance, SystemConfig, Announcement, Task, Chat } from '@/lib/types';
+import { Bell, Search as SearchIcon, CheckCircle2, Circle, Megaphone, Info, AlertTriangle, Zap, Check, MessageSquare, Clock } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { ScrollArea } from '../ui/scroll-area';
-import { formatDistanceToNow } from 'date-fns';
+import { formatDistanceToNow, format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { UniversalSearch } from '@/components/layout/UniversalSearch';
 import { playNotificationSound, showBrowserNotification } from '@/lib/notifications';
@@ -34,7 +34,14 @@ export default function AppHeader({
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [greeting, setGreeting] = useState('Mission Control');
   const [selectedAnnouncement, setSelectedAnnouncement] = useState<Announcement | null>(null);
+  const [isBriefing, setIsBriefing] = useState(true);
   const prevUnreadCount = useRef(0);
+
+  // Briefing Sequence Timer: Show for 5 seconds then revert to normal alert ticker
+  useEffect(() => {
+    const timer = setTimeout(() => setIsBriefing(false), 5000);
+    return () => clearTimeout(timer);
+  }, []);
 
   // Update Greeting
   useEffect(() => {
@@ -71,7 +78,7 @@ export default function AppHeader({
     return () => clearInterval(interval);
   }, [userProfile, user]);
 
-  // Notifications Query
+  // Telemetry Queries for Debrief
   const notificationsQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
     return query(
@@ -82,9 +89,34 @@ export default function AppHeader({
     );
   }, [firestore, user]);
 
+  const tasksQuery = useMemoFirebase(() => {
+    if (!firestore || !user) return null;
+    return query(
+        collection(firestore, 'tasks'),
+        where('assignedTo', '==', user.uid)
+    );
+  }, [firestore, user]);
+
+  const chatsQuery = useMemoFirebase(() => {
+    if (!firestore || !user) return null;
+    return query(
+        collection(firestore, 'chats'),
+        where('participants', 'array-contains', user.uid)
+    );
+  }, [firestore, user]);
+
   const { data: notifications } = useCollection<Notification>(notificationsQuery);
+  const { data: tasks } = useCollection<Task>(tasksQuery);
+  const { data: chats } = useCollection<Chat>(chatsQuery);
+
   const unreadNotifications = notifications?.filter(n => !n.isRead) || [];
   const unreadCount = unreadNotifications.length;
+  const activeTasksCount = tasks?.filter(t => t.status !== 'ARCHIVED').length || 0;
+  
+  const unreadChatsCount = chats?.filter(c => {
+      const lastRead = c.readReceipts?.[user?.uid || ''];
+      return !lastRead || (c.lastMessage && new Date(c.lastMessage.timestamp) > new Date(lastRead));
+  }).length || 0;
 
   // Announcements Query for Ticker
   const announcementsQuery = useMemoFirebase(() => {
@@ -101,7 +133,6 @@ export default function AppHeader({
   
   const latestAnnouncement = useMemo(() => {
     if (!announcements || announcements.length === 0) return null;
-    // Prefer pinned, otherwise most recent
     return announcements.find(a => a.isPinned) || announcements[0];
   }, [announcements]);
 
@@ -138,9 +169,24 @@ export default function AppHeader({
 
   // UNIFIED TICKER FEED
   const activeTickerAlert = useMemo(() => {
+    // 1. Priority Briefing Sequence
+    if (isBriefing) {
+        return {
+            id: 'briefing',
+            timestamp: Date.now(),
+            type: 'BRIEFING',
+            label: 'DAILY DEBRIEF',
+            icon: <Zap className="h-4 w-4 text-primary animate-pulse" />,
+            title: greeting.toUpperCase(),
+            content: `MISSIONS: ${activeTasksCount} | TRANSMISSIONS: ${unreadChatsCount} | ALERTS: ${unreadCount} | STATUS: OPTIMAL | TIME: ${format(new Date(), 'HH:mm')}`,
+            color: 'bg-slate-900 border-b border-primary/20',
+            onClick: () => {}
+        };
+    }
+
     const items = [];
     
-    // 1. Announcements (Broad Priority)
+    // 2. Announcements (Broad Priority)
     if (latestAnnouncement) {
       items.push({
         id: latestAnnouncement.id,
@@ -155,7 +201,7 @@ export default function AppHeader({
       });
     }
     
-    // 2. Notifications (Operational Reality)
+    // 3. Notifications (Operational Reality)
     const newestUnread = unreadNotifications[0];
     if (newestUnread) {
       const titleLower = newestUnread.title.toLowerCase();
@@ -176,9 +222,8 @@ export default function AppHeader({
       });
     }
     
-    // Sort by timestamp and take the freshest node
     return items.sort((a, b) => b.timestamp - a.timestamp)[0];
-  }, [latestAnnouncement, unreadNotifications, latestAnnouncement?.viewedBy?.length]);
+  }, [isBriefing, activeTasksCount, unreadChatsCount, unreadCount, greeting, latestAnnouncement, unreadNotifications]);
 
   const markAllRead = () => {
     if (!firestore || !unreadNotifications.length) return;
@@ -189,11 +234,11 @@ export default function AppHeader({
 
   return (
     <header className={cn("flex flex-col shrink-0 bg-transparent transition-all", className)}>
-        {/* HIGH VISIBILITY TICKER - Unified Alert Feed */}
+        {/* HIGH VISIBILITY TICKER - Daily Debrief & Alert Feed */}
         {activeTickerAlert && (
             <div 
                 className={cn(
-                    "h-10 text-white flex items-center overflow-hidden cursor-pointer hover:opacity-90 transition-all group",
+                    "h-10 text-white flex items-center overflow-hidden cursor-pointer hover:opacity-90 transition-all group z-50",
                     activeTickerAlert.color
                 )}
                 onClick={activeTickerAlert.onClick}
@@ -212,7 +257,9 @@ export default function AppHeader({
                     </p>
                 </div>
                 <div className="flex-shrink-0 px-4 z-10 bg-gradient-to-l from-black/20 to-transparent h-full flex items-center">
-                    <span className="text-[9px] font-bold opacity-0 group-hover:opacity-100 transition-opacity uppercase tracking-widest">Execute Node</span>
+                    <span className="text-[9px] font-bold opacity-0 group-hover:opacity-100 transition-opacity uppercase tracking-widest">
+                        {activeTickerAlert.type === 'BRIEFING' ? 'Sequence Active' : 'Execute Node'}
+                    </span>
                 </div>
             </div>
         )}
@@ -238,13 +285,16 @@ export default function AppHeader({
 
                         <Popover open={isNotificationsOpen} onOpenChange={setIsNotificationsOpen}>
                             <PopoverTrigger asChild>
-                                <button className="relative text-gray-400 hover:text-primary transition-all interactive-element p-2 rounded-full hover:bg-primary/5">
-                                    <Bell className="w-6 h-6" />
+                                <button className="relative text-gray-400 hover:text-primary transition-all interactive-element p-2 rounded-full hover:bg-primary/5 group">
+                                    <Bell className={cn("w-6 h-6", unreadCount > 0 && "text-primary")} />
                                     {unreadCount > 0 && (
                                         <span className="absolute top-1.5 right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[9px] font-black text-white ring-2 ring-background animate-pop-in">
                                             {unreadCount}
                                         </span>
                                     )}
+                                    <div className="absolute -bottom-10 left-1/2 -translate-x-1/2 apple-glass px-2 py-1 rounded text-[8px] font-black uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
+                                        Broadcast Node
+                                    </div>
                                 </button>
                             </PopoverTrigger>
                             <PopoverContent align="end" className="w-96 p-0 apple-glass border-none shadow-2xl overflow-hidden mt-2">
