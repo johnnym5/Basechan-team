@@ -12,7 +12,7 @@ import { ClockControl } from "@/components/attendance/ClockControl";
 import { useSystemConfig } from "@/hooks/useSystemConfig";
 import { PerformanceCard } from '@/components/dashboard/PerformanceCard';
 import { DashboardRecentChats } from '@/components/dashboard/DashboardRecentChats';
-import { MaintenanceCard } from '@/components/dashboard/MaintenanceCard';
+import { DashboardLiveDisplays } from '@/components/dashboard/DashboardLiveDisplays';
 import { useSuperAdmin } from '@/hooks/useSuperAdmin';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -101,7 +101,7 @@ export default function DashboardPage() {
 
                 <div className="col-span-12 lg:col-span-3 space-y-4">
                     <DashboardQuickActions />
-                    <MaintenanceCard userProfile={userProfile || null} />
+                    <DashboardLiveDisplays userProfile={userProfile || null} />
                     <DashboardRecentReports />
                     <DashboardRecentChats />
                     <Announcements />

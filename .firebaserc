@@ -1,16 +1,5 @@
-<<<<<<< HEAD
 {
   "projects": {
-    "default": "palilious",
-    "basechanteam": "bsihub"
-  },
-  "targets": {},
-  "etags": {}
-}
-=======
-{
-  "projects": {
-    "default": "palilious"
+    "default": "basechanteam"
   }
 }
->>>>>>> e46f2e1ad97486affb300b626ff5055ece21f529

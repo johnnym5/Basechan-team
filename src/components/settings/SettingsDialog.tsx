@@ -6,6 +6,7 @@ import { UserProfile } from '@/lib/types';
 import { TeamPane } from './TeamPane';
 import { SystemPane } from './SystemPane';
 import { AuditPane } from './AuditPane';
+import { MaintenancePane } from './MaintenancePane';
 import { usePermissions } from '@/hooks/usePermissions';
 import { ShieldAlert, Shield } from 'lucide-react';
 import { Button } from '../ui/button';
@@ -60,10 +61,11 @@ export function SettingsDialog({ open, onOpenChange, userProfile }: SettingsDial
   }
 
   const tabCount = [
-    true, // Team pane is always visible if they have console access
-    permissions.canManageCompany,
-    permissions.canViewAudit,
-    isSuperAdmin
+    true, // Team
+    permissions.canManageCompany, // System
+    true, // Maintenance is useful for anyone with team access
+    permissions.canViewAudit, // Audit
+    isSuperAdmin // SuperAdmin
   ].filter(Boolean).length;
 
   return (
@@ -79,10 +81,11 @@ export function SettingsDialog({ open, onOpenChange, userProfile }: SettingsDial
           <div className="px-6">
             <TabsList className={cn(
                 "grid w-full",
-                tabCount === 4 ? "grid-cols-4" : tabCount === 3 ? "grid-cols-3" : tabCount === 2 ? "grid-cols-2" : "grid-cols-1"
+                tabCount === 5 ? "grid-cols-5" : tabCount === 4 ? "grid-cols-4" : tabCount === 3 ? "grid-cols-3" : "grid-cols-2"
             )}>
                 <TabsTrigger value="team">Team</TabsTrigger>
                 {permissions.canManageCompany && <TabsTrigger value="system">System</TabsTrigger>}
+                <TabsTrigger value="maintenance">Maintenance</TabsTrigger>
                 {permissions.canViewAudit && <TabsTrigger value="audit">Audit Trail</TabsTrigger>}
                 {isSuperAdmin && <TabsTrigger value="superadmin">Super Admin</TabsTrigger>}
             </TabsList>
@@ -95,6 +98,9 @@ export function SettingsDialog({ open, onOpenChange, userProfile }: SettingsDial
                 <SystemPane currentUserProfile={userProfile} />
             </TabsContent>
           )}
+          <TabsContent value="maintenance" className="flex-1 overflow-y-auto mt-4 px-6 pb-6">
+            <MaintenancePane currentUserProfile={userProfile} />
+          </TabsContent>
           {permissions.canViewAudit && (
              <TabsContent value="audit" className="flex-1 overflow-y-auto mt-4 px-6 pb-6">
                 <AuditPane currentUserProfile={userProfile} />
