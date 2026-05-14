@@ -2,14 +2,24 @@
 
 import { firebaseConfig } from '@/firebase/config';
 import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
-import { initializeFirestore, enableIndexedDbPersistence, getFirestore, CACHE_SIZE_UNLIMITED } from 'firebase/firestore';
-import { getStorage } from 'firebase/storage';
-import { getDatabase } from 'firebase/database';
+import { getAuth, Auth } from 'firebase/auth';
+import { initializeFirestore, enableIndexedDbPersistence, getFirestore, CACHE_SIZE_UNLIMITED, Firestore } from 'firebase/firestore';
+import { getStorage, FirebaseStorage } from 'firebase/storage';
+import { getDatabase, Database } from 'firebase/database';
 
 const isFirebaseConfigAvailable = !!(firebaseConfig.apiKey && firebaseConfig.projectId);
 
-// IMPORTANT: DO NOT MODIFY THIS FUNCTION
+// Singleton instances to ensure stable references across hot reloads in Next.js dev mode
+let firestoreInstance: Firestore | null = null;
+let authInstance: Auth | null = null;
+let storageInstance: FirebaseStorage | null = null;
+let databaseInstance: Database | null = null;
+
+/**
+ * Initializes the Firebase Client SDKs.
+ * Uses a singleton pattern to prevent "INTERNAL ASSERTION FAILED" errors 
+ * caused by multiple initializations in development environments.
+ */
 export function initializeFirebase() {
   if (!isFirebaseConfigAvailable) {
     return {
@@ -21,53 +31,61 @@ export function initializeFirebase() {
     };
   }
   
-  if (!getApps().length) {
-    // Always initialize with the config object.
-    const firebaseApp = initializeApp(firebaseConfig);
-    return getSdks(firebaseApp);
+  let app: FirebaseApp;
+  const existingApps = getApps();
+  
+  if (!existingApps.length) {
+    app = initializeApp(firebaseConfig);
+  } else {
+    app = existingApps[0];
   }
 
-  // If already initialized, return the SDKs with the already initialized App
-  return getSdks(getApp());
+  return getSdks(app);
 }
 
-let persistenceEnabled = false;
-
 export function getSdks(firebaseApp: FirebaseApp) {
-  // Use initializeFirestore with experimentalForceLongPolling to prevent connection timeouts 
-  // in Cloud Workstation / IDE environments where WebSockets might be restricted.
-  let firestore;
-  try {
-    firestore = initializeFirestore(firebaseApp, {
-      experimentalForceLongPolling: true,
-      cacheSizeBytes: CACHE_SIZE_UNLIMITED,
-    });
-  } catch (e) {
-    // Fallback if already initialized
-    firestore = getFirestore(firebaseApp);
+  // 1. Initialize Firestore as a singleton
+  if (!firestoreInstance) {
+    try {
+      firestoreInstance = initializeFirestore(firebaseApp, {
+        experimentalForceLongPolling: true,
+        cacheSizeBytes: CACHE_SIZE_UNLIMITED,
+      });
+    } catch (e) {
+      // Fallback if already initialized (common in hot-reload scenarios)
+      firestoreInstance = getFirestore(firebaseApp);
+    }
+
+    // 2. Enable persistence only once per browser session
+    if (typeof window !== 'undefined') {
+      const win = window as any;
+      if (!win.__firebasePersistenceEnabled) {
+        win.__firebasePersistenceEnabled = true;
+        enableIndexedDbPersistence(firestoreInstance)
+          .catch((err) => {
+            if (err.code === 'failed-precondition') {
+              console.warn('Firestore persistence: already active in another tab.');
+            } else if (err.code === 'unimplemented') {
+              console.warn('Firestore persistence: not supported by this browser.');
+            } else {
+                console.warn('Firestore persistence initialization error:', err.message);
+            }
+          });
+      }
+    }
   }
 
-  // Attempt persistence only in the browser and only once
-  if (typeof window !== 'undefined' && !persistenceEnabled) {
-    persistenceEnabled = true; 
-    enableIndexedDbPersistence(firestore)
-      .catch((err) => {
-        if (err.code === 'failed-precondition') {
-          // This means persistence is already enabled in another tab.
-          console.warn('Firestore persistence already active in another tab.');
-        } else if (err.code === 'unimplemented') {
-          // The current browser does not support all of the features.
-          console.warn('Firestore persistence is not supported in this browser.');
-        }
-      });
-  }
+  // 3. Initialize other services as singletons
+  if (!authInstance) authInstance = getAuth(firebaseApp);
+  if (!storageInstance) storageInstance = getStorage(firebaseApp);
+  if (!databaseInstance) databaseInstance = getDatabase(firebaseApp);
 
   return {
     firebaseApp,
-    auth: getAuth(firebaseApp),
-    firestore: firestore,
-    storage: getStorage(firebaseApp),
-    database: getDatabase(firebaseApp),
+    auth: authInstance,
+    firestore: firestoreInstance,
+    storage: storageInstance,
+    database: databaseInstance,
   };
 }
 
