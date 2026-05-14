@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import { useUser, useDoc, useMemoFirebase, useCollection, updateDocumentNonBlocking, useFirestore } from '@/firebase';
 import { collection, query, where, orderBy, limit, doc, arrayUnion } from 'firebase/firestore';
 import type { UserProfile, Notification, Attendance, SystemConfig, Announcement } from '@/lib/types';
-import { Bell, Search as SearchIcon, CheckCircle2, Circle, Megaphone } from 'lucide-react';
+import { Bell, Search as SearchIcon, CheckCircle2, Circle, Megaphone, Info, AlertTriangle, Zap, Check } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { ScrollArea } from '../ui/scroll-area';
 import { formatDistanceToNow } from 'date-fns';
@@ -125,6 +125,61 @@ export default function AppHeader({
     router.push(n.href);
   };
 
+  const handleViewAnnouncement = (ann: Announcement) => {
+      if (!ann) return;
+      if (firestore && user && !ann.viewedBy?.includes(user.uid)) {
+          const annRef = doc(firestore, 'announcements', ann.id);
+          updateDocumentNonBlocking(annRef, {
+              viewedBy: arrayUnion(user.uid)
+          });
+      }
+      setSelectedAnnouncement(ann);
+  };
+
+  // UNIFIED TICKER FEED
+  const activeTickerAlert = useMemo(() => {
+    const items = [];
+    
+    // 1. Announcements (Broad Priority)
+    if (latestAnnouncement) {
+      items.push({
+        id: latestAnnouncement.id,
+        timestamp: new Date(latestAnnouncement.createdAt).getTime(),
+        type: 'BROADCAST',
+        label: 'BROADCAST',
+        icon: <Megaphone className="h-4 w-4 animate-bounce" />,
+        title: latestAnnouncement.title,
+        content: latestAnnouncement.content,
+        color: 'bg-primary/95',
+        onClick: () => handleViewAnnouncement(latestAnnouncement)
+      });
+    }
+    
+    // 2. Notifications (Operational Reality)
+    const newestUnread = unreadNotifications[0];
+    if (newestUnread) {
+      const titleLower = newestUnread.title.toLowerCase();
+      const isSuccess = titleLower.includes('success') || titleLower.includes('approved') || titleLower.includes('paid') || titleLower.includes('verified');
+      const isWarning = titleLower.includes('pending') || titleLower.includes('assigned') || titleLower.includes('waiting');
+      const isUrgent = titleLower.includes('urgent') || titleLower.includes('denied') || titleLower.includes('rejected') || titleLower.includes('action');
+
+      items.push({
+        id: newestUnread.id,
+        timestamp: new Date(newestUnread.createdAt).getTime(),
+        type: 'NOTIFICATION',
+        label: 'TELEMETRY',
+        icon: <Zap className="h-4 w-4 animate-pulse" />,
+        title: newestUnread.title,
+        content: newestUnread.description,
+        color: isUrgent ? 'bg-rose-600' : isSuccess ? 'bg-emerald-600' : isWarning ? 'bg-amber-600' : 'bg-slate-700',
+        onClick: () => handleNotificationClick(newestUnread)
+      });
+    }
+    
+    // Sort by timestamp and take the freshest node
+    return items.sort((a, b) => b.timestamp - a.timestamp)[0];
+  }, [latestAnnouncement, unreadNotifications, latestAnnouncement?.viewedBy?.length]);
+
   const markAllRead = () => {
     if (!firestore || !unreadNotifications.length) return;
     unreadNotifications.forEach(n => {
@@ -132,40 +187,32 @@ export default function AppHeader({
     });
   };
 
-  const handleViewAnnouncement = () => {
-      if (!latestAnnouncement) return;
-      if (firestore && user && !latestAnnouncement.viewedBy?.includes(user.uid)) {
-          const annRef = doc(firestore, 'announcements', latestAnnouncement.id);
-          updateDocumentNonBlocking(annRef, {
-              viewedBy: arrayUnion(user.uid)
-          });
-      }
-      setSelectedAnnouncement(latestAnnouncement);
-  };
-
   return (
     <header className={cn("flex flex-col shrink-0 bg-transparent transition-all", className)}>
-        {/* HIGH VISIBILITY TICKER */}
-        {latestAnnouncement && (
+        {/* HIGH VISIBILITY TICKER - Unified Alert Feed */}
+        {activeTickerAlert && (
             <div 
-                className="h-10 bg-primary/95 text-white flex items-center overflow-hidden cursor-pointer hover:bg-primary transition-colors group"
-                onClick={handleViewAnnouncement}
+                className={cn(
+                    "h-10 text-white flex items-center overflow-hidden cursor-pointer hover:opacity-90 transition-all group",
+                    activeTickerAlert.color
+                )}
+                onClick={activeTickerAlert.onClick}
             >
-                <div className="flex-shrink-0 bg-primary-foreground/10 h-full flex items-center px-4 z-10 shadow-lg gap-2">
-                    <Megaphone className="h-4 w-4 animate-bounce" />
-                    <span className="text-[10px] font-black uppercase tracking-widest whitespace-nowrap">Broadcast</span>
+                <div className="flex-shrink-0 bg-white/10 h-full flex items-center px-4 z-10 shadow-lg gap-2 backdrop-blur-md">
+                    {activeTickerAlert.icon}
+                    <span className="text-[10px] font-black uppercase tracking-[0.2em] whitespace-nowrap">{activeTickerAlert.label}</span>
                 </div>
                 <div className="relative flex-1 overflow-hidden h-full flex items-center">
                     <p className="animate-marquee text-sm font-black uppercase tracking-tight">
-                        <span className="mx-8">{latestAnnouncement.title} — {latestAnnouncement.content}</span>
+                        <span className="mx-8">{activeTickerAlert.title} — {activeTickerAlert.content}</span>
                         <span className="mx-8 opacity-50">•</span>
-                        <span className="mx-8">{latestAnnouncement.title} — {latestAnnouncement.content}</span>
+                        <span className="mx-8">{activeTickerAlert.title} — {activeTickerAlert.content}</span>
                         <span className="mx-8 opacity-50">•</span>
-                        <span className="mx-8">{latestAnnouncement.title} — {latestAnnouncement.content}</span>
+                        <span className="mx-8">{activeTickerAlert.title} — {activeTickerAlert.content}</span>
                     </p>
                 </div>
-                <div className="flex-shrink-0 px-4 z-10 bg-gradient-to-l from-primary to-transparent h-full flex items-center">
-                    <span className="text-[9px] font-bold opacity-0 group-hover:opacity-100 transition-opacity uppercase tracking-widest">Click to expand</span>
+                <div className="flex-shrink-0 px-4 z-10 bg-gradient-to-l from-black/20 to-transparent h-full flex items-center">
+                    <span className="text-[9px] font-bold opacity-0 group-hover:opacity-100 transition-opacity uppercase tracking-widest">Execute Node</span>
                 </div>
             </div>
         )}
