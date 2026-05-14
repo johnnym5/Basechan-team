@@ -47,12 +47,12 @@ export function DashboardTaskList({ userProfile, permissions }: DashboardTaskLis
     const tasks = allTasks?.filter(t => t.status !== 'ARCHIVED').slice(0, 10);
 
   return (
-    <section className="card-bg rounded-2xl p-6 shadow-lg h-full animate-slide-up-fade" style={{ animationDelay: '100ms' }}>
+    <section className="card-bg rounded-2xl p-6 shadow-lg animate-slide-up-fade" style={{ animationDelay: '100ms' }}>
         <h3 className="text-lg font-bold font-headline tracking-tight mb-6">Active Tasks</h3>
         <div className="overflow-x-auto">
-            <table className="w-full text-left">
+            <table className="w-full text-left border-collapse">
                 <thead>
-                    <tr className="text-muted-foreground text-[0.625rem] uppercase tracking-widest border-b">
+                    <tr className="text-muted-foreground text-[0.625rem] uppercase tracking-widest border-b border-border/50">
                         <th className="pb-4 font-bold">Priority</th>
                         <th className="pb-4 font-bold">Task Name</th>
                         <th className="pb-4 font-bold">Assignee</th>
@@ -66,7 +66,7 @@ export function DashboardTaskList({ userProfile, permissions }: DashboardTaskLis
                     {!isLoading && tasks?.map((task, idx) => (
                         <tr 
                             key={task.id} 
-                            className="border-b border-border/50 hover:bg-primary/5 transition-all cursor-pointer group interactive-element"
+                            className="border-b border-border/30 last:border-0 hover:bg-primary/5 transition-all cursor-pointer group interactive-element"
                             onClick={() => uiEmitter.emit('open-tasks-dialog', { taskId: task.id })}
                             style={{ animationDelay: `${150 + (idx * 50)}ms` }}
                         >
