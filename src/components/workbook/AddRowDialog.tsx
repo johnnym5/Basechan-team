@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Loader2, CalendarIcon, ScanLine } from "lucide-react";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useFirestore, updateDocumentNonBlocking } from "@/firebase";
 import { doc, arrayUnion } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
@@ -60,6 +60,13 @@ export function AddRowDialog({ children, open, onOpenChange, sheet }: AddRowDial
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
+    defaultValues: useMemo(() => {
+        const defaults: Record<string, any> = {};
+        sheet.headers.forEach(h => {
+            defaults[h] = "";
+        });
+        return defaults;
+    }, [sheet.headers])
   });
 
   const handleOpenChange = (isOpen: boolean) => {
@@ -125,10 +132,10 @@ export function AddRowDialog({ children, open, onOpenChange, sheet }: AddRowDial
 
     switch(config?.type) {
         case 'number':
-            return <Input type="number" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || 0)} className="rounded-xl" />;
+            return <Input type="number" {...field} value={field.value ?? ""} onChange={e => field.onChange(parseFloat(e.target.value) || 0)} className="rounded-xl" />;
         case 'select':
             return (
-                <Select onValueChange={field.onChange} value={field.value}>
+                <Select onValueChange={field.onChange} value={field.value || ""}>
                     <SelectTrigger className="rounded-xl"><SelectValue placeholder="Select an option" /></SelectTrigger>
                     <SelectContent>
                         {config.selectOptions?.map(opt => <SelectItem key={opt} value={opt}>{opt}</SelectItem>)}
@@ -153,7 +160,7 @@ export function AddRowDialog({ children, open, onOpenChange, sheet }: AddRowDial
         default:
             return (
                 <div className="relative">
-                    <Input {...field} className={cn("rounded-xl", isBarcodeField && "pr-10")} />
+                    <Input {...field} value={field.value ?? ""} className={cn("rounded-xl", isBarcodeField && "pr-10")} />
                     {isBarcodeField && (
                         <button 
                             type="button"

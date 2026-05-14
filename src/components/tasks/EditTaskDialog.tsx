@@ -52,7 +52,7 @@ export function EditTaskDialog({ task, open, onOpenChange, currentUserProfile }:
   const isBusy = isLoading || isUploading;
 
   const workbooksQuery = useMemoFirebase(() => 
-    currentUserProfile ? query(collection(firestore, 'workbooks'), where('orgId', '==', currentUserProfile.orgId)) : null
+    currentUserProfile ? query(collection(firestore!, 'workbooks'), where('orgId', '==', currentUserProfile.orgId)) : null
   , [firestore, currentUserProfile]);
   const { data: workbooks, isLoading: areWorkbooksLoading } = useCollection<Workbook>(workbooksQuery);
 
@@ -63,7 +63,7 @@ export function EditTaskDialog({ task, open, onOpenChange, currentUserProfile }:
   const selectedWorkbookId = form.watch('workbookId');
 
   const sheetsQuery = useMemoFirebase(() =>
-      selectedWorkbookId ? query(collection(firestore, `workbooks/${selectedWorkbookId}/sheets`)) : null
+      selectedWorkbookId ? query(collection(firestore!, `workbooks/${selectedWorkbookId}/sheets`)) : null
   , [firestore, selectedWorkbookId]);
   const { data: sheets, isLoading: areSheetsLoading } = useCollection<Sheet>(sheetsQuery);
 
@@ -73,8 +73,8 @@ export function EditTaskDialog({ task, open, onOpenChange, currentUserProfile }:
       description: task.description || "",
       priority: task.priority,
       dueDate: task.dueDate ? new Date(task.dueDate) : undefined,
-      workbookId: task.workbookId || undefined,
-      sheetId: task.sheetId || undefined,
+      workbookId: task.workbookId || "",
+      sheetId: task.sheetId || "",
       estimatedHours: task.estimatedHours,
     });
     setFileName(task.attachmentName || null);
@@ -135,16 +135,16 @@ export function EditTaskDialog({ task, open, onOpenChange, currentUserProfile }:
         <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
                 <FormField control={form.control} name="title" render={({ field }) => (
-                    <FormItem><FormLabel>Title</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                    <FormItem><FormLabel>Title</FormLabel><FormControl><Input {...field} value={field.value ?? ""} /></FormControl><FormMessage /></FormItem>
                 )} />
                 <FormField control={form.control} name="description" render={({ field }) => (
-                    <FormItem><FormLabel>Description (Optional)</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>
+                    <FormItem><FormLabel>Description (Optional)</FormLabel><FormControl><Textarea {...field} value={field.value ?? ""} /></FormControl><FormMessage /></FormItem>
                 )} />
                 
                  <div className="space-y-2">
                     <FormField control={form.control} name="workbookId" render={({ field }) => (
                         <FormItem><FormLabel>Attached Workbook</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
+                        <Select onValueChange={field.onChange} value={field.value || ""}>
                             <FormControl><SelectTrigger disabled={areWorkbooksLoading}><SelectValue placeholder="Select a workbook" /></SelectTrigger></FormControl>
                             <SelectContent>{workbooks?.map(wb => <SelectItem key={wb.id} value={wb.id}>{wb.title}</SelectItem>)}</SelectContent>
                         </Select>
@@ -153,7 +153,7 @@ export function EditTaskDialog({ task, open, onOpenChange, currentUserProfile }:
                     {selectedWorkbookId && (
                          <FormField control={form.control} name="sheetId" render={({ field }) => (
                             <FormItem>
-                            <Select onValueChange={field.onChange} value={field.value}>
+                            <Select onValueChange={field.onChange} value={field.value || ""}>
                                 <FormControl><SelectTrigger disabled={areSheetsLoading}><SelectValue placeholder="Select a sheet" /></SelectTrigger></FormControl>
                                 <SelectContent>{sheets?.map(sh => <SelectItem key={sh.id} value={sh.id}>{sh.name}</SelectItem>)}</SelectContent>
                             </Select>
@@ -184,7 +184,7 @@ export function EditTaskDialog({ task, open, onOpenChange, currentUserProfile }:
                 <div className="grid grid-cols-2 gap-4">
                     <FormField control={form.control} name="priority" render={({ field }) => (
                          <FormItem><FormLabel>Priority</FormLabel>
-                         <Select onValueChange={field.onChange} defaultValue={field.value}>
+                         <Select onValueChange={field.onChange} value={field.value}>
                             <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
                             <SelectContent>
                                 <SelectItem value="LEVEL_1">Low</SelectItem>
@@ -196,7 +196,7 @@ export function EditTaskDialog({ task, open, onOpenChange, currentUserProfile }:
                     )} />
                     <FormField control={form.control} name="estimatedHours" render={({ field }) => (
                         <FormItem><FormLabel>Estimated Hours</FormLabel>
-                        <FormControl><Input type="number" placeholder="e.g., 8" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : e.target.value)} /></FormControl>
+                        <FormControl><Input type="number" placeholder="e.g., 8" {...field} value={field.value ?? ""} onChange={e => field.onChange(e.target.value === '' ? undefined : e.target.value)} /></FormControl>
                         <FormMessage /></FormItem>
                     )} />
                 </div>

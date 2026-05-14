@@ -77,9 +77,7 @@ export function AssignTaskDialog({ open, onOpenChange, initialData, currentUserP
       title: "",
       description: "",
       priority: "LEVEL_1",
-      dueDate: undefined,
       estimatedHours: undefined,
-      attachment: undefined,
     },
   });
 
@@ -96,12 +94,11 @@ export function AssignTaskDialog({ open, onOpenChange, initialData, currentUserP
             title: initialData?.title || "",
             description: initialData?.description || "",
             priority: initialData?.priority || "LEVEL_1",
-            assignedTo: undefined,
+            assignedTo: "",
             dueDate: initialData?.dueDate || undefined,
-            workbookId: initialData?.workbookId || undefined,
-            sheetId: initialData?.sheetId || undefined,
+            workbookId: initialData?.workbookId || "",
+            sheetId: initialData?.sheetId || "",
             estimatedHours: undefined,
-            attachment: undefined,
         });
         setFileName(null);
     }
@@ -148,17 +145,17 @@ export function AssignTaskDialog({ open, onOpenChange, initialData, currentUserP
         <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                 <FormField control={form.control} name="title" render={({ field }) => (
-                    <FormItem><FormLabel>Title</FormLabel><FormControl><Input placeholder="e.g., Finalize Q3 Report" {...field} /></FormControl><FormMessage /></FormItem>
+                    <FormItem><FormLabel>Title</FormLabel><FormControl><Input placeholder="e.g., Finalize Q3 Report" {...field} value={field.value ?? ""} /></FormControl><FormMessage /></FormItem>
                 )} />
                 <FormField control={form.control} name="description" render={({ field }) => (
-                    <FormItem><FormLabel>Description (Optional)</FormLabel><FormControl><Textarea placeholder="Add more context..." {...field} /></FormControl><FormMessage /></FormItem>
+                    <FormItem><FormLabel>Description (Optional)</FormLabel><FormControl><Textarea placeholder="Add more context..." {...field} value={field.value ?? ""} /></FormControl><FormMessage /></FormItem>
                 )} />
                 
                  <div className="grid grid-cols-2 gap-4">
                     {permissions.canManageStaff && (
                       <FormField control={form.control} name="assignedTo" render={({ field }) => (
                           <FormItem><FormLabel>Assign To</FormLabel>
-                          <Select onValueChange={field.onChange} value={field.value}>
+                          <Select onValueChange={field.onChange} value={field.value || ""}>
                               <FormControl><SelectTrigger disabled={areUsersLoading}><SelectValue placeholder="Select Personnel" /></SelectTrigger></FormControl>
                               <SelectContent>{users?.map(user => <SelectItem key={user.id} value={user.id}>{user.fullName}</SelectItem>)}</SelectContent>
                           </Select>
@@ -204,7 +201,7 @@ export function AssignTaskDialog({ open, onOpenChange, initialData, currentUserP
                         )}
                     />
                     <FormField control={form.control} name="estimatedHours" render={({ field }) => (
-                        <FormItem><FormLabel>Est. Hours</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
+                        <FormItem><FormLabel>Est. Hours</FormLabel><FormControl><Input type="number" {...field} value={field.value ?? ""} /></FormControl><FormMessage /></FormItem>
                     )} />
                 </div>
 

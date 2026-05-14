@@ -133,13 +133,13 @@ export function NewJournalEntryDialog({ open, onOpenChange, userProfile }: NewJo
             <div className="px-6 py-4 space-y-4 flex-shrink-0">
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <FormField control={form.control} name="date" render={({ field }) => (
-                        <FormItem><FormLabel>Transaction Date</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>
+                        <FormItem><FormLabel>Transaction Date</FormLabel><FormControl><Input type="date" {...field} value={field.value ?? ""} /></FormControl><FormMessage /></FormItem>
                     )}/>
                     <FormField control={form.control} name="reference" render={({ field }) => (
-                        <FormItem><FormLabel>Reference #</FormLabel><FormControl><Input placeholder="GJ-001" {...field} /></FormControl><FormMessage /></FormItem>
+                        <FormItem><FormLabel>Reference #</FormLabel><FormControl><Input placeholder="GJ-001" {...field} value={field.value ?? ""} /></FormControl><FormMessage /></FormItem>
                     )}/>
                     <FormField control={form.control} name="description" render={({ field }) => (
-                        <FormItem className="sm:col-span-1"><FormLabel>Entry Memo</FormLabel><FormControl><Input placeholder="Brief description..." {...field} /></FormControl><FormMessage /></FormItem>
+                        <FormItem className="sm:col-span-1"><FormLabel>Entry Memo</FormLabel><FormControl><Input placeholder="Brief description..." {...field} value={field.value ?? ""} /></FormControl><FormMessage /></FormItem>
                     )}/>
                 </div>
             </div>
@@ -160,7 +160,7 @@ export function NewJournalEntryDialog({ open, onOpenChange, userProfile }: NewJo
                                     <FormField control={form.control} name={`lines.${index}.accountId`} render={({ field }) => (
                                         <FormItem>
                                             {index === 0 && <FormLabel className="text-[10px] uppercase text-muted-foreground">Account</FormLabel>}
-                                            <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
+                                            <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value || ""}>
                                                 <FormControl><SelectTrigger className="h-10"><SelectValue placeholder="Select account..." /></SelectTrigger></FormControl>
                                                 <SelectContent>
                                                     {accounts?.map(a => <SelectItem key={a.id} value={a.id}>{a.code} — {a.name}</SelectItem>)}
@@ -173,7 +173,7 @@ export function NewJournalEntryDialog({ open, onOpenChange, userProfile }: NewJo
                                     <FormField control={form.control} name={`lines.${index}.debit`} render={({ field }) => (
                                         <FormItem>
                                             {index === 0 && <FormLabel className="text-[10px] uppercase text-muted-foreground">Debit</FormLabel>}
-                                            <FormControl><Input type="number" step="0.01" className="h-10 font-mono text-right" {...field} /></FormControl>
+                                            <FormControl><Input type="number" step="0.01" className="h-10 font-mono text-right" {...field} value={field.value ?? 0} /></FormControl>
                                         </FormItem>
                                     )}/>
                                 </div>
@@ -181,7 +181,7 @@ export function NewJournalEntryDialog({ open, onOpenChange, userProfile }: NewJo
                                     <FormField control={form.control} name={`lines.${index}.credit`} render={({ field }) => (
                                         <FormItem>
                                             {index === 0 && <FormLabel className="text-[10px] uppercase text-muted-foreground">Credit</FormLabel>}
-                                            <FormControl><Input type="number" step="0.01" className="h-10 font-mono text-right" {...field} /></FormControl>
+                                            <FormControl><Input type="number" step="0.01" className="h-10 font-mono text-right" {...field} value={field.value ?? 0} /></FormControl>
                                         </FormItem>
                                     )}/>
                                 </div>
