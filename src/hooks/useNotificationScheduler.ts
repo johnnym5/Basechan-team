@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
@@ -7,6 +6,7 @@ import { format, parse, isAfter, isBefore, addMinutes, differenceInMinutes } fro
 
 /**
  * Hook to manage deterministic background reminders and escalations.
+ * This runs in the layout and uses the Service Worker to trigger local OS notifications.
  */
 export function useNotificationScheduler(
     user: UserProfile | null,
@@ -21,7 +21,6 @@ export function useNotificationScheduler(
 
         const interval = setInterval(() => {
             const now = new Date();
-            const timeStr = format(now, 'HH:mm');
             const today = format(now, 'yyyy-MM-dd');
 
             // 1. Check Shift Start (8:50 AM for 9:00 AM shift)
@@ -29,6 +28,7 @@ export function useNotificationScheduler(
                 const startTime = parse(systemConfig.work_hours.start, 'HH:mm', now);
                 const notificationLeadTime = addMinutes(startTime, -10);
                 
+                // If it's between 10 mins before and start time
                 if (isAfter(now, notificationLeadTime) && isBefore(now, startTime)) {
                     triggerReminder(
                         'Shift Impending',
@@ -57,11 +57,12 @@ export function useNotificationScheduler(
                             `shift-end-${escalationStep}`,
                             [{ action: 'login', title: 'Sign Out Now' }]
                         );
+                        // Move to next escalation level if user ignores
                         setEscalationLevel(prev => Math.min(prev + 1, thresholds.length - 1));
                     }
                 }
             }
-        }, 60000); // Check every minute
+        }, 30000); // Check every 30 seconds
 
         return () => clearInterval(interval);
     }, [user, systemConfig, attendance, escalationStep]);
@@ -70,18 +71,24 @@ export function useNotificationScheduler(
         if (!('serviceWorker' in navigator)) return;
         
         const key = `${id}-${format(new Date(), 'yyyy-MM-dd')}`;
+        // Prevent duplicate notifications within the same minute
         if (lastNotifiedRef.current[key]) return;
 
-        const registration = await navigator.serviceWorker.ready;
-        registration.showNotification(title, {
-            body,
-            icon: '/favicon.ico',
-            badge: '/favicon.ico',
-            tag: id,
-            actions,
-            requireInteraction: true
-        });
+        try {
+            const registration = await navigator.serviceWorker.ready;
+            registration.showNotification(title, {
+                body,
+                icon: '/favicon.ico',
+                badge: '/favicon.ico',
+                tag: id,
+                actions,
+                requireInteraction: true,
+                vibrate: [200, 100, 200]
+            });
 
-        lastNotifiedRef.current[key] = new Date().toISOString();
+            lastNotifiedRef.current[key] = new Date().toISOString();
+        } catch (e) {
+            console.warn("Notification failed to trigger:", e);
+        }
     };
 }

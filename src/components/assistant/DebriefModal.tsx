@@ -1,9 +1,8 @@
-
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
-import { useUser, useDoc, useFirestore, useMemoFirebase, useCollection } from '@/firebase';
-import { doc, query, collection, where } from 'firebase/firestore';
+import { useFirestore, useMemoFirebase, useCollection } from '@/firebase';
+import { query, collection, where } from 'firebase/firestore';
 import type { UserProfile, Chat, Task } from '@/lib/types';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -14,12 +13,11 @@ export function DebriefModal({ userProfile }: { userProfile: UserProfile }) {
     const firestore = useFirestore();
     const [isOpen, setIsOpen] = useState(false);
 
-    // 1. Check if debrief was shown today
+    // Check if debrief was shown today
     useEffect(() => {
         const lastDebrief = localStorage.getItem(`last-debrief-${userProfile.id}`);
         const today = format(new Date(), 'yyyy-MM-dd');
         
-        // Logic: Show if never shown today, OR if "remind later" was clicked and it's afternoon
         const remindLater = localStorage.getItem(`debrief-remind-later-${userProfile.id}`);
         const isAfternoon = new Date().getHours() >= 13;
 
@@ -32,9 +30,9 @@ export function DebriefModal({ userProfile }: { userProfile: UserProfile }) {
         }
     }, [userProfile.id]);
 
-    // 2. Query Unread Messages
+    // Query Unread Messages
     const chatsQuery = useMemoFirebase(() => 
-        query(collection(firestore!, 'chats'), where('participants', 'array-contains', userProfile.id))
+        firestore ? query(collection(firestore, 'chats'), where('participants', 'array-contains', userProfile.id)) : null
     , [firestore, userProfile.id]);
     const { data: chats } = useCollection<Chat>(chatsQuery);
 
@@ -46,9 +44,9 @@ export function DebriefModal({ userProfile }: { userProfile: UserProfile }) {
         }).length;
     }, [chats, userProfile.id]);
 
-    // 3. Query Missions
+    // Query Active Missions
     const tasksQuery = useMemoFirebase(() => 
-        query(collection(firestore!, 'tasks'), where('assignedTo', '==', userProfile.id), where('status', 'in', ['QUEUED', 'ACTIVE']))
+        firestore ? query(collection(firestore, 'tasks'), where('assignedTo', '==', userProfile.id), where('status', 'in', ['QUEUED', 'ACTIVE'])) : null
     , [firestore, userProfile.id]);
     const { data: tasks } = useCollection<Task>(tasksQuery);
 

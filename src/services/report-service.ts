@@ -1,10 +1,10 @@
-
 'use client';
 
-import { Firestore, collection, query, where, getDocs, orderBy } from 'firebase/firestore';
+import { Firestore, collection, query, where, getDocs } from 'firebase/firestore';
 import { addDocumentNonBlocking } from '@/firebase';
 import type { UserProfile, Attendance, Task, DailyReport, Chat } from '@/lib/types';
 import { format, startOfDay } from 'date-fns';
+import { sanitizeInput } from '@/lib/utils';
 
 /**
  * Service to generate structured organizational telemetry reports.
@@ -22,7 +22,7 @@ export const reportService = {
             collection(db, 'tasks'),
             where('assignedTo', '==', user.id),
             where('status', '==', 'ARCHIVED'),
-            where('createdAt', '>=', dayStart) // Approximation for 'today'
+            where('createdAt', '>=', dayStart)
         );
         const tasksSnap = await getDocs(tasksQuery);
         const completedTasks = tasksSnap.docs.map(d => ({
@@ -30,8 +30,7 @@ export const reportService = {
             title: (d.data() as Task).title
         }));
 
-        // 2. Fetch Chat interactions today (who user sent messages to)
-        // Note: For a high-velocity app, we just count chats where user participated
+        // 2. Fetch Chat interactions today
         const chatsQuery = query(
             collection(db, 'chats'),
             where('participants', 'array-contains', user.id),
@@ -76,7 +75,7 @@ COMMUNICATIONS:
             userId: user.id,
             userName: user.fullName,
             reportDate: today,
-            content: summary,
+            content: sanitizeInput(summary),
             completedTasks: completedTasks,
             createdAt: new Date().toISOString(),
         };
