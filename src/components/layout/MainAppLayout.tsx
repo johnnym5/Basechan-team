@@ -116,7 +116,7 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
               className="apple-glass z-10 sticky top-0"
           />
           
-          <main className="flex-1 overflow-y-auto p-4 md:p-8 scroll-smooth pb-28 md:pb-8">
+          <main className="flex-1 overflow-y-auto p-4 md:p-8 scroll-smooth pb-28 md:pb-8 [scrollbar-gutter:stable]">
               <div className="w-full mx-auto">
                   {children}
               </div>
