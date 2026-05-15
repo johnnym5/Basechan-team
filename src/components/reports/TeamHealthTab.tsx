@@ -1,6 +1,7 @@
 
 'use client';
 
+import { useMemo } from 'react';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query, where, orderBy, limit } from 'firebase/firestore';
 import type { PulseCheck, UserProfile } from '@/lib/types';
@@ -18,14 +19,14 @@ export function TeamHealthTab({ userProfile }: { userProfile: UserProfile }) {
     const threeDaysAgo = format(subDays(new Date(), 3), 'yyyy-MM-dd');
 
     const pulseQuery = useMemoFirebase(() => {
-        if (!firestore) return null;
+        if (!firestore || !userProfile?.orgId) return null;
         return query(
             collection(firestore, 'pulse_checks'),
             where('orgId', '==', userProfile.orgId),
             where('date', '>=', threeDaysAgo),
             orderBy('date', 'desc')
         );
-    }, [firestore, userProfile.orgId, threeDaysAgo]);
+    }, [firestore, userProfile?.orgId, threeDaysAgo]);
 
     const { data: pulses, isLoading } = useCollection<PulseCheck>(pulseQuery);
 

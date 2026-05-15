@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
@@ -13,7 +14,7 @@ interface ReportsDialogProps {
 export function ReportsDialog({ open, onOpenChange, initialPayload }: ReportsDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent position="left" className="flex flex-col p-0">
+      <DialogContent position="left" className="flex flex-col p-0 overflow-hidden">
         <div className="sr-only">
           <DialogHeader>
             <DialogTitle>Organizational Analytics</DialogTitle>
@@ -21,7 +22,7 @@ export function ReportsDialog({ open, onOpenChange, initialPayload }: ReportsDia
           </DialogHeader>
         </div>
         {/* Use native high-visibility scrolling for complex report content */}
-        <div className="flex-1 overflow-y-auto [scrollbar-gutter:stable] p-8 pb-32 custom-scrollbar">
+        <div className="flex-1 overflow-y-auto [scrollbar-gutter:stable] p-8 pb-32 custom-scrollbar bg-background">
             <ReportsPageContent initialPayload={initialPayload} />
         </div>
       </DialogContent>

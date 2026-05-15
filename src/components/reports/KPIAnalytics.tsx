@@ -1,3 +1,4 @@
+
 'use client';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection, query, where } from 'firebase/firestore';
@@ -10,6 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from '../ui/badge';
 import { cn } from '@/lib/utils';
 import { Progress } from '../ui/progress';
+import { ScrollArea } from '../ui/scroll-area';
 
 interface KPIAnalyticsProps {
     userProfile: UserProfile;
@@ -138,8 +140,7 @@ export function KPIAnalytics({ userProfile }: KPIAnalyticsProps) {
                 </div>
             </CardHeader>
             <CardContent className="flex-1 overflow-hidden p-0">
-                {/* Standard native scroll to ensure visibility of standings */}
-                <div className="h-full overflow-y-auto custom-scrollbar">
+                <ScrollArea className="h-full custom-scrollbar">
                     <Table>
                         <TableHeader className="bg-secondary/10">
                             <TableRow className="hover:bg-transparent border-white/5">
@@ -204,7 +205,7 @@ export function KPIAnalytics({ userProfile }: KPIAnalyticsProps) {
                             )}
                         </TableBody>
                     </Table>
-                </div>
+                </ScrollArea>
             </CardContent>
         </Card>
     );
