@@ -40,8 +40,8 @@
     --ring: 217 91% 60%;
     --radius: 1.5rem; 
 
-    --sidebar-background: 230 15% 10%; 
-    --sidebar-foreground: 210 40% 98%;
+    --sidebar-background: 240 5% 96%; 
+    --sidebar-foreground: 240 10% 10%;
   }
 
   .dark {
@@ -72,6 +72,9 @@
 
     --border: 240 10% 15%;
     --input: 240 10% 15%;
+
+    --sidebar-background: 230 15% 10%; 
+    --sidebar-foreground: 210 40% 98%;
   }
 }
 
@@ -118,19 +121,19 @@
 
 @layer utilities {
     .apple-glass {
-        @apply bg-background/60 backdrop-blur-2xl border border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.05)];
+        @apply bg-background/60 backdrop-blur-2xl border border-border/50 shadow-[0_8px_32px_0_rgba(0,0,0,0.05)];
     }
     
     .apple-glass-darker {
-        @apply bg-background/80 backdrop-blur-3xl border border-white/5 shadow-2xl;
+        @apply bg-background/80 backdrop-blur-3xl border border-border/50 shadow-2xl;
     }
 
     .min-h-screen-safe {
         min-height: 100dvh;
     }
 
-    .sidebar-bg { background-color: #0f1014; }
-    .card-bg { @apply bg-card/50 backdrop-blur-xl border border-white/5; }
+    .sidebar-bg { @apply bg-[hsl(var(--sidebar-background))]; }
+    .card-bg { @apply bg-card/50 backdrop-blur-xl border border-border/50; }
     .active-nav { @apply bg-primary/10 text-primary border-r-2 border-primary; }
     
     .gauge-container {
