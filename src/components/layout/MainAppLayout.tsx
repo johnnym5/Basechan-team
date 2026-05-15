@@ -11,7 +11,7 @@ import { usePermissions } from '@/hooks/usePermissions';
 import { format } from 'date-fns';
 import { useIdleTimer } from '@/hooks/useIdleTimer';
 import { useSyncDialogsWithUrl } from '@/hooks/useSyncDialogsWithUrl';
-import { hexToHslString, ORG_ID } from '@/lib/utils';
+import { hexToHslString } from '@/lib/utils';
 import dynamic from 'next/dynamic';
 import { BottomNavBar } from './BottomNavBar';
 import { useShiftReminders } from '@/hooks/useShiftReminders';

@@ -56,7 +56,7 @@ export function ResponsiveDialog({
                 <SheetTitle className="text-3xl font-black font-headline tracking-tighter">{title}</SheetTitle>
                 {description && <SheetDescription className="text-xs uppercase tracking-[0.2em] font-black opacity-50">{description}</SheetDescription>}
             </SheetHeader>
-            <div className="flex-1 overflow-y-auto px-8 pb-32 no-scrollbar">
+            <div className="flex-1 overflow-y-auto px-8 pb-32">
                 {children}
             </div>
         </div>
