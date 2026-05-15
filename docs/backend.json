@@ -30,6 +30,32 @@
         "remarks": { "type": "array", "items": { "type": "string" } }
       }
     },
+    "PulseCheck": {
+        "title": "Pulse Check",
+        "type": "object",
+        "description": "A daily snapshot of personnel workload and well-being.",
+        "properties": {
+            "orgId": { "type": "string" },
+            "userId": { "type": "string" },
+            "userName": { "type": "string" },
+            "date": { "type": "string", "format": "date" },
+            "mood": { "type": "string", "enum": ["SMOOTH", "HEAVY", "OVERWHELMED"] },
+            "timestamp": { "type": "string", "format": "date-time" }
+        },
+        "required": ["orgId", "userId", "date", "mood", "timestamp"]
+    },
+    "ActivityPoint": {
+        "title": "Activity Point",
+        "type": "object",
+        "description": "Aggregated daily activity points for the contribution heatmap.",
+        "properties": {
+            "orgId": { "type": "string" },
+            "userId": { "type": "string" },
+            "date": { "type": "string", "format": "date" },
+            "points": { "type": "number" }
+        },
+        "required": ["orgId", "userId", "date", "points"]
+    },
     "Roster": {
       "title": "Workforce Roster",
       "type": "object",
@@ -144,6 +170,8 @@
   "firestore": {
     "structure": [
       { "path": "/attendance/{id}", "definition": { "entityName": "Attendance", "schema": { "$ref": "#/entities/Attendance" } } },
+      { "path": "/pulse_checks/{id}", "definition": { "entityName": "PulseCheck", "schema": { "$ref": "#/entities/PulseCheck" } } },
+      { "path": "/activity_points/{id}", "definition": { "entityName": "ActivityPoint", "schema": { "$ref": "#/entities/ActivityPoint" } } },
       { "path": "/rosters/{id}", "definition": { "entityName": "Roster", "schema": { "$ref": "#/entities/Roster" } } },
       { "path": "/tasks/{id}", "definition": { "entityName": "Task", "schema": { "$ref": "#/entities/Task" } } },
       { "path": "/library_items/{id}", "definition": { "entityName": "LibraryItem", "schema": { "$ref": "#/entities/LibraryItem" } } },

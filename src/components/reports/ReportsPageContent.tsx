@@ -1,7 +1,7 @@
 
 'use client';
 import { useUser, useDoc, useMemoFirebase, useFirestore, useCollection } from "@/firebase";
-import { doc, collection, query, where } from 'firebase/firestore';
+import { doc, collection, query, where, getDocs } from 'firebase/firestore';
 import type { UserProfile, DailyReport, Attendance, Requisition, Task } from '@/lib/types';
 import { usePermissions } from '@/hooks/usePermissions';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -13,9 +13,10 @@ import { SubmitDailyReport } from "@/components/reports/SubmitDailyReport";
 import { MyDailyReports } from "@/components/reports/MyDailyReports";
 import { TeamDailyReports } from "@/components/reports/TeamDailyReports";
 import { PerformanceDashboard } from "@/components/reports/PerformanceDashboard";
+import { TeamHealthTab } from "@/components/reports/TeamHealthTab";
 import { useState, useEffect } from "react";
 import { Button } from "../ui/button";
-import { Download, FileSpreadsheet, Loader2, Trophy, BarChart3, UserCheck } from "lucide-react";
+import { Download, FileSpreadsheet, Loader2, Trophy, BarChart3, UserCheck, Heart } from "lucide-react";
 import * as XLSX from 'xlsx';
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
@@ -50,7 +51,6 @@ export function ReportsPageContent({ initialPayload }: { initialPayload?: { tab?
     }
   }, [activeTab]);
 
-  // Master Export Function
   const handleMasterExport = async () => {
     if (!firestore || !userProfile) return;
     setIsExporting(true);
@@ -157,6 +157,9 @@ export function ReportsPageContent({ initialPayload }: { initialPayload?: { tab?
                     <TabsTrigger value="team-reports" className="rounded-xl px-6 font-black uppercase text-[10px] tracking-widest data-[state=active]:bg-background data-[state=active]:shadow-lg">
                         <UserCheck className="h-3 w-3 mr-2" /> Mission Logs
                     </TabsTrigger>
+                    <TabsTrigger value="team-health" className="rounded-xl px-6 font-black uppercase text-[10px] tracking-widest data-[state=active]:bg-background data-[state=active]:shadow-lg">
+                        <Heart className="h-3 w-3 mr-2" /> Team Health
+                    </TabsTrigger>
                 </>
             )}
             {!permissions.canManageStaff && (
@@ -181,6 +184,10 @@ export function ReportsPageContent({ initialPayload }: { initialPayload?: { tab?
 
             <TabsContent value="team-reports" className="m-0 focus-visible:ring-0 outline-none animate-in fade-in duration-500">
                 {userProfile && <TeamDailyReports userProfile={userProfile} />}
+            </TabsContent>
+
+            <TabsContent value="team-health" className="m-0 focus-visible:ring-0 outline-none animate-in fade-in duration-500">
+                {userProfile && <TeamHealthTab userProfile={userProfile} />}
             </TabsContent>
 
             <TabsContent value="submit" className="m-0 space-y-8 focus-visible:ring-0 outline-none animate-in fade-in duration-500">

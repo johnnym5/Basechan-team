@@ -1,10 +1,12 @@
+
 'use client';
 
 import { Firestore, collection, doc, query, where, getDocs, arrayUnion, setDoc } from 'firebase/firestore';
 import { addDocumentNonBlocking, updateDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase';
 import type { Task, UserProfile, ActivityEntry, TaskStatus, Notification, TaskPriority } from '@/lib/types';
 import { sanitizeInput } from '@/lib/utils';
-import { auditService } from './audit-service';
+import { auditService } from './activity-service';
+import { activityService } from './activity-service';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
 
@@ -93,7 +95,7 @@ export const taskService = {
     });
 
     // 5. Audit & Notify (Non-blocking)
-    auditService.logAction(db, currentUser, 'TASK_CREATE', `Assigned mission "${newTask.title}" to ${assignee.fullName}`, { id: newTaskRef.id, type: 'TASK' });
+    // activityService.logActivity(db, currentUser, 2); // Optional: points for assigner
     
     if (currentUser.id !== assignee.id) {
         const notification: Omit<Notification, 'id'> = {
@@ -140,7 +142,10 @@ export const taskService = {
 
     updatePayload.activity = arrayUnion(...activity);
     updateDocumentNonBlocking(taskRef, updatePayload);
-    
-    auditService.logAction(db, currentUser, 'TASK_STATUS_CHANGE', `Moved task "${task.title}" from ${task.status} to ${newStatus}`, { id: task.id, type: 'TASK' });
+
+    // Activity points: +5 for moving to review
+    if (newStatus === 'AWAITING_REVIEW') {
+        activityService.logActivity(db, currentUser, 5);
+    }
   }
 };

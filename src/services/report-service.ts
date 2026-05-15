@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Firestore, collection, query, where, getDocs } from 'firebase/firestore';
@@ -5,6 +6,8 @@ import { addDocumentNonBlocking } from '@/firebase';
 import type { UserProfile, Attendance, Task, DailyReport, Chat } from '@/lib/types';
 import { format, startOfDay } from 'date-fns';
 import { sanitizeInput } from '@/lib/utils';
+import { activityService } from './activity-service';
+import { uiEmitter } from '@/lib/ui-emitter';
 
 /**
  * Service to generate structured organizational telemetry reports.
@@ -79,6 +82,9 @@ COMMUNICATIONS:
             completedTasks: completedTasks,
             createdAt: new Date().toISOString(),
         };
+
+        // Activity points: +10 for report submission
+        activityService.logActivity(db, user, 10);
 
         return await addDocumentNonBlocking(collection(db, 'daily_reports'), reportData);
     }

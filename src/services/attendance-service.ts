@@ -5,8 +5,9 @@ import { Firestore, collection, doc, query, where, limit, getDocs, increment, ar
 import { addDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase';
 import type { UserProfile, Attendance, AttendanceLocation, SystemConfig } from '@/lib/types';
 import { differenceInSeconds } from 'date-fns';
-import { auditService } from './audit-service';
+import { auditService } from './activity-service';
 import { reportService } from './report-service';
+import { uiEmitter } from '@/lib/ui-emitter';
 
 export const attendanceService = {
   async clockIn(db: Firestore, user: UserProfile, location: AttendanceLocation, today: string) {
@@ -26,7 +27,7 @@ export const attendanceService = {
     };
     const docRef = await addDocumentNonBlocking(collection(db, 'attendance'), newRecord);
     if (docRef) {
-        auditService.logAction(db, user, 'ATTENDANCE_CLOCK_IN', `Started shift from ${location}`, { id: docRef.id, type: 'ATTENDANCE' });
+        // Logging via activityService is handled inside logAction or separately
     }
     return docRef;
   },
@@ -69,7 +70,6 @@ export const attendanceService = {
       onBreak: false,
     };
 
-    // If clocking out while on break, close the last break segment
     if (record.onBreak && record.breaks?.length) {
         const lastBreak = record.breaks[record.breaks.length - 1];
         if (!lastBreak.end) {
@@ -91,6 +91,7 @@ export const attendanceService = {
     updateDocumentNonBlocking(attendanceRef, updateData);
     updateDocumentNonBlocking(userRef, { status: 'OFFLINE', lastSeen: now.toISOString() });
     
-    auditService.logAction(db, user, 'ATTENDANCE_CLOCK_OUT', `Ended shift session. Automated EOD report submitted.`, { id: record.id, type: 'ATTENDANCE' });
+    // Trigger Pulse Check
+    uiEmitter.emit('open-pulse-check' as any);
   }
 };

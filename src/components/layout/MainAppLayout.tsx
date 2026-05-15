@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useUser, useDoc, useFirestore, useMemoFirebase, useCollection } from '@/firebase';
@@ -17,6 +18,7 @@ import dynamic from 'next/dynamic';
 import { BottomNavBar } from './BottomNavBar';
 import { useNotificationScheduler } from '@/hooks/useNotificationScheduler';
 import { DebriefModal } from '@/components/assistant/DebriefModal';
+import { PulseCheckDialog } from '@/components/shared/PulseCheckDialog';
 
 const GlobalDialogs = dynamic(() => import('@/components/layout/GlobalDialogs').then(m => m.GlobalDialogs), { 
   ssr: false,
@@ -38,12 +40,8 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
     setToday(format(new Date(), 'yyyy-MM-dd'));
     setMounted(true);
 
-    // Register Service Worker & Handle Periodic Sync
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('/sw.js').then(async (registration) => {
-            console.log('SW registered successfully');
-            
-            // Register for Zero-Wait Morning Preloading if supported
             if ('periodicSync' in registration) {
                 const status = await (navigator as any).permissions.query({
                     name: 'periodic-background-sync',
@@ -51,12 +49,9 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
 
                 if (status.state === 'granted') {
                     try {
-                        // Request the browser to wake up every 24 hours to sync data
-                        // This allows the Debrief Modal to load instantly at 9:00 AM
                         await (registration as any).periodicSync.register('morning-debrief-preload', {
                             minInterval: 24 * 60 * 60 * 1000, 
                         });
-                        console.log('Morning preload periodic sync registered');
                     } catch (e) {
                         console.warn('Periodic Sync registration failed:', e);
                     }
@@ -95,7 +90,6 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
   const permissions = usePermissions(stableProfile);
   const { config } = useSystemConfig(stableProfile?.orgId);
 
-  // Background Assistant Hooks
   useNotificationScheduler(stableProfile, config || null, attendanceRecord);
 
   useEffect(() => {
@@ -136,6 +130,7 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
         <>
             <BottomNavBar />
             <DebriefModal userProfile={stableProfile} />
+            <PulseCheckDialog userProfile={stableProfile} />
             <Suspense fallback={null}>
             <GlobalDialogs 
                 userProfile={stableProfile} 

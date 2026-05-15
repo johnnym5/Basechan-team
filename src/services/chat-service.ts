@@ -1,9 +1,11 @@
+
 'use client';
 
 import { Firestore, collection, doc, query, where, getDocs, writeBatch, arrayUnion, serverTimestamp } from 'firebase/firestore';
 import { addDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase';
 import type { Chat, ChatMessage, UserProfile, Notification } from '@/lib/types';
 import { sanitizeInput } from '@/lib/utils';
+import { activityService } from './activity-service';
 
 /**
  * Service to handle real-time communication and read receipts.
@@ -63,6 +65,9 @@ export const chatService = {
                 batch.set(notifRef, notification);
             }
         });
+
+        // Activity points: +1 for message sent
+        activityService.logActivity(db, user, 1);
 
         return await batch.commit();
     },

@@ -471,3 +471,23 @@ export interface Kudos {
     message: string;
     timestamp: string;
 }
+
+export type PulseMood = "SMOOTH" | "HEAVY" | "OVERWHELMED";
+
+export interface PulseCheck {
+    id: string;
+    orgId: string;
+    userId: string;
+    userName: string;
+    date: string;
+    mood: PulseMood;
+    timestamp: string;
+}
+
+export interface ActivityPoint {
+    id: string; // userId_YYYY-MM-DD
+    orgId: string;
+    userId: string;
+    date: string;
+    points: number;
+}
