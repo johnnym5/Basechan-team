@@ -37,10 +37,10 @@ const dialogVariants = cva(
     variants: {
       position: {
         center: "left-[50%] top-[50%] w-full max-w-lg translate-x-[-50%] translate-y-[-50%] border p-6 duration-200 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] sm:rounded-lg max-h-[90vh] overflow-y-auto",
-        left: "inset-y-0 left-0 h-full w-full data-[state=closed]:slide-out-to-left data-[state=open]:slide-in-from-left duration-500",
-        right: "inset-y-0 right-0 h-full border-l data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right sm:max-w-sm",
-        bottom: "inset-x-0 bottom-0 border-t data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom h-[90vh] rounded-t-[2.5rem] p-6 pb-20",
-        top: "inset-x-0 top-0 border-b data-[state=closed]:slide-out-to-top data-[state=open]:slide-in-from-top h-full max-h-[98vh] rounded-b-[4rem] px-0 pt-0 pb-16",
+        left: "inset-y-0 left-0 h-full w-full data-[state=closed]:slide-out-to-left data-[state=open]:slide-in-from-left duration-500 overflow-hidden",
+        right: "inset-y-0 right-0 h-full border-l data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right sm:max-w-sm overflow-hidden",
+        bottom: "inset-x-0 bottom-0 border-t data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom h-[90vh] rounded-t-[2.5rem] p-6 pb-20 overflow-hidden",
+        top: "inset-x-0 top-0 border-b data-[state=closed]:slide-out-to-top data-[state=open]:slide-in-from-top h-full max-h-[98vh] rounded-b-[4rem] px-0 pt-0 pb-16 overflow-hidden",
       },
     },
     defaultVariants: {
@@ -79,7 +79,7 @@ const DialogContent = React.forwardRef<
         )}
 
         <div className={cn("mx-auto w-full h-full flex flex-col relative", (isTopPanel || isLeftPanel) ? "max-w-7xl" : "")}>
-            <div className={cn("flex-1 h-full min-h-0", (isTopPanel || isSidePanel) && "px-8 pt-4", isBottomPanel && "pt-6")}>
+            <div className={cn("flex-1 h-full min-h-0", (isTopPanel || isLeftPanel) ? "" : isSidePanel ? "px-8 pt-4" : "", isBottomPanel && "pt-6")}>
                 {children}
             </div>
             

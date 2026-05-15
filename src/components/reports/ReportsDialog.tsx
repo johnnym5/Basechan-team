@@ -21,7 +21,7 @@ export function ReportsDialog({ open, onOpenChange, initialPayload }: ReportsDia
           </DialogHeader>
         </div>
         <ScrollArea className="flex-1">
-            <div className="p-6">
+            <div className="p-8 pb-32">
                 <ReportsPageContent initialPayload={initialPayload} />
             </div>
         </ScrollArea>
