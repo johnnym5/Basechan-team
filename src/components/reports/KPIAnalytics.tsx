@@ -1,4 +1,3 @@
-
 'use client';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection, query, where } from 'firebase/firestore';
@@ -11,6 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from '../ui/badge';
 import { cn } from '@/lib/utils';
 import { Progress } from '../ui/progress';
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface KPIAnalyticsProps {
     userProfile: UserProfile;
@@ -19,17 +19,20 @@ interface KPIAnalyticsProps {
 export function KPIAnalytics({ userProfile }: KPIAnalyticsProps) {
     const firestore = useFirestore();
 
-    const tasksQuery = useMemoFirebase(() => 
-        query(collection(firestore!, 'tasks'), where('orgId', '==', userProfile.orgId))
-    , [firestore, userProfile.orgId]);
+    const tasksQuery = useMemoFirebase(() => {
+        if (!firestore || !userProfile?.orgId) return null;
+        return query(collection(firestore, 'tasks'), where('orgId', '==', userProfile.orgId));
+    }, [firestore, userProfile?.orgId]);
 
-    const kudosQuery = useMemoFirebase(() => 
-        query(collection(firestore!, 'kudos'), where('orgId', '==', userProfile.orgId))
-    , [firestore, userProfile.orgId]);
+    const kudosQuery = useMemoFirebase(() => {
+        if (!firestore || !userProfile?.orgId) return null;
+        return query(collection(firestore, 'kudos'), where('orgId', '==', userProfile.orgId));
+    }, [firestore, userProfile?.orgId]);
 
-    const attendanceQuery = useMemoFirebase(() => 
-        query(collection(firestore!, 'attendance'), where('orgId', '==', userProfile.orgId))
-    , [firestore, userProfile.orgId]);
+    const attendanceQuery = useMemoFirebase(() => {
+        if (!firestore || !userProfile?.orgId) return null;
+        return query(collection(firestore, 'attendance'), where('orgId', '==', userProfile.orgId));
+    }, [firestore, userProfile?.orgId]);
 
     const { data: allTasks, isLoading: isTasksLoading } = useCollection<Task>(tasksQuery);
     const { data: allKudos, isLoading: isKudosLoading } = useCollection<Kudos>(kudosQuery);
@@ -51,7 +54,7 @@ export function KPIAnalytics({ userProfile }: KPIAnalyticsProps) {
         // Collect distinct users from all sets
         const allUserNames = new Set([
             ...allTasks.map(t => t.assignedToName),
-            ...allKudos.map(k => k.toUserId), // We'll need a better way to map kudos ID to Name if possible, for now we rely on tasks to establish names
+            ...allKudos.map(k => k.fromUserName),
             ...allAttendance.map(a => a.userName)
         ]);
 
@@ -71,10 +74,7 @@ export function KPIAnalytics({ userProfile }: KPIAnalyticsProps) {
             }
         });
 
-        // For kudos, the data has toUserId. We need to find the name. 
-        // This is a limitation of the current query structure. Let's assume we map via attendance/tasks names.
         allKudos.forEach(k => {
-            // Finding name by toUserId in allTasks or allAttendance
             const recipient = allTasks.find(t => t.assignedTo === k.toUserId)?.assignedToName || 
                             allAttendance.find(a => a.userId === k.toUserId)?.userName;
             if (recipient && userStats[recipient]) {
@@ -89,8 +89,6 @@ export function KPIAnalytics({ userProfile }: KPIAnalyticsProps) {
         });
 
         return Object.entries(userStats).map(([name, stats]) => {
-            const completionRate = stats.tasksGiven > 0 ? stats.completed / stats.tasksGiven : 0;
-            
             let efficiencyRatio = 1.0;
             if (stats.totalActual > 0 && stats.totalEstimated > 0) {
                 efficiencyRatio = Math.min(1.5, stats.totalEstimated / stats.totalActual);
