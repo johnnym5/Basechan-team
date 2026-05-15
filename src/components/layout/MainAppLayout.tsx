@@ -12,12 +12,11 @@ import { usePermissions } from '@/hooks/usePermissions';
 import { format } from 'date-fns';
 import { useIdleTimer } from '@/hooks/useIdleTimer';
 import { useSyncDialogsWithUrl } from '@/hooks/useSyncDialogsWithUrl';
-import { hexToHslString } from '@/lib/utils';
-import { ORG_ID } from '@/lib/config';
+import { hexToHslString, ORG_ID } from '@/lib/utils';
 import dynamic from 'next/dynamic';
 import { BottomNavBar } from './BottomNavBar';
-import { useNotificationScheduler } from '@/hooks/useNotificationScheduler';
-import { DebriefModal } from '@/components/assistant/DebriefModal';
+import { useShiftReminders } from '@/hooks/useShiftReminders';
+import { DebriefModal } from '@/components/dashboard/DebriefModal';
 import { PulseCheckDialog } from '@/components/shared/PulseCheckDialog';
 
 const GlobalDialogs = dynamic(() => import('@/components/layout/GlobalDialogs').then(m => m.GlobalDialogs), { 
@@ -34,30 +33,29 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
 
   useSyncDialogsWithUrl();
 
-  const isLoggedIn = !!user;
-
   useEffect(() => {
     setToday(format(new Date(), 'yyyy-MM-dd'));
     setMounted(true);
 
+    // Register Service Worker & Periodic Sync
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('/sw.js').then(async (registration) => {
             if ('periodicSync' in registration) {
-                const status = await (navigator as any).permissions.query({
-                    name: 'periodic-background-sync',
-                });
+                try {
+                    const status = await (navigator as any).permissions.query({
+                        name: 'periodic-background-sync',
+                    });
 
-                if (status.state === 'granted') {
-                    try {
+                    if (status.state === 'granted') {
                         await (registration as any).periodicSync.register('morning-debrief-preload', {
                             minInterval: 24 * 60 * 60 * 1000, 
                         });
-                    } catch (e) {
-                        console.warn('Periodic Sync registration failed:', e);
                     }
+                } catch (e) {
+                    console.warn('Periodic Sync skipped:', e);
                 }
             }
-        }).catch(err => console.error('SW registration failed:', err));
+        });
     }
   }, []);
 
@@ -70,7 +68,7 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
     if (!user) return null;
     return {
         id: user.uid,
-        orgId: userProfile?.orgId || ORG_ID,
+        orgId: userProfile?.orgId || 'basechan-international',
         email: user.email || '',
         fullName: userProfile?.fullName || user.displayName || 'Personnel',
         role: userProfile?.role || 'STAFF',
@@ -90,7 +88,8 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
   const permissions = usePermissions(stableProfile);
   const { config } = useSystemConfig(stableProfile?.orgId);
 
-  useNotificationScheduler(stableProfile, config || null, attendanceRecord);
+  // Activate Deterministic In-App Assistant Reminders
+  useShiftReminders(stableProfile, config || null, attendanceRecord);
 
   useEffect(() => {
     if (!mounted || !config) return;
@@ -106,13 +105,13 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen-safe w-full bg-muted/30 flex justify-center p-0 md:p-3 lg:p-6 transition-all duration-500 overflow-hidden">
       <div className="flex w-full max-w-[1920px] bg-background md:rounded-[2rem] md:shadow-2xl md:border border-border/50 overflow-hidden relative">
-        <AppSidebar isLoggedIn={isLoggedIn} isAuthLoading={isUserLoading} />
+        <AppSidebar isLoggedIn={!!user} isAuthLoading={isUserLoading} />
 
         <div className="flex-1 flex flex-col min-w-0 h-[100dvh] md:h-full overflow-hidden">
           <AppHeader
               userProfile={stableProfile}
               onMenuClick={() => {}}
-              isLoggedIn={isLoggedIn}
+              isLoggedIn={!!user}
               attendanceRecord={attendanceRecord}
               systemConfig={config || null}
               className="apple-glass z-10 sticky top-0"
@@ -126,17 +125,17 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
         </div>
       </div>
 
-      {isLoggedIn && stableProfile && (
+      {user && stableProfile && (
         <>
             <BottomNavBar />
             <DebriefModal userProfile={stableProfile} />
             <PulseCheckDialog userProfile={stableProfile} />
             <Suspense fallback={null}>
-            <GlobalDialogs 
-                userProfile={stableProfile} 
-                permissions={permissions} 
-                onAnyDialogOpenChange={setIsAnyDialogOpen}
-            />
+                <GlobalDialogs 
+                    userProfile={stableProfile} 
+                    permissions={permissions} 
+                    onAnyDialogOpenChange={setIsAnyDialogOpen}
+                />
             </Suspense>
         </>
       )}

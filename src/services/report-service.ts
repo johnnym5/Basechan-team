@@ -1,76 +1,77 @@
 
 'use client';
 
-import { Firestore, collection, query, where, getDocs } from 'firebase/firestore';
+import { Firestore, collection, query, where, getDocs, orderBy, limit } from 'firebase/firestore';
 import { addDocumentNonBlocking } from '@/firebase';
 import type { UserProfile, Attendance, Task, DailyReport, Chat } from '@/lib/types';
 import { format, startOfDay } from 'date-fns';
 import { sanitizeInput } from '@/lib/utils';
 import { activityService } from './activity-service';
-import { uiEmitter } from '@/lib/ui-emitter';
 
 /**
- * Service to generate structured organizational telemetry reports.
+ * Service to aggregate organizational telemetry and generate automated reports.
  */
 export const reportService = {
     /**
-     * Aggregates telemetry from various modules to generate an automated end-of-day summary.
+     * Captures system state to generate an automated end-of-day summary.
      */
     async generateAutomatedEODReport(db: Firestore, user: UserProfile, attendance: Attendance) {
         const today = format(new Date(), 'yyyy-MM-dd');
         const dayStart = startOfDay(new Date()).toISOString();
 
-        // 1. Fetch Completed Tasks today
+        // 1. AGGREGATE COMPLETED MISSIONS
         const tasksQuery = query(
             collection(db, 'tasks'),
             where('assignedTo', '==', user.id),
-            where('status', '==', 'ARCHIVED'),
-            where('createdAt', '>=', dayStart)
+            where('status', '==', 'ARCHIVED')
         );
         const tasksSnap = await getDocs(tasksQuery);
-        const completedTasks = tasksSnap.docs.map(d => ({
-            taskId: d.id,
-            title: (d.data() as Task).title
-        }));
+        
+        // Filter for tasks completed today by checking the activity log timestamps
+        const completedToday = tasksSnap.docs
+            .map(d => ({ id: d.id, ...d.data() } as Task))
+            .filter(t => t.activity.some(a => a.toStatus === 'ARCHIVED' && a.timestamp >= dayStart));
 
-        // 2. Fetch Chat interactions today
+        // 2. AGGREGATE COLLABORATION PARTNERS
         const chatsQuery = query(
             collection(db, 'chats'),
-            where('participants', 'array-contains', user.id),
-            where('updatedAt', '>=', dayStart)
+            where('participants', 'array-contains', user.id)
         );
         const chatsSnap = await getDocs(chatsQuery);
-        const interactedParties = new Set<string>();
+        const partners = new Set<string>();
+        
+        // Check which chats had activity today
         chatsSnap.forEach(doc => {
-            const data = doc.data() as Chat;
-            Object.values(data.participantProfiles).forEach(p => {
-                if (p.fullName !== user.fullName) interactedParties.add(p.fullName);
-            });
+            const chat = doc.data() as Chat;
+            if (chat.updatedAt >= dayStart) {
+                Object.values(chat.participantProfiles).forEach(p => {
+                    if (p.fullName !== user.fullName) partners.add(p.fullName);
+                });
+            }
         });
 
-        // 3. Calculate Durations
-        const clockIn = new Date(attendance.clockIn);
-        const clockOut = new Date();
-        const totalDurationSeconds = Math.floor((clockOut.getTime() - clockIn.getTime()) / 1000);
-        const activeHours = (totalDurationSeconds / 3600).toFixed(2);
-        const idleHours = ((attendance.idleTime || 0) / 3600).toFixed(2);
+        // 3. CALCULATE DURATIONS
+        const clockInTime = new Date(attendance.clockIn);
+        const clockOutTime = new Date();
+        const totalDurationHrs = (differenceInSeconds(clockOutTime, clockInTime) / 3600).toFixed(2);
+        const idleHrs = ((attendance.idleTime || 0) / 3600).toFixed(2);
 
-        // 4. Construct Content
+        // 4. CONSTRUCT SUMMARY
         const summary = `
 [SYSTEM GENERATED EOD REPORT]
 -----------------------------------
-SHIFT TELEMETRY:
-- Total Time on System: ${activeHours} hours
-- Inactive (Idle) Time: ${idleHours} hours
-- Operational Readiness: ${attendance.location}
+SHIFT METRICS:
+- Active Duty: ${totalDurationHrs} hours
+- Inactive (Idle): ${idleHrs} hours
+- Deployment Mode: ${attendance.location}
 
 MISSION LOG:
-- Tasks Finalized: ${completedTasks.length}
-${completedTasks.map(t => `  • ${t.title}`).join('\n')}
+- Tasks Finalized: ${completedToday.length}
+${completedToday.map(t => `  • ${t.title} (${t.serialNo})`).join('\n') || '  • No missions finalized in this cycle.'}
 
-COMMUNICATIONS:
-- Active Channels/Contacts: ${interactedParties.size}
-- Units Contacted: ${Array.from(interactedParties).join(', ') || 'None'}
+COLLABORATION:
+- Collaboration Units: ${partners.size}
+- Communication Partners: ${Array.from(partners).join(', ') || 'None'}
         `.trim();
 
         const reportData: Omit<DailyReport, 'id'> = {
@@ -79,12 +80,12 @@ COMMUNICATIONS:
             userName: user.fullName,
             reportDate: today,
             content: sanitizeInput(summary),
-            completedTasks: completedTasks,
+            completedTasks: completedToday.map(t => ({ taskId: t.id, title: t.title })),
             createdAt: new Date().toISOString(),
         };
 
-        // Activity points: +10 for report submission
-        activityService.logActivity(db, user, 10);
+        // Award Activity Points: +10 for system-verified EOD submission
+        await activityService.logActivity(db, user, 10);
 
         return await addDocumentNonBlocking(collection(db, 'daily_reports'), reportData);
     }
