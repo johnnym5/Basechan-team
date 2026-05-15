@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useForm } from "react-hook-form";
@@ -155,15 +154,15 @@ export function ProfileDialog({ open, onOpenChange, userProfile }: ProfileDialog
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl h-[90vh] flex flex-col p-0">
-        <DialogHeader className="p-6 pb-0">
+      <DialogContent className="sm:max-w-2xl h-[90vh] flex flex-col p-0 overflow-hidden">
+        <DialogHeader className="p-6 pb-0 flex-shrink-0">
           <DialogTitle>My Profile & Security</DialogTitle>
           <DialogDescription>Manage your identity and authorize system access.</DialogDescription>
         </DialogHeader>
         
-        <Progress value={uploadProgress} className={isUploading ? "w-full rounded-none h-1" : "hidden"} />
+        <Progress value={uploadProgress} className={isUploading ? "w-full rounded-none h-1 flex-shrink-0" : "hidden"} />
 
-        <div className="flex-1 overflow-y-auto px-6 pb-12 custom-scrollbar">
+        <div className="flex-1 overflow-y-auto px-6 pb-12">
             <div className="relative mx-auto w-24 h-24 my-6">
                 <Avatar className="w-24 h-24 border-2 border-primary/20">
                     <AvatarImage src={avatarPreview || userProfile.avatarUrl || user?.photoURL || ''} alt={userProfile.fullName} />
@@ -193,13 +192,21 @@ export function ProfileDialog({ open, onOpenChange, userProfile }: ProfileDialog
                         <Form {...form}>
                             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                                 <FormField control={form.control} name="fullName" render={({ field }) => (
-                                    <FormItem><FormLabel>Full Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                                    <FormItem>
+                                        <FormLabel>Full Name</FormLabel>
+                                        <FormControl><Input {...field} /></FormControl>
+                                        <FormMessage />
+                                    </FormItem>
                                 )}/>
                                 <FormField control={form.control} name="phoneNumber" render={({ field }) => (
-                                    <FormItem><FormLabel>Phone Number</FormLabel><FormControl><Input type="tel" {...field} /></FormControl><FormMessage /></FormItem>
+                                    <FormItem>
+                                        <FormLabel>Phone Number</FormLabel>
+                                        <FormControl><Input type="tel" {...field} /></FormControl>
+                                        <FormMessage />
+                                    </FormItem>
                                 )}/>
                                 <Button type="submit" className="w-full h-12 rounded-xl" disabled={isBusy}>
-                                {isBusy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Save Changes"}
+                                    {isBusy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Save Changes"}
                                 </Button>
                             </form>
                         </Form>

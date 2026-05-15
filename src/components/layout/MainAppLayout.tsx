@@ -77,9 +77,10 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
     } as UserProfile;
   }, [user, userProfile]);
 
-  const attendanceQuery = useMemoFirebase(() => 
-    user && firestore && today ? query(collection(firestore, 'attendance'), where('userId', '==', user.uid), where('date', '==', today), limit(1)) : null
-  , [user, firestore, today]);
+  const attendanceQuery = useMemoFirebase(() => {
+    if (!user || !firestore || !today) return null;
+    return query(collection(firestore, 'attendance'), where('userId', '==', user.uid), where('date', '==', today), limit(1));
+  }, [user, firestore, today]);
   const { data: attendanceData } = useCollection<Attendance>(attendanceQuery);
   const attendanceRecord = attendanceData?.[0] || null;
 
@@ -116,7 +117,7 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
               className="apple-glass z-10 shrink-0"
           />
           
-          <main className="flex-1 overflow-y-auto p-4 md:p-8 scroll-smooth pb-28 md:pb-8 [scrollbar-gutter:stable]">
+          <main className="flex-1 overflow-y-scroll p-4 md:p-8 scroll-smooth pb-28 md:pb-8 [scrollbar-gutter:stable]">
               <div className="w-full mx-auto max-w-[1600px]">
                   {children}
               </div>

@@ -84,40 +84,35 @@
     height: 100%;
     margin: 0;
     padding: 0;
-    overflow: hidden; 
   }
 
   body {
-    @apply bg-background text-foreground overflow-x-hidden font-body;
+    @apply bg-background text-foreground overflow-hidden font-body;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
 
-  /* Global High-Visibility Scrollbar System */
+  /* High-Visibility Vertical Scrollbar System */
   * {
-    scrollbar-width: thin;
-    scrollbar-color: hsl(var(--primary) / 0.8) transparent;
+    scrollbar-width: auto;
+    scrollbar-color: hsl(var(--primary)) hsl(var(--muted) / 0.1);
   }
 
   ::-webkit-scrollbar {
-    width: 0.75rem;
-    height: 0.75rem;
+    width: 10px;
+    height: 10px;
   }
 
   ::-webkit-scrollbar-track {
-    @apply bg-transparent;
+    @apply bg-muted/10;
   }
 
   ::-webkit-scrollbar-thumb {
-    @apply bg-primary/70 rounded-full border-[3px] border-solid border-background bg-clip-padding transition-colors duration-200 shadow-inner;
+    @apply bg-primary rounded-full border-2 border-solid border-background bg-clip-padding;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    @apply bg-primary;
-  }
-
-  ::-webkit-scrollbar-corner {
-    @apply bg-transparent;
+    @apply bg-primary/80;
   }
 }
 
