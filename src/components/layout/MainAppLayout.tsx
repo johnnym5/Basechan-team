@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useUser, useDoc, useFirestore, useMemoFirebase, useCollection } from '@/firebase';
@@ -15,6 +16,8 @@ import { hexToHslString } from '@/lib/utils';
 import { ORG_ID } from '@/lib/config';
 import dynamic from 'next/dynamic';
 import { BottomNavBar } from './BottomNavBar';
+import { useNotificationScheduler } from '@/hooks/useNotificationScheduler';
+import { DebriefModal } from '@/components/assistant/DebriefModal';
 
 const GlobalDialogs = dynamic(() => import('@/components/layout/GlobalDialogs').then(m => m.GlobalDialogs), { 
   ssr: false,
@@ -35,6 +38,11 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     setToday(format(new Date(), 'yyyy-MM-dd'));
     setMounted(true);
+
+    // Register Service Worker
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/sw.js').catch(err => console.error('SW failed:', err));
+    }
   }, []);
 
   const userProfileRef = useMemoFirebase(() => 
@@ -66,6 +74,9 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
   const permissions = usePermissions(stableProfile);
   const { config } = useSystemConfig(stableProfile?.orgId);
 
+  // Background Assistant Hooks
+  useNotificationScheduler(stableProfile, config || null, attendanceRecord);
+
   useEffect(() => {
     if (!mounted || !config) return;
     const root = document.documentElement;
@@ -80,7 +91,6 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen-safe w-full bg-muted/30 flex justify-center p-0 md:p-3 lg:p-6 transition-all duration-500 overflow-hidden">
       <div className="flex w-full max-w-[1920px] bg-background md:rounded-[2rem] md:shadow-2xl md:border border-border/50 overflow-hidden relative">
-        {/* Sidebar handles its own responsive visibility (hidden on mobile) */}
         <AppSidebar isLoggedIn={isLoggedIn} isAuthLoading={isUserLoading} />
 
         <div className="flex-1 flex flex-col min-w-0 h-[100dvh] md:h-full overflow-hidden">
@@ -101,9 +111,10 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
         </div>
       </div>
 
-      {isLoggedIn && (
+      {isLoggedIn && stableProfile && (
         <>
             <BottomNavBar />
+            <DebriefModal userProfile={stableProfile} />
             <Suspense fallback={null}>
             <GlobalDialogs 
                 userProfile={stableProfile} 

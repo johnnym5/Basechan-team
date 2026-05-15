@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Firestore, collection, doc, query, where, limit, getDocs, increment, arrayUnion } from 'firebase/firestore';
@@ -5,6 +6,7 @@ import { addDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase';
 import type { UserProfile, Attendance, AttendanceLocation, SystemConfig } from '@/lib/types';
 import { differenceInSeconds } from 'date-fns';
 import { auditService } from './audit-service';
+import { reportService } from './report-service';
 
 export const attendanceService = {
   async clockIn(db: Firestore, user: UserProfile, location: AttendanceLocation, today: string) {
@@ -79,9 +81,16 @@ export const attendanceService = {
         }
     }
 
+    // EPIC 4: Trigger Automated EOD Report before wiping status
+    try {
+        await reportService.generateAutomatedEODReport(db, user, { ...record, ...updateData });
+    } catch (e) {
+        console.error("EOD Report generation failed:", e);
+    }
+
     updateDocumentNonBlocking(attendanceRef, updateData);
     updateDocumentNonBlocking(userRef, { status: 'OFFLINE', lastSeen: now.toISOString() });
     
-    auditService.logAction(db, user, 'ATTENDANCE_CLOCK_OUT', `Ended shift session.`, { id: record.id, type: 'ATTENDANCE' });
+    auditService.logAction(db, user, 'ATTENDANCE_CLOCK_OUT', `Ended shift session. Automated EOD report submitted.`, { id: record.id, type: 'ATTENDANCE' });
   }
 };
