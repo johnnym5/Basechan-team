@@ -96,7 +96,7 @@
   /* Global High-Visibility Scrollbar System */
   * {
     scrollbar-width: thin;
-    scrollbar-color: hsl(var(--primary) / 0.5) transparent;
+    scrollbar-color: hsl(var(--primary) / 0.8) transparent;
   }
 
   ::-webkit-scrollbar {
@@ -109,11 +109,11 @@
   }
 
   ::-webkit-scrollbar-thumb {
-    @apply bg-primary/40 rounded-full border-[3px] border-solid border-transparent bg-clip-padding transition-colors duration-200;
+    @apply bg-primary/70 rounded-full border-[3px] border-solid border-background bg-clip-padding transition-colors duration-200 shadow-inner;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    @apply bg-primary/70;
+    @apply bg-primary;
   }
 
   ::-webkit-scrollbar-corner {
