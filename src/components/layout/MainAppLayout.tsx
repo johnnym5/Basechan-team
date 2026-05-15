@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useUser, useDoc, useFirestore, useMemoFirebase, useCollection } from '@/firebase';
@@ -39,9 +38,31 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
     setToday(format(new Date(), 'yyyy-MM-dd'));
     setMounted(true);
 
-    // Register Service Worker
+    // Register Service Worker & Handle Periodic Sync
     if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('/sw.js').catch(err => console.error('SW failed:', err));
+        navigator.serviceWorker.register('/sw.js').then(async (registration) => {
+            console.log('SW registered successfully');
+            
+            // Register for Zero-Wait Morning Preloading if supported
+            if ('periodicSync' in registration) {
+                const status = await (navigator as any).permissions.query({
+                    name: 'periodic-background-sync',
+                });
+
+                if (status.state === 'granted') {
+                    try {
+                        // Request the browser to wake up every 24 hours to sync data
+                        // This allows the Debrief Modal to load instantly at 9:00 AM
+                        await (registration as any).periodicSync.register('morning-debrief-preload', {
+                            minInterval: 24 * 60 * 60 * 1000, 
+                        });
+                        console.log('Morning preload periodic sync registered');
+                    } catch (e) {
+                        console.warn('Periodic Sync registration failed:', e);
+                    }
+                }
+            }
+        }).catch(err => console.error('SW registration failed:', err));
     }
   }, []);
 
