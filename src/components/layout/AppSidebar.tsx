@@ -90,7 +90,7 @@ export default function AppSidebar({
         </div>
       </div>
       
-      <nav className="flex-1 px-2 lg:px-3 space-y-1.5 lg:space-y-2 mt-4 overflow-y-auto no-scrollbar">
+      <nav className="flex-1 px-2 lg:px-3 space-y-1.5 lg:space-y-2 mt-4 overflow-y-auto">
         {isLoggedIn && mainNavItems.map((item, index) => {
           if ('isSeparator' in item) return <div key={index} className={cn("h-px bg-gray-800/50 my-3 lg:my-4 mx-2", !isExpanded && "opacity-0")} />;
           

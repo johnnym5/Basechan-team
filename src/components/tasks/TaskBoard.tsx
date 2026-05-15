@@ -89,8 +89,8 @@ export function TaskBoard({ userProfile, permissions, onTaskSelect }: TaskBoardP
                             <h3 className="font-bold text-sm uppercase tracking-[0.2em] mb-4 px-1 text-muted-foreground">
                                 {col.title} ({tasksByStatus[col.status].length})
                             </h3>
-                            <div className="flex-1 min-h-0 bg-secondary/20 p-2 rounded-2xl border border-white/5 overflow-y-auto no-scrollbar">
-                                <div className="space-y-3">
+                            <div className="flex-1 min-h-0 bg-secondary/20 p-2 rounded-2xl border border-white/5 overflow-y-auto">
+                                <div className="space-y-3 p-1">
                                     {tasksByStatus[col.status].length === 0 ? (
                                         <div className="text-center text-[10px] font-black uppercase tracking-widest text-muted-foreground opacity-30 pt-20">
                                             Stage Empty
