@@ -1,4 +1,3 @@
-
 'use client';
 
 type AppEvents = {
@@ -21,6 +20,7 @@ type AppEvents = {
   'open-accounting-dialog': void;
   'open-library-dialog': void;
   'open-displays-dialog': { displayId?: string } | void;
+  'open-assistant-dialog': void;
   'close-all-dialogs': void;
 };
 

@@ -14,6 +14,7 @@ import { playNotificationSound, showBrowserNotification } from '@/lib/notificati
 import { useRouter } from 'next/navigation';
 import { AnnouncementDetailDialog } from '@/components/dashboard/AnnouncementDetailDialog';
 import { Logo } from '../Logo';
+import { uiEmitter } from '@/lib/ui-emitter';
 
 interface AppHeaderProps {
   userProfile: UserProfile | null;
@@ -119,7 +120,7 @@ export default function AppHeader({
             title: greeting.toUpperCase(),
             content: `MISSIONS: ${activeTasksCount} | COMMS: ${unreadChatsCount} | ALERTS: ${unreadCount} | ${currentTime}`,
             color: 'bg-slate-900 border-b border-primary/20',
-            onClick: () => {}
+            onClick: () => uiEmitter.emit('open-assistant-dialog')
         };
     }
     if (latestAnnouncement) {
@@ -130,7 +131,7 @@ export default function AppHeader({
         title: latestAnnouncement.title,
         content: latestAnnouncement.content,
         color: 'bg-primary/95',
-        onClick: () => setSelectedAnnouncement(latestAnnouncement)
+        onClick: () => uiEmitter.emit('open-assistant-dialog')
       };
     }
     return null;

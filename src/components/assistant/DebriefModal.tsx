@@ -8,12 +8,20 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Button } from '@/components/ui/button';
 import { MessageSquare, ListTodo, AlertCircle, Sparkles, Clock, ArrowRight } from 'lucide-react';
 import { format, isToday, isTomorrow, parseISO } from 'date-fns';
+import { uiEmitter } from '@/lib/ui-emitter';
 
 export function DebriefModal({ userProfile }: { userProfile: UserProfile }) {
     const firestore = useFirestore();
     const [isOpen, setIsOpen] = useState(false);
 
-    // Check if debrief was shown today
+    // Manual Trigger Listener
+    useEffect(() => {
+        const openAssistant = () => setIsOpen(true);
+        uiEmitter.on('open-assistant-dialog', openAssistant);
+        return () => uiEmitter.off('open-assistant-dialog', openAssistant);
+    }, []);
+
+    // Check if debrief was shown today for auto-popup
     useEffect(() => {
         const lastDebrief = localStorage.getItem(`last-debrief-${userProfile.id}`);
         const today = format(new Date(), 'yyyy-MM-dd');
