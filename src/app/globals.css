@@ -184,4 +184,24 @@
     .animate-marquee:hover {
       animation-play-state: paused;
     }
+    
+    .custom-scrollbar {
+        scrollbar-width: thin;
+        scrollbar-color: hsl(var(--primary)) transparent;
+    }
+    
+    .custom-scrollbar::-webkit-scrollbar {
+        width: 12px;
+    }
+    
+    .custom-scrollbar::-webkit-scrollbar-track {
+        background: transparent;
+    }
+    
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+        background-color: hsl(var(--primary));
+        border-radius: 20px;
+        border: 3px solid transparent;
+        background-clip: content-box;
+    }
 }

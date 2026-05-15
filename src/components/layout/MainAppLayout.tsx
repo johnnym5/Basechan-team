@@ -117,7 +117,7 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
               className="apple-glass z-10 shrink-0"
           />
           
-          <main className="flex-1 overflow-y-scroll p-4 md:p-8 scroll-smooth pb-28 md:pb-8 [scrollbar-gutter:stable]">
+          <main className="flex-1 overflow-y-scroll p-4 md:p-8 scroll-smooth pb-28 md:pb-8 [scrollbar-gutter:stable] custom-scrollbar">
               <div className="w-full mx-auto max-w-[1600px]">
                   {children}
               </div>

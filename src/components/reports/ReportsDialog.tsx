@@ -1,8 +1,8 @@
 'use client';
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { ReportsPageContent } from './ReportsPageContent';
+import { cn } from '@/lib/utils';
 
 interface ReportsDialogProps {
   open: boolean;
@@ -20,11 +20,10 @@ export function ReportsDialog({ open, onOpenChange, initialPayload }: ReportsDia
             <DialogDescription>Analyze performance and review team reports.</DialogDescription>
           </DialogHeader>
         </div>
-        <ScrollArea className="flex-1">
-            <div className="p-8 pb-32">
-                <ReportsPageContent initialPayload={initialPayload} />
-            </div>
-        </ScrollArea>
+        {/* Use native high-visibility scrolling for complex report content */}
+        <div className="flex-1 overflow-y-auto [scrollbar-gutter:stable] p-8 pb-32 custom-scrollbar">
+            <ReportsPageContent initialPayload={initialPayload} />
+        </div>
       </DialogContent>
     </Dialog>
   );

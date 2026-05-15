@@ -10,7 +10,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from '../ui/badge';
 import { cn } from '@/lib/utils';
 import { Progress } from '../ui/progress';
-import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface KPIAnalyticsProps {
     userProfile: UserProfile;
@@ -139,7 +138,8 @@ export function KPIAnalytics({ userProfile }: KPIAnalyticsProps) {
                 </div>
             </CardHeader>
             <CardContent className="flex-1 overflow-hidden p-0">
-                <ScrollArea className="h-full">
+                {/* Standard native scroll to ensure visibility of standings */}
+                <div className="h-full overflow-y-auto custom-scrollbar">
                     <Table>
                         <TableHeader className="bg-secondary/10">
                             <TableRow className="hover:bg-transparent border-white/5">
@@ -204,7 +204,7 @@ export function KPIAnalytics({ userProfile }: KPIAnalyticsProps) {
                             )}
                         </TableBody>
                     </Table>
-                </ScrollArea>
+                </div>
             </CardContent>
         </Card>
     );
