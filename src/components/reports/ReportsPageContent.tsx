@@ -1,3 +1,4 @@
+
 'use client';
 import { useUser, useDoc, useMemoFirebase, useFirestore, useCollection } from "@/firebase";
 import { doc, collection, query, where } from 'firebase/firestore';
@@ -11,9 +12,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SubmitDailyReport } from "@/components/reports/SubmitDailyReport";
 import { MyDailyReports } from "@/components/reports/MyDailyReports";
 import { TeamDailyReports } from "@/components/reports/TeamDailyReports";
+import { PerformanceDashboard } from "@/components/reports/PerformanceDashboard";
 import { useState, useEffect } from "react";
 import { Button } from "../ui/button";
-import { Download, FileSpreadsheet, Loader2 } from "lucide-react";
+import { Download, FileSpreadsheet, Loader2, Trophy, BarChart3, UserCheck } from "lucide-react";
 import * as XLSX from 'xlsx';
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
@@ -25,13 +27,13 @@ export function ReportsPageContent({ initialPayload }: { initialPayload?: { tab?
   const [isExporting, setIsExporting] = useState(false);
 
   const userProfileRef = useMemoFirebase(() => 
-    authUser ? doc(firestore, "users", authUser.uid) : null,
+    authUser ? doc(firestore!, "users", authUser.uid) : null,
   [firestore, authUser]);
   const { data: userProfile, isLoading: isProfileLoading } = useDoc<UserProfile>(userProfileRef);
   const permissions = usePermissions(userProfile);
 
   const storageKey = 'reports-view-tab';
-  const [activeTab, setActiveTab] = useState('analytics');
+  const [activeTab, setActiveTab] = useState('performance');
 
   useEffect(() => {
     if (initialPayload?.tab) {
@@ -55,33 +57,37 @@ export function ReportsPageContent({ initialPayload }: { initialPayload?: { tab?
     
     try {
         const orgId = userProfile.orgId;
-        const [attSnap, reqSnap, taskSnap, reportSnap] = await Promise.all([
-            useCollection(query(collection(firestore, 'attendance'), where('orgId', '==', orgId))),
-            useCollection(query(collection(firestore, 'requisitions'), where('orgId', '==', orgId))),
-            useCollection(query(collection(firestore, 'tasks'), where('orgId', '==', orgId))),
-            useCollection(query(collection(firestore, 'daily_reports'), where('orgId', '==', orgId))),
+        
+        const qAtt = query(collection(firestore, 'attendance'), where('orgId', '==', orgId));
+        const qReq = query(collection(firestore, 'requisitions'), where('orgId', '==', orgId));
+        const qTask = query(collection(firestore, 'tasks'), where('orgId', '==', orgId));
+        
+        const [attSnap, reqSnap, taskSnap] = await Promise.all([
+            getDocs(qAtt),
+            getDocs(qReq),
+            getDocs(qTask)
         ]);
 
         const wb = XLSX.utils.book_new();
 
-        // Attendance Sheet
-        if (attSnap.data) {
-            const attData = attSnap.data.map(r => ({
+        const attData = attSnap.docs.map(doc => {
+            const r = doc.data() as Attendance;
+            return {
                 Date: r.date,
                 Name: r.userName,
-                'Clock In': format(new Date(r.clockIn), 'p'),
+                'Clock In': r.clockIn ? format(new Date(r.clockIn), 'p') : 'N/A',
                 'Clock Out': r.clockOut ? format(new Date(r.clockOut), 'p') : 'N/A',
                 'Worked (Hrs)': ((r.duration || 0) / 3600).toFixed(2),
                 'Idle (Hrs)': ((r.idleTime || 0) / 3600).toFixed(2),
                 Location: r.location,
                 Status: r.status
-            }));
-            XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(attData), "Attendance");
-        }
+            };
+        });
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(attData), "Attendance");
 
-        // Requisitions Sheet
-        if (reqSnap.data) {
-            const reqData = reqSnap.data.map(r => ({
+        const reqData = reqSnap.docs.map(doc => {
+            const r = doc.data() as Requisition;
+            return {
                 Serial: r.serialNo,
                 Title: r.title,
                 Amount: r.amount,
@@ -89,13 +95,13 @@ export function ReportsPageContent({ initialPayload }: { initialPayload?: { tab?
                 Status: r.status,
                 CreatedBy: r.creatorName,
                 Date: format(new Date(r.createdAt), 'PP')
-            }));
-            XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(reqData), "Procurement");
-        }
+            };
+        });
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(reqData), "Procurement");
 
-        // Tasks Sheet
-        if (taskSnap.data) {
-            const taskData = taskSnap.data.map(t => ({
+        const taskData = taskSnap.docs.map(doc => {
+            const t = doc.data() as Task;
+            return {
                 Serial: t.serialNo,
                 Title: t.title,
                 Assignee: t.assignedToName,
@@ -104,9 +110,9 @@ export function ReportsPageContent({ initialPayload }: { initialPayload?: { tab?
                 'Est. Hours': t.estimatedHours || 0,
                 'Actual Hours': t.actualHours || 0,
                 Due: t.dueDate ? format(new Date(t.dueDate), 'PP') : 'N/A'
-            }));
-            XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(taskData), "Missions");
-        }
+            };
+        });
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(taskData), "Missions");
 
         XLSX.writeFile(wb, `Org_Performance_Report_${format(new Date(), 'yyyy-MM-dd')}.xlsx`);
         toast({ title: "Export Complete", description: "Consolidated organizational data has been downloaded." });
@@ -118,49 +124,71 @@ export function ReportsPageContent({ initialPayload }: { initialPayload?: { tab?
   }
 
   if (isProfileLoading) {
-    return <Skeleton className="h-screen w-full" />
+    return <div className="space-y-8 p-6"><Skeleton className="h-10 w-1/3" /><Skeleton className="h-[600px] w-full rounded-3xl" /></div>;
   }
 
   return (
     <div className="space-y-6">
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
-            <h1 className="text-3xl font-bold font-headline tracking-tight">Reports & Analytics</h1>
-            <p className="text-muted-foreground">
-                {permissions.canManageStaff ? "Analyze performance, punctuality, and team productivity." : "Submit your daily report and view your history."}
+            <h1 className="text-3xl font-black font-headline tracking-tighter">Personnel Intelligence</h1>
+            <p className="text-muted-foreground uppercase tracking-widest text-[10px] font-bold">
+                {permissions.canManageStaff ? "Operational Load & Telemetry Analysis" : "Personal Mission Performance & Identity Medals"}
             </p>
         </div>
         {permissions.canManageStaff && (
-            <Button variant="outline" onClick={handleMasterExport} disabled={isExporting} className="rounded-xl border-primary/20 hover:bg-primary/5">
-                {isExporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileSpreadsheet className="mr-2 h-4 w-4" />}
-                Consolidated Export
+            <Button variant="outline" onClick={handleMasterExport} disabled={isExporting} className="rounded-xl border-primary/20 hover:bg-primary/10 hover:border-primary transition-all active:scale-95 group">
+                {isExporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileSpreadsheet className="mr-2 h-4 w-4 group-hover:rotate-12 transition-transform" />}
+                Export Repository
             </Button>
         )}
       </div>
 
-      {permissions.canManageStaff ? (
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid grid-cols-2 max-w-md bg-secondary/20">
-            <TabsTrigger value="analytics" className="font-bold uppercase text-[10px] tracking-widest">Executive Analytics</TabsTrigger>
-            <TabsTrigger value="team-reports" className="font-bold uppercase text-[10px] tracking-widest">Personnel Logs</TabsTrigger>
-          </TabsList>
-          <TabsContent value="analytics" className="mt-6 space-y-6 animate-slide-up-fade">
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-                {userProfile && <AttendanceReport userProfile={userProfile} />}
-                {userProfile && <KPIAnalytics userProfile={userProfile} />}
-            </div>
-            {userProfile && <FinancialReport userProfile={userProfile} />}
-          </TabsContent>
-          <TabsContent value="team-reports" className="mt-6 animate-slide-up-fade">
-            {userProfile && <TeamDailyReports userProfile={userProfile} />}
-          </TabsContent>
-        </Tabs>
-      ) : (
-        <div className="space-y-6 animate-slide-up-fade">
-            {userProfile && <SubmitDailyReport userProfile={userProfile} />}
-            {userProfile && <MyDailyReports userProfile={userProfile} />}
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="bg-secondary/20 rounded-2xl p-1 mb-8">
+            <TabsTrigger value="performance" className="rounded-xl px-6 font-black uppercase text-[10px] tracking-widest data-[state=active]:bg-background data-[state=active]:shadow-lg">
+                <Trophy className="h-3 w-3 mr-2" /> Personal Dashboard
+            </TabsTrigger>
+            {permissions.canManageStaff && (
+                <>
+                    <TabsTrigger value="analytics" className="rounded-xl px-6 font-black uppercase text-[10px] tracking-widest data-[state=active]:bg-background data-[state=active]:shadow-lg">
+                        <BarChart3 className="h-3 w-3 mr-2" /> Node Leaderboard
+                    </TabsTrigger>
+                    <TabsTrigger value="team-reports" className="rounded-xl px-6 font-black uppercase text-[10px] tracking-widest data-[state=active]:bg-background data-[state=active]:shadow-lg">
+                        <UserCheck className="h-3 w-3 mr-2" /> Mission Logs
+                    </TabsTrigger>
+                </>
+            )}
+            {!permissions.canManageStaff && (
+                <TabsTrigger value="submit" className="rounded-xl px-6 font-black uppercase text-[10px] tracking-widest data-[state=active]:bg-background data-[state=active]:shadow-lg">
+                    Submit EOD Report
+                </TabsTrigger>
+            )}
+        </TabsList>
+
+        <div className="mt-0">
+            <TabsContent value="performance" className="m-0 focus-visible:ring-0 outline-none">
+                {userProfile && <PerformanceDashboard userProfile={userProfile} />}
+            </TabsContent>
+
+            <TabsContent value="analytics" className="m-0 space-y-8 focus-visible:ring-0 outline-none animate-in fade-in duration-500">
+                <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+                    {userProfile && <AttendanceReport userProfile={userProfile} />}
+                    {userProfile && <KPIAnalytics userProfile={userProfile} />}
+                </div>
+                {userProfile && <FinancialReport userProfile={userProfile} />}
+            </TabsContent>
+
+            <TabsContent value="team-reports" className="m-0 focus-visible:ring-0 outline-none animate-in fade-in duration-500">
+                {userProfile && <TeamDailyReports userProfile={userProfile} />}
+            </TabsContent>
+
+            <TabsContent value="submit" className="m-0 space-y-8 focus-visible:ring-0 outline-none animate-in fade-in duration-500">
+                {userProfile && <SubmitDailyReport userProfile={userProfile} />}
+                {userProfile && <MyDailyReports userProfile={userProfile} />}
+            </TabsContent>
         </div>
-      )}
+      </Tabs>
     </div>
   );
 }

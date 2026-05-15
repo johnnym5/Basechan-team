@@ -109,6 +109,21 @@
       },
       "required": ["orgId", "email", "fullName", "role", "username", "joinedDate"]
     },
+    "Kudos": {
+        "title": "Peer Kudos",
+        "type": "object",
+        "description": "Peer-to-peer recognition badge.",
+        "properties": {
+          "orgId": { "type": "string" },
+          "fromUserId": { "type": "string" },
+          "fromUserName": { "type": "string" },
+          "toUserId": { "type": "string" },
+          "badgeType": { "type": "string", "enum": ["TEAM_PLAYER", "PROBLEM_SOLVER", "INNOVATOR", "RELENTLESS"] },
+          "message": { "type": "string" },
+          "timestamp": { "type": "string", "format": "date-time" }
+        },
+        "required": ["orgId", "fromUserId", "toUserId", "badgeType", "timestamp"]
+    },
     "AuditLog": {
       "title": "Audit Log",
       "type": "object",
@@ -123,21 +138,6 @@
         "resourceType": { "type": "string" },
         "timestamp": { "type": "string", "format": "date-time" }
       }
-    },
-    "ExternalDisplay": {
-      "title": "External Display",
-      "type": "object",
-      "description": "A link to an external dashboard or embedded web content.",
-      "properties": {
-        "orgId": { "type": "string" },
-        "title": { "type": "string" },
-        "url": { "type": "string" },
-        "description": { "type": "string" },
-        "icon": { "type": "string" },
-        "createdBy": { "type": "string" },
-        "createdAt": { "type": "string", "format": "date-time" }
-      },
-      "required": ["orgId", "title", "url", "createdBy", "createdAt"]
     }
   },
   "auth": { "providers": ["password"] },
@@ -148,8 +148,8 @@
       { "path": "/tasks/{id}", "definition": { "entityName": "Task", "schema": { "$ref": "#/entities/Task" } } },
       { "path": "/library_items/{id}", "definition": { "entityName": "LibraryItem", "schema": { "$ref": "#/entities/LibraryItem" } } },
       { "path": "/users/{id}", "definition": { "entityName": "UserProfile", "schema": { "$ref": "#/entities/UserProfile" } } },
-      { "path": "/audit_logs/{id}", "definition": { "entityName": "AuditLog", "schema": { "$ref": "#/entities/AuditLog" } } },
-      { "path": "/external_displays/{id}", "definition": { "entityName": "ExternalDisplay", "schema": { "$ref": "#/entities/ExternalDisplay" } } }
+      { "path": "/kudos/{id}", "definition": { "entityName": "Kudos", "schema": { "$ref": "#/entities/Kudos" } } },
+      { "path": "/audit_logs/{id}", "definition": { "entityName": "AuditLog", "schema": { "$ref": "#/entities/AuditLog" } } }
     ]
   }
 }

@@ -458,3 +458,16 @@ export interface ExternalDisplay {
   createdBy: string;
   createdAt: string;
 }
+
+export type BadgeType = "TEAM_PLAYER" | "PROBLEM_SOLVER" | "INNOVATOR" | "RELENTLESS";
+
+export interface Kudos {
+    id: string;
+    orgId: string;
+    fromUserId: string;
+    fromUserName: string;
+    toUserId: string;
+    badgeType: BadgeType;
+    message: string;
+    timestamp: string;
+}

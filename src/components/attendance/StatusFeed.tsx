@@ -1,3 +1,4 @@
+
 'use client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "../ui/scroll-area";
@@ -9,8 +10,9 @@ import { Skeleton } from "../ui/skeleton";
 import { useMemo, useState } from "react";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import { Button } from "../ui/button";
-import { MessageSquare, LifeBuoy } from "lucide-react";
+import { MessageSquare, LifeBuoy, Trophy } from "lucide-react";
 import { RequestAssistanceDialog } from "../tasks/RequestAssistanceDialog";
+import { AwardKudosDialog } from "../reports/AwardKudosDialog";
 import { uiEmitter } from '@/lib/ui-emitter';
 
 interface StatusFeedProps {
@@ -21,6 +23,7 @@ interface StatusFeedProps {
 export function StatusFeed({ userProfile, permissions }: StatusFeedProps) {
   const firestore = useFirestore();
   const [assistanceUser, setAssistanceUser] = useState<UserProfile | null>(null);
+  const [kudosUser, setKudosUser] = useState<UserProfile | null>(null);
 
   const usersQuery = useMemoFirebase(() => {
     if (!firestore || !userProfile) return null;
@@ -57,7 +60,10 @@ export function StatusFeed({ userProfile, permissions }: StatusFeedProps) {
                      return (
                         <Popover key={user.id}>
                             <PopoverTrigger asChild>
-                                <Card className="p-4 hover:bg-accent cursor-pointer transition-colors">
+                                <Card className="p-4 hover:bg-accent cursor-pointer transition-all active:scale-[0.98] group overflow-hidden relative">
+                                    {user.status === 'ONLINE' && (
+                                        <div className="absolute top-0 left-0 w-1 h-full bg-emerald-500" />
+                                    )}
                                     <div className="flex items-center gap-4">
                                         <div className="relative">
                                             <span className={`absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-background ${user.status === 'ONLINE' ? 'bg-emerald-500' : 'bg-muted-foreground'}`} />
@@ -66,26 +72,29 @@ export function StatusFeed({ userProfile, permissions }: StatusFeedProps) {
                                             </div>
                                         </div>
                                         <div className="flex-1 min-w-0">
-                                            <p className="font-semibold text-sm truncate">{user.fullName} {isSelf && "(You)"}</p>
-                                            <p className="text-xs text-muted-foreground truncate">{user.position}</p>
+                                            <p className="font-bold text-sm truncate">{user.fullName} {isSelf && "(You)"}</p>
+                                            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest truncate">{user.position}</p>
                                         </div>
                                     </div>
                                 </Card>
                             </PopoverTrigger>
                             {!isSelf && (
-                                <PopoverContent className="w-48 p-1">
-                                    <Button variant="ghost" className="w-full justify-start" onClick={() => handleChat(user.id)}>
-                                        <MessageSquare className="mr-2 h-4 w-4" /> Send Message
+                                <PopoverContent className="w-56 p-1 apple-glass-darker border-none rounded-xl">
+                                    <Button variant="ghost" className="w-full justify-start text-xs font-bold rounded-lg" onClick={() => handleChat(user.id)}>
+                                        <MessageSquare className="mr-2 h-4 w-4 text-primary" /> Send Transmission
                                     </Button>
-                                    <Button variant="ghost" className="w-full justify-start" onClick={() => setAssistanceUser(user)}>
-                                        <LifeBuoy className="mr-2 h-4 w-4" /> Request Help
+                                    <Button variant="ghost" className="w-full justify-start text-xs font-bold rounded-lg" onClick={() => setKudosUser(user)}>
+                                        <Trophy className="mr-2 h-4 w-4 text-amber-500" /> Recognize Unit
+                                    </Button>
+                                    <Button variant="ghost" className="w-full justify-start text-xs font-bold rounded-lg" onClick={() => setAssistanceUser(user)}>
+                                        <LifeBuoy className="mr-2 h-4 w-4 text-primary" /> Request Assistance
                                     </Button>
                                 </PopoverContent>
                             )}
                         </Popover>
                  )})}
                   {!isLoading && sortedUsers.length === 0 && (
-                       <p className="text-sm text-muted-foreground text-center py-20 col-span-full">No staff members found.</p>
+                       <p className="text-sm text-muted-foreground text-center py-20 col-span-full uppercase tracking-widest font-black opacity-30">Zero Personnel Found</p>
                   )}
           </div>
       </div>
@@ -97,6 +106,15 @@ export function StatusFeed({ userProfile, permissions }: StatusFeedProps) {
             targetUser={assistanceUser}
             currentUserProfile={userProfile}
         />
+      )}
+
+      {kudosUser && userProfile && (
+          <AwardKudosDialog 
+            open={!!kudosUser}
+            onOpenChange={(isOpen) => !isOpen && setKudosUser(null)}
+            targetUser={kudosUser}
+            currentUserProfile={userProfile}
+          />
       )}
     </>
   );
