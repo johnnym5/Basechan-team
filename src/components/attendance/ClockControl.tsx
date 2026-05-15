@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { Button } from '../ui/button';
-import { format, differenceInSeconds } from 'date-fns';
-import { Clock, Loader2, Building, Briefcase, LogOut, Coffee, Play, MapPin, AlertTriangle } from 'lucide-react';
+import { format, differenceInSeconds, isAfter } from 'date-fns';
+import { Clock, Loader2, Building, Briefcase, LogOut, Coffee, Play, MapPin, AlertTriangle, Hourglass } from 'lucide-react';
 import type { UserProfile, Attendance, SystemConfig, AttendanceLocation } from '@/lib/types';
 import type { Permissions } from '@/hooks/usePermissions';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
@@ -27,6 +27,7 @@ export function ClockControl({ userProfile, permissions, systemConfig, className
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [shiftDuration, setShiftDuration] = useState('00:00:00');
+  const [timeRemaining, setTimeRemaining] = useState('00:00:00');
   const [progress, setProgress] = useState(0);
   const [location, setLocation] = useState<AttendanceLocation>('OFFICE');
   const [today, setToday] = useState('');
@@ -86,6 +87,23 @@ export function ClockControl({ userProfile, permissions, systemConfig, className
         
         setShiftDuration(`${h}:${m}:${s}`);
         setProgress(Math.min(100, (workedSeconds / STANDARD_SHIFT_SECONDS) * 100));
+
+        // Calculate Countdown to Shift End (e.g. 5 PM)
+        if (systemConfig?.work_hours?.end) {
+            const [endH, endM] = systemConfig.work_hours.end.split(':').map(Number);
+            const shiftEndTime = new Date(now);
+            shiftEndTime.setHours(endH, endM, 0, 0);
+
+            if (isAfter(shiftEndTime, now)) {
+                const diffSec = differenceInSeconds(shiftEndTime, now);
+                const rh = String(Math.floor(diffSec / 3600)).padStart(2, '0');
+                const rm = String(Math.floor((diffSec % 3600) / 60)).padStart(2, '0');
+                const rs = String(Math.floor(diffSec % 60)).padStart(2, '0');
+                setTimeRemaining(`${rh}:${rm}:${rs}`);
+            } else {
+                setTimeRemaining('00:00:00');
+            }
+        }
     };
 
     if (isClockedIn && attendanceRecord?.clockIn) {
@@ -93,11 +111,12 @@ export function ClockControl({ userProfile, permissions, systemConfig, className
       timer = setInterval(updateTime, 1000);
     } else if (!isClockedIn) {
       setShiftDuration('00:00:00');
+      setTimeRemaining('00:00:00');
       setProgress(0);
     }
     
     return () => clearInterval(timer);
-  }, [isClockedIn, attendanceRecord]);
+  }, [isClockedIn, attendanceRecord, systemConfig]);
 
   const handleClockIn = async () => {
     if (!userProfile || !firestore) return;
@@ -140,12 +159,30 @@ export function ClockControl({ userProfile, permissions, systemConfig, className
       {isOnBreak && <div className="absolute top-0 left-0 w-full h-1 bg-amber-500 animate-pulse" />}
       <div className="mb-2 flex items-center gap-2 text-muted-foreground uppercase tracking-widest text-[0.625rem] font-bold">
         <Clock className="w-3 h-3" />
-        {isClockedIn ? (isOnBreak ? 'Rest Cycle Active' : 'Effective Work Time') : 'Ready for Deployment'}
+        {isClockedIn ? (isOnBreak ? 'Rest Cycle Active' : 'Operational Status') : 'Ready for Deployment'}
       </div>
       
-      <h3 className={cn("text-5xl font-bold mb-4 font-headline tracking-tighter transition-all", isOnBreak && "text-amber-500 opacity-50")}>
-        {isClockedIn ? (isOnBreak ? 'REST' : shiftDuration) : '00:00:00'}
-      </h3>
+      <div className="flex flex-col items-center gap-4 mb-4">
+          <div className="flex flex-col items-center">
+            <h3 className={cn("text-5xl font-bold font-headline tracking-tighter transition-all", isOnBreak && "text-amber-500 opacity-50")}>
+                {isClockedIn ? (isOnBreak ? 'REST' : shiftDuration) : '00:00:00'}
+            </h3>
+            {isClockedIn && !isOnBreak && (
+                <span className="text-[10px] font-black uppercase tracking-widest text-primary opacity-60 mt-1">Effective Duty Time</span>
+            )}
+          </div>
+
+          {isClockedIn && !isOnBreak && (
+              <div className="flex flex-col items-center py-2 px-4 rounded-2xl bg-secondary/10 border border-white/5 animate-in fade-in zoom-in-95 duration-500">
+                  <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-amber-500">
+                      <Hourglass className="w-3 h-3" />
+                      Shift Countdown
+                  </div>
+                  <p className="text-2xl font-black font-mono tracking-tight mt-1">{timeRemaining}</p>
+                  <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-tighter">Until {systemConfig?.work_hours?.end || '00:00'} Clearance</p>
+              </div>
+          )}
+      </div>
 
       {isClockedIn && (
           <div className="w-full max-w-[240px] mb-8 space-y-2">
