@@ -89,7 +89,7 @@ export default function DashboardPage() {
                 <Card className="apple-glass border-primary/20 bg-primary/5 rounded-[1.5rem] overflow-hidden">
                     <CardHeader className="flex-row items-center justify-between py-2 px-6">
                         <CardTitle className="text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
-                            <Shield className="h-3 w-3 text-primary" /> Master Console
+                            <Shield className="h-3 w-3 text-primary" /> Admin Panel
                         </CardTitle>
                         <Button size="sm" onClick={() => uiEmitter.emit('open-superadmin-dialog')} className="rounded-full h-6 px-3 text-[8px] font-black uppercase">Launch</Button>
                     </CardHeader>

@@ -64,7 +64,7 @@ export function PerformanceCard({ userProfile }: PerformanceCardProps) {
 
     return (
         <section className="apple-glass rounded-2xl p-4 md:p-5 h-full flex flex-col animate-slide-up-fade interactive-element">
-            <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-4">Work Performance Overview</h3>
+            <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-4">Work Performance Report</h3>
             <div className="flex flex-col items-center flex-1 justify-center py-2">
                 <div 
                     className="gauge-container mb-2 scale-[0.75] sm:scale-90 md:scale-100 cursor-pointer hover:scale-[1.1] transition-transform duration-300"
@@ -74,38 +74,41 @@ export function PerformanceCard({ userProfile }: PerformanceCardProps) {
                     <div className="gauge-fill" style={{ transform: `rotate(${45 + (stats.success * 1.8)}deg)` }}></div>
                     <div className="absolute inset-0 flex flex-col items-center justify-center pt-8">
                         <span className="text-xl md:text-2xl font-black font-mono">{stats.success}%</span>
-                        <span className="text-[8px] uppercase tracking-widest text-muted-foreground">Completed Tasks</span>
+                        <span className="text-[8px] uppercase tracking-widest text-muted-foreground">Overall Performance</span>
                     </div>
                 </div>
                 
-                <div className="grid grid-cols-4 gap-2 w-full mt-4">
-                    <div 
-                        className="flex flex-col items-center cursor-pointer p-2 rounded-xl hover:bg-white/5 transition-colors group"
-                        onClick={() => uiEmitter.emit('open-reports-dialog', { tab: 'analytics' })}
-                    >
-                        <span className="text-sm font-black font-mono group-hover:text-primary transition-colors">{stats.success}%</span>
-                        <span className="text-[7px] text-muted-foreground uppercase tracking-tight font-bold">Success</span>
-                    </div>
-                    <div 
-                        className="flex flex-col items-center cursor-pointer p-2 rounded-xl hover:bg-white/5 transition-colors group"
-                        onClick={() => uiEmitter.emit('open-attendance-dialog')}
-                    >
-                        <span className="text-sm font-black font-mono group-hover:text-primary transition-colors">0%</span>
-                        <span className="text-[7px] text-muted-foreground uppercase tracking-tight font-bold">Punctual</span>
-                    </div>
-                    <div 
-                        className="flex flex-col items-center cursor-pointer p-2 rounded-xl hover:bg-white/5 transition-colors group"
-                        onClick={() => uiEmitter.emit('open-tasks-dialog')}
-                    >
-                        <span className="text-sm font-black font-mono group-hover:text-primary transition-colors">{stats.management}%</span>
-                        <span className="text-[7px] text-muted-foreground uppercase tracking-tight font-bold">Activity</span>
-                    </div>
-                    <div 
-                        className="flex flex-col items-center cursor-pointer p-2 rounded-xl hover:bg-white/5 transition-colors group"
-                        onClick={() => uiEmitter.emit('open-reports-dialog', { tab: 'team-reports' })}
-                    >
-                        <span className="text-sm font-black font-mono group-hover:text-primary transition-colors">{stats.reporting}%</span>
-                        <span className="text-[7px] text-muted-foreground uppercase tracking-tight font-bold">Reports</span>
+                <div className="w-full mt-4">
+                    <p className="text-[8px] font-black uppercase tracking-widest text-primary mb-2 text-center opacity-50">Report Overview</p>
+                    <div className="grid grid-cols-4 gap-2">
+                        <div 
+                            className="flex flex-col items-center cursor-pointer p-2 rounded-xl hover:bg-white/5 transition-colors group"
+                            onClick={() => uiEmitter.emit('open-reports-dialog', { tab: 'analytics' })}
+                        >
+                            <span className="text-sm font-black font-mono group-hover:text-primary transition-colors">{stats.success}%</span>
+                            <span className="text-[7px] text-muted-foreground uppercase tracking-tight font-bold text-center leading-tight">Task Report</span>
+                        </div>
+                        <div 
+                            className="flex flex-col items-center cursor-pointer p-2 rounded-xl hover:bg-white/5 transition-colors group"
+                            onClick={() => uiEmitter.emit('open-attendance-dialog')}
+                        >
+                            <span className="text-sm font-black font-mono group-hover:text-primary transition-colors">0%</span>
+                            <span className="text-[7px] text-muted-foreground uppercase tracking-tight font-bold text-center leading-tight">Attendance Report</span>
+                        </div>
+                        <div 
+                            className="flex flex-col items-center cursor-pointer p-2 rounded-xl hover:bg-white/5 transition-colors group"
+                            onClick={() => uiEmitter.emit('open-reports-dialog', { tab: 'team-reports' })}
+                        >
+                            <span className="text-sm font-black font-mono group-hover:text-primary transition-colors">{stats.reporting}%</span>
+                            <span className="text-[7px] text-muted-foreground uppercase tracking-tight font-bold text-center leading-tight">Daily Report</span>
+                        </div>
+                        <div 
+                            className="flex flex-col items-center cursor-pointer p-2 rounded-xl hover:bg-white/5 transition-colors group"
+                            onClick={() => uiEmitter.emit('open-reports-dialog', { tab: 'performance' })}
+                        >
+                            <span className="text-sm font-black font-mono group-hover:text-primary transition-colors">{stats.success}%</span>
+                            <span className="text-[7px] text-muted-foreground uppercase tracking-tight font-bold text-center leading-tight">Summary</span>
+                        </div>
                     </div>
                 </div>
             </div>
