@@ -1,18 +1,17 @@
 'use client';
 import { UserNav } from "@/components/layout/UserNav";
-import { useState, useEffect, useRef, useMemo } from 'react';
-import { useUser, useDoc, useMemoFirebase, useCollection, updateDocumentNonBlocking, useFirestore } from '@/firebase';
+import { useState, useEffect, useRef } from 'react';
+import { useUser, useMemoFirebase, useCollection, updateDocumentNonBlocking, useFirestore } from '@/firebase';
 import { collection, query, where, orderBy, limit, doc } from 'firebase/firestore';
 import type { UserProfile, Notification, Attendance, SystemConfig, Announcement, Task, Chat } from '@/lib/types';
-import { Bell, Zap, Megaphone, CheckCircle2, Circle } from 'lucide-react';
+import { Bell, Sparkles, Megaphone } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { ScrollArea } from '../ui/scroll-area';
-import { formatDistanceToNow, format } from 'date-fns';
+import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { UniversalSearch } from '@/components/layout/UniversalSearch';
 import { playNotificationSound, showBrowserNotification } from '@/lib/notifications';
 import { useRouter } from 'next/navigation';
-import { AnnouncementDetailDialog } from '@/components/dashboard/AnnouncementDetailDialog';
 import { Logo } from '../Logo';
 import { uiEmitter } from '@/lib/ui-emitter';
 import { ThemeToggle } from "./ThemeToggle";
@@ -38,8 +37,6 @@ export default function AppHeader({
   const router = useRouter();
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [greeting, setGreeting] = useState('Mission Control');
-  const [selectedAnnouncement, setSelectedAnnouncement] = useState<Announcement | null>(null);
-  const [isBriefing, setIsBriefing] = useState(true);
   const [currentTime, setCurrentTime] = useState('');
   const prevUnreadCount = useRef(0);
 
@@ -47,11 +44,7 @@ export default function AppHeader({
     const updateTime = () => setCurrentTime(format(new Date(), 'HH:mm'));
     updateTime();
     const clockInterval = setInterval(updateTime, 10000);
-    const briefingTimer = setTimeout(() => setIsBriefing(false), 5000);
-    return () => {
-        clearInterval(clockInterval);
-        clearTimeout(briefingTimer);
-    };
+    return () => clearInterval(clockInterval);
   }, []);
 
   useEffect(() => {
@@ -72,30 +65,16 @@ export default function AppHeader({
   const notificationsQuery = useMemoFirebase(() => 
     firestore && user ? query(collection(firestore, 'notifications'), where('userId', '==', user.uid), orderBy('createdAt', 'desc'), limit(20)) : null
   , [firestore, user]);
-  const tasksQuery = useMemoFirebase(() => 
-    firestore && user ? query(collection(firestore, 'tasks'), where('assignedTo', '==', user.uid)) : null
-  , [firestore, user]);
-  const chatsQuery = useMemoFirebase(() => 
-    firestore && user ? query(collection(firestore, 'chats'), where('participants', 'array-contains', user.uid)) : null
-  , [firestore, user]);
-
-  const { data: notifications } = useCollection<Notification>(notificationsQuery);
-  const { data: tasks } = useCollection<Task>(tasksQuery);
-  const { data: chats } = useCollection<Chat>(chatsQuery);
-
-  const unreadNotifications = notifications?.filter(n => !n.isRead) || [];
-  const unreadCount = unreadNotifications.length;
-  const activeTasksCount = tasks?.filter(t => t.status !== 'ARCHIVED').length || 0;
-  const unreadChatsCount = chats?.filter(c => {
-      const lastRead = c.readReceipts?.[user?.uid || ''];
-      return !lastRead || (c.lastMessage && new Date(c.lastMessage.timestamp) > new Date(lastRead));
-  }).length || 0;
-
+  
   const announcementsQuery = useMemoFirebase(() => 
     firestore && userProfile ? query(collection(firestore, 'announcements'), where('orgId', '==', userProfile.orgId), orderBy('createdAt', 'desc'), limit(3)) : null
   , [firestore, userProfile]);
+
+  const { data: notifications } = useCollection<Notification>(notificationsQuery);
   const { data: announcements } = useCollection<Announcement>(announcementsQuery);
-  const latestAnnouncement = announcements?.[0] || null;
+
+  const unreadNotifications = notifications?.filter(n => !n.isRead) || [];
+  const unreadCount = unreadNotifications.length;
 
   useEffect(() => {
     if (unreadCount > prevUnreadCount.current) {
@@ -114,6 +93,15 @@ export default function AppHeader({
     router.push(n.href);
   };
 
+  const handleOpenDebrief = () => {
+    uiEmitter.emit('open-assistant-dialog');
+  };
+
+  const handleOpenAnnouncements = () => {
+    // Navigate home if not there, then scroll to announcements or just trigger panel
+    window.location.href = '/';
+  };
+
   if (isVertical) {
       return (
           <div className="flex flex-col items-center gap-6 py-6 border-b border-white/5">
@@ -121,15 +109,48 @@ export default function AppHeader({
               <div className="flex flex-col items-center gap-4">
                   <UserNav userProfile={userProfile} />
                   <ThemeToggle />
+                  
+                  {/* Tactical Debrief Button */}
+                  <button 
+                    onClick={handleOpenDebrief}
+                    className="relative text-gray-400 hover:text-amber-500 transition-all p-2 rounded-full hover:bg-amber-500/5 group/btn"
+                    title="Mission Debrief"
+                  >
+                      <Sparkles className="w-6 h-6" />
+                      <div className="absolute left-full ml-4 px-2 py-1 bg-amber-500 text-white text-[10px] font-black uppercase rounded opacity-0 group-hover/btn:opacity-100 transition-opacity whitespace-nowrap z-50">
+                          Briefing
+                      </div>
+                  </button>
+
+                  {/* Broadcast Indicator */}
+                  <button 
+                    onClick={handleOpenAnnouncements}
+                    className="relative text-gray-400 hover:text-primary transition-all p-2 rounded-full hover:bg-primary/5 group/btn"
+                    title="Organizational Broadcasts"
+                  >
+                      <Megaphone className="w-6 h-6" />
+                      {announcements && announcements.length > 0 && (
+                          <span className="absolute top-1 right-1 flex h-3 w-3 items-center justify-center rounded-full bg-primary text-[8px] font-black text-white ring-2 ring-background">
+                              {announcements.length}
+                          </span>
+                      )}
+                       <div className="absolute left-full ml-4 px-2 py-1 bg-primary text-white text-[10px] font-black uppercase rounded opacity-0 group-hover/btn:opacity-100 transition-opacity whitespace-nowrap z-50">
+                          Broadcasts
+                      </div>
+                  </button>
+
                    <Popover open={isNotificationsOpen} onOpenChange={setIsNotificationsOpen}>
                       <PopoverTrigger asChild>
-                          <button className="relative text-gray-400 hover:text-primary transition-all p-2 rounded-full hover:bg-primary/5">
+                          <button className="relative text-gray-400 hover:text-primary transition-all p-2 rounded-full hover:bg-primary/5 group/btn">
                               <Bell className={cn("w-6 h-6", unreadCount > 0 && "text-primary")} />
                               {unreadCount > 0 && (
                                   <span className="absolute top-1 right-1 flex h-3 w-3 items-center justify-center rounded-full bg-destructive text-[8px] font-black text-white ring-2 ring-background">
                                       {unreadCount}
                                   </span>
                               )}
+                              <div className="absolute left-full ml-4 px-2 py-1 bg-destructive text-white text-[10px] font-black uppercase rounded opacity-0 group-hover/btn:opacity-100 transition-opacity whitespace-nowrap z-50">
+                                  Alerts
+                              </div>
                           </button>
                       </PopoverTrigger>
                       <PopoverContent align="start" side="right" className="w-[90vw] sm:w-96 p-0 apple-glass border-none shadow-3xl overflow-hidden ml-2">
@@ -137,7 +158,9 @@ export default function AppHeader({
                                 <h3 className="font-bold text-xs uppercase tracking-widest">Alerts</h3>
                             </div>
                             <ScrollArea className="h-96">
-                                {notifications?.map(n => (
+                                {notifications?.length === 0 ? (
+                                    <div className="p-12 text-center text-xs text-muted-foreground uppercase font-black opacity-30">Zero Alerts</div>
+                                ) : notifications?.map(n => (
                                     <div key={n.id} className={cn("p-4 border-b border-white/5 transition-colors cursor-pointer", n.isRead ? "opacity-60" : "bg-primary/5")} onClick={() => handleNotificationClick(n)}>
                                         <p className="font-bold text-sm">{n.title}</p>
                                         <p className="text-xs text-muted-foreground mt-1">{n.description}</p>
@@ -146,10 +169,6 @@ export default function AppHeader({
                             </ScrollArea>
                       </PopoverContent>
                   </Popover>
-                  <div className="hidden group-hover:flex flex-col items-center mt-4">
-                      <p className="text-[10px] font-black uppercase tracking-widest text-primary truncate max-w-[150px]">{greeting}</p>
-                      <p className="text-[8px] font-bold text-muted-foreground uppercase mt-1">Status: Operational</p>
-                  </div>
               </div>
           </div>
       )

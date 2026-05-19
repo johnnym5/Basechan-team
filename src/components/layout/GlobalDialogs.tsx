@@ -182,6 +182,7 @@ export function GlobalDialogs({ userProfile, permissions, onAnyDialogOpenChange 
     };
   }, [closeAllDialogs]);
 
+  // WORKSTATION MODALITY CONFIGURATION: modal={false} allows interaction with the sidebar while workstations are open.
   return (
     <>
       <WorkbookDialog
