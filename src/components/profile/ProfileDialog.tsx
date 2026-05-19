@@ -165,18 +165,18 @@ export function ProfileDialog({ open, onOpenChange, userProfile, modal }: Profil
         
         <Progress value={uploadProgress} className={isUploading ? "w-full rounded-none h-1 flex-shrink-0" : "hidden"} />
 
-        <div className="flex-1 flex flex-col h-full min-h-0 overflow-y-auto [scrollbar-gutter:stable] custom-scrollbar bg-background">
-            <div className="max-w-[1600px] mx-auto w-full min-h-full border-x border-white/5 bg-background/40 p-4 md:p-6 space-y-6">
+        <div className="flex-1 flex flex-col h-full min-h-0 overflow-y-auto [scrollbar-gutter:stable] custom-scrollbar bg-background/20 relative">
+            <div className="max-w-[1600px] mx-auto w-full min-h-full border-x border-white/5 bg-background/30 p-4 md:p-8 space-y-6">
                 {/* Tactical Header Row */}
                 <div className="flex items-center justify-between">
                     <div className="flex flex-col gap-1">
-                        <h1 className="text-2xl font-black font-headline tracking-tighter">Identity Control</h1>
-                        <p className="text-muted-foreground uppercase tracking-widest text-[8px] font-black opacity-60">System Security & Personnel Telemetry</p>
+                        <h1 className="text-3xl font-black font-headline tracking-tighter">Identity Control</h1>
+                        <p className="text-muted-foreground uppercase tracking-widest text-[10px] font-black opacity-60">System Security & Personnel Telemetry</p>
                     </div>
                     <div className="flex items-center gap-3">
                         <div className="text-right hidden sm:block">
-                            <p className="text-[9px] font-black uppercase tracking-widest text-primary leading-none">Security Clearance</p>
-                            <p className="text-sm font-bold mt-0.5">{userProfile.role}</p>
+                            <p className="text-[10px] font-black uppercase tracking-widest text-primary leading-none">Security Clearance</p>
+                            <p className="text-sm font-bold mt-1 uppercase">{userProfile.role}</p>
                         </div>
                     </div>
                 </div>
@@ -184,8 +184,8 @@ export function ProfileDialog({ open, onOpenChange, userProfile, modal }: Profil
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 pb-20">
                     {/* LEFT COLUMN: Identity & Credentials */}
                     <div className="lg:col-span-4 space-y-6">
-                        <section className="p-6 rounded-[2rem] bg-secondary/5 border border-white/5 flex flex-col items-center text-center">
-                            <div className="relative mb-4 group">
+                        <section className="apple-glass rounded-[2rem] p-6 flex flex-col items-center text-center interactive-element">
+                            <div className="relative mb-6 group">
                                 <Avatar className="w-28 h-28 border-4 border-primary/20 shadow-2xl transition-transform group-hover:scale-105 duration-500">
                                     <AvatarImage src={avatarPreview || userProfile.avatarUrl || user?.photoURL || ''} alt={userProfile.fullName} />
                                     <AvatarFallback className="text-3xl font-black bg-secondary">{userProfile.fullName.split(' ').map(n=>n[0]).join('')}</AvatarFallback>
@@ -199,7 +199,7 @@ export function ProfileDialog({ open, onOpenChange, userProfile, modal }: Profil
                             <p className="text-[10px] font-bold text-primary uppercase tracking-[0.2em] mt-1">{userProfile.position}</p>
                         </section>
 
-                        <section className="p-6 rounded-[2rem] bg-secondary/5 border border-white/5">
+                        <section className="apple-glass rounded-[2rem] p-6">
                             <div className="flex items-center gap-2 mb-6">
                                 <div className="p-1.5 rounded-lg bg-primary/10 text-primary">
                                     <Lock className="h-3.5 w-3.5" />
@@ -222,7 +222,7 @@ export function ProfileDialog({ open, onOpenChange, userProfile, modal }: Profil
                                             <FormMessage />
                                         </FormItem>
                                     )}/>
-                                    <Button type="submit" className="w-full h-12 rounded-2xl font-black uppercase tracking-widest shadow-lg shadow-primary/20 text-[10px]" disabled={isBusy}>
+                                    <Button type="submit" className="w-full h-12 rounded-2xl font-black uppercase tracking-widest shadow-lg shadow-primary/20 text-[10px] interactive-element" disabled={isBusy}>
                                         {isBusy ? <Loader2 className="mr-2 h-3 w-3 animate-spin" /> : "Authorize Changes"}
                                     </Button>
                                 </form>
@@ -238,7 +238,7 @@ export function ProfileDialog({ open, onOpenChange, userProfile, modal }: Profil
 
                     {/* RIGHT COLUMN: Telemetry & Authorization */}
                     <div className="lg:col-span-8 space-y-6">
-                        <section className="p-6 rounded-[2rem] bg-secondary/5 border border-white/5 shadow-inner">
+                        <section className="apple-glass rounded-[2rem] p-6 shadow-inner">
                             <div className="flex items-center justify-between mb-8">
                                 <div className="flex items-center gap-2">
                                     <Activity className="h-4 w-4 text-emerald-500" />
@@ -250,7 +250,7 @@ export function ProfileDialog({ open, onOpenChange, userProfile, modal }: Profil
                         </section>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <section className="p-6 rounded-[2rem] bg-secondary/5 border border-white/5">
+                            <section className="apple-glass rounded-[2rem] p-6 interactive-element">
                                 <div className="flex items-center gap-3 mb-6">
                                     <div className="p-2 rounded-xl bg-amber-500/10">
                                         <Bell className="h-4 w-4 text-amber-500" />
@@ -271,7 +271,7 @@ export function ProfileDialog({ open, onOpenChange, userProfile, modal }: Profil
                                 </div>
                             </section>
 
-                            <section className="p-6 rounded-[2rem] bg-secondary/5 border border-white/5">
+                            <section className="apple-glass rounded-[2rem] p-6 interactive-element">
                                 <div className="flex items-center gap-3 mb-6">
                                     <div className="p-2 rounded-xl bg-primary/10">
                                         <MapPin className="h-4 w-4 text-primary" />
@@ -293,13 +293,13 @@ export function ProfileDialog({ open, onOpenChange, userProfile, modal }: Profil
                             </section>
                         </div>
                         
-                        <div className="p-6 rounded-[2rem] bg-primary/5 border border-primary/10">
+                        <div className="apple-glass p-6 rounded-[2rem] border-primary/10">
                             <div className="flex items-center gap-3 text-primary mb-2">
-                                <Activity className="h-4 w-4" />
+                                <ShieldCheck className="h-4 w-4" />
                                 <span className="text-[10px] font-black uppercase tracking-tighter">System Intelligence Memo</span>
                             </div>
                             <p className="text-[9px] leading-relaxed text-foreground/70 font-medium uppercase tracking-tight">
-                                Personnel identity telemetry is analyzed in real-time. Continuous geofencing and active notification nodes are required for optimal mission reporting and shift synchronization.
+                                Personnel identity telemetry is analyzed in real-time. Continuous geofencing and active notification nodes are required for optimal mission reporting and shift synchronization. Standard personnel are subject to strictly enforced spatial boundaries.
                             </p>
                         </div>
                     </div>

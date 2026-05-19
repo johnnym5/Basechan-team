@@ -105,7 +105,7 @@ export default function DashboardPage() {
                     <PerformanceCard userProfile={userProfile || null} />
                 </section>
 
-                <section className="col-span-12 lg:col-span-8 xl:col-span-9">
+                <section className="col-span-12 lg:col-span-8 xl:col-span-9 h-full">
                     <DashboardTaskList userProfile={userProfile || null} permissions={permissions} />
                 </section>
 

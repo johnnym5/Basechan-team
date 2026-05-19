@@ -34,7 +34,7 @@ export function DashboardLiveDisplays({ userProfile }: DashboardLiveDisplaysProp
 
     if (isLoading) {
         return (
-            <section className="card-bg rounded-2xl p-4 shadow-lg">
+            <section className="apple-glass rounded-2xl p-4 shadow-lg">
                 <Skeleton className="h-5 w-1/2 mb-3" />
                 <div className="space-y-2">
                     <Skeleton className="h-10 w-full rounded-xl" />
@@ -45,7 +45,7 @@ export function DashboardLiveDisplays({ userProfile }: DashboardLiveDisplaysProp
     }
 
     return (
-        <section className="card-bg rounded-2xl p-4 shadow-lg animate-in fade-in slide-in-from-bottom-2 duration-500">
+        <section className="apple-glass rounded-2xl p-4 animate-in fade-in slide-in-from-bottom-2 duration-500 interactive-element">
             <div className="flex items-center justify-between mb-3">
                 <h3 className="text-xs font-bold font-headline flex items-center gap-2">
                     <Globe className="h-3.5 w-3.5 text-primary" />

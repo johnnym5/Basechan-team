@@ -88,7 +88,7 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
             VERTICAL CONTROL PILLAR: LOCKED ON LEFT
             Locked at z-[1000] to ensure it remains interactive above workstation drop-downs.
         */}
-        <div className="sticky left-0 h-full z-[1000] flex flex-col shrink-0 bg-background/80 backdrop-blur-2xl border-r border-white/5 shadow-2xl w-[5.5rem] lg:w-[7.5rem] group hover:w-64 transition-all duration-500 ease-apple-ease pointer-events-auto">
+        <div className="sticky left-0 h-full z-[1000] flex flex-col shrink-0 apple-glass-darker w-[5.5rem] lg:w-[7.5rem] group hover:w-64 transition-all duration-500 ease-apple-ease pointer-events-auto border-r border-white/5">
           <AppHeader
               userProfile={stableProfile}
               onMenuClick={() => {}}
@@ -104,7 +104,7 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
         
         {/* MISSION WORKSPACE: SCROLLS BEHIND CONTROL CENTER */}
         <main className="flex-1 overflow-y-scroll scroll-smooth [scrollbar-gutter:stable] custom-scrollbar bg-background/20 relative">
-            <div className="w-full mx-auto max-w-[1600px] min-h-full border-x border-white/5 bg-background/30 p-4 md:p-8 animate-in fade-in duration-700">
+            <div className="w-full mx-auto max-w-[1600px] min-h-full border-x border-white/5 bg-background/30 p-4 md:p-6 animate-in fade-in duration-700">
                 {children}
             </div>
         </main>

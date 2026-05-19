@@ -49,7 +49,7 @@ export function Announcements() {
 
     return (
         <>
-            <section className="card-bg rounded-2xl p-5 shadow-lg animate-slide-up-fade">
+            <section className="apple-glass rounded-2xl p-5 animate-slide-up-fade interactive-element">
                 <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-4">Latest Broadcasts</h3>
                 <div className="space-y-4">
                     {isLoading ? (

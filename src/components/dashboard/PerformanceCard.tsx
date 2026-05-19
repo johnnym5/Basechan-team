@@ -63,7 +63,7 @@ export function PerformanceCard({ userProfile }: PerformanceCardProps) {
     }, [allTasks, dailyReports, orgUsers]);
 
     return (
-        <section className="card-bg rounded-2xl p-4 md:p-5 shadow-lg h-full flex flex-col animate-slide-up-fade">
+        <section className="apple-glass rounded-2xl p-4 md:p-5 h-full flex flex-col animate-slide-up-fade interactive-element">
             <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-4">Tactical Intelligence KPI</h3>
             <div className="flex flex-col items-center flex-1 justify-center py-2">
                 <div 

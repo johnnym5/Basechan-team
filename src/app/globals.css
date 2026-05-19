@@ -35,25 +35,25 @@
   }
 
   .dark {
-    --background: 240 10% 4%; 
+    --background: 240 10% 2%; 
     --foreground: 0 0% 98%;
-    --card: 240 10% 6%;
+    --card: 240 10% 4%;
     --card-foreground: 210 40% 98%;
-    --popover: 240 10% 6%;
+    --popover: 240 10% 4%;
     --popover-foreground: 210 40% 98%;
     --primary: 217 91% 60%;
     --primary-foreground: 210 40% 98%;
-    --secondary: 240 10% 12%;
+    --secondary: 240 10% 8%;
     --secondary-foreground: 210 40% 98%;
-    --muted: 240 10% 10%;
+    --muted: 240 10% 6%;
     --muted-foreground: 240 5% 65%;
     --accent: 217 91% 60%;
     --accent-foreground: 210 40% 98%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
-    --border: 240 10% 15%;
-    --input: 240 10% 15%;
-    --sidebar-background: 230 15% 10%; 
+    --border: 240 10% 12%;
+    --input: 240 10% 12%;
+    --sidebar-background: 230 15% 4%; 
     --sidebar-foreground: 210 40% 98%;
   }
 }
@@ -70,7 +70,7 @@
   }
 
   ::-webkit-scrollbar { width: 12px; height: 12px; }
-  ::-webkit-scrollbar-track { background: hsl(var(--secondary) / 0.1); }
+  ::-webkit-scrollbar-track { background: hsl(var(--secondary) / 0.05); }
   ::-webkit-scrollbar-thumb {
     background-color: hsl(var(--primary));
     border-radius: 6px;
@@ -83,8 +83,12 @@
 }
 
 @layer utilities {
-    .apple-glass { @apply bg-background/60 backdrop-blur-2xl border border-border/50 shadow-[0_8px_32px_0_rgba(0,0,0,0.05)]; }
-    .apple-glass-darker { @apply bg-background/80 backdrop-blur-3xl border border-border/50 shadow-2xl; }
+    .apple-glass { 
+      @apply bg-card/40 backdrop-blur-3xl border border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.1)]; 
+    }
+    .apple-glass-darker { 
+      @apply bg-background/80 backdrop-blur-[40px] border border-white/5 shadow-[0_12px_64px_0_rgba(0,0,0,0.3)]; 
+    }
     .min-h-screen-safe { min-height: 100dvh; }
     .gauge-container { position: relative; width: 10rem; height: 5rem; overflow: hidden; }
     .gauge-track { width: 10rem; height: 10rem; border: 1.2rem solid hsl(var(--muted) / 0.3); border-radius: 50%; }
@@ -95,4 +99,5 @@
       transform: rotate(45deg); transition: transform 1s cubic-bezier(0.16, 1, 0.3, 1);
     }
     .custom-scrollbar { scrollbar-gutter: stable; }
+    .interactive-element { @apply transition-all duration-300 ease-apple-ease hover:-translate-y-0.5 hover:shadow-xl active:scale-95; }
 }

@@ -40,19 +40,19 @@ export function DashboardRecentChats() {
     }
 
     return (
-        <section className="card-bg rounded-2xl p-6 shadow-lg animate-slide-up-fade" style={{ animationDelay: '200ms' }}>
-            <h3 className="text-lg font-bold font-headline tracking-tight mb-6">Recent Chats</h3>
+        <section className="apple-glass rounded-2xl p-6 animate-slide-up-fade interactive-element" style={{ animationDelay: '200ms' }}>
+            <h3 className="text-lg font-bold font-headline tracking-tight mb-6">Recent Transmissions</h3>
             <div className="space-y-6">
                 {isLoading ? (
                     Array.from({length: 3}).map((_, i) => <Skeleton key={i} className="h-12 w-full rounded-lg" />)
                 ) : chats?.map((chat, idx) => (
                     <div 
                         key={chat.id} 
-                        className="flex items-start space-x-3 cursor-pointer hover:bg-primary/5 p-2 -m-2 rounded-xl transition-all interactive-element group" 
+                        className="flex items-start space-x-3 cursor-pointer hover:bg-primary/5 p-2 -m-2 rounded-xl transition-all group" 
                         onClick={() => uiEmitter.emit('open-chat-dialog', { chatId: chat.id })}
                         style={{ animationDelay: `${250 + (idx * 50)}ms` }}
                     >
-                        <Avatar className="w-10 h-10 border shadow-sm group-hover:border-primary/50 transition-colors">
+                        <Avatar className="w-10 h-10 border border-white/5 shadow-sm group-hover:border-primary/50 transition-colors">
                             <AvatarFallback className="font-bold text-xs bg-secondary">{getChatTitle(chat).split(' ').map(n=>n[0]).join('')}</AvatarFallback>
                         </Avatar>
                         <div className="flex-1 min-w-0">
@@ -64,7 +64,7 @@ export function DashboardRecentChats() {
                                     </span>
                                 )}
                             </div>
-                            <p className="text-xs text-muted-foreground truncate italic">"{chat.lastMessage?.text || 'No messages yet'}"</p>
+                            <p className="text-xs text-muted-foreground truncate italic opacity-60">"{chat.lastMessage?.text || 'No messages yet'}"</p>
                         </div>
                     </div>
                 ))}
