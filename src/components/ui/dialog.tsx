@@ -61,9 +61,8 @@ const DialogContent = React.forwardRef<
 >(({ className, children, position, showRetractHandle, ...props }, ref) => {
   const isMobile = useMediaQuery("(max-width: 768px)");
   const finalPosition = isMobile ? "bottom" : position || "center";
-  const isTopPanel = finalPosition === "top";
-  const isBottomPanel = finalPosition === "bottom";
   const isLeftPanel = finalPosition === "left";
+  const isBottomPanel = finalPosition === "bottom";
   const isSidePanel = finalPosition === "left" || finalPosition === "right";
 
   const contentOffsetClass = isLeftPanel ? "pl-[5.5rem] lg:pl-[7.5rem]" : "";
@@ -80,8 +79,8 @@ const DialogContent = React.forwardRef<
             <div className="absolute top-3 left-1/2 -translate-x-1/2 w-12 h-1.5 bg-muted/40 rounded-full" />
         )}
 
-        <div className={cn("mx-auto w-full h-full flex flex-col relative", (isTopPanel || isLeftPanel) ? "max-w-[1920px]" : "", contentOffsetClass)}>
-            <div className={cn("flex-1 min-h-0", (isTopPanel || isLeftPanel) ? "" : isSidePanel ? "px-8 pt-4" : "", isBottomPanel && "pt-6")}>
+        <div className={cn("mx-auto w-full h-full flex flex-col relative", (finalPosition === "top" || finalPosition === "left") ? "max-w-[1920px]" : "", contentOffsetClass)}>
+            <div className={cn("flex-1 min-h-0", (finalPosition === "top" || finalPosition === "left") ? "" : isSidePanel ? "px-8 pt-4" : "", isBottomPanel && "pt-6")}>
                 {children}
             </div>
             
@@ -141,9 +140,7 @@ const DialogTitle = React.forwardRef<
       className
     )}
     {...props}
-  >
-    {props.children}
-  </DialogPrimitive.Title>
+  />
 ))
 DialogTitle.displayName = "DialogTitle"
 
@@ -155,9 +152,7 @@ const DialogDescription = React.forwardRef<
     ref={ref}
     className={cn("text-lg text-muted-foreground", className)}
     {...props}
-  >
-    {props.children}
-  </DialogPrimitive.Description>
+  />
 ))
 DialogDescription.displayName = "DialogDescription"
 
