@@ -85,7 +85,7 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
       <div className="flex w-full bg-background overflow-hidden relative h-full flex-row">
         
         {/* VERTICAL CONTROL PILLAR: LOCKED ON LEFT */}
-        <div className="sticky left-0 h-full z-[1000] flex flex-col shrink-0 bg-background/80 backdrop-blur-2xl border-r border-white/5 shadow-2xl w-[5.5rem] lg:w-[6.5rem] group hover:w-64 transition-all duration-500 ease-apple-ease">
+        <div className="sticky left-0 h-full z-[1000] flex flex-col shrink-0 bg-background/80 backdrop-blur-2xl border-r border-white/5 shadow-2xl w-[5.5rem] lg:w-[6.5rem] group hover:w-64 transition-all duration-500 ease-apple-ease pointer-events-auto">
           <AppHeader
               userProfile={stableProfile}
               onMenuClick={() => {}}

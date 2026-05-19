@@ -80,7 +80,6 @@ export function PanelSwitcher({ isVertical }: PanelSwitcherProps) {
                             <item.icon className={cn("h-5 w-5 shrink-0 transition-colors", isActive ? "text-primary" : "group-hover:text-primary")} />
                             <span className={cn(
                                 "text-[10px] font-black uppercase tracking-widest transition-opacity duration-300 overflow-hidden whitespace-nowrap",
-                                // Text is hidden when parent is collapsed, but pillar uses group-hover to expand
                                 "opacity-0 group-hover:opacity-100"
                             )}>
                                 {item.label}

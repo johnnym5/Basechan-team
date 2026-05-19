@@ -6,15 +6,14 @@ import { collection, query, where, orderBy, limit } from 'firebase/firestore';
 import type { PulseCheck, UserProfile } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Thermometer, Heart, AlertCircle, Smile, Frown, Users } from 'lucide-react';
-import { format, formatDistanceToNow, subDays } from 'date-fns';
+import { Heart, AlertCircle, Smile, Frown, Users } from 'lucide-react';
+import { format, subDays } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '../ui/scroll-area';
 
 export function TeamHealthTab({ userProfile }: { userProfile: UserProfile }) {
     const firestore = useFirestore();
-    const today = format(new Date(), 'yyyy-MM-dd');
     const threeDaysAgo = format(subDays(new Date(), 3), 'yyyy-MM-dd');
 
     const pulseQuery = useMemoFirebase(() => {
