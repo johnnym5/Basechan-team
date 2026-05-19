@@ -3,7 +3,7 @@
 import * as React from "react"
 import * as DialogPrimitive from "@radix-ui/react-dialog"
 import { cva, type VariantProps } from "class-variance-authority"
-import { ChevronUp, X, ChevronLeft } from "lucide-react"
+import { X, ChevronLeft } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 import { useMediaQuery } from "@/hooks/use-media-query"
@@ -40,7 +40,7 @@ const dialogVariants = cva(
         left: "inset-y-0 left-0 h-full w-full data-[state=closed]:slide-out-to-left data-[state=open]:slide-in-from-left duration-500 overflow-hidden",
         right: "inset-y-0 right-0 h-full border-l data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right sm:max-w-sm overflow-hidden",
         bottom: "inset-x-0 bottom-0 border-t data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom h-[90vh] rounded-t-[2.5rem] p-6 pb-20 overflow-hidden",
-        top: "inset-x-0 top-[6.375rem] border-b data-[state=closed]:slide-out-to-top data-[state=open]:slide-in-from-top h-[calc(100vh-6.375rem)] rounded-b-none px-0 pt-0 pb-16 overflow-hidden",
+        top: "inset-x-0 top-0 border-b data-[state=closed]:slide-out-to-top data-[state=open]:slide-in-from-top h-full rounded-b-none px-0 pt-0 pb-16 overflow-hidden",
       },
     },
     defaultVariants: {
@@ -66,6 +66,9 @@ const DialogContent = React.forwardRef<
   const isLeftPanel = finalPosition === "left";
   const isSidePanel = finalPosition === "left" || finalPosition === "right";
 
+  // When in "left" mode, we offset the content so it sits beside our Control Pillar
+  const contentOffsetClass = isLeftPanel ? "pl-[5.5rem] lg:pl-[6.5rem]" : "";
+
   return (
     <DialogPortal>
       <DialogOverlay />
@@ -78,19 +81,19 @@ const DialogContent = React.forwardRef<
             <div className="absolute top-3 left-1/2 -translate-x-1/2 w-12 h-1.5 bg-muted/40 rounded-full" />
         )}
 
-        <div className={cn("mx-auto w-full h-full flex flex-col relative", (isTopPanel || isLeftPanel) ? "max-w-[1920px]" : "")}>
+        <div className={cn("mx-auto w-full h-full flex flex-col relative", (isTopPanel || isLeftPanel) ? "max-w-[1920px]" : "", contentOffsetClass)}>
             <div className={cn("flex-1 h-full min-h-0", (isTopPanel || isLeftPanel) ? "" : isSidePanel ? "px-8 pt-4" : "", isBottomPanel && "pt-6")}>
                 {children}
             </div>
             
             <DialogPrimitive.Close className={cn(
                 "absolute rounded-full transition-all hover:scale-110 active:scale-95 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none shadow-2xl z-[60]",
-                isTopPanel 
-                  ? "left-1/2 bottom-8 -translate-x-1/2 p-4 bg-primary text-primary-foreground border-4 border-background h-16 w-16 flex items-center justify-center translate-y-1/2" 
+                isLeftPanel 
+                  ? "left-4 top-1/2 -translate-y-1/2 p-4 bg-primary text-primary-foreground border-4 border-background h-16 w-16 flex items-center justify-center -translate-x-1/2" 
                   : "right-4 top-4 p-2 bg-secondary text-muted-foreground opacity-70 hover:opacity-100",
                 isBottomPanel && "top-0 right-2 translate-y-2 translate-x-0"
             )}>
-                {isTopPanel ? <ChevronUp className="h-8 w-8" /> : <X className="h-4 w-4" />}
+                {isLeftPanel ? <ChevronLeft className="h-8 w-8" /> : <X className="h-4 w-4" />}
                 <span className="sr-only">Close</span>
             </DialogPrimitive.Close>
         </div>

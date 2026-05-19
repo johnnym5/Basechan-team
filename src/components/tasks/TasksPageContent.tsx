@@ -11,10 +11,8 @@ import { Button } from '@/components/ui/button';
 import { PlusCircle, Search, ListFilter } from 'lucide-react';
 import { AssignTaskDialog } from '@/components/tasks/AssignTaskDialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ScrollArea } from '../ui/scroll-area';
 import { Input } from '../ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
-import { cn } from '@/lib/utils';
 import { PerformanceCard } from '../dashboard/PerformanceCard';
 import { DashboardRecentReports } from '../dashboard/DashboardRecentReports';
 
@@ -54,7 +52,7 @@ export function TasksPageContent({ initialPayload, currentUserProfile, permissio
 
   return (
     <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col overflow-hidden">
-      <div className="flex-1 flex flex-col min-h-0 bg-background/20 p-4 md:p-8 overflow-y-auto custom-scrollbar">
+      <div className="flex-1 flex flex-col min-h-0 p-4 md:p-8 overflow-y-auto custom-scrollbar bg-background/20 rounded-[2.5rem]">
           <div className="max-w-[1600px] mx-auto w-full space-y-6">
               <div className="flex flex-col gap-6">
                 <div className="flex items-start justify-between gap-4 flex-wrap">
@@ -76,7 +74,6 @@ export function TasksPageContent({ initialPayload, currentUserProfile, permissio
                   </div>
                 </div>
 
-                {/* Tactical Search & Filter Bar */}
                 <div className="flex flex-col sm:flex-row items-center gap-4 bg-secondary/10 p-3 rounded-2xl border border-white/5">
                     <div className="relative flex-1 w-full">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -133,12 +130,6 @@ export function TasksPageContent({ initialPayload, currentUserProfile, permissio
                   <div className="col-span-12 lg:col-span-4 xl:col-span-3 space-y-6">
                       <PerformanceCard userProfile={currentUserProfile} />
                       <DashboardRecentReports />
-                      <div className="p-6 rounded-[2.5rem] bg-primary/5 border border-primary/10">
-                          <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-primary mb-4">Mission Integrity</h4>
-                          <p className="text-[11px] leading-relaxed text-muted-foreground">
-                              All tactical objectives are tracked in real-time. Moving a task to "Awaiting Review" triggers an automated notification to the mission commander. 
-                          </p>
-                      </div>
                   </div>
               </div>
           </div>

@@ -6,7 +6,6 @@ import { doc, collection, query, where, limit } from 'firebase/firestore';
 import type { UserProfile, Attendance } from '@/lib/types';
 import { useSystemConfig } from '@/hooks/useSystemConfig';
 import AppHeader from '@/components/layout/AppHeader';
-import AppSidebar from '@/components/layout/AppSidebar';
 import { PanelSwitcher } from '@/components/layout/PanelSwitcher';
 import { usePermissions } from '@/hooks/usePermissions';
 import { format } from 'date-fns';
@@ -83,28 +82,29 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="h-[100dvh] w-full bg-muted/30 flex justify-center p-0 transition-all duration-500 overflow-hidden">
-      <div className="flex w-full bg-background overflow-hidden relative h-full">
-        <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden relative">
-          
-          {/* CONTROL CENTER: STRICTLY LOCKED ON TOP */}
-          <div className="sticky top-0 z-[1000] flex flex-col shrink-0 bg-background/50 backdrop-blur-2xl border-b border-white/5 shadow-sm">
-             <AppHeader
-                userProfile={stableProfile}
-                onMenuClick={() => {}}
-                isLoggedIn={!!user}
-                attendanceRecord={attendanceRecord}
-                systemConfig={config || null}
-            />
-            <PanelSwitcher />
+      <div className="flex w-full bg-background overflow-hidden relative h-full flex-row">
+        
+        {/* VERTICAL CONTROL PILLAR: LOCKED ON LEFT */}
+        <div className="sticky left-0 h-full z-[1000] flex flex-col shrink-0 bg-background/80 backdrop-blur-2xl border-r border-white/5 shadow-2xl w-[5.5rem] lg:w-[6.5rem] group hover:w-64 transition-all duration-500 ease-apple-ease">
+          <AppHeader
+              userProfile={stableProfile}
+              onMenuClick={() => {}}
+              isLoggedIn={!!user}
+              attendanceRecord={attendanceRecord}
+              systemConfig={config || null}
+              isVertical
+          />
+          <div className="flex-1 overflow-y-auto custom-scrollbar px-3 py-4">
+              <PanelSwitcher isVertical />
           </div>
-          
-          {/* MISSION WORKSPACE: SCROLLS BEHIND CONTROL CENTER */}
-          <main className="flex-1 overflow-y-scroll p-4 md:p-8 scroll-smooth pb-28 md:pb-8 [scrollbar-gutter:stable] custom-scrollbar bg-background/20">
-              <div className="w-full mx-auto max-w-[1600px] animate-in fade-in duration-700">
-                  {children}
-              </div>
-          </main>
         </div>
+        
+        {/* MISSION WORKSPACE: SCROLLS BEHIND CONTROL CENTER */}
+        <main className="flex-1 overflow-y-scroll p-4 md:p-8 scroll-smooth pb-28 md:pb-8 [scrollbar-gutter:stable] custom-scrollbar bg-background/20 relative">
+            <div className="w-full mx-auto max-w-[1600px] animate-in fade-in duration-700">
+                {children}
+            </div>
+        </main>
       </div>
 
       {user && stableProfile && (
