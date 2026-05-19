@@ -166,8 +166,8 @@ export function ProfileDialog({ open, onOpenChange, userProfile, modal }: Profil
         
         <Progress value={uploadProgress} className={isUploading ? "w-full rounded-none h-1 flex-shrink-0" : "hidden"} />
 
-        <div className="flex-1 flex flex-col min-h-0 p-4 md:p-8 overflow-y-auto custom-scrollbar bg-background/20 rounded-[2.5rem]">
-            <div className="max-w-[1600px] mx-auto w-full space-y-12 pb-32">
+        <div className="flex-1 flex flex-col min-h-0 overflow-y-auto [scrollbar-gutter:stable] custom-scrollbar bg-background">
+            <div className="max-w-[1600px] mx-auto w-full min-h-full border-x border-white/5 bg-background/40 p-4 md:p-8 space-y-12 pb-32">
                 <div className="flex flex-col gap-2">
                     <h1 className="text-3xl font-black font-headline tracking-tighter">Identity Control</h1>
                     <p className="text-muted-foreground uppercase tracking-widest text-[10px] font-bold">Personnel Security & Telemetry Overview</p>

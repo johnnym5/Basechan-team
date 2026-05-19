@@ -52,8 +52,8 @@ export function TasksPageContent({ initialPayload, currentUserProfile, permissio
 
   return (
     <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col overflow-hidden">
-      <div className="flex-1 flex flex-col min-h-0 p-4 md:p-8 overflow-y-auto custom-scrollbar bg-background/20 rounded-[2.5rem]">
-          <div className="max-w-[1600px] mx-auto w-full space-y-6">
+      <div className="flex-1 flex flex-col min-h-0 overflow-y-auto [scrollbar-gutter:stable] custom-scrollbar bg-background">
+          <div className="max-w-[1600px] mx-auto w-full min-h-full border-x border-white/5 bg-background/30 p-4 md:p-8 space-y-6">
               <div className="flex flex-col gap-6">
                 <div className="flex items-start justify-between gap-4 flex-wrap">
                   <div>
@@ -103,7 +103,7 @@ export function TasksPageContent({ initialPayload, currentUserProfile, permissio
                 </div>
               </div>
 
-              <div className="grid grid-cols-12 gap-8">
+              <div className="grid grid-cols-12 gap-8 pb-32">
                   <div className="col-span-12 lg:col-span-8 xl:col-span-9">
                       <div className="border rounded-3xl bg-background/20 backdrop-blur-sm relative overflow-hidden min-h-[500px]">
                         <TabsContent value="board" className="m-0 h-full">

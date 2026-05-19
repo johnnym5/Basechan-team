@@ -103,8 +103,8 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
         </div>
         
         {/* MISSION WORKSPACE: SCROLLS BEHIND CONTROL CENTER */}
-        <main className="flex-1 overflow-y-scroll p-4 md:p-8 scroll-smooth pb-28 md:pb-8 [scrollbar-gutter:stable] custom-scrollbar bg-background/20 relative">
-            <div className="w-full mx-auto max-w-[1600px] animate-in fade-in duration-700">
+        <main className="flex-1 overflow-y-scroll scroll-smooth [scrollbar-gutter:stable] custom-scrollbar bg-background/20 relative">
+            <div className="w-full mx-auto max-w-[1600px] min-h-full border-x border-white/5 bg-background/30 p-4 md:p-8 animate-in fade-in duration-700">
                 {children}
             </div>
         </main>
