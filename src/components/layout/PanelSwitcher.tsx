@@ -28,6 +28,10 @@ export function PanelSwitcher({ isVertical }: PanelSwitcherProps) {
     const { data: userProfile } = useDoc<UserProfile>(userProfileRef);
     const permissions = usePermissions(userProfile);
 
+    /**
+     * TACTICAL MODULE ACTIVATION:
+     * Switches the active module/workstation.
+     */
     const handleSwitch = (item: any) => {
         if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
         
@@ -35,16 +39,21 @@ export function PanelSwitcher({ isVertical }: PanelSwitcherProps) {
         if ('href' in item) {
             router.push(item.href);
         } else if (item.dialog) {
+            // Slight delay ensures close-all-dialogs cleanup is processed by the event loop
             setTimeout(() => {
                 uiEmitter.emit(`open-${item.dialog}-dialog` as any);
             }, 50);
         }
     };
 
+    /**
+     * HOVER-TO-OPEN LOGIC:
+     * Automatically triggers workstation modules when the cursor enters the button.
+     * Includes a 150ms tactical debounce to prevent accidental triggering.
+     */
     const handleMouseEnter = (item: any) => {
         if (!item.dialog) return;
         
-        // 150ms tactical debounce to prevent accidental triggering
         hoverTimeoutRef.current = setTimeout(() => {
             handleSwitch(item);
         }, 150);

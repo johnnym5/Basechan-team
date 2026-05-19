@@ -182,7 +182,11 @@ export function GlobalDialogs({ userProfile, permissions, onAnyDialogOpenChange 
     };
   }, [closeAllDialogs]);
 
-  // WORKSTATION MODALITY CONFIGURATION: modal={false} allows interaction with the sidebar while workstations are open.
+  /**
+   * CRITICAL INTERACTIVITY FIX:
+   * We set modal={false} for all primary workstations.
+   * This ensures the Vertical Control Pillar remains clickable while a workstation is open.
+   */
   return (
     <>
       <WorkbookDialog

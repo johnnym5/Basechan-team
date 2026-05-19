@@ -3,7 +3,7 @@ import { UserNav } from "@/components/layout/UserNav";
 import { useState, useEffect, useRef } from 'react';
 import { useUser, useMemoFirebase, useCollection, updateDocumentNonBlocking, useFirestore } from '@/firebase';
 import { collection, query, where, orderBy, limit, doc } from 'firebase/firestore';
-import type { UserProfile, Notification, Attendance, SystemConfig, Announcement, Task, Chat } from '@/lib/types';
+import type { UserProfile, Notification, Attendance, SystemConfig, Announcement } from '@/lib/types';
 import { Bell, Sparkles, Megaphone } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { ScrollArea } from '../ui/scroll-area';
@@ -98,19 +98,26 @@ export default function AppHeader({
   };
 
   const handleOpenAnnouncements = () => {
-    // Navigate home if not there, then scroll to announcements or just trigger panel
     window.location.href = '/';
   };
 
   if (isVertical) {
       return (
           <div className="flex flex-col items-center gap-6 py-6 border-b border-white/5">
-              <div className="shrink-0"><Logo /></div>
+              {/* Dynamic Status Greeting replaces Static Logo */}
+              <div className="w-full px-4 overflow-hidden min-h-[3rem] flex flex-col justify-center">
+                  <p className="text-[9px] font-black uppercase tracking-[0.2em] text-primary opacity-50 mb-0.5 truncate">
+                      Command Pillar
+                  </p>
+                  <p className="text-xs font-black font-headline tracking-tighter leading-tight transition-all duration-500 group-hover:text-sm group-hover:tracking-tight animate-in fade-in slide-in-from-left-2">
+                      {greeting}
+                  </p>
+              </div>
+
               <div className="flex flex-col items-center gap-4">
                   <UserNav userProfile={userProfile} />
                   <ThemeToggle />
                   
-                  {/* Tactical Debrief Button */}
                   <button 
                     onClick={handleOpenDebrief}
                     className="relative text-gray-400 hover:text-amber-500 transition-all p-2 rounded-full hover:bg-amber-500/5 group/btn"
@@ -122,7 +129,6 @@ export default function AppHeader({
                       </div>
                   </button>
 
-                  {/* Broadcast Indicator */}
                   <button 
                     onClick={handleOpenAnnouncements}
                     className="relative text-gray-400 hover:text-primary transition-all p-2 rounded-full hover:bg-primary/5 group/btn"
