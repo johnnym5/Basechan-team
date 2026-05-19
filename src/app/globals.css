@@ -4,204 +4,92 @@
 
 @layer base {
   html {
-    /* Fluid typography: Scales between mobile and desktop based on viewport width */
-    font-size: clamp(60%, 0.75vw + 0.3rem, 75%);
+    font-size: 14px;
     scroll-behavior: smooth;
+    scrollbar-gutter: stable;
   }
   
   :root {
-    /* Sophisticated Light Mode */
     --background: 240 10% 98%;
     --foreground: 240 10% 10%;
-
     --card: 0 0% 100%;
     --card-foreground: 240 10% 10%;
-
     --popover: 0 0% 100%;
     --popover-foreground: 240 10% 10%;
-
     --primary: 217 91% 60%;
     --primary-foreground: 210 40% 98%;
-
     --secondary: 240 5% 92%;
     --secondary-foreground: 240 5% 25%;
-
     --muted: 240 5% 95%;
     --muted-foreground: 240 5% 45%;
-
     --accent: 217 91% 60%;
     --accent-foreground: 210 40% 98%;
-
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
-
     --border: 240 6% 90%;
     --input: 240 6% 90%;
     --ring: 217 91% 60%;
-    --radius: 1.5rem; 
-
+    --radius: 1rem; 
     --sidebar-background: 240 5% 96%; 
     --sidebar-foreground: 240 10% 10%;
   }
 
   .dark {
-    /* Deep, OLED-friendly Dark Mode */
     --background: 240 10% 4%; 
     --foreground: 0 0% 98%;
-
     --card: 240 10% 6%;
     --card-foreground: 210 40% 98%;
-
     --popover: 240 10% 6%;
     --popover-foreground: 210 40% 98%;
-
     --primary: 217 91% 60%;
     --primary-foreground: 210 40% 98%;
-
     --secondary: 240 10% 12%;
     --secondary-foreground: 210 40% 98%;
-
     --muted: 240 10% 10%;
     --muted-foreground: 240 5% 65%;
-
     --accent: 217 91% 60%;
     --accent-foreground: 210 40% 98%;
-
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
-
     --border: 240 10% 15%;
     --input: 240 10% 15%;
-
     --sidebar-background: 230 15% 10%; 
     --sidebar-foreground: 210 40% 98%;
   }
 }
 
 @layer base {
+  * { @apply border-border; }
+  html, body { height: 100%; margin: 0; padding: 0; }
+  body { @apply bg-background text-foreground overflow-hidden font-body; -webkit-font-smoothing: antialiased; }
+
+  /* Solid Tactical Scrollbar System */
   * {
-    @apply border-border;
-  }
-  
-  html, body {
-    height: 100%;
-    margin: 0;
-    padding: 0;
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--primary)) transparent;
   }
 
-  body {
-    @apply bg-background text-foreground overflow-hidden font-body;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-  }
-
-  /* High-Visibility Vertical Scrollbar System */
-  * {
-    scrollbar-width: auto;
-    scrollbar-color: hsl(var(--primary)) hsl(var(--muted) / 0.3);
-  }
-
-  ::-webkit-scrollbar {
-    width: 12px;
-    height: 12px;
-  }
-
-  ::-webkit-scrollbar-track {
-    @apply bg-muted/20;
-  }
-
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb {
-    @apply bg-primary rounded-full border-[3px] border-solid border-background;
-    background-clip: padding-box;
-    transition: background-color 0.2s;
-  }
-
-  ::-webkit-scrollbar-thumb:hover {
-    background-color: hsl(var(--primary) / 0.8);
+    background-color: hsl(var(--primary));
+    border-radius: 10px;
+    border: 3px solid transparent;
+    background-clip: content-box;
   }
 }
 
 @layer utilities {
-    .apple-glass {
-        @apply bg-background/60 backdrop-blur-2xl border border-border/50 shadow-[0_8px_32px_0_rgba(0,0,0,0.05)];
-    }
-    
-    .apple-glass-darker {
-        @apply bg-background/80 backdrop-blur-3xl border border-border/50 shadow-2xl;
-    }
-
-    .min-h-screen-safe {
-        min-height: 100dvh;
-    }
-
-    .sidebar-bg { @apply bg-[hsl(var(--sidebar-background))]; }
-    .card-bg { @apply bg-card/50 backdrop-blur-xl border border-border/50; }
-    .active-nav { @apply bg-primary/10 text-primary border-r-2 border-primary; }
-    
-    .gauge-container {
-      position: relative;
-      width: 12.5rem; 
-      height: 6.25rem; 
-      overflow: hidden;
-    }
-    .gauge-track {
-      width: 12.5rem;
-      height: 12.5rem;
-      border: 1.5rem solid hsl(var(--muted) / 0.3); 
-      border-radius: 50%;
-    }
+    .apple-glass { @apply bg-background/60 backdrop-blur-2xl border border-border/50 shadow-[0_8px_32px_0_rgba(0,0,0,0.05)]; }
+    .apple-glass-darker { @apply bg-background/80 backdrop-blur-3xl border border-border/50 shadow-2xl; }
+    .min-h-screen-safe { min-height: 100dvh; }
+    .gauge-container { position: relative; width: 10rem; height: 5rem; overflow: hidden; }
+    .gauge-track { width: 10rem; height: 10rem; border: 1.2rem solid hsl(var(--muted) / 0.3); border-radius: 50%; }
     .gauge-fill {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 12.5rem;
-      height: 12.5rem;
-      border: 1.5rem solid hsl(var(--primary));
-      border-radius: 50%;
-      border-bottom-color: transparent;
-      border-left-color: transparent;
-      transform: rotate(45deg);
-      transition: transform 1s cubic-bezier(0.16, 1, 0.3, 1);
+      position: absolute; top: 0; left: 0; width: 10rem; height: 10rem;
+      border: 1.2rem solid hsl(var(--primary)); border-radius: 50%;
+      border-bottom-color: transparent; border-left-color: transparent;
+      transform: rotate(45deg); transition: transform 1s cubic-bezier(0.16, 1, 0.3, 1);
     }
-
-    .interactive-element {
-      @apply transition-all duration-300 ease-apple-ease hover:-translate-y-1 hover:shadow-lg active:scale-[0.98] active:shadow-sm;
-    }
-
-    .mobile-tab-active {
-        @apply text-primary scale-110 -translate-y-0.5;
-    }
-
-    @keyframes marquee {
-      0% { transform: translateX(100%); }
-      100% { transform: translateX(-100%); }
-    }
-    .animate-marquee {
-      display: inline-block;
-      white-space: nowrap;
-      animation: marquee 30s linear infinite;
-    }
-    .animate-marquee:hover {
-      animation-play-state: paused;
-    }
-    
-    .custom-scrollbar {
-        scrollbar-width: auto;
-        scrollbar-color: hsl(var(--primary)) transparent;
-    }
-    
-    .custom-scrollbar::-webkit-scrollbar {
-        width: 10px;
-    }
-    
-    .custom-scrollbar::-webkit-scrollbar-track {
-        background: rgba(128, 128, 128, 0.05);
-    }
-    
-    .custom-scrollbar::-webkit-scrollbar-thumb {
-        background-color: hsl(var(--primary));
-        border-radius: 10px;
-        border: 2px solid transparent;
-        background-clip: content-box;
-    }
+    .custom-scrollbar { scrollbar-gutter: stable; }
 }

@@ -69,7 +69,6 @@ export function ClockControl({ userProfile, permissions, systemConfig, className
         const now = new Date();
         const start = new Date(attendanceRecord.clockIn);
         
-        // Calculate offset for break currently in progress
         let currentBreakElapsed = 0;
         if (attendanceRecord.onBreak && attendanceRecord.breaks?.length) {
             const lastBreak = attendanceRecord.breaks[attendanceRecord.breaks.length - 1];
@@ -88,7 +87,6 @@ export function ClockControl({ userProfile, permissions, systemConfig, className
         setShiftDuration(`${h}:${m}:${s}`);
         setProgress(Math.min(100, (workedSeconds / STANDARD_SHIFT_SECONDS) * 100));
 
-        // Calculate Countdown to Shift End (e.g. 5 PM)
         if (systemConfig?.work_hours?.end) {
             const [endH, endM] = systemConfig.work_hours.end.split(':').map(Number);
             const shiftEndTime = new Date(now);
@@ -127,7 +125,7 @@ export function ClockControl({ userProfile, permissions, systemConfig, className
     setIsSubmitting(true);
     try {
       await attendanceService.clockIn(firestore, userProfile, location, today);
-      toast({ title: 'Shift Started', description: 'Your session has been initiated.' });
+      toast({ title: 'Shift Started' });
     } catch (error: any) { toast({ variant: "destructive", title: "Error", description: error.message }); }
     finally { setIsSubmitting(false); }
   };
@@ -137,7 +135,6 @@ export function ClockControl({ userProfile, permissions, systemConfig, className
       setIsSubmitting(true);
       try {
           await attendanceService.toggleBreak(firestore, attendanceRecord);
-          toast({ title: isOnBreak ? 'Break Ended' : 'Break Started', description: isOnBreak ? 'Effective timer resumed.' : 'Shift duration suspended.' });
       } catch (e: any) { toast({ variant: 'destructive', title: 'Error', description: e.message }); }
       finally { setIsSubmitting(false); }
   }
@@ -147,93 +144,73 @@ export function ClockControl({ userProfile, permissions, systemConfig, className
      setIsSubmitting(true);
      try {
        await attendanceService.clockOut(firestore, userProfile, attendanceRecord);
-       toast({ title: 'Shift Ended', description: 'Your telemetry has been recorded.' });
+       toast({ title: 'Shift Ended' });
      } catch (e: any) { toast({ variant: 'destructive', title: 'Error', description: e.message }); }
      finally { setIsSubmitting(false); }
   };
 
-  if (isLoading) return <div className="card-bg rounded-2xl h-80 flex items-center justify-center"><Loader2 className="animate-spin" /></div>;
+  if (isLoading) return <div className="card-bg rounded-2xl h-64 flex items-center justify-center"><Loader2 className="animate-spin" /></div>;
 
   return (
-    <section className={cn("card-bg rounded-2xl p-8 flex flex-col items-center justify-center text-center shadow-lg relative overflow-hidden", className)}>
+    <section className={cn("card-bg rounded-2xl p-6 flex flex-col items-center justify-center text-center shadow-lg relative overflow-hidden h-full", className)}>
       {isOnBreak && <div className="absolute top-0 left-0 w-full h-1 bg-amber-500 animate-pulse" />}
-      <div className="mb-2 flex items-center gap-2 text-muted-foreground uppercase tracking-widest text-[0.625rem] font-bold">
-        <Clock className="w-3 h-3" />
-        {isClockedIn ? (isOnBreak ? 'Rest Cycle Active' : 'Operational Status') : 'Ready for Deployment'}
+      <div className="mb-4 flex items-center gap-2 text-muted-foreground uppercase tracking-[0.2em] text-[8px] font-black">
+        <Clock className="w-2.5 h-2.5" />
+        {isClockedIn ? (isOnBreak ? 'Rest Cycle' : 'Deployment Status') : 'Ready for Duty'}
       </div>
       
-      <div className="flex flex-col items-center gap-4 mb-4">
-          <div className="flex flex-col items-center">
-            <h3 className={cn("text-5xl font-bold font-headline tracking-tighter transition-all", isOnBreak && "text-amber-500 opacity-50")}>
-                {isClockedIn ? (isOnBreak ? 'REST' : shiftDuration) : '00:00:00'}
-            </h3>
-            {isClockedIn && !isOnBreak && (
-                <span className="text-[10px] font-black uppercase tracking-widest text-primary opacity-60 mt-1">Effective Duty Time</span>
-            )}
-          </div>
-
+      <div className="flex flex-col items-center gap-2 mb-6">
+          <h3 className={cn("text-4xl font-black font-mono tracking-tighter transition-all", isOnBreak && "text-amber-500 opacity-50")}>
+              {isClockedIn ? (isOnBreak ? 'REST' : shiftDuration) : '00:00:00'}
+          </h3>
           {isClockedIn && !isOnBreak && (
-              <div className="flex flex-col items-center py-2 px-4 rounded-2xl bg-secondary/10 border border-white/5 animate-in fade-in zoom-in-95 duration-500">
-                  <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-amber-500">
-                      <Hourglass className="w-3 h-3" />
-                      Shift Countdown
-                  </div>
-                  <p className="text-2xl font-black font-mono tracking-tight mt-1">{timeRemaining}</p>
-                  <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-tighter">Until {systemConfig?.work_hours?.end || '00:00'} Clearance</p>
+              <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-secondary/10 border border-white/5 animate-in fade-in">
+                  <Hourglass className="w-2.5 h-2.5 text-amber-500" />
+                  <span className="text-[9px] font-black font-mono text-amber-500">T-MINUS {timeRemaining}</span>
               </div>
           )}
       </div>
 
       {isClockedIn && (
-          <div className="w-full max-w-[240px] mb-8 space-y-2">
-             <div className="flex justify-between text-[0.625rem] font-bold text-muted-foreground uppercase tracking-widest">
-                 <span>Duty Progress</span>
+          <div className="w-full max-w-[200px] mb-6 space-y-1.5">
+             <div className="flex justify-between text-[7px] font-black text-muted-foreground uppercase tracking-widest">
+                 <span>Duty Load</span>
                  <span>{Math.round(progress)}%</span>
              </div>
-             <Progress value={progress} className="h-1.5" indicatorClassName={cn(progress >= 100 ? "bg-emerald-500" : "bg-primary")} />
-             {isOnBreak && <p className="text-[9px] font-black uppercase text-amber-600 tracking-tighter">Timer suspended for break</p>}
+             <Progress value={progress} className="h-1" indicatorClassName={cn(progress >= 100 ? "bg-emerald-500" : "bg-primary")} />
           </div>
       )}
 
-      <div className={cn("w-full space-y-4 mb-8", !isClockedIn && "mt-4")}>
+      <div className={cn("w-full space-y-3 mb-4", !isClockedIn && "mt-2")}>
         {isClockedIn ? (
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-3">
                 <Button 
                     variant={isOnBreak ? 'default' : 'outline'} 
-                    className={cn("py-8 rounded-xl text-lg font-bold uppercase transition-all", isOnBreak ? "bg-amber-600 hover:bg-amber-700" : "border-amber-500/50 text-amber-500 hover:bg-amber-500/5")} 
+                    className={cn("h-14 rounded-xl text-xs font-black uppercase transition-all", isOnBreak ? "bg-amber-600 hover:bg-amber-700" : "border-amber-500/50 text-amber-500 hover:bg-amber-500/5")} 
                     onClick={handleToggleBreak} 
                     disabled={isSubmitting}
                 >
-                    {isSubmitting ? <Loader2 className="animate-spin" /> : (isOnBreak ? <><Play className="mr-2 h-6 w-6" /> Resume</> : <><Coffee className="mr-2 h-6 w-6" /> Break</>)}
+                    {isSubmitting ? <Loader2 className="animate-spin" /> : (isOnBreak ? <><Play className="mr-2 h-4 w-4" /> Resume</> : <><Coffee className="mr-2 h-4 w-4" /> Break</>)}
                 </Button>
-                <Button className="py-8 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-lg font-bold uppercase shadow-lg shadow-rose-900/20" onClick={handleClockOut} disabled={isSubmitting}>
-                    {isSubmitting ? <Loader2 className="animate-spin" /> : <><LogOut className="mr-2 h-6 w-6" /> End</>}
+                <Button className="h-14 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-black uppercase" onClick={handleClockOut} disabled={isSubmitting}>
+                    {isSubmitting ? <Loader2 className="animate-spin" /> : <><LogOut className="mr-2 h-4 w-4" /> End</>}
                 </Button>
             </div>
         ) : (
-            <Button className="w-full py-8 bg-primary hover:bg-primary/90 text-white rounded-xl text-2xl font-bold uppercase shadow-xl shadow-primary/20 interactive-element" onClick={handleClockIn} disabled={isSubmitting}>
+            <Button className="w-full h-16 bg-primary hover:bg-primary/90 text-white rounded-xl text-lg font-black uppercase shadow-xl shadow-primary/20 interactive-element" onClick={handleClockIn} disabled={isSubmitting}>
                 {isSubmitting ? <Loader2 className="animate-spin" /> : 'Start Shift'}
             </Button>
         )}
       </div>
 
-      <div className="flex flex-col items-center gap-4 w-full pt-4 border-t border-white/5">
-        <div className="flex items-center justify-center space-x-8">
-            <div onClick={() => !isClockedIn && setLocation('OFFICE')} className={cn("flex flex-col items-center gap-2 cursor-pointer transition-all", location === 'OFFICE' ? "text-primary scale-110" : "text-gray-500 opacity-50 hover:opacity-100")}>
-                <Building className="w-6 h-6" /><span className="text-[0.625rem] font-bold uppercase tracking-widest">Office</span>
-            </div>
-            <div className="h-8 w-px bg-white/10" />
-            <div onClick={() => !isClockedIn && setLocation('REMOTE')} className={cn("flex flex-col items-center gap-2 cursor-pointer transition-all", location === 'REMOTE' ? "text-primary scale-110" : "text-gray-500 opacity-50 hover:opacity-100")}>
-                <Briefcase className="w-6 h-6" /><span className="text-[0.625rem] font-bold uppercase tracking-widest">Remote</span>
-            </div>
-        </div>
-        
-        {systemConfig?.attendance_strict && location === 'OFFICE' && (
-            <div className={cn("flex items-center gap-2 px-3 py-1.5 rounded-full text-[0.625rem] font-bold uppercase tracking-tighter", distanceFromOffice === null ? "bg-secondary" : distanceFromOffice <= 200 ? "bg-emerald-500/10 text-emerald-500" : "bg-rose-500/10 text-rose-500")}>
-                {distanceFromOffice === null ? <Loader2 className="w-3 h-3 animate-spin" /> : distanceFromOffice <= 200 ? <MapPin className="w-3 h-3" /> : <AlertTriangle className="w-3 h-3" />}
-                {distanceFromOffice === null ? 'Locating Node...' : distanceFromOffice <= 200 ? 'Within Range' : 'Outside Geofence'}
-            </div>
-        )}
+      <div className="flex items-center justify-center space-x-6 pt-4 border-t border-white/5 w-full">
+          <div onClick={() => !isClockedIn && setLocation('OFFICE')} className={cn("flex items-center gap-1.5 cursor-pointer transition-all", location === 'OFFICE' ? "text-primary" : "text-muted-foreground opacity-50")}>
+              <Building className="w-3.5 h-3.5" /><span className="text-[8px] font-black uppercase tracking-widest">Office</span>
+          </div>
+          <div className="h-4 w-px bg-white/10" />
+          <div onClick={() => !isClockedIn && setLocation('REMOTE')} className={cn("flex items-center gap-1.5 cursor-pointer transition-all", location === 'REMOTE' ? "text-primary" : "text-muted-foreground opacity-50")}>
+              <Briefcase className="w-3.5 h-3.5" /><span className="text-[8px] font-black uppercase tracking-widest">Remote</span>
+          </div>
       </div>
     </section>
   );

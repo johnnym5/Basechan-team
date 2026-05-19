@@ -78,7 +78,7 @@ export default function DashboardPage() {
     }
 
     return (
-        <div className="space-y-6 md:space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-1000">
+        <div className="space-y-4 md:space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-1000">
              {/* Mobile-only Greeting */}
              <div className="md:hidden space-y-1 px-1">
                  <h1 className="text-4xl font-black font-headline tracking-tighter">Good {greeting},</h1>
@@ -86,22 +86,22 @@ export default function DashboardPage() {
              </div>
 
              {isSuperAdmin && !isImpersonating && (
-                <Card className="apple-glass border-primary/20 bg-primary/5 rounded-[2rem] overflow-hidden">
-                    <CardHeader className="flex-row items-center justify-between py-4">
-                        <CardTitle className="text-sm font-black uppercase tracking-widest flex items-center gap-2">
-                            <Shield className="h-4 w-4 text-primary" /> Master Console
+                <Card className="apple-glass border-primary/20 bg-primary/5 rounded-[1.5rem] overflow-hidden">
+                    <CardHeader className="flex-row items-center justify-between py-2 px-6">
+                        <CardTitle className="text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
+                            <Shield className="h-3 w-3 text-primary" /> Master Console
                         </CardTitle>
-                        <Button size="sm" onClick={() => uiEmitter.emit('open-superadmin-dialog')} className="rounded-full h-8 px-4 text-[10px] font-black uppercase">Launch</Button>
+                        <Button size="sm" onClick={() => uiEmitter.emit('open-superadmin-dialog')} className="rounded-full h-6 px-3 text-[8px] font-black uppercase">Launch</Button>
                     </CardHeader>
                 </Card>
             )}
 
-            <div className="grid grid-cols-12 gap-4 md:gap-8">
-                <section className="col-span-12 lg:col-span-5 xl:col-span-4 interactive-element">
+            <div className="grid grid-cols-12 gap-4 md:gap-6">
+                <section className="col-span-12 lg:col-span-5 xl:col-span-4 interactive-element h-fit">
                     <ClockControl userProfile={userProfile || null} permissions={permissions} systemConfig={systemConfig} />
                 </section>
 
-                <section className="col-span-12 lg:col-span-7 xl:col-span-8 interactive-element">
+                <section className="col-span-12 lg:col-span-7 xl:col-span-8 interactive-element h-fit">
                     <PerformanceCard userProfile={userProfile || null} />
                 </section>
 
@@ -110,7 +110,7 @@ export default function DashboardPage() {
                 </section>
 
                 <div className="col-span-12 lg:col-span-4 xl:col-span-3">
-                    <div className="flex flex-col gap-4 md:gap-8">
+                    <div className="flex flex-col gap-4 md:gap-6">
                         <DashboardQuickActions />
                         <DashboardLiveDisplays userProfile={userProfile || null} />
                         <DashboardRecentReports />

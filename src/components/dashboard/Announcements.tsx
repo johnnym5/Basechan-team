@@ -24,7 +24,7 @@ export function Announcements() {
             collection(firestore, 'announcements'),
             where('orgId', '==', userProfile.orgId),
             orderBy('createdAt', 'desc'),
-            limit(5)
+            limit(3)
         );
     }, [firestore, userProfile, authUser]);
 
@@ -49,38 +49,32 @@ export function Announcements() {
 
     return (
         <>
-            <section className="card-bg rounded-2xl p-6 shadow-lg animate-slide-up-fade" style={{ animationDelay: '300ms' }}>
-                <h3 className="text-lg font-bold font-headline tracking-tight mb-6">Announcements</h3>
-                <div className="space-y-6">
+            <section className="card-bg rounded-2xl p-5 shadow-lg animate-slide-up-fade">
+                <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-4">Latest Broadcasts</h3>
+                <div className="space-y-4">
                     {isLoading ? (
-                        Array.from({length: 2}).map((_, i) => <Skeleton key={i} className="h-20 w-full rounded-lg" />)
+                        Array.from({length: 2}).map((_, i) => <Skeleton key={i} className="h-12 w-full rounded-lg" />)
                     ) : sortedAnnouncements.map((ann, idx) => (
                         <div 
                             key={ann.id} 
-                            className="pb-6 border-b last:border-0 last:pb-0 cursor-pointer group interactive-element"
+                            className="pb-4 border-b border-white/5 last:border-0 last:pb-0 cursor-pointer group"
                             onClick={() => handleViewAnnouncement(ann)}
                             style={{ animationDelay: `${350 + (idx * 50)}ms` }}
                         >
-                            <span className="text-[0.625rem] text-primary font-bold uppercase tracking-widest mb-1 block group-hover:text-blue-400 transition-colors">
-                                {ann.isPinned ? '📌 Pinned Update' : 'Recent Update'}
-                            </span>
-                            <h4 className="text-sm font-bold mb-1 text-foreground group-hover:text-primary transition-colors">{ann.title}</h4>
-                            <p className="text-xs text-muted-foreground leading-relaxed mb-2 line-clamp-2">{ann.content}</p>
+                            <div className="flex items-center gap-2 mb-1">
+                                {ann.isPinned && <span className="text-[7px] font-black bg-primary/20 text-primary px-1 rounded uppercase tracking-tighter">PINNED</span>}
+                                <h4 className="text-[11px] font-bold text-foreground group-hover:text-primary transition-colors truncate">{ann.title}</h4>
+                            </div>
+                            <p className="text-[10px] text-muted-foreground leading-tight line-clamp-1 mb-1.5">{ann.content}</p>
                             <div className="flex items-center justify-between">
-                                <span className="text-[0.625rem] text-muted-foreground uppercase tracking-widest font-bold">
+                                <span className="text-[7px] font-black text-muted-foreground uppercase tracking-widest">
                                     {formatDistanceToNow(new Date(ann.createdAt), { addSuffix: true })}
                                 </span>
-                                {isAdmin && (
-                                    <span className="text-[0.625rem] text-muted-foreground flex items-center gap-1 bg-primary/5 px-1.5 py-0.5 rounded font-bold">
-                                        <span className="material-symbols-outlined text-[0.75rem]">visibility</span>
-                                        {ann.viewedBy?.length || 0}
-                                    </span>
-                                )}
                             </div>
                         </div>
                     ))}
                     {!isLoading && sortedAnnouncements.length === 0 && (
-                        <p className="text-center text-xs text-muted-foreground py-4 italic">No active broadcasts.</p>
+                        <p className="text-center text-[8px] text-muted-foreground py-2 uppercase font-black tracking-widest opacity-30">Zero active signals</p>
                     )}
                 </div>
             </section>

@@ -63,56 +63,56 @@ export function PerformanceCard({ userProfile }: PerformanceCardProps) {
     }, [allTasks, dailyReports, orgUsers]);
 
     return (
-        <section className="card-bg rounded-2xl p-4 md:p-6 shadow-lg h-full flex flex-col animate-slide-up-fade">
-            <h3 className="text-base md:text-lg font-semibold mb-4 md:mb-6">Mission & Reporting KPIs</h3>
-            <div className="flex flex-col items-center flex-1 justify-center py-4 md:py-0">
+        <section className="card-bg rounded-2xl p-4 md:p-5 shadow-lg h-full flex flex-col animate-slide-up-fade">
+            <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-4">Tactical Intelligence KPI</h3>
+            <div className="flex flex-col items-center flex-1 justify-center py-2">
                 <div 
-                    className="gauge-container mb-4 scale-[0.85] sm:scale-100 md:scale-125 cursor-pointer hover:scale-[1.3] transition-transform duration-300"
+                    className="gauge-container mb-2 scale-[0.75] sm:scale-90 md:scale-100 cursor-pointer hover:scale-[1.1] transition-transform duration-300"
                     onClick={() => uiEmitter.emit('open-reports-dialog', { tab: 'analytics' })}
                 >
                     <div className="gauge-track"></div>
                     <div className="gauge-fill" style={{ transform: `rotate(${45 + (stats.success * 1.8)}deg)` }}></div>
                     <div className="absolute inset-0 flex flex-col items-center justify-center pt-8">
-                        <span className="text-2xl md:text-4xl font-bold">{stats.success}%</span>
-                        <span className="text-[0.5rem] md:text-[0.625rem] uppercase tracking-widest text-gray-400">Team Success</span>
+                        <span className="text-xl md:text-2xl font-black font-mono">{stats.success}%</span>
+                        <span className="text-[8px] uppercase tracking-widest text-muted-foreground">Team Success</span>
                     </div>
                 </div>
                 
-                <div className="grid grid-cols-2 gap-x-4 md:gap-x-12 gap-y-4 md:gap-y-6 w-full mt-6 md:mt-8">
+                <div className="grid grid-cols-4 gap-2 w-full mt-4">
                     <div 
-                        className="flex flex-col cursor-pointer p-2 rounded-lg hover:bg-white/5 transition-colors group"
+                        className="flex flex-col items-center cursor-pointer p-2 rounded-xl hover:bg-white/5 transition-colors group"
                         onClick={() => uiEmitter.emit('open-reports-dialog', { tab: 'analytics' })}
                     >
-                        <span className="text-lg md:text-xl font-bold group-hover:text-primary transition-colors">{stats.success}%</span>
-                        <span className="text-[10px] md:text-xs text-muted-foreground uppercase tracking-wider">Success Rate</span>
+                        <span className="text-sm font-black font-mono group-hover:text-primary transition-colors">{stats.success}%</span>
+                        <span className="text-[7px] text-muted-foreground uppercase tracking-tight font-bold">Success</span>
                     </div>
                     <div 
-                        className="flex flex-col cursor-pointer p-2 rounded-lg hover:bg-white/5 transition-colors group"
+                        className="flex flex-col items-center cursor-pointer p-2 rounded-xl hover:bg-white/5 transition-colors group"
                         onClick={() => uiEmitter.emit('open-attendance-dialog')}
                     >
-                        <span className="text-lg md:text-xl font-bold group-hover:text-primary transition-colors">0%</span>
-                        <span className="text-[10px] md:text-xs text-muted-foreground uppercase tracking-wider">Punctuality</span>
+                        <span className="text-sm font-black font-mono group-hover:text-primary transition-colors">0%</span>
+                        <span className="text-[7px] text-muted-foreground uppercase tracking-tight font-bold">Time</span>
                     </div>
                     <div 
-                        className="flex flex-col cursor-pointer p-2 rounded-lg hover:bg-white/5 transition-colors group"
+                        className="flex flex-col items-center cursor-pointer p-2 rounded-xl hover:bg-white/5 transition-colors group"
                         onClick={() => uiEmitter.emit('open-tasks-dialog')}
                     >
-                        <span className="text-lg md:text-xl font-bold group-hover:text-primary transition-colors">{stats.management}%</span>
-                        <span className="text-[10px] md:text-xs text-muted-foreground uppercase tracking-wider">Management</span>
+                        <span className="text-sm font-black font-mono group-hover:text-primary transition-colors">{stats.management}%</span>
+                        <span className="text-[7px] text-muted-foreground uppercase tracking-tight font-bold">Ops</span>
                     </div>
                     <div 
-                        className="flex flex-col cursor-pointer p-2 rounded-lg hover:bg-white/5 transition-colors group"
+                        className="flex flex-col items-center cursor-pointer p-2 rounded-xl hover:bg-white/5 transition-colors group"
                         onClick={() => uiEmitter.emit('open-reports-dialog', { tab: 'team-reports' })}
                     >
-                        <span className="text-lg md:text-xl font-bold group-hover:text-primary transition-colors">{stats.reporting}%</span>
-                        <span className="text-[10px] md:text-xs text-muted-foreground uppercase tracking-wider">Reporting</span>
+                        <span className="text-sm font-black font-mono group-hover:text-primary transition-colors">{stats.reporting}%</span>
+                        <span className="text-[7px] text-muted-foreground uppercase tracking-tight font-bold">Report</span>
                     </div>
                 </div>
             </div>
             {systemConfig?.reporting_schedule?.required && (
-                <div className="mt-4 md:mt-6 pt-4 border-t border-white/5 flex items-center justify-between">
-                    <span className="text-[9px] md:text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Reporting Deadline</span>
-                    <span className="text-[10px] md:text-xs font-bold text-amber-500">{systemConfig.reporting_schedule.deadline} TODAY</span>
+                <div className="mt-2 pt-2 border-t border-white/5 flex items-center justify-between">
+                    <span className="text-[8px] font-black uppercase tracking-widest text-muted-foreground">Reporting Window</span>
+                    <span className="text-[9px] font-black text-amber-500">{systemConfig.reporting_schedule.deadline} DEADLINE</span>
                 </div>
             )}
         </section>
