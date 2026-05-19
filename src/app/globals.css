@@ -4,7 +4,7 @@
 
 @layer base {
   html {
-    font-size: 14px;
+    font-size: 10.5px; /* Reduced from 14px to achieve 75% tactical scale */
     scroll-behavior: smooth;
     scrollbar-gutter: stable;
   }
@@ -29,7 +29,7 @@
     --border: 240 6% 90%;
     --input: 240 6% 90%;
     --ring: 217 91% 60%;
-    --radius: 1rem; 
+    --radius: 0.75rem; 
     --sidebar-background: 240 5% 96%; 
     --sidebar-foreground: 240 10% 10%;
   }
@@ -69,12 +69,12 @@
     scrollbar-color: hsl(var(--primary)) hsl(var(--secondary) / 0.1);
   }
 
-  ::-webkit-scrollbar { width: 12px; height: 12px; }
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
   ::-webkit-scrollbar-track { background: hsl(var(--secondary) / 0.05); }
   ::-webkit-scrollbar-thumb {
     background-color: hsl(var(--primary));
-    border-radius: 6px;
-    border: 3px solid hsl(var(--background));
+    border-radius: 5px;
+    border: 2.5px solid hsl(var(--background));
     background-clip: padding-box;
   }
   ::-webkit-scrollbar-thumb:hover {
@@ -84,20 +84,20 @@
 
 @layer utilities {
     .apple-glass { 
-      @apply bg-card/40 backdrop-blur-3xl border border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.1)]; 
+      @apply bg-card/40 backdrop-blur-3xl border border-white/10 shadow-[0_4px_16px_0_rgba(0,0,0,0.1)]; 
     }
     .apple-glass-darker { 
-      @apply bg-background/80 backdrop-blur-[40px] border border-white/5 shadow-[0_12px_64px_0_rgba(0,0,0,0.3)]; 
+      @apply bg-background/80 backdrop-blur-[40px] border border-white/5 shadow-[0_8px_32px_0_rgba(0,0,0,0.3)]; 
     }
     .min-h-screen-safe { min-height: 100dvh; }
-    .gauge-container { position: relative; width: 10rem; height: 5rem; overflow: hidden; }
-    .gauge-track { width: 10rem; height: 10rem; border: 1.2rem solid hsl(var(--muted) / 0.3); border-radius: 50%; }
+    .gauge-container { position: relative; width: 7.5rem; height: 3.75rem; overflow: hidden; }
+    .gauge-track { width: 7.5rem; height: 7.5rem; border: 0.9rem solid hsl(var(--muted) / 0.3); border-radius: 50%; }
     .gauge-fill {
-      position: absolute; top: 0; left: 0; width: 10rem; height: 10rem;
-      border: 1.2rem solid hsl(var(--primary)); border-radius: 50%;
+      position: absolute; top: 0; left: 0; width: 7.5rem; height: 7.5rem;
+      border: 0.9rem solid hsl(var(--primary)); border-radius: 50%;
       border-bottom-color: transparent; border-left-color: transparent;
       transform: rotate(45deg); transition: transform 1s cubic-bezier(0.16, 1, 0.3, 1);
     }
     .custom-scrollbar { scrollbar-gutter: stable; }
-    .interactive-element { @apply transition-all duration-300 ease-apple-ease hover:-translate-y-0.5 hover:shadow-xl active:scale-95; }
+    .interactive-element { @apply transition-all duration-300 ease-apple-ease hover:-translate-y-0.5 hover:shadow-lg active:scale-95; }
 }
