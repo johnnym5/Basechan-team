@@ -196,6 +196,7 @@ export function GlobalDialogs({ userProfile, permissions, onAnyDialogOpenChange 
               if (!isOpen) setInitialWorkbookPayload(undefined);
           }}
           initialPayload={initialWorkbookPayload}
+          modal={false}
       />
       <RequisitionsDialog
           open={isRequisitionsOpen}
@@ -204,6 +205,7 @@ export function GlobalDialogs({ userProfile, permissions, onAnyDialogOpenChange 
               if (!isOpen) setInitialReqPayload(undefined);
           }}
           initialPayload={initialReqPayload}
+          modal={false}
       />
       <TasksDialog
           open={isTasksOpen}
@@ -214,9 +216,10 @@ export function GlobalDialogs({ userProfile, permissions, onAnyDialogOpenChange 
           initialPayload={initialTaskPayload}
           userProfile={userProfile}
           permissions={permissions}
+          modal={false}
       />
-      <AttendanceDialog open={isAttendanceOpen} onOpenChange={setIsAttendanceOpen} />
-      <LeaveDialog open={isLeaveOpen} onOpenChange={setIsLeaveOpen} />
+      <AttendanceDialog open={isAttendanceOpen} onOpenChange={setIsAttendanceOpen} modal={false} />
+      <LeaveDialog open={isLeaveOpen} onOpenChange={setIsLeaveOpen} modal={false} />
       <ReportsDialog
           open={isReportsOpen}
           onOpenChange={(isOpen) => {
@@ -224,9 +227,10 @@ export function GlobalDialogs({ userProfile, permissions, onAnyDialogOpenChange 
               if (!isOpen) setInitialReportsPayload(undefined);
           }}
           initialPayload={initialReportsPayload}
+          modal={false}
       />
-      <AccountingDialog open={isAccountingOpen} onOpenChange={setIsAccountingOpen} />
-      <LibraryDialog open={isLibraryOpen} onOpenChange={setIsLibraryOpen} />
+      <AccountingDialog open={isAccountingOpen} onOpenChange={setIsAccountingOpen} modal={false} />
+      <LibraryDialog open={isLibraryOpen} onOpenChange={setIsLibraryOpen} modal={false} />
       <DisplaysDialog 
         open={isDisplaysOpen} 
         onOpenChange={(isOpen) => {
@@ -234,8 +238,9 @@ export function GlobalDialogs({ userProfile, permissions, onAnyDialogOpenChange 
             if (!isOpen) setInitialDisplaysPayload(undefined);
         }} 
         initialPayload={initialDisplaysPayload}
+        modal={false}
       />
-      <SuperAdminDialog open={isSuperAdminOpen} onOpenChange={setIsSuperAdminOpen} />
+      <SuperAdminDialog open={isSuperAdminOpen} onOpenChange={setIsSuperAdminOpen} modal={false} />
       
       {isProfileOpen && userProfile && <ProfileDialog open={isProfileOpen} onOpenChange={setIsProfileOpen} userProfile={userProfile} />}
       {isSettingsOpen && userProfile && <SettingsDialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen} userProfile={userProfile} />}

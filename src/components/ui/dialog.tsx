@@ -66,7 +66,7 @@ const DialogContent = React.forwardRef<
   const isLeftPanel = finalPosition === "left";
   const isSidePanel = finalPosition === "left" || finalPosition === "right";
 
-  const contentOffsetClass = isLeftPanel ? "pl-[5.5rem] lg:pl-[6.5rem]" : "";
+  const contentOffsetClass = isLeftPanel ? "pl-[5.5rem] lg:pl-[7.5rem]" : "";
 
   return (
     <DialogPortal>

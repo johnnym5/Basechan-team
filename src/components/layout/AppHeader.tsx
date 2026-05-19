@@ -67,7 +67,7 @@ export default function AppHeader({
   , [firestore, user]);
   
   const announcementsQuery = useMemoFirebase(() => 
-    firestore && userProfile ? query(collection(firestore, 'announcements'), where('orgId', '==', userProfile.orgId), orderBy('createdAt', 'desc'), limit(3)) : null
+    firestore && userProfile ? query(collection(firestore, 'announcements'), where('orgId', '==', userProfile.orgId), orderBy('createdAt', 'desc'), limit(5)) : null
   , [firestore, userProfile]);
 
   const { data: notifications } = useCollection<Notification>(notificationsQuery);
@@ -75,6 +75,7 @@ export default function AppHeader({
 
   const unreadNotifications = notifications?.filter(n => !n.isRead) || [];
   const unreadCount = unreadNotifications.length;
+  const broadcastCount = announcements?.length || 0;
 
   useEffect(() => {
     if (unreadCount > prevUnreadCount.current) {
@@ -93,18 +94,14 @@ export default function AppHeader({
     router.push(n.href);
   };
 
-  const handleOpenDebrief = () => {
+  const handleOpenIntelligence = () => {
     uiEmitter.emit('open-assistant-dialog');
-  };
-
-  const handleOpenAnnouncements = () => {
-    window.location.href = '/';
   };
 
   if (isVertical) {
       return (
           <div className="flex flex-col items-center gap-6 py-6 border-b border-white/5">
-              {/* Dynamic Status Greeting replaces Static Logo */}
+              {/* Dynamic Status Greeting */}
               <div className="w-full px-4 overflow-hidden min-h-[3rem] flex flex-col justify-center">
                   <p className="text-[9px] font-black uppercase tracking-[0.2em] text-primary opacity-50 mb-0.5 truncate">
                       Command Pillar
@@ -118,30 +115,20 @@ export default function AppHeader({
                   <UserNav userProfile={userProfile} />
                   <ThemeToggle />
                   
+                  {/* MERGED: Intelligence Button (Debrief + Broadcast Indicator) */}
                   <button 
-                    onClick={handleOpenDebrief}
+                    onClick={handleOpenIntelligence}
                     className="relative text-gray-400 hover:text-amber-500 transition-all p-2 rounded-full hover:bg-amber-500/5 group/btn"
-                    title="Mission Debrief"
+                    title="Tactical Intelligence"
                   >
                       <Sparkles className="w-6 h-6" />
-                      <div className="absolute left-full ml-4 px-2 py-1 bg-amber-500 text-white text-[10px] font-black uppercase rounded opacity-0 group-hover/btn:opacity-100 transition-opacity whitespace-nowrap z-50">
-                          Briefing
-                      </div>
-                  </button>
-
-                  <button 
-                    onClick={handleOpenAnnouncements}
-                    className="relative text-gray-400 hover:text-primary transition-all p-2 rounded-full hover:bg-primary/5 group/btn"
-                    title="Organizational Broadcasts"
-                  >
-                      <Megaphone className="w-6 h-6" />
-                      {announcements && announcements.length > 0 && (
-                          <span className="absolute top-1 right-1 flex h-3 w-3 items-center justify-center rounded-full bg-primary text-[8px] font-black text-white ring-2 ring-background">
-                              {announcements.length}
+                      {broadcastCount > 0 && (
+                          <span className="absolute top-1 right-1 flex h-3 w-3 items-center justify-center rounded-full bg-primary text-[8px] font-black text-white ring-2 ring-background animate-pulse">
+                              {broadcastCount}
                           </span>
                       )}
-                       <div className="absolute left-full ml-4 px-2 py-1 bg-primary text-white text-[10px] font-black uppercase rounded opacity-0 group-hover/btn:opacity-100 transition-opacity whitespace-nowrap z-50">
-                          Broadcasts
+                      <div className="absolute left-full ml-4 px-2 py-1 bg-amber-500 text-white text-[10px] font-black uppercase rounded opacity-0 group-hover/btn:opacity-100 transition-opacity whitespace-nowrap z-50 shadow-xl">
+                          Intelligence
                       </div>
                   </button>
 
