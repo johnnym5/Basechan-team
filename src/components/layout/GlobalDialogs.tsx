@@ -242,18 +242,33 @@ export function GlobalDialogs({ userProfile, permissions, onAnyDialogOpenChange 
       />
       <SuperAdminDialog open={isSuperAdminOpen} onOpenChange={setIsSuperAdminOpen} modal={false} />
       
-      {isProfileOpen && userProfile && <ProfileDialog open={isProfileOpen} onOpenChange={setIsProfileOpen} userProfile={userProfile} />}
-      {isSettingsOpen && userProfile && <SettingsDialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen} userProfile={userProfile} />}
+      {isProfileOpen && userProfile && (
+        <ProfileDialog 
+          open={isProfileOpen} 
+          onOpenChange={setIsProfileOpen} 
+          userProfile={userProfile} 
+          modal={false}
+        />
+      )}
+      {isSettingsOpen && userProfile && (
+        <SettingsDialog 
+          open={isSettingsOpen} 
+          onOpenChange={setIsSettingsOpen} 
+          userProfile={userProfile} 
+          modal={false}
+        />
+      )}
       {isChatOpen && userProfile && (
           <ChatDialog
-          open={isChatOpen}
-          onOpenChange={(isOpen) => {
-              setIsChatOpen(isOpen);
-              if (!isOpen) setInitialChatPayload(undefined);
-          }}
-          currentUserProfile={userProfile}
-          permissions={permissions}
-          initialPayload={initialChatPayload}
+            open={isChatOpen}
+            onOpenChange={(isOpen) => {
+                setIsChatOpen(isOpen);
+                if (!isOpen) setInitialChatPayload(undefined);
+            }}
+            currentUserProfile={userProfile}
+            permissions={permissions}
+            initialPayload={initialChatPayload}
+            modal={false}
           />
       )}
 
