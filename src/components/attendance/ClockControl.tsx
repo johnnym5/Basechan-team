@@ -36,13 +36,17 @@ export function ClockControl({ userProfile, permissions, systemConfig, className
   useEffect(() => { setToday(format(new Date(), 'yyyy-MM-dd')); }, []);
 
   useEffect(() => {
-    if (systemConfig?.attendance_strict && systemConfig.office_coordinates && location === 'OFFICE') {
+    // FORCE GEOFENCE LOGIC: Mandatory if coordinates exist, unless user has bypass permission
+    const isExempt = permissions.canBypassGeofence;
+    const shouldCheckGeofence = systemConfig?.office_coordinates && location === 'OFFICE' && (systemConfig.attendance_strict || !isExempt);
+    
+    if (shouldCheckGeofence && 'geolocation' in navigator) {
         navigator.geolocation.getCurrentPosition((pos) => {
             const dist = getDistanceInMeters(pos.coords.latitude, pos.coords.longitude, systemConfig.office_coordinates!.lat, systemConfig.office_coordinates!.lng);
             setDistanceFromOffice(dist);
         }, () => setDistanceFromOffice(null), { timeout: 10000 });
     } else { setDistanceFromOffice(null); }
-  }, [location, systemConfig]);
+  }, [location, systemConfig, permissions.canBypassGeofence]);
 
   const attendanceQuery = useMemoFirebase(() => {
     if (!userProfile || !today || !firestore) return null;
@@ -118,10 +122,20 @@ export function ClockControl({ userProfile, permissions, systemConfig, className
 
   const handleClockIn = async () => {
     if (!userProfile || !firestore) return;
-    if (systemConfig?.attendance_strict && location === 'OFFICE' && distanceFromOffice !== null && distanceFromOffice > 200) {
-        toast({ variant: "destructive", title: "Outside Geofence", description: `You must be within 200m of the office.` });
+
+    // GEOFENCE ENFORCEMENT: Forced for non-admin/non-hr
+    const isExempt = permissions.canBypassGeofence;
+    const isOutOfRange = location === 'OFFICE' && systemConfig?.office_coordinates && distanceFromOffice !== null && distanceFromOffice > 200;
+
+    if (!isExempt && isOutOfRange) {
+        toast({ 
+            variant: "destructive", 
+            title: "Access Denied: Geofence Breach", 
+            description: `Personnel must be within 200m of the office node for on-site clock-in. You are currently ${Math.round(distanceFromOffice!)}m away.` 
+        });
         return;
     }
+
     setIsSubmitting(true);
     try {
       await attendanceService.clockIn(firestore, userProfile, location, today);

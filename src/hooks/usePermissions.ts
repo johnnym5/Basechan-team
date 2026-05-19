@@ -1,4 +1,3 @@
-
 'use client';
 import type { UserProfile, UserRole } from '@/lib/types';
 import { useSuperAdmin } from './useSuperAdmin';
@@ -28,12 +27,14 @@ export interface Permissions {
   canViewFiles: boolean;
   canViewAudit: boolean;
   canManageDisplays: boolean;
+  canBypassGeofence: boolean;
 }
 
 const rolePermissions: Record<UserRole, Partial<Permissions>> = {
   'STAFF': {
       canAccessLibrary: true,
       canViewFiles: true,
+      canBypassGeofence: false,
   },
   'HR_MANAGER': {
     canApproveHR: true,
@@ -43,6 +44,7 @@ const rolePermissions: Record<UserRole, Partial<Permissions>> = {
     canManageLibrary: true,
     canViewFiles: true,
     canViewAudit: true,
+    canBypassGeofence: true,
   },
   'FINANCE_MANAGER': {
     canApproveFinance: true,
@@ -50,6 +52,7 @@ const rolePermissions: Record<UserRole, Partial<Permissions>> = {
     canManageAccounting: true,
     canAccessLibrary: true,
     canViewFiles: true,
+    canBypassGeofence: false,
   },
   'MANAGING_DIRECTOR': {
     canApproveMD: true,
@@ -60,6 +63,7 @@ const rolePermissions: Record<UserRole, Partial<Permissions>> = {
     canViewFiles: true,
     canViewAudit: true,
     canManageDisplays: true,
+    canBypassGeofence: true,
   },
   'ORG_ADMIN': {
     canApproveHR: true,
@@ -75,6 +79,7 @@ const rolePermissions: Record<UserRole, Partial<Permissions>> = {
     canViewFiles: true,
     canViewAudit: true,
     canManageDisplays: true,
+    canBypassGeofence: true,
   },
 };
 
@@ -99,6 +104,7 @@ const defaultPermissions: Permissions = {
   canViewFiles: false,
   canViewAudit: false,
   canManageDisplays: false,
+  canBypassGeofence: false,
 };
 
 export function usePermissions(userProfile: UserProfile | null): Permissions {
@@ -130,6 +136,7 @@ export function usePermissions(userProfile: UserProfile | null): Permissions {
           canViewFiles: true,
           canViewAudit: true,
           canManageDisplays: true,
+          canBypassGeofence: true,
       };
     }
     
@@ -138,7 +145,6 @@ export function usePermissions(userProfile: UserProfile | null): Permissions {
     }
     
     // 2. Position-aware role resolution
-    // Leadership roles are dynamically elevated regardless of database 'role' field
     const derivedRole = getRoleFromPosition(userProfile.position);
     let effectiveRole: UserRole = userProfile.role;
     
