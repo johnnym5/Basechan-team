@@ -41,7 +41,7 @@ export function DashboardRecentChats() {
 
     return (
         <section className="apple-glass rounded-2xl p-6 animate-slide-up-fade interactive-element" style={{ animationDelay: '200ms' }}>
-            <h3 className="text-lg font-bold font-headline tracking-tight mb-6">Recent Transmissions</h3>
+            <h3 className="text-lg font-bold font-headline tracking-tight mb-6">Recent Messages</h3>
             <div className="space-y-6">
                 {isLoading ? (
                     Array.from({length: 3}).map((_, i) => <Skeleton key={i} className="h-12 w-full rounded-lg" />)

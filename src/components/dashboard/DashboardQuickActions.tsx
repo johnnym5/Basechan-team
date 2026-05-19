@@ -26,19 +26,19 @@ export function DashboardQuickActions() {
     }
 
     const actions = [
-        { label: "Staff", icon: UserPlus, action: () => uiEmitter.emit('open-invite-user-dialog'), permission: permissions.canManageStaff },
-        { label: "Task", icon: ListTodo, action: () => uiEmitter.emit('open-assign-task-dialog'), permission: true },
-        { label: "Req", icon: FileText, action: () => uiEmitter.emit('open-new-requisition-dialog'), permission: permissions.canAccessRequisitions },
-        { label: "Leave", icon: CalendarPlus, action: () => uiEmitter.emit('open-request-leave-dialog'), permission: true },
-        { label: "Grid", icon: BookOpenCheck, action: () => uiEmitter.emit('open-new-workbook-dialog'), permission: true },
-        { label: "Chat", icon: MessageSquare, action: () => uiEmitter.emit('open-chat-dialog'), permission: permissions.canAccessChat },
+        { label: "Invite Staff", icon: UserPlus, action: () => uiEmitter.emit('open-invite-user-dialog'), permission: permissions.canManageStaff },
+        { label: "Add Task", icon: ListTodo, action: () => uiEmitter.emit('open-assign-task-dialog'), permission: true },
+        { label: "New Request", icon: FileText, action: () => uiEmitter.emit('open-new-requisition-dialog'), permission: permissions.canAccessRequisitions },
+        { label: "Request Leave", icon: CalendarPlus, action: () => uiEmitter.emit('open-request-leave-dialog'), permission: true },
+        { label: "Workbook", icon: BookOpenCheck, action: () => uiEmitter.emit('open-new-workbook-dialog'), permission: true },
+        { label: "Message", icon: MessageSquare, action: () => uiEmitter.emit('open-chat-dialog'), permission: permissions.canAccessChat },
         { label: "Announce", icon: Megaphone, action: () => uiEmitter.emit('open-new-announcement-dialog'), permission: permissions.canManageAnnouncements },
     ].filter(a => a.permission);
 
     return (
         <Card className="apple-glass border-none shadow-xl overflow-hidden">
             <CardHeader className="py-3 px-5">
-                <CardTitle className="text-[8px] font-black uppercase tracking-[0.25em] text-primary opacity-70">Mission Quick-start</CardTitle>
+                <CardTitle className="text-[8px] font-black uppercase tracking-[0.25em] text-primary opacity-70">Quick Actions</CardTitle>
             </CardHeader>
             <CardContent className="grid grid-cols-2 gap-2 p-4 pt-0">
                 {actions.map(({ label, icon: Icon, action }) => (

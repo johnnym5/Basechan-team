@@ -125,11 +125,11 @@ export function AssignTaskDialog({ open, onOpenChange, initialData, currentUserP
 
         await taskService.createTask(firestore, currentUserProfile, assignedUser, values, attachmentUrl);
         
-        toast({ title: "Task Assigned", description: `${values.title} has been delegated.`});
+        toast({ title: "Task Assigned", description: `"${values.title}" has been assigned successfully.`});
         onOpenChange(false);
         form.reset();
     } catch (error: any) {
-        toast({ variant: "destructive", title: "Assignment Failed", description: error.message });
+        toast({ variant: "destructive", title: "Error", description: error.message });
     } finally {
         setIsLoading(false);
     }
@@ -139,16 +139,16 @@ export function AssignTaskDialog({ open, onOpenChange, initialData, currentUserP
     <ResponsiveDialog 
         open={open} 
         onOpenChange={onOpenChange} 
-        title="Assign New Task" 
-        description="Delegate a new mission to a member of your team."
+        title="New Task Assignment" 
+        description="Assign a new task to a team member."
     >
         <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                 <FormField control={form.control} name="title" render={({ field }) => (
-                    <FormItem><FormLabel>Title</FormLabel><FormControl><Input placeholder="e.g., Finalize Q3 Report" {...field} value={field.value ?? ""} /></FormControl><FormMessage /></FormItem>
+                    <FormItem><FormLabel>Task Title</FormLabel><FormControl><Input placeholder="e.g., Update Monthly Report" {...field} value={field.value ?? ""} /></FormControl><FormMessage /></FormItem>
                 )} />
                 <FormField control={form.control} name="description" render={({ field }) => (
-                    <FormItem><FormLabel>Description (Optional)</FormLabel><FormControl><Textarea placeholder="Add more context..." {...field} value={field.value ?? ""} /></FormControl><FormMessage /></FormItem>
+                    <FormItem><FormLabel>Task Description (Optional)</FormLabel><FormControl><Textarea placeholder="Add some details about this task..." {...field} value={field.value ?? ""} /></FormControl><FormMessage /></FormItem>
                 )} />
                 
                  <div className="grid grid-cols-2 gap-4">
@@ -156,7 +156,7 @@ export function AssignTaskDialog({ open, onOpenChange, initialData, currentUserP
                       <FormField control={form.control} name="assignedTo" render={({ field }) => (
                           <FormItem><FormLabel>Assign To</FormLabel>
                           <Select onValueChange={field.onChange} value={field.value || ""}>
-                              <FormControl><SelectTrigger disabled={areUsersLoading}><SelectValue placeholder="Select Personnel" /></SelectTrigger></FormControl>
+                              <FormControl><SelectTrigger disabled={areUsersLoading}><SelectValue placeholder="Select Staff Member" /></SelectTrigger></FormControl>
                               <SelectContent>{users?.map(user => <SelectItem key={user.id} value={user.id}>{user.fullName}</SelectItem>)}</SelectContent>
                           </Select>
                           <FormMessage /></FormItem>
@@ -207,7 +207,7 @@ export function AssignTaskDialog({ open, onOpenChange, initialData, currentUserP
 
                 <Button type="submit" className="w-full" disabled={isBusy}>
                     {isBusy && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    {permissions.canManageStaff ? 'Assign Mission' : 'Create Task'}
+                    {permissions.canManageStaff ? 'Assign Task' : 'Create Task'}
                 </Button>
             </form>
         </Form>

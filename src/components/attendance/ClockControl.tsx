@@ -36,7 +36,7 @@ export function ClockControl({ userProfile, permissions, systemConfig, className
   useEffect(() => { setToday(format(new Date(), 'yyyy-MM-dd')); }, []);
 
   useEffect(() => {
-    // FORCE GEOFENCE LOGIC: Mandatory if coordinates exist, unless user has bypass permission
+    // Role-based geofence logic
     const isExempt = permissions.canBypassGeofence;
     const shouldCheckGeofence = systemConfig?.office_coordinates && location === 'OFFICE' && (systemConfig.attendance_strict || !isExempt);
     
@@ -123,15 +123,15 @@ export function ClockControl({ userProfile, permissions, systemConfig, className
   const handleClockIn = async () => {
     if (!userProfile || !firestore) return;
 
-    // GEOFENCE ENFORCEMENT: Forced for non-admin/non-hr
+    // Role-based geofence check
     const isExempt = permissions.canBypassGeofence;
     const isOutOfRange = location === 'OFFICE' && systemConfig?.office_coordinates && distanceFromOffice !== null && distanceFromOffice > 200;
 
     if (!isExempt && isOutOfRange) {
         toast({ 
             variant: "destructive", 
-            title: "Access Denied: Geofence Breach", 
-            description: `Personnel must be within 200m of the office node for on-site clock-in. You are currently ${Math.round(distanceFromOffice!)}m away.` 
+            title: "Out of Range", 
+            description: `Please ensure you are at the office before clocking in. You are currently ${Math.round(distanceFromOffice!)}m away.` 
         });
         return;
     }
@@ -166,21 +166,21 @@ export function ClockControl({ userProfile, permissions, systemConfig, className
   if (isLoading) return <div className="card-bg rounded-2xl h-64 flex items-center justify-center"><Loader2 className="animate-spin" /></div>;
 
   return (
-    <section className={cn("card-bg rounded-2xl p-6 flex flex-col items-center justify-center text-center shadow-lg relative overflow-hidden h-full", className)}>
+    <section className={cn("apple-glass rounded-2xl p-6 flex flex-col items-center justify-center text-center shadow-lg relative overflow-hidden h-full", className)}>
       {isOnBreak && <div className="absolute top-0 left-0 w-full h-1 bg-amber-500 animate-pulse" />}
       <div className="mb-4 flex items-center gap-2 text-muted-foreground uppercase tracking-[0.2em] text-[8px] font-black">
         <Clock className="w-2.5 h-2.5" />
-        {isClockedIn ? (isOnBreak ? 'Rest Cycle' : 'Deployment Status') : 'Ready for Duty'}
+        {isClockedIn ? (isOnBreak ? 'On Break' : 'Work Status') : 'Ready to Clock In'}
       </div>
       
       <div className="flex flex-col items-center gap-2 mb-6">
           <h3 className={cn("text-4xl font-black font-mono tracking-tighter transition-all", isOnBreak && "text-amber-500 opacity-50")}>
-              {isClockedIn ? (isOnBreak ? 'REST' : shiftDuration) : '00:00:00'}
+              {isClockedIn ? (isOnBreak ? 'BREAK' : shiftDuration) : '00:00:00'}
           </h3>
           {isClockedIn && !isOnBreak && (
               <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-secondary/10 border border-white/5 animate-in fade-in">
                   <Hourglass className="w-2.5 h-2.5 text-amber-500" />
-                  <span className="text-[9px] font-black font-mono text-amber-500">T-MINUS {timeRemaining}</span>
+                  <span className="text-[9px] font-black font-mono text-amber-500">{timeRemaining} REMAINING</span>
               </div>
           )}
       </div>
@@ -188,7 +188,7 @@ export function ClockControl({ userProfile, permissions, systemConfig, className
       {isClockedIn && (
           <div className="w-full max-w-[200px] mb-6 space-y-1.5">
              <div className="flex justify-between text-[7px] font-black text-muted-foreground uppercase tracking-widest">
-                 <span>Duty Load</span>
+                 <span>Daily Progress</span>
                  <span>{Math.round(progress)}%</span>
              </div>
              <Progress value={progress} className="h-1" indicatorClassName={cn(progress >= 100 ? "bg-emerald-500" : "bg-primary")} />
@@ -207,7 +207,7 @@ export function ClockControl({ userProfile, permissions, systemConfig, className
                     {isSubmitting ? <Loader2 className="animate-spin" /> : (isOnBreak ? <><Play className="mr-2 h-4 w-4" /> Resume</> : <><Coffee className="mr-2 h-4 w-4" /> Break</>)}
                 </Button>
                 <Button className="h-14 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-black uppercase" onClick={handleClockOut} disabled={isSubmitting}>
-                    {isSubmitting ? <Loader2 className="animate-spin" /> : <><LogOut className="mr-2 h-4 w-4" /> End</>}
+                    {isSubmitting ? <Loader2 className="animate-spin" /> : <><LogOut className="mr-2 h-4 w-4" /> Clock Out</>}
                 </Button>
             </div>
         ) : (

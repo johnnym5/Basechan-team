@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -29,10 +28,10 @@ export function PulseCheckDialog({ userProfile }: { userProfile: UserProfile }) 
         setIsSubmitting(true);
         try {
             await pulseService.logPulse(firestore, userProfile, mood);
-            toast({ title: "Feedback Captured", description: "Telemetry recorded for HR well-being analysis." });
+            toast({ title: "Feedback Sent", description: "Your daily check-in has been recorded." });
             setIsOpen(false);
         } catch (e: any) {
-            toast({ variant: 'destructive', title: "Pulse Failed", description: e.message });
+            toast({ variant: 'destructive', title: "Error", description: e.message });
         } finally {
             setIsSubmitting(false);
         }
@@ -46,7 +45,7 @@ export function PulseCheckDialog({ userProfile }: { userProfile: UserProfile }) 
                         <Thermometer className="h-8 w-8 text-primary animate-pulse" />
                     </div>
                     <div>
-                        <DialogTitle className="text-2xl font-black font-headline tracking-tighter">Mission Pulse Check</DialogTitle>
+                        <DialogTitle className="text-2xl font-black font-headline tracking-tighter">Daily Check-in</DialogTitle>
                         <DialogDescription className="text-xs font-bold uppercase tracking-widest mt-2">
                             How was your workload during this shift?
                         </DialogDescription>
@@ -55,9 +54,9 @@ export function PulseCheckDialog({ userProfile }: { userProfile: UserProfile }) 
 
                 <div className="grid grid-cols-1 gap-4 py-8">
                     {[
-                        { mood: 'SMOOTH', label: 'Smooth', icon: Smile, color: 'text-emerald-500 bg-emerald-500/10 hover:bg-emerald-500 hover:text-white', desc: 'Manageable tasks and clear flow.' },
-                        { mood: 'HEAVY', label: 'Heavy', icon: AlertCircle, color: 'text-amber-500 bg-amber-500/10 hover:bg-amber-500 hover:text-white', desc: 'High volume, but keeping pace.' },
-                        { mood: 'OVERWHELMED', label: 'Overwhelmed', icon: Frown, color: 'text-rose-500 bg-rose-500/10 hover:bg-rose-500 hover:text-white', desc: 'Exhausted by mission load or complexity.' },
+                        { mood: 'SMOOTH', label: 'Great', icon: Smile, color: 'text-emerald-500 bg-emerald-500/10 hover:bg-emerald-500 hover:text-white', desc: 'Workload was manageable and smooth.' },
+                        { mood: 'HEAVY', label: 'Busy', icon: AlertCircle, color: 'text-amber-500 bg-amber-500/10 hover:bg-amber-500 hover:text-white', desc: 'High volume, but keeping up.' },
+                        { mood: 'OVERWHELMED', label: 'Overwhelmed', icon: Frown, color: 'text-rose-500 bg-rose-500/10 hover:bg-rose-500 hover:text-white', desc: 'Feeling exhausted or overloaded today.' },
                     ].map((item) => {
                         const Icon = item.icon;
                         return (
@@ -84,7 +83,7 @@ export function PulseCheckDialog({ userProfile }: { userProfile: UserProfile }) 
 
                 {isSubmitting && (
                     <div className="flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest opacity-60">
-                        <Loader2 className="h-3 w-3 animate-spin" /> Transmitting Telemetry...
+                        <Loader2 className="h-3 w-3 animate-spin" /> Saving...
                     </div>
                 )}
             </DialogContent>

@@ -57,9 +57,9 @@ export function TasksPageContent({ initialPayload, currentUserProfile, permissio
               <div className="flex flex-col gap-6">
                 <div className="flex items-start justify-between gap-4 flex-wrap">
                   <div>
-                    <h1 className="text-3xl font-black font-headline tracking-tighter">Mission Manager</h1>
+                    <h1 className="text-3xl font-black font-headline tracking-tighter">Task Manager</h1>
                     <p className="text-muted-foreground uppercase tracking-widest text-[10px] font-bold">
-                      {permissions.canManageStaff ? "Strategic Deployment & Load Monitoring" : "Personal Tactical Objectives"}
+                      {permissions.canManageStaff ? "Manage Team Tasks & Workload" : "View Your Active Tasks"}
                     </p>
                   </div>
                   <div className="flex items-center gap-3">
@@ -69,7 +69,7 @@ export function TasksPageContent({ initialPayload, currentUserProfile, permissio
                       </TabsList>
                       <Button onClick={() => setIsAssignTaskOpen(true)} className="rounded-xl font-bold shadow-lg shadow-primary/20">
                           <PlusCircle className="mr-2 h-4 w-4"/>
-                          Deploy Mission
+                          Add Task
                       </Button>
                   </div>
                 </div>
@@ -78,7 +78,7 @@ export function TasksPageContent({ initialPayload, currentUserProfile, permissio
                     <div className="relative flex-1 w-full">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <Input 
-                            placeholder="Identify mission by title or serial..." 
+                            placeholder="Find task by name or ID..." 
                             className="pl-10 h-11 bg-background/50 border-none rounded-xl text-sm"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
@@ -87,16 +87,16 @@ export function TasksPageContent({ initialPayload, currentUserProfile, permissio
                     <div className="flex items-center gap-3 w-full sm:w-auto">
                         <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-muted-foreground shrink-0">
                             <ListFilter className="h-3 w-3" />
-                            Sort:
+                            Sort By:
                         </div>
                         <Select value={sortBy} onValueChange={setSortBy}>
                             <SelectTrigger className="h-11 w-[180px] bg-background/50 border-none rounded-xl text-xs font-bold uppercase tracking-wider">
-                                <SelectValue placeholder="Ordering Strategy" />
+                                <SelectValue placeholder="Sort order" />
                             </SelectTrigger>
                             <SelectContent className="apple-glass-darker border-none">
-                                <SelectItem value="newest" className="text-xs font-bold uppercase tracking-widest">Newest Logged</SelectItem>
-                                <SelectItem value="priority" className="text-xs font-bold uppercase tracking-widest">Highest Threat</SelectItem>
-                                <SelectItem value="deadline" className="text-xs font-bold uppercase tracking-widest">Nearest Clearance</SelectItem>
+                                <SelectItem value="newest" className="text-xs font-bold uppercase tracking-widest">Newest First</SelectItem>
+                                <SelectItem value="priority" className="text-xs font-bold uppercase tracking-widest">Priority (High to Low)</SelectItem>
+                                <SelectItem value="deadline" className="text-xs font-bold uppercase tracking-widest">Deadline (Soonest)</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>

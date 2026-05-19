@@ -48,15 +48,15 @@ export function DashboardTaskList({ userProfile, permissions }: DashboardTaskLis
 
   return (
     <section className="apple-glass rounded-2xl p-5 h-full animate-slide-up-fade overflow-hidden flex flex-col" style={{ animationDelay: '100ms' }}>
-        <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-4">Active Missions Log</h3>
+        <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-4">Active Tasks</h3>
         <div className="overflow-x-auto flex-1">
             <table className="w-full text-left border-collapse">
                 <thead>
                     <tr className="text-muted-foreground text-[8px] uppercase tracking-[0.2em] border-b border-white/5">
-                        <th className="pb-3 font-black">Prio</th>
-                        <th className="pb-3 font-black">Deployment Name</th>
-                        <th className="pb-3 font-black">Assignee</th>
-                        <th className="pb-3 font-black">Clearance</th>
+                        <th className="pb-3 font-black">Priority</th>
+                        <th className="pb-3 font-black">Task Name</th>
+                        <th className="pb-3 font-black">Assigned To</th>
+                        <th className="pb-3 font-black">Due Date</th>
                     </tr>
                 </thead>
                 <tbody className="text-[11px]">
@@ -77,7 +77,7 @@ export function DashboardTaskList({ userProfile, permissions }: DashboardTaskLis
                                     task.priority === 'LEVEL_2' ? "bg-amber-500/20 text-amber-500" :
                                     "bg-sky-500/20 text-sky-500"
                                 )}>
-                                    {task.priority === 'LEVEL_3' ? 'H' : task.priority === 'LEVEL_2' ? 'M' : 'L'}
+                                    {task.priority === 'LEVEL_3' ? 'High' : task.priority === 'LEVEL_2' ? 'Med' : 'Low'}
                                 </span>
                             </td>
                             <td className="py-3 font-bold text-foreground group-hover:text-primary transition-colors truncate max-w-[200px]">{task.title}</td>
@@ -86,7 +86,7 @@ export function DashboardTaskList({ userProfile, permissions }: DashboardTaskLis
                         </tr>
                     ))}
                     {!isLoading && (!tasks || tasks.length === 0) && (
-                        <tr><td colSpan={4} className="py-20 text-center text-[10px] font-black uppercase tracking-widest text-muted-foreground opacity-30">Zero active missions</td></tr>
+                        <tr><td colSpan={4} className="py-20 text-center text-[10px] font-black uppercase tracking-widest text-muted-foreground opacity-30">No active tasks</td></tr>
                     )}
                 </tbody>
             </table>

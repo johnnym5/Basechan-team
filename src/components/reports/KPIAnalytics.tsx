@@ -124,13 +124,13 @@ export function KPIAnalytics({ userProfile }: KPIAnalyticsProps) {
                     <div>
                         <CardTitle className="text-xl flex items-center gap-2">
                              <Trophy className="h-5 w-5 text-amber-500" />
-                             Elite Operational Standings
+                             Team Leaderboard
                         </CardTitle>
-                        <CardDescription>Personnel influence rankings based on mission success and peer recognition.</CardDescription>
+                        <CardDescription>Rankings based on completed tasks and peer recognition.</CardDescription>
                     </div>
                     <div className="hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 border border-primary/20">
                         <Sparkles className="h-3 w-3 text-primary animate-pulse" />
-                        <span className="text-[10px] font-black uppercase tracking-widest text-primary">Live Ratings</span>
+                        <span className="text-[10px] font-black uppercase tracking-widest text-primary">Live Stats</span>
                     </div>
                 </div>
             </CardHeader>
@@ -139,9 +139,9 @@ export function KPIAnalytics({ userProfile }: KPIAnalyticsProps) {
                     <Table>
                         <TableHeader className="bg-secondary/10">
                             <TableRow className="hover:bg-transparent border-white/5">
-                                <TableHead className="font-black uppercase tracking-[0.2em] text-[10px]">Rank & Unit</TableHead>
+                                <TableHead className="font-black uppercase tracking-[0.2em] text-[10px]">Rank & Staff</TableHead>
                                 <TableHead className="text-center font-black uppercase tracking-[0.2em] text-[10px]">Efficiency</TableHead>
-                                <TableHead className="text-center font-black uppercase tracking-[0.2em] text-[10px]">Influence</TableHead>
+                                <TableHead className="text-center font-black uppercase tracking-[0.2em] text-[10px]">Recognition</TableHead>
                                 <TableHead className="text-right font-black uppercase tracking-[0.2em] text-[10px]">Total Score</TableHead>
                             </TableRow>
                         </TableHeader>
@@ -150,7 +150,7 @@ export function KPIAnalytics({ userProfile }: KPIAnalyticsProps) {
                                 <TableRow>
                                     <TableCell colSpan={4} className="text-center py-24 text-muted-foreground opacity-30">
                                         <AlertCircle className="h-10 w-10 mx-auto mb-4" />
-                                        <p className="font-black uppercase tracking-widest">No Intelligence Data</p>
+                                        <p className="font-black uppercase tracking-widest">No activity recorded</p>
                                     </TableCell>
                                 </TableRow>
                             ) : (
@@ -168,7 +168,7 @@ export function KPIAnalytics({ userProfile }: KPIAnalyticsProps) {
                                                 </div>
                                                 <div className="flex flex-col">
                                                     <span className="font-black text-sm">{stat.name}</span>
-                                                    <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">{stat.completed} Missions</span>
+                                                    <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">{stat.completed} Tasks Done</span>
                                                 </div>
                                             </div>
                                         </TableCell>
@@ -181,7 +181,7 @@ export function KPIAnalytics({ userProfile }: KPIAnalyticsProps) {
                                         <TableCell className="text-center">
                                             <div className="flex flex-col items-center">
                                                 <span className="font-black text-xs text-primary">{stat.kudos}</span>
-                                                <span className="text-[7px] font-black uppercase text-muted-foreground tracking-tighter">Identity Badges</span>
+                                                <span className="text-[7px] font-black uppercase text-muted-foreground tracking-tighter">Kudos</span>
                                             </div>
                                         </TableCell>
                                         <TableCell className="text-right pr-6">
@@ -192,7 +192,7 @@ export function KPIAnalytics({ userProfile }: KPIAnalyticsProps) {
                                                 )}>
                                                     {stat.hrScore}
                                                 </span>
-                                                <span className="text-[8px] font-black text-muted-foreground uppercase tracking-[0.2em] opacity-50">Influence Points</span>
+                                                <span className="text-[8px] font-black text-muted-foreground uppercase tracking-[0.2em] opacity-50">Points</span>
                                             </div>
                                         </TableCell>
                                     </TableRow>

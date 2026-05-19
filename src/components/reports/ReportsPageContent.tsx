@@ -1,4 +1,3 @@
-
 'use client';
 import { useUser, useDoc, useMemoFirebase, useFirestore, useCollection } from "@/firebase";
 import { doc, collection, query, where, getDocs } from 'firebase/firestore';
@@ -97,7 +96,7 @@ export function ReportsPageContent({ initialPayload }: { initialPayload?: { tab?
                 Date: format(new Date(r.createdAt), 'PP')
             };
         });
-        XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(reqData), "Procurement");
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(reqData), "Financial Requests");
 
         const taskData = taskSnap.docs.map(doc => {
             const t = doc.data() as Task;
@@ -112,10 +111,10 @@ export function ReportsPageContent({ initialPayload }: { initialPayload?: { tab?
                 Due: t.dueDate ? format(new Date(t.dueDate), 'PP') : 'N/A'
             };
         });
-        XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(taskData), "Missions");
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(taskData), "Tasks");
 
-        XLSX.writeFile(wb, `Org_Performance_Report_${format(new Date(), 'yyyy-MM-dd')}.xlsx`);
-        toast({ title: "Export Complete", description: "Consolidated organizational data has been downloaded." });
+        XLSX.writeFile(wb, `Team_Report_${format(new Date(), 'yyyy-MM-dd')}.xlsx`);
+        toast({ title: "Export Complete", description: "Consolidated team data has been downloaded." });
     } catch (e: any) {
         toast({ variant: 'destructive', title: "Export Failed", description: e.message });
     } finally {
@@ -131,15 +130,15 @@ export function ReportsPageContent({ initialPayload }: { initialPayload?: { tab?
     <div className="space-y-6">
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
-            <h1 className="text-3xl font-black font-headline tracking-tighter">Personnel Intelligence</h1>
+            <h1 className="text-3xl font-black font-headline tracking-tighter">Reports & Analytics</h1>
             <p className="text-muted-foreground uppercase tracking-widest text-[10px] font-bold">
-                {permissions.canManageStaff ? "Operational Load & Telemetry Analysis" : "Personal Mission Performance & Identity Medals"}
+                {permissions.canManageStaff ? "Team Performance & Activity Logs" : "Personal Task History & Achievements"}
             </p>
         </div>
         {permissions.canManageStaff && (
             <Button variant="outline" onClick={handleMasterExport} disabled={isExporting} className="rounded-xl border-primary/20 hover:bg-primary/10 hover:border-primary transition-all active:scale-95 group">
                 {isExporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileSpreadsheet className="mr-2 h-4 w-4 group-hover:rotate-12 transition-transform" />}
-                Export Repository
+                Export Data
             </Button>
         )}
       </div>
@@ -147,15 +146,15 @@ export function ReportsPageContent({ initialPayload }: { initialPayload?: { tab?
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="bg-secondary/20 rounded-2xl p-1 mb-8">
             <TabsTrigger value="performance" className="rounded-xl px-6 font-black uppercase text-[10px] tracking-widest data-[state=active]:bg-background data-[state=active]:shadow-lg">
-                <Trophy className="h-3 w-3 mr-2" /> Personal Dashboard
+                <Trophy className="h-3 w-3 mr-2" /> My Dashboard
             </TabsTrigger>
             {permissions.canManageStaff && (
                 <>
                     <TabsTrigger value="analytics" className="rounded-xl px-6 font-black uppercase text-[10px] tracking-widest data-[state=active]:bg-background data-[state=active]:shadow-lg">
-                        <BarChart3 className="h-3 w-3 mr-2" /> Node Leaderboard
+                        <BarChart3 className="h-3 w-3 mr-2" /> Team Leaderboard
                     </TabsTrigger>
                     <TabsTrigger value="team-reports" className="rounded-xl px-6 font-black uppercase text-[10px] tracking-widest data-[state=active]:bg-background data-[state=active]:shadow-lg">
-                        <UserCheck className="h-3 w-3 mr-2" /> Mission Logs
+                        <UserCheck className="h-3 w-3 mr-2" /> Activity Logs
                     </TabsTrigger>
                     <TabsTrigger value="team-health" className="rounded-xl px-6 font-black uppercase text-[10px] tracking-widest data-[state=active]:bg-background data-[state=active]:shadow-lg">
                         <Heart className="h-3 w-3 mr-2" /> Team Health
@@ -164,7 +163,7 @@ export function ReportsPageContent({ initialPayload }: { initialPayload?: { tab?
             )}
             {!permissions.canManageStaff && (
                 <TabsTrigger value="submit" className="rounded-xl px-6 font-black uppercase text-[10px] tracking-widest data-[state=active]:bg-background data-[state=active]:shadow-lg">
-                    Submit EOD Report
+                    Submit Daily Report
                 </TabsTrigger>
             )}
         </TabsList>

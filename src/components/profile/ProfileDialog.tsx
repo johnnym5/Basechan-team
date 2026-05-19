@@ -159,7 +159,7 @@ export function ProfileDialog({ open, onOpenChange, userProfile, modal }: Profil
         <VisuallyHidden>
             <DialogHeader>
                 <DialogTitle>My Profile & Security</DialogTitle>
-                <DialogDescription>Manage your identity and authorize system access.</DialogDescription>
+                <DialogDescription>Manage your information and app permissions.</DialogDescription>
             </DialogHeader>
         </VisuallyHidden>
         
@@ -167,16 +167,16 @@ export function ProfileDialog({ open, onOpenChange, userProfile, modal }: Profil
 
         <div className="flex-1 flex flex-col h-full min-h-0 overflow-y-auto [scrollbar-gutter:stable] custom-scrollbar bg-background/20 relative">
             <div className="max-w-[1600px] mx-auto w-full min-h-full border-x border-white/5 bg-background/30 p-4 md:p-8 space-y-6">
-                {/* Tactical Header Row */}
+                {/* Header Row */}
                 <div className="flex items-center justify-between">
                     <div className="flex flex-col gap-1">
-                        <h1 className="text-3xl font-black font-headline tracking-tighter">Identity Control</h1>
-                        <p className="text-muted-foreground uppercase tracking-widest text-[10px] font-black opacity-60">System Security & Personnel Telemetry</p>
+                        <h1 className="text-3xl font-black font-headline tracking-tighter">My Profile</h1>
+                        <p className="text-muted-foreground uppercase tracking-widest text-[10px] font-black opacity-60">Security & Activity History</p>
                     </div>
                     <div className="flex items-center gap-3">
                         <div className="text-right hidden sm:block">
-                            <p className="text-[10px] font-black uppercase tracking-widest text-primary leading-none">Security Clearance</p>
-                            <p className="text-sm font-bold mt-1 uppercase">{userProfile.role}</p>
+                            <p className="text-[10px] font-black uppercase tracking-widest text-primary leading-none">Job Role</p>
+                            <p className="text-sm font-bold mt-1 uppercase">{userProfile.position}</p>
                         </div>
                     </div>
                 </div>
@@ -204,7 +204,7 @@ export function ProfileDialog({ open, onOpenChange, userProfile, modal }: Profil
                                 <div className="p-1.5 rounded-lg bg-primary/10 text-primary">
                                     <Lock className="h-3.5 w-3.5" />
                                 </div>
-                                <h3 className="text-xs font-black uppercase tracking-widest">Credential Control</h3>
+                                <h3 className="text-xs font-black uppercase tracking-widest">Update Information</h3>
                             </div>
                             <Form {...form}>
                                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
@@ -217,34 +217,34 @@ export function ProfileDialog({ open, onOpenChange, userProfile, modal }: Profil
                                     )}/>
                                     <FormField control={form.control} name="phoneNumber" render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel className="text-[9px] font-black uppercase tracking-widest opacity-50">Contact Line</FormLabel>
+                                            <FormLabel className="text-[9px] font-black uppercase tracking-widest opacity-50">Phone Number</FormLabel>
                                             <FormControl><Input type="tel" {...field} className="rounded-xl h-11 bg-background/50 border-white/5 text-sm" /></FormControl>
                                             <FormMessage />
                                         </FormItem>
                                     )}/>
                                     <Button type="submit" className="w-full h-12 rounded-2xl font-black uppercase tracking-widest shadow-lg shadow-primary/20 text-[10px] interactive-element" disabled={isBusy}>
-                                        {isBusy ? <Loader2 className="mr-2 h-3 w-3 animate-spin" /> : "Authorize Changes"}
+                                        {isBusy ? <Loader2 className="mr-2 h-3 w-3 animate-spin" /> : "Save Changes"}
                                     </Button>
                                 </form>
                             </Form>
                             
                             <div className="mt-6 pt-6 border-t border-white/5">
                                 <Button variant="outline" className="w-full h-11 rounded-xl border-white/10 hover:bg-rose-500/10 hover:text-rose-500 text-[10px] font-bold uppercase tracking-widest transition-all" onClick={() => sendPasswordResetEmail(auth!, userProfile.email)}>
-                                    <Lock className="mr-2 h-3.5 w-3.5" /> Reset Terminal Key
+                                    <Lock className="mr-2 h-3.5 w-3.5" /> Reset Password
                                 </Button>
                             </div>
                         </section>
                     </div>
 
-                    {/* RIGHT COLUMN: Telemetry & Authorization */}
+                    {/* RIGHT COLUMN: History & Permissions */}
                     <div className="lg:col-span-8 space-y-6">
                         <section className="apple-glass rounded-[2rem] p-6 shadow-inner">
                             <div className="flex items-center justify-between mb-8">
                                 <div className="flex items-center gap-2">
                                     <Activity className="h-4 w-4 text-emerald-500" />
-                                    <h3 className="text-xs font-black uppercase tracking-widest">Operational Consistency</h3>
+                                    <h3 className="text-xs font-black uppercase tracking-widest">Work Consistency</h3>
                                 </div>
-                                <span className="text-[8px] font-black uppercase tracking-[0.2em] text-muted-foreground opacity-50">LIVE TELEMETRY NODE</span>
+                                <span className="text-[8px] font-black uppercase tracking-[0.2em] text-muted-foreground opacity-50">ACTIVITY HISTORY</span>
                             </div>
                             <ActivityHeatmap userId={userProfile.id} orgId={userProfile.orgId} />
                         </section>
@@ -256,17 +256,17 @@ export function ProfileDialog({ open, onOpenChange, userProfile, modal }: Profil
                                         <Bell className="h-4 w-4 text-amber-500" />
                                     </div>
                                     <div>
-                                        <h3 className="text-xs font-black uppercase tracking-widest leading-none">Alert Node</h3>
-                                        <p className="text-[8px] font-bold text-muted-foreground uppercase tracking-tighter mt-1">Push Notifications</p>
+                                        <h3 className="text-xs font-black uppercase tracking-widest leading-none">Notifications</h3>
+                                        <p className="text-[8px] font-bold text-muted-foreground uppercase tracking-tighter mt-1">Browser Alerts</p>
                                     </div>
                                 </div>
                                 <div className="flex flex-col gap-4">
                                     <div className="flex items-center justify-between">
-                                        <span className="text-[10px] font-bold text-muted-foreground uppercase">OS Status</span>
+                                        <span className="text-[10px] font-bold text-muted-foreground uppercase">Status</span>
                                         {getStatusBadge(notifStatus)}
                                     </div>
                                     {notifStatus !== 'granted' && (
-                                        <Button size="sm" variant="ghost" className="w-full h-10 rounded-xl text-[9px] font-black uppercase bg-primary/10 text-primary hover:bg-primary hover:text-white transition-all" onClick={() => handleRequestPermission('notifications')}>Request Authorization</Button>
+                                        <Button size="sm" variant="ghost" className="w-full h-10 rounded-xl text-[9px] font-black uppercase bg-primary/10 text-primary hover:bg-primary hover:text-white transition-all" onClick={() => handleRequestPermission('notifications')}>Enable Notifications</Button>
                                     )}
                                 </div>
                             </section>
@@ -277,17 +277,17 @@ export function ProfileDialog({ open, onOpenChange, userProfile, modal }: Profil
                                         <MapPin className="h-4 w-4 text-primary" />
                                     </div>
                                     <div>
-                                        <h3 className="text-xs font-black uppercase tracking-widest leading-none">Spatial Node</h3>
-                                        <p className="text-[8px] font-bold text-muted-foreground uppercase tracking-tighter mt-1">Geofence Compliance</p>
+                                        <h3 className="text-xs font-black uppercase tracking-widest leading-none">Location</h3>
+                                        <p className="text-[8px] font-bold text-muted-foreground uppercase tracking-tighter mt-1">Clock-in Verification</p>
                                     </div>
                                 </div>
                                 <div className="flex flex-col gap-4">
                                     <div className="flex items-center justify-between">
-                                        <span className="text-[10px] font-bold text-muted-foreground uppercase">Signal Status</span>
+                                        <span className="text-[10px] font-bold text-muted-foreground uppercase">Status</span>
                                         {getStatusBadge(locationStatus)}
                                     </div>
                                     {locationStatus !== 'granted' && (
-                                        <Button size="sm" variant="ghost" className="w-full h-10 rounded-xl text-[9px] font-black uppercase bg-primary/10 text-primary hover:bg-primary hover:text-white transition-all" onClick={() => handleRequestPermission('location')}>Request Authorization</Button>
+                                        <Button size="sm" variant="ghost" className="w-full h-10 rounded-xl text-[9px] font-black uppercase bg-primary/10 text-primary hover:bg-primary hover:text-white transition-all" onClick={() => handleRequestPermission('location')}>Enable Location</Button>
                                     )}
                                 </div>
                             </section>
@@ -296,10 +296,10 @@ export function ProfileDialog({ open, onOpenChange, userProfile, modal }: Profil
                         <div className="apple-glass p-6 rounded-[2rem] border-primary/10">
                             <div className="flex items-center gap-3 text-primary mb-2">
                                 <ShieldCheck className="h-4 w-4" />
-                                <span className="text-[10px] font-black uppercase tracking-tighter">System Intelligence Memo</span>
+                                <span className="text-[10px] font-black uppercase tracking-tighter">Security Reminder</span>
                             </div>
                             <p className="text-[9px] leading-relaxed text-foreground/70 font-medium uppercase tracking-tight">
-                                Personnel identity telemetry is analyzed in real-time. Continuous geofencing and active notification nodes are required for optimal mission reporting and shift synchronization. Standard personnel are subject to strictly enforced spatial boundaries.
+                                Your profile activity is monitored for safety and reporting. Please ensure location and notification settings are active for accurate clock-ins and real-time updates. Standard job roles are subject to office range limits.
                             </p>
                         </div>
                     </div>

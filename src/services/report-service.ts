@@ -1,15 +1,14 @@
-
 'use client';
 
 import { Firestore, collection, query, where, getDocs, orderBy, limit } from 'firebase/firestore';
 import { addDocumentNonBlocking } from '@/firebase';
 import type { UserProfile, Attendance, Task, DailyReport, Chat } from '@/lib/types';
-import { format, startOfDay } from 'date-fns';
+import { format, startOfDay, differenceInSeconds } from 'date-fns';
 import { sanitizeInput } from '@/lib/utils';
 import { activityService } from './activity-service';
 
 /**
- * Service to aggregate organizational telemetry and generate automated reports.
+ * Service to aggregate organizational data and generate automated reports.
  */
 export const reportService = {
     /**
@@ -19,7 +18,7 @@ export const reportService = {
         const today = format(new Date(), 'yyyy-MM-dd');
         const dayStart = startOfDay(new Date()).toISOString();
 
-        // 1. AGGREGATE COMPLETED MISSIONS
+        // 1. AGGREGATE COMPLETED TASKS
         const tasksQuery = query(
             collection(db, 'tasks'),
             where('assignedTo', '==', user.id),
@@ -58,20 +57,20 @@ export const reportService = {
 
         // 4. CONSTRUCT SUMMARY
         const summary = `
-[SYSTEM GENERATED EOD REPORT]
+[SYSTEM GENERATED END-OF-DAY REPORT]
 -----------------------------------
 SHIFT METRICS:
-- Active Duty: ${totalDurationHrs} hours
-- Inactive (Idle): ${idleHrs} hours
-- Deployment Mode: ${attendance.location}
+- Total Time: ${totalDurationHrs} hours
+- Inactive Time: ${idleHrs} hours
+- Location: ${attendance.location}
 
-MISSION LOG:
-- Tasks Finalized: ${completedToday.length}
-${completedToday.map(t => `  • ${t.title} (${t.serialNo})`).join('\n') || '  • No missions finalized in this cycle.'}
+TASK SUMMARY:
+- Tasks Completed: ${completedToday.length}
+${completedToday.map(t => `  • ${t.title} (${t.serialNo})`).join('\n') || '  • No tasks completed today.'}
 
 COLLABORATION:
-- Collaboration Units: ${partners.size}
-- Communication Partners: ${Array.from(partners).join(', ') || 'None'}
+- Team Members Contacted: ${partners.size}
+- Contacts: ${Array.from(partners).join(', ') || 'None'}
         `.trim();
 
         const reportData: Omit<DailyReport, 'id'> = {
@@ -84,7 +83,7 @@ COLLABORATION:
             createdAt: new Date().toISOString(),
         };
 
-        // Award Activity Points: +10 for system-verified EOD submission
+        // Award Activity Points: +10 for automated report submission
         await activityService.logActivity(db, user, 10);
 
         return await addDocumentNonBlocking(collection(db, 'daily_reports'), reportData);

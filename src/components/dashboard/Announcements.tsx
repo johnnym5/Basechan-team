@@ -50,7 +50,7 @@ export function Announcements() {
     return (
         <>
             <section className="apple-glass rounded-2xl p-5 animate-slide-up-fade interactive-element">
-                <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-4">Latest Broadcasts</h3>
+                <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-4">Recent Updates</h3>
                 <div className="space-y-4">
                     {isLoading ? (
                         Array.from({length: 2}).map((_, i) => <Skeleton key={i} className="h-12 w-full rounded-lg" />)
@@ -74,7 +74,7 @@ export function Announcements() {
                         </div>
                     ))}
                     {!isLoading && sortedAnnouncements.length === 0 && (
-                        <p className="text-center text-[8px] text-muted-foreground py-2 uppercase font-black tracking-widest opacity-30">Zero active signals</p>
+                        <p className="text-center text-[8px] text-muted-foreground py-2 uppercase font-black tracking-widest opacity-30">No new updates</p>
                     )}
                 </div>
             </section>

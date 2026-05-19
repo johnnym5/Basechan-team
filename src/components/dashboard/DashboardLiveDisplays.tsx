@@ -3,7 +3,7 @@
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query, where, orderBy, limit } from 'firebase/firestore';
 import type { ExternalDisplay, UserProfile } from '@/lib/types';
-import { MonitorDot, ExternalLink, ChevronRight, Globe } from 'lucide-react';
+import { MonitorDot, ChevronRight, Globe } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { uiEmitter } from '@/lib/ui-emitter';
 import { ORG_ID } from '@/lib/config';
@@ -49,11 +49,11 @@ export function DashboardLiveDisplays({ userProfile }: DashboardLiveDisplaysProp
             <div className="flex items-center justify-between mb-3">
                 <h3 className="text-xs font-bold font-headline flex items-center gap-2">
                     <Globe className="h-3.5 w-3.5 text-primary" />
-                    Live Infrastructure
+                    Shared Dashboards
                 </h3>
                 {displays && displays.length > 0 && (
                     <span className="text-[8px] font-black bg-primary/10 text-primary px-1.5 py-0.5 rounded-full uppercase tracking-tighter">
-                        {displays.length} Feeds
+                        {displays.length} Links
                     </span>
                 )}
             </div>
@@ -62,7 +62,7 @@ export function DashboardLiveDisplays({ userProfile }: DashboardLiveDisplaysProp
                 {!displays || displays.length === 0 ? (
                     <div className="py-6 flex flex-col items-center justify-center text-center opacity-40 grayscale">
                         <MonitorDot className="h-6 w-6 mb-2" />
-                        <p className="font-bold text-[9px] uppercase tracking-[0.1em]">No External Links Integrated</p>
+                        <p className="font-bold text-[9px] uppercase tracking-[0.1em]">No shared dashboards</p>
                     </div>
                 ) : (
                     displays.map((display) => (
@@ -78,7 +78,7 @@ export function DashboardLiveDisplays({ userProfile }: DashboardLiveDisplaysProp
                                 <div className="min-w-0">
                                     <p className="font-bold text-[10px] truncate leading-none">{display.title}</p>
                                     <p className="text-[7px] font-black uppercase tracking-widest text-muted-foreground mt-1 truncate">
-                                        Source: {new URL(display.url).hostname}
+                                        From: {new URL(display.url).hostname}
                                     </p>
                                 </div>
                             </div>
@@ -93,7 +93,7 @@ export function DashboardLiveDisplays({ userProfile }: DashboardLiveDisplaysProp
                     onClick={() => uiEmitter.emit('open-displays-dialog')}
                     className="w-full text-[7px] font-black text-primary hover:underline uppercase tracking-[0.2em] text-center"
                 >
-                    Expand Control Center
+                    View All Dashboards
                 </button>
             </div>
         </section>

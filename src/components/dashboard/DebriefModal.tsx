@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -99,7 +98,7 @@ export function DebriefModal({ userProfile }: { userProfile: UserProfile }) {
                             <ChevronRight className="h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity" />
                         </div>
                         <p className="text-3xl font-black font-headline">{unreadCount}</p>
-                        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Unread Comms</p>
+                        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">New Messages</p>
                     </div>
                     <div 
                         onClick={() => { setIsOpen(false); uiEmitter.emit('open-tasks-dialog'); }}
@@ -110,7 +109,7 @@ export function DebriefModal({ userProfile }: { userProfile: UserProfile }) {
                             <ChevronRight className="h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity" />
                         </div>
                         <p className="text-3xl font-black font-headline">{taskIntel.pending}</p>
-                        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Active Missions</p>
+                        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Open Tasks</p>
                     </div>
                 </div>
 
@@ -119,33 +118,33 @@ export function DebriefModal({ userProfile }: { userProfile: UserProfile }) {
                     <div className="p-4 rounded-2xl bg-amber-500/5 border border-amber-500/10 space-y-2">
                         <div className="flex items-center gap-2 text-amber-600">
                             <Megaphone className="h-4 w-4" />
-                            <span className="text-[10px] font-black uppercase tracking-widest">Global Broadcast</span>
+                            <span className="text-[10px] font-black uppercase tracking-widest">Recent Update</span>
                         </div>
                         <h4 className="font-bold text-sm">{latestAnnouncement.title}</h4>
                         <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">{latestAnnouncement.content}</p>
                     </div>
                 )}
 
-                {/* Critical Deadline Alert */}
+                {/* Deadline Alert */}
                 {taskIntel.urgent > 0 && (
                     <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/20 flex items-center gap-4">
                         <div className="h-10 w-10 rounded-xl bg-rose-500/20 flex items-center justify-center text-rose-500">
                             <AlertCircle className="h-6 w-6" />
                         </div>
                         <div>
-                            <p className="text-xs font-black text-rose-500 uppercase tracking-tighter">Urgent Deadlines</p>
-                            <p className="text-[10px] font-medium leading-tight text-foreground/80">You have {taskIntel.urgent} mission(s) requiring finalization within 24 hours.</p>
+                            <p className="text-xs font-black text-rose-500 uppercase tracking-tighter">Tasks Due Soon</p>
+                            <p className="text-[10px] font-medium leading-tight text-foreground/80">You have {taskIntel.urgent} task(s) that need to be finished within 24 hours.</p>
                         </div>
                     </div>
                 )}
 
                 <div className="flex flex-col gap-3 pt-4">
                     <Button onClick={handleAcknowledge} className="h-14 rounded-2xl font-black uppercase tracking-[0.2em] shadow-xl shadow-primary/20 group">
-                        Acknowledge & Start Day
+                        Let's Get Started
                         <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
                     </Button>
                     <Button variant="ghost" onClick={handleRemindLater} className="text-[10px] font-black uppercase tracking-widest opacity-60">
-                        Remind me in the afternoon
+                        Check back later
                     </Button>
                 </div>
             </div>
