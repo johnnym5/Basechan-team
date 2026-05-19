@@ -11,11 +11,12 @@ interface TasksDialogProps {
   initialPayload?: { taskId?: string };
   userProfile: UserProfile | null;
   permissions: Permissions;
+  modal?: boolean;
 }
 
-export function TasksDialog({ open, onOpenChange, initialPayload, userProfile, permissions }: TasksDialogProps) {
+export function TasksDialog({ open, onOpenChange, initialPayload, userProfile, permissions, modal = false }: TasksDialogProps) {
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={onOpenChange} modal={modal}>
       <DialogContent position="left" className="flex flex-col p-0">
         <VisuallyHidden>
             <DialogHeader>
