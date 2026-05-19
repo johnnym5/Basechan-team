@@ -13,7 +13,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Bell, Loader2, Pencil, MapPin, Calendar, Lock, Activity } from "lucide-react";
+import { Bell, Loader2, Pencil, MapPin, Calendar, Lock, Activity, ShieldCheck } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useFirestore, updateDocumentNonBlocking, useUser, useAuth } from "@/firebase";
 import { doc } from "firebase/firestore";
@@ -149,9 +149,9 @@ export function ProfileDialog({ open, onOpenChange, userProfile, modal }: Profil
   };
 
   const getStatusBadge = (status: string) => {
-    if (status === 'granted') return <Badge className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20">Authorized</Badge>;
-    if (status === 'denied') return <Badge variant="destructive">Denied</Badge>;
-    return <Badge variant="outline">Awaiting</Badge>;
+    if (status === 'granted') return <Badge className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20 text-[8px] font-black uppercase">Authorized</Badge>;
+    if (status === 'denied') return <Badge variant="destructive" className="text-[8px] font-black uppercase">Denied</Badge>;
+    return <Badge variant="outline" className="text-[8px] font-black uppercase">Awaiting</Badge>;
   }
 
   return (
@@ -167,117 +167,146 @@ export function ProfileDialog({ open, onOpenChange, userProfile, modal }: Profil
         <Progress value={uploadProgress} className={isUploading ? "w-full rounded-none h-1 flex-shrink-0" : "hidden"} />
 
         <div className="flex-1 flex flex-col min-h-0 overflow-y-auto [scrollbar-gutter:stable] custom-scrollbar bg-background">
-            <div className="max-w-[1600px] mx-auto w-full min-h-full border-x border-white/5 bg-background/40 p-4 md:p-8 space-y-12 pb-32">
-                <div className="flex flex-col gap-2">
-                    <h1 className="text-3xl font-black font-headline tracking-tighter">Identity Control</h1>
-                    <p className="text-muted-foreground uppercase tracking-widest text-[10px] font-bold">Personnel Security & Telemetry Overview</p>
-                </div>
-
-                <div className="relative w-32 h-32">
-                    <Avatar className="w-32 h-32 border-4 border-primary/20 shadow-2xl">
-                        <AvatarImage src={avatarPreview || userProfile.avatarUrl || user?.photoURL || ''} alt={userProfile.fullName} />
-                        <AvatarFallback className="text-4xl font-black bg-secondary">{userProfile.fullName.split(' ').map(n=>n[0]).join('')}</AvatarFallback>
-                    </Avatar>
-                    <label htmlFor="avatar-upload" className="absolute -bottom-2 -right-2 bg-primary text-primary-foreground rounded-full p-3 cursor-pointer hover:bg-primary/90 transition-all shadow-xl active:scale-90">
-                        <Pencil className="h-5 w-5" />
-                        <Input id="avatar-upload" type="file" className="hidden" accept="image/*" onChange={handleFileChange} />
-                    </label>
-                </div>
-
-                <section className="p-8 rounded-[3rem] bg-secondary/10 border border-white/5 shadow-inner">
-                    <div className="flex items-center gap-2 mb-8">
-                        <Activity className="h-6 w-6 text-emerald-500" />
-                        <h4 className="text-sm font-black uppercase tracking-[0.25em]">Operational Consistency</h4>
+            <div className="max-w-[1600px] mx-auto w-full min-h-full border-x border-white/5 bg-background/40 p-4 md:p-6 space-y-6">
+                {/* Tactical Header Row */}
+                <div className="flex items-center justify-between">
+                    <div className="flex flex-col gap-1">
+                        <h1 className="text-2xl font-black font-headline tracking-tighter">Identity Control</h1>
+                        <p className="text-muted-foreground uppercase tracking-widest text-[8px] font-black opacity-60">System Security & Personnel Telemetry</p>
                     </div>
-                    <ActivityHeatmap userId={userProfile.id} orgId={userProfile.orgId} />
-                </section>
-
-                <div className="grid grid-cols-1 xl:grid-cols-2 gap-12">
-                    <div className="space-y-8">
-                        <div className="flex items-center gap-3">
-                            <div className="p-2 rounded-xl bg-primary/10">
-                                <Lock className="h-5 w-5 text-primary" />
-                            </div>
-                            <h4 className="text-lg font-bold font-headline tracking-tight">Identity Details</h4>
+                    <div className="flex items-center gap-3">
+                        <div className="text-right hidden sm:block">
+                            <p className="text-[9px] font-black uppercase tracking-widest text-primary leading-none">Security Clearance</p>
+                            <p className="text-sm font-bold mt-0.5">{userProfile.role}</p>
                         </div>
-                        <Form {...form}>
-                            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="h-10 w-px bg-white/5 mx-2" />
+                        <Badge variant="outline" className="h-8 rounded-xl bg-emerald-500/5 text-emerald-500 border-emerald-500/20 gap-1.5">
+                            <ShieldCheck className="h-3 w-3" />
+                            <span className="text-[9px] font-black tracking-[0.1em]">NODE VERIFIED</span>
+                        </Badge>
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 pb-20">
+                    {/* LEFT COLUMN: Identity & Credentials */}
+                    <div className="lg:col-span-4 space-y-6">
+                        <section className="p-6 rounded-[2rem] bg-secondary/5 border border-white/5 flex flex-col items-center text-center">
+                            <div className="relative mb-4 group">
+                                <Avatar className="w-28 h-28 border-4 border-primary/20 shadow-2xl transition-transform group-hover:scale-105 duration-500">
+                                    <AvatarImage src={avatarPreview || userProfile.avatarUrl || user?.photoURL || ''} alt={userProfile.fullName} />
+                                    <AvatarFallback className="text-3xl font-black bg-secondary">{userProfile.fullName.split(' ').map(n=>n[0]).join('')}</AvatarFallback>
+                                </Avatar>
+                                <label htmlFor="avatar-upload" className="absolute -bottom-1 -right-1 bg-primary text-primary-foreground rounded-full p-2.5 cursor-pointer hover:bg-primary/90 transition-all shadow-xl active:scale-90 border-4 border-background">
+                                    <Pencil className="h-4 w-4" />
+                                    <Input id="avatar-upload" type="file" className="hidden" accept="image/*" onChange={handleFileChange} />
+                                </label>
+                            </div>
+                            <h2 className="text-xl font-black font-headline tracking-tight">{userProfile.fullName}</h2>
+                            <p className="text-[10px] font-bold text-primary uppercase tracking-[0.2em] mt-1">{userProfile.position}</p>
+                        </section>
+
+                        <section className="p-6 rounded-[2rem] bg-secondary/5 border border-white/5">
+                            <div className="flex items-center gap-2 mb-6">
+                                <div className="p-1.5 rounded-lg bg-primary/10 text-primary">
+                                    <Lock className="h-3.5 w-3.5" />
+                                </div>
+                                <h3 className="text-xs font-black uppercase tracking-widest">Credential Control</h3>
+                            </div>
+                            <Form {...form}>
+                                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
                                     <FormField control={form.control} name="fullName" render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel className="text-[10px] font-black uppercase tracking-widest opacity-60">Full Name</FormLabel>
-                                            <FormControl><Input {...field} className="rounded-xl h-12 bg-background/50 border-white/5" /></FormControl>
+                                            <FormLabel className="text-[9px] font-black uppercase tracking-widest opacity-50">Full Name</FormLabel>
+                                            <FormControl><Input {...field} className="rounded-xl h-11 bg-background/50 border-white/5 text-sm" /></FormControl>
                                             <FormMessage />
                                         </FormItem>
                                     )}/>
                                     <FormField control={form.control} name="phoneNumber" render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel className="text-[10px] font-black uppercase tracking-widest opacity-60">Phone Number</FormLabel>
-                                            <FormControl><Input type="tel" {...field} className="rounded-xl h-12 bg-background/50 border-white/5" /></FormControl>
+                                            <FormLabel className="text-[9px] font-black uppercase tracking-widest opacity-50">Contact Line</FormLabel>
+                                            <FormControl><Input type="tel" {...field} className="rounded-xl h-11 bg-background/50 border-white/5 text-sm" /></FormControl>
                                             <FormMessage />
                                         </FormItem>
                                     )}/>
-                                </div>
-                                <Button type="submit" className="w-full h-14 rounded-2xl font-black uppercase tracking-widest shadow-xl shadow-primary/20" disabled={isBusy}>
-                                    {isBusy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Save Configuration"}
+                                    <Button type="submit" className="w-full h-12 rounded-2xl font-black uppercase tracking-widest shadow-lg shadow-primary/20 text-[10px]" disabled={isBusy}>
+                                        {isBusy ? <Loader2 className="mr-2 h-3 w-3 animate-spin" /> : "Authorize Changes"}
+                                    </Button>
+                                </form>
+                            </Form>
+                            
+                            <div className="mt-6 pt-6 border-t border-white/5">
+                                <Button variant="outline" className="w-full h-11 rounded-xl border-white/10 hover:bg-rose-500/10 hover:text-rose-500 text-[10px] font-bold uppercase tracking-widest transition-all" onClick={() => sendPasswordResetEmail(auth!, userProfile.email)}>
+                                    <Lock className="mr-2 h-3.5 w-3.5" /> Reset Terminal Key
                                 </Button>
-                            </form>
-                        </Form>
-                        <Separator className="bg-white/5" />
-                        <div className="space-y-4">
-                            <h4 className="text-xs font-black uppercase tracking-widest text-primary/70">Access Keys</h4>
-                            <Button variant="outline" className="w-full h-12 rounded-xl border-white/10 hover:bg-primary/5 transition-all" onClick={() => sendPasswordResetEmail(auth!, userProfile.email)}>
-                                <Lock className="mr-2 h-4 w-4" /> Reset Access Key
-                            </Button>
-                        </div>
+                            </div>
+                        </section>
                     </div>
 
-                    <div className="space-y-8">
-                        <div className="flex items-center gap-3">
-                            <div className="p-2 rounded-xl bg-amber-500/10">
-                                <Bell className="h-5 w-5 text-amber-500" />
+                    {/* RIGHT COLUMN: Telemetry & Authorization */}
+                    <div className="lg:col-span-8 space-y-6">
+                        <section className="p-6 rounded-[2rem] bg-secondary/5 border border-white/5 shadow-inner">
+                            <div className="flex items-center justify-between mb-8">
+                                <div className="flex items-center gap-2">
+                                    <Activity className="h-4 w-4 text-emerald-500" />
+                                    <h3 className="text-xs font-black uppercase tracking-widest">Operational Consistency</h3>
+                                </div>
+                                <span className="text-[8px] font-black uppercase tracking-[0.2em] text-muted-foreground opacity-50">LIVE TELEMETRY NODE</span>
                             </div>
-                            <h4 className="text-lg font-bold font-headline tracking-tight">System Authorization</h4>
+                            <ActivityHeatmap userId={userProfile.id} orgId={userProfile.orgId} />
+                        </section>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <section className="p-6 rounded-[2rem] bg-secondary/5 border border-white/5">
+                                <div className="flex items-center gap-3 mb-6">
+                                    <div className="p-2 rounded-xl bg-amber-500/10">
+                                        <Bell className="h-4 w-4 text-amber-500" />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-xs font-black uppercase tracking-widest leading-none">Alert Node</h3>
+                                        <p className="text-[8px] font-bold text-muted-foreground uppercase tracking-tighter mt-1">Push Notifications</p>
+                                    </div>
+                                </div>
+                                <div className="flex flex-col gap-4">
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-[10px] font-bold text-muted-foreground uppercase">OS Status</span>
+                                        {getStatusBadge(notifStatus)}
+                                    </div>
+                                    {notifStatus !== 'granted' && (
+                                        <Button size="sm" variant="ghost" className="w-full h-10 rounded-xl text-[9px] font-black uppercase bg-primary/10 text-primary hover:bg-primary hover:text-white transition-all" onClick={() => handleRequestPermission('notifications')}>Request Authorization</Button>
+                                    )}
+                                </div>
+                            </section>
+
+                            <section className="p-6 rounded-[2rem] bg-secondary/5 border border-white/5">
+                                <div className="flex items-center gap-3 mb-6">
+                                    <div className="p-2 rounded-xl bg-primary/10">
+                                        <MapPin className="h-4 w-4 text-primary" />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-xs font-black uppercase tracking-widest leading-none">Spatial Node</h3>
+                                        <p className="text-[8px] font-bold text-muted-foreground uppercase tracking-tighter mt-1">Geofence Compliance</p>
+                                    </div>
+                                </div>
+                                <div className="flex flex-col gap-4">
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-[10px] font-bold text-muted-foreground uppercase">Signal Status</span>
+                                        {getStatusBadge(locationStatus)}
+                                    </div>
+                                    {locationStatus !== 'granted' && (
+                                        <Button size="sm" variant="ghost" className="w-full h-10 rounded-xl text-[9px] font-black uppercase bg-primary/10 text-primary hover:bg-primary hover:text-white transition-all" onClick={() => handleRequestPermission('location')}>Request Authorization</Button>
+                                    )}
+                                </div>
+                            </section>
                         </div>
-                        <div className="space-y-4">
-                            <div className="flex items-center justify-between p-5 rounded-[2rem] border border-white/5 bg-secondary/5 transition-all hover:bg-secondary/10">
-                                <div className="flex items-center gap-4">
-                                    <div className="p-3 bg-background/50 rounded-2xl border border-white/5"><Bell className="h-6 w-6 text-primary" /></div>
-                                    <div>
-                                        <p className="font-bold text-base">Alert Node</p>
-                                        <p className="text-xs text-muted-foreground uppercase tracking-widest font-bold">Push Notifications</p>
-                                    </div>
-                                </div>
-                                <div className="flex flex-col items-end gap-3">
-                                    {getStatusBadge(notifStatus)}
-                                    {notifStatus !== 'granted' && <Button size="sm" variant="ghost" className="h-8 rounded-lg text-[10px] font-black uppercase bg-primary/10 text-primary hover:bg-primary hover:text-white transition-all" onClick={() => handleRequestPermission('notifications')}>Authorize</Button>}
-                                </div>
+                        
+                        <div className="p-6 rounded-[2rem] bg-primary/5 border border-primary/10">
+                            <div className="flex items-center gap-3 text-primary mb-2">
+                                <Activity className="h-4 w-4" />
+                                <span className="text-[10px] font-black uppercase tracking-tighter">System Intelligence Memo</span>
                             </div>
-
-                            <div className="flex items-center justify-between p-5 rounded-[2rem] border border-white/5 bg-secondary/5 transition-all hover:bg-secondary/10">
-                                <div className="flex items-center gap-4">
-                                    <div className="p-3 bg-background/50 rounded-2xl border border-white/5"><MapPin className="h-6 w-6 text-primary" /></div>
-                                    <div>
-                                        <p className="font-bold text-base">Geospatial Telemetry</p>
-                                        <p className="text-xs text-muted-foreground uppercase tracking-widest font-bold">Geofencing Support</p>
-                                    </div>
-                                </div>
-                                <div className="flex flex-col items-end gap-3">
-                                    {getStatusBadge(locationStatus)}
-                                    {locationStatus !== 'granted' && <Button size="sm" variant="ghost" className="h-8 rounded-lg text-[10px] font-black uppercase bg-primary/10 text-primary hover:bg-primary hover:text-white transition-all" onClick={() => handleRequestPermission('location')}>Authorize</Button>}
-                                </div>
-                            </div>
-
-                            <div className="flex items-center justify-between p-5 rounded-[2rem] border border-white/5 bg-secondary/5 opacity-50 grayscale cursor-not-allowed">
-                                <div className="flex items-center gap-4">
-                                    <div className="p-3 bg-background/50 rounded-2xl border border-white/5"><Calendar className="h-6 w-6 text-primary" /></div>
-                                    <div>
-                                        <p className="font-bold text-base">Availability Matrix</p>
-                                        <p className="text-xs text-muted-foreground uppercase tracking-widest font-bold">Roster Sync</p>
-                                    </div>
-                                </div>
-                                <Badge variant="outline" className="text-[9px] font-black tracking-widest">MANAGED</Badge>
-                            </div>
+                            <p className="text-[9px] leading-relaxed text-foreground/70 font-medium uppercase tracking-tight">
+                                Personnel identity telemetry is analyzed in real-time. Continuous geofencing and active notification nodes are required for optimal mission reporting and shift synchronization.
+                            </p>
                         </div>
                     </div>
                 </div>
