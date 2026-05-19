@@ -7,6 +7,7 @@ import type { UserProfile, Attendance } from '@/lib/types';
 import { useSystemConfig } from '@/hooks/useSystemConfig';
 import AppHeader from '@/components/layout/AppHeader';
 import AppSidebar from '@/components/layout/AppSidebar';
+import { PanelSwitcher } from '@/components/layout/PanelSwitcher';
 import { usePermissions } from '@/hooks/usePermissions';
 import { format } from 'date-fns';
 import { useIdleTimer } from '@/hooks/useIdleTimer';
@@ -35,27 +36,6 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     setToday(format(new Date(), 'yyyy-MM-dd'));
     setMounted(true);
-
-    // Register Service Worker & Periodic Sync
-    if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('/sw.js').then(async (registration) => {
-            if ('periodicSync' in registration) {
-                try {
-                    const status = await (navigator as any).permissions.query({
-                        name: 'periodic-background-sync',
-                    });
-
-                    if (status.state === 'granted') {
-                        await (registration as any).periodicSync.register('morning-debrief-preload', {
-                            minInterval: 24 * 60 * 60 * 1000, 
-                        });
-                    }
-                } catch (e) {
-                    console.warn('Periodic Sync skipped:', e);
-                }
-            }
-        });
-    }
   }, []);
 
   const userProfileRef = useMemoFirebase(() => 
@@ -88,7 +68,6 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
   const permissions = usePermissions(stableProfile);
   const { config } = useSystemConfig(stableProfile?.orgId);
 
-  // Activate Deterministic In-App Assistant Reminders
   useShiftReminders(stableProfile, config || null, attendanceRecord);
 
   useEffect(() => {
@@ -103,22 +82,25 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
   if (!mounted) return <div className="min-h-screen bg-background flex items-center justify-center"><div className="animate-pulse w-12 h-12 rounded-full bg-primary/20" /></div>;
 
   return (
-    <div className="h-[100dvh] w-full bg-muted/30 flex justify-center p-0 md:p-3 lg:p-6 transition-all duration-500 overflow-hidden">
-      <div className="flex w-full max-w-[1920px] bg-background md:rounded-[2rem] md:shadow-2xl md:border border-border/50 overflow-hidden relative h-full">
-        <AppSidebar isLoggedIn={!!user} isAuthLoading={isUserLoading} />
-
-        <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
-          <AppHeader
-              userProfile={stableProfile}
-              onMenuClick={() => {}}
-              isLoggedIn={!!user}
-              attendanceRecord={attendanceRecord}
-              systemConfig={config || null}
-              className="apple-glass z-10 shrink-0"
-          />
+    <div className="h-[100dvh] w-full bg-muted/30 flex justify-center p-0 transition-all duration-500 overflow-hidden">
+      <div className="flex w-full bg-background overflow-hidden relative h-full">
+        <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden relative">
           
-          <main className="flex-1 overflow-y-scroll p-4 md:p-8 scroll-smooth pb-28 md:pb-8 [scrollbar-gutter:stable] custom-scrollbar">
-              <div className="w-full mx-auto max-w-[1600px]">
+          {/* CONTROL CENTER: STRICTLY LOCKED ON TOP */}
+          <div className="sticky top-0 z-[1000] flex flex-col shrink-0 bg-background/50 backdrop-blur-2xl border-b border-white/5 shadow-sm">
+             <AppHeader
+                userProfile={stableProfile}
+                onMenuClick={() => {}}
+                isLoggedIn={!!user}
+                attendanceRecord={attendanceRecord}
+                systemConfig={config || null}
+            />
+            <PanelSwitcher />
+          </div>
+          
+          {/* MISSION WORKSPACE: SCROLLS BEHIND CONTROL CENTER */}
+          <main className="flex-1 overflow-y-scroll p-4 md:p-8 scroll-smooth pb-28 md:pb-8 [scrollbar-gutter:stable] custom-scrollbar bg-background/20">
+              <div className="w-full mx-auto max-w-[1600px] animate-in fade-in duration-700">
                   {children}
               </div>
           </main>

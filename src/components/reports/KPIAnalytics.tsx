@@ -1,4 +1,3 @@
-
 'use client';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection, query, where } from 'firebase/firestore';
@@ -52,7 +51,6 @@ export function KPIAnalytics({ userProfile }: KPIAnalyticsProps) {
             perfectDays: number;
         }>;
 
-        // Collect distinct users from all sets
         const allUserNames = new Set([
             ...allTasks.map(t => t.assignedToName),
             ...allKudos.map(k => k.fromUserName),
@@ -95,8 +93,6 @@ export function KPIAnalytics({ userProfile }: KPIAnalyticsProps) {
                 efficiencyRatio = Math.min(1.5, stats.totalEstimated / stats.totalActual);
             }
 
-            // POINT CALCULATION:
-            // (Tasks * 10) + (HP Bonus * 5) + (Kudos * 20) + (Perfect Days * 5)
             const score = (stats.completed * 10) + 
                           (stats.highPriorityCompleted * 5) + 
                           (stats.kudosCount * 20) + 

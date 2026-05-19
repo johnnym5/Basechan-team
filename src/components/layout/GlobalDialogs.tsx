@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
@@ -185,63 +184,53 @@ export function GlobalDialogs({ userProfile, permissions, onAnyDialogOpenChange 
 
   return (
     <>
-      {isWorkbookOpen && (
-        <WorkbookDialog
-            open={isWorkbookOpen}
-            onOpenChange={(isOpen) => {
-                setIsWorkbookOpen(isOpen);
-                if (!isOpen) setInitialWorkbookPayload(undefined);
-            }}
-            initialPayload={initialWorkbookPayload}
-        />
-      )}
-      {isRequisitionsOpen && (
-        <RequisitionsDialog
-            open={isRequisitionsOpen}
-            onOpenChange={(isOpen) => {
-                setIsRequisitionsOpen(isOpen);
-                if (!isOpen) setInitialReqPayload(undefined);
-            }}
-            initialPayload={initialReqPayload}
-        />
-      )}
-      {isTasksOpen && (
-        <TasksDialog
-            open={isTasksOpen}
-            onOpenChange={(isOpen) => {
-                setIsTasksOpen(isOpen);
-                if (!isOpen) setInitialTaskPayload(undefined);
-            }}
-            initialPayload={initialTaskPayload}
-            userProfile={userProfile}
-            permissions={permissions}
-        />
-      )}
-      {isAttendanceOpen && <AttendanceDialog open={isAttendanceOpen} onOpenChange={setIsAttendanceOpen} />}
-      {isLeaveOpen && <LeaveDialog open={isLeaveOpen} onOpenChange={setIsLeaveOpen} />}
-      {isReportsOpen && (
-        <ReportsDialog
-            open={isReportsOpen}
-            onOpenChange={(isOpen) => {
-                setIsReportsOpen(isOpen);
-                if (!isOpen) setInitialReportsPayload(undefined);
-            }}
-            initialPayload={initialReportsPayload}
-        />
-      )}
-      {isAccountingOpen && <AccountingDialog open={isAccountingOpen} onOpenChange={setIsAccountingOpen} />}
-      {isLibraryOpen && <LibraryDialog open={isLibraryOpen} onOpenChange={setIsLibraryOpen} />}
-      {isDisplaysOpen && (
-          <DisplaysDialog 
-            open={isDisplaysOpen} 
-            onOpenChange={(isOpen) => {
-                setIsDisplaysOpen(isOpen);
-                if (!isOpen) setInitialDisplaysPayload(undefined);
-            }} 
-            initialPayload={initialDisplaysPayload}
-          />
-      )}
-      {isSuperAdminOpen && <SuperAdminDialog open={isSuperAdminOpen} onOpenChange={setIsSuperAdminOpen} />}
+      <WorkbookDialog
+          open={isWorkbookOpen}
+          onOpenChange={(isOpen) => {
+              setIsWorkbookOpen(isOpen);
+              if (!isOpen) setInitialWorkbookPayload(undefined);
+          }}
+          initialPayload={initialWorkbookPayload}
+      />
+      <RequisitionsDialog
+          open={isRequisitionsOpen}
+          onOpenChange={(isOpen) => {
+              setIsRequisitionsOpen(isOpen);
+              if (!isOpen) setInitialReqPayload(undefined);
+          }}
+          initialPayload={initialReqPayload}
+      />
+      <TasksDialog
+          open={isTasksOpen}
+          onOpenChange={(isOpen) => {
+              setIsTasksOpen(isOpen);
+              if (!isOpen) setInitialTaskPayload(undefined);
+          }}
+          initialPayload={initialTaskPayload}
+          userProfile={userProfile}
+          permissions={permissions}
+      />
+      <AttendanceDialog open={isAttendanceOpen} onOpenChange={setIsAttendanceOpen} />
+      <LeaveDialog open={isLeaveOpen} onOpenChange={setIsLeaveOpen} />
+      <ReportsDialog
+          open={isReportsOpen}
+          onOpenChange={(isOpen) => {
+              setIsReportsOpen(isOpen);
+              if (!isOpen) setInitialReportsPayload(undefined);
+          }}
+          initialPayload={initialReportsPayload}
+      />
+      <AccountingDialog open={isAccountingOpen} onOpenChange={setIsAccountingOpen} />
+      <LibraryDialog open={isLibraryOpen} onOpenChange={setIsLibraryOpen} />
+      <DisplaysDialog 
+        open={isDisplaysOpen} 
+        onOpenChange={(isOpen) => {
+            setIsDisplaysOpen(isOpen);
+            if (!isOpen) setInitialDisplaysPayload(undefined);
+        }} 
+        initialPayload={initialDisplaysPayload}
+      />
+      <SuperAdminDialog open={isSuperAdminOpen} onOpenChange={setIsSuperAdminOpen} />
       
       {isProfileOpen && userProfile && <ProfileDialog open={isProfileOpen} onOpenChange={setIsProfileOpen} userProfile={userProfile} />}
       {isSettingsOpen && userProfile && <SettingsDialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen} userProfile={userProfile} />}

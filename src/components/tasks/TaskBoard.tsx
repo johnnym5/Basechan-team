@@ -1,19 +1,22 @@
 'use client';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query, where, Query } from 'firebase/firestore';
-import type { Task, UserProfile, TaskStatus } from '@/lib/types';
+import type { Task, UserProfile, TaskStatus, TaskPriority } from '@/lib/types';
 import type { Permissions } from '@/hooks/usePermissions';
 import { TaskCard } from './TaskCard';
 import { useSuperAdmin } from '@/hooks/useSuperAdmin';
 import { useMemo } from 'react';
 import { Skeleton } from '../ui/skeleton';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
-import { cn } from '@/lib/utils';
+import { Badge } from '../ui/badge';
+import { parseISO, compareDesc, compareAsc } from 'date-fns';
 
 interface TaskBoardProps {
     userProfile: UserProfile;
     permissions: Permissions;
     onTaskSelect: (task: Task) => void;
+    searchTerm: string;
+    sortBy: string;
 }
 
 const KANBAN_COLUMNS: { title: string, status: TaskStatus }[] = [
@@ -23,13 +26,18 @@ const KANBAN_COLUMNS: { title: string, status: TaskStatus }[] = [
     { title: 'Archived', status: 'ARCHIVED' },
 ];
 
-export function TaskBoard({ userProfile, permissions, onTaskSelect }: TaskBoardProps) {
+const PRIORITY_MAP: Record<TaskPriority, number> = {
+    'LEVEL_3': 3,
+    'LEVEL_2': 2,
+    'LEVEL_1': 1,
+};
+
+export function TaskBoard({ userProfile, permissions, onTaskSelect, searchTerm, sortBy }: TaskBoardProps) {
     const firestore = useFirestore();
     const { isSuperAdmin } = useSuperAdmin();
 
-    // Query all tasks regardless of status, we will filter on the client.
     const tasksQuery = useMemoFirebase((): Query | null => {
-        if (!firestore) return null;
+        if (!firestore || !userProfile?.orgId) return null;
         
         const tasksRef = collection(firestore, 'tasks');
 
@@ -44,7 +52,7 @@ export function TaskBoard({ userProfile, permissions, onTaskSelect }: TaskBoardP
                 where('assignedTo', '==', userProfile.id)
             );
         }
-    }, [firestore, userProfile, permissions.canAccessAllTasks, isSuperAdmin]);
+    }, [firestore, userProfile?.orgId, userProfile?.id, permissions.canAccessAllTasks, isSuperAdmin]);
 
     const { data: tasks, isLoading } = useCollection<Task>(tasksQuery);
     
@@ -57,18 +65,44 @@ export function TaskBoard({ userProfile, permissions, onTaskSelect }: TaskBoardP
         };
 
         if (tasks) {
-            for (const task of tasks) {
+            let processedTasks = [...tasks];
+
+            // 1. Apply Search
+            if (searchTerm) {
+                const term = searchTerm.toLowerCase();
+                processedTasks = processedTasks.filter(t => 
+                    t.title.toLowerCase().includes(term) || 
+                    t.serialNo.toLowerCase().includes(term)
+                );
+            }
+
+            // 2. Apply Sort
+            processedTasks.sort((a, b) => {
+                switch(sortBy) {
+                    case 'priority':
+                        return PRIORITY_MAP[b.priority] - PRIORITY_MAP[a.priority];
+                    case 'deadline':
+                        if (!a.dueDate) return 1;
+                        if (!b.dueDate) return -1;
+                        return compareAsc(parseISO(a.dueDate), parseISO(b.dueDate));
+                    case 'newest':
+                    default:
+                        return compareDesc(parseISO(a.createdAt), parseISO(b.createdAt));
+                }
+            });
+
+            for (const task of processedTasks) {
                 if (grouped[task.status]) {
                     grouped[task.status].push(task);
                 }
             }
         }
         return grouped;
-    }, [tasks]);
+    }, [tasks, searchTerm, sortBy]);
 
     if (isLoading) {
         return (
-             <div className="grid grid-cols-4 gap-6 h-full p-4">
+             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 h-full p-6">
                 {Array.from({ length: 4 }).map((_, i) => (
                     <div key={i} className="space-y-4">
                         <Skeleton className="h-8 w-1/2" />
@@ -83,27 +117,37 @@ export function TaskBoard({ userProfile, permissions, onTaskSelect }: TaskBoardP
     return (
         <div className="h-full flex flex-col min-h-0">
             <ScrollArea className="flex-1 w-full h-full">
-                <div className="flex h-full gap-6 p-4">
+                <div className="flex h-full gap-6 p-6">
                     {KANBAN_COLUMNS.map(col => (
                         <div key={col.status} className="w-80 flex-shrink-0 flex flex-col h-full min-h-0">
-                            <h3 className="font-bold text-sm uppercase tracking-[0.2em] mb-4 px-1 text-muted-foreground">
-                                {col.title} ({tasksByStatus[col.status].length})
-                            </h3>
-                            <div className="flex-1 min-h-0 bg-secondary/20 p-2 rounded-2xl border border-white/5 overflow-y-auto">
-                                <div className="space-y-3 p-1">
+                            <div className="flex items-center justify-between mb-4 px-2">
+                                <h3 className="font-black text-[10px] uppercase tracking-[0.25em] text-muted-foreground">
+                                    {col.title}
+                                </h3>
+                                <Badge variant="secondary" className="h-5 rounded-md px-1.5 font-bold text-[9px] bg-white/5 border-white/5">
+                                    {tasksByStatus[col.status].length}
+                                </Badge>
+                            </div>
+                            <div className="flex-1 min-h-0 bg-secondary/5 p-3 rounded-[2rem] border border-white/5 overflow-y-auto custom-scrollbar">
+                                <div className="space-y-4 p-1">
                                     {tasksByStatus[col.status].length === 0 ? (
                                         <div className="text-center text-[10px] font-black uppercase tracking-widest text-muted-foreground opacity-30 pt-20">
                                             Stage Empty
                                         </div>
                                     ) : (
-                                        tasksByStatus[col.status].map(task => (
-                                            <TaskCard
-                                                key={task.id}
-                                                task={task}
-                                                userProfile={userProfile}
-                                                permissions={permissions}
-                                                onSelect={() => onTaskSelect(task)}
-                                            />
+                                        tasksByStatus[col.status].map((task, idx) => (
+                                            <div 
+                                                key={task.id} 
+                                                className="animate-slide-up-fade"
+                                                style={{ animationDelay: `${idx * 50}ms` }}
+                                            >
+                                                <TaskCard
+                                                    task={task}
+                                                    userProfile={userProfile}
+                                                    permissions={permissions}
+                                                    onSelect={() => onTaskSelect(task)}
+                                                />
+                                            </div>
                                         ))
                                     )}
                                 </div>
