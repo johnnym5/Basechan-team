@@ -81,7 +81,7 @@ const DialogContent = React.forwardRef<
         )}
 
         <div className={cn("mx-auto w-full h-full flex flex-col relative", (isTopPanel || isLeftPanel) ? "max-w-[1920px]" : "", contentOffsetClass)}>
-            <div className={cn("flex-1 h-full min-h-0", (isTopPanel || isLeftPanel) ? "" : isSidePanel ? "px-8 pt-4" : "", isBottomPanel && "pt-6")}>
+            <div className={cn("flex-1 min-h-0", (isTopPanel || isLeftPanel) ? "" : isSidePanel ? "px-8 pt-4" : "", isBottomPanel && "pt-6")}>
                 {children}
             </div>
             
