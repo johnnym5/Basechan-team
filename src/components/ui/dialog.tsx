@@ -66,7 +66,6 @@ const DialogContent = React.forwardRef<
   const isLeftPanel = finalPosition === "left";
   const isSidePanel = finalPosition === "left" || finalPosition === "right";
 
-  // When in "left" mode, we offset the content so it sits beside our Control Pillar
   const contentOffsetClass = isLeftPanel ? "pl-[5.5rem] lg:pl-[6.5rem]" : "";
 
   return (
