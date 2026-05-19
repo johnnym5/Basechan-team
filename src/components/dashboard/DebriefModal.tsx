@@ -14,12 +14,19 @@ import { cn } from '@/lib/utils';
 export function DebriefModal({ userProfile }: { userProfile: UserProfile }) {
     const firestore = useFirestore();
     const [isOpen, setIsOpen] = useState(false);
+    const [greeting, setGreeting] = useState('Morning');
 
-    // Trigger Logic
+    // Trigger Logic & Time Context
     useEffect(() => {
         const handleManualOpen = () => setIsOpen(true);
         uiEmitter.on('open-assistant-dialog', handleManualOpen);
         
+        // Dynamic Greeting Calculation
+        const hour = new Date().getHours();
+        if (hour < 12) setGreeting('Morning');
+        else if (hour < 17) setGreeting('Afternoon');
+        else setGreeting('Evening');
+
         // Auto-open logic for first login of the day
         const lastDebrief = localStorage.getItem(`last-debrief-${userProfile.id}`);
         const today = format(new Date(), 'yyyy-MM-dd');
@@ -83,7 +90,7 @@ export function DebriefModal({ userProfile }: { userProfile: UserProfile }) {
         <ResponsiveDialog 
             open={isOpen} 
             onOpenChange={setIsOpen} 
-            title={`Good ${new Date().getHours() < 12 ? 'Morning' : 'Afternoon'}, ${userProfile.fullName.split(' ')[0]}`}
+            title={`Good ${greeting}, ${userProfile.fullName.split(' ')[0]}`}
             description={format(new Date(), 'PPPP p')}
         >
             <div className="py-4 space-y-6">

@@ -14,20 +14,28 @@ import { cn } from '@/lib/utils';
 export function DebriefModal({ userProfile }: { userProfile: UserProfile }) {
     const firestore = useFirestore();
     const [isOpen, setIsOpen] = useState(false);
+    const [greeting, setGreeting] = useState('Morning');
 
-    // Manual Trigger Listener
+    // Manual Trigger Listener & Time Context
     useEffect(() => {
         const openAssistant = () => setIsOpen(true);
         uiEmitter.on('open-assistant-dialog', openAssistant);
+
+        // Dynamic Greeting
+        const hour = new Date().getHours();
+        if (hour < 12) setGreeting('Morning');
+        else if (hour < 17) setGreeting('Afternoon');
+        else setGreeting('Evening');
+
         return () => uiEmitter.off('open-assistant-dialog', openAssistant);
     }, []);
 
     // Check if debrief was shown today for auto-popup
     useEffect(() => {
-        const lastDebrief = localStorage.getItem(`last-debrief-${userProfile.id}`);
+        const lastDebrief = localStorage.getItem(`last-debrief-assistant-${userProfile.id}`);
         const today = format(new Date(), 'yyyy-MM-dd');
         
-        const remindLater = localStorage.getItem(`debrief-remind-later-${userProfile.id}`);
+        const remindLater = localStorage.getItem(`debrief-remind-later-assistant-${userProfile.id}`);
         const isAfternoon = new Date().getHours() >= 13;
 
         if (lastDebrief !== today) {
@@ -78,13 +86,13 @@ export function DebriefModal({ userProfile }: { userProfile: UserProfile }) {
     const latestAnnouncement = announcements?.[0];
 
     const handleAcknowledge = () => {
-        localStorage.setItem(`last-debrief-${userProfile.id}`, format(new Date(), 'yyyy-MM-dd'));
-        localStorage.removeItem(`debrief-remind-later-${userProfile.id}`);
+        localStorage.setItem(`last-debrief-assistant-${userProfile.id}`, format(new Date(), 'yyyy-MM-dd'));
+        localStorage.removeItem(`debrief-remind-later-assistant-${userProfile.id}`);
         setIsOpen(false);
     };
 
     const handleRemindLater = () => {
-        localStorage.setItem(`debrief-remind-later-${userProfile.id}`, format(new Date(), 'yyyy-MM-dd'));
+        localStorage.setItem(`debrief-remind-later-assistant-${userProfile.id}`, format(new Date(), 'yyyy-MM-dd'));
         setIsOpen(false);
     };
 
@@ -107,7 +115,7 @@ export function DebriefModal({ userProfile }: { userProfile: UserProfile }) {
                     </div>
                     <div className="text-center">
                         <DialogTitle className="text-2xl font-black font-headline tracking-tighter">
-                            Good Morning, {userProfile.fullName.split(' ')[0]}
+                            Good {greeting}, {userProfile.fullName.split(' ')[0]}
                         </DialogTitle>
                         <DialogDescription className="flex items-center justify-center gap-2 text-xs font-bold uppercase tracking-widest mt-2">
                             <Clock className="h-3 w-3" /> {format(new Date(), 'PP p')}
@@ -139,7 +147,7 @@ export function DebriefModal({ userProfile }: { userProfile: UserProfile }) {
                             <div className="flex items-center justify-between text-primary">
                                 <div className="flex items-center gap-2">
                                     <ListTodo className="h-4 w-4" />
-                                    <span className="text-[10px] font-black uppercase tracking-tighter">Missions</span>
+                                    <span className="text-[10px] font-black uppercase tracking-tighter">Tasks</span>
                                 </div>
                                 <ChevronRight className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
                             </div>
@@ -154,13 +162,12 @@ export function DebriefModal({ userProfile }: { userProfile: UserProfile }) {
                             className="p-4 rounded-3xl bg-primary/5 border border-primary/10 flex flex-col gap-2 cursor-pointer hover:bg-primary/10 transition-colors"
                             onClick={() => {
                                 setIsOpen(false);
-                                // Open detailed announcements view if possible, or just home
                                 window.location.href = '/';
                             }}
                         >
                             <div className="flex items-center gap-2 text-primary">
                                 <Megaphone className="h-3.5 w-3.5" />
-                                <span className="text-[9px] font-black uppercase tracking-[0.2em]">Latest Broadcast</span>
+                                <span className="text-[9px] font-black uppercase tracking-[0.2em]">Latest Update</span>
                             </div>
                             <h4 className="text-xs font-bold truncate">{latestAnnouncement.title}</h4>
                             <p className="text-[10px] text-muted-foreground line-clamp-1">{latestAnnouncement.content}</p>
@@ -174,7 +181,7 @@ export function DebriefModal({ userProfile }: { userProfile: UserProfile }) {
                             </div>
                             <div>
                                 <p className="text-xs font-bold text-rose-500 uppercase tracking-tighter">Critical Deadline</p>
-                                <p className="text-[10px] font-medium leading-tight">You have {taskIntel.urgent} mission(s) due within the next 24 hours.</p>
+                                <p className="text-[10px] font-medium leading-tight">You have {taskIntel.urgent} task(s) due within the next 24 hours.</p>
                             </div>
                         </div>
                     )}
