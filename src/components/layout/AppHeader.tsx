@@ -104,7 +104,7 @@ export default function AppHeader({
               {/* Dynamic Status Greeting */}
               <div className="w-full px-4 overflow-hidden min-h-[3rem] flex flex-col justify-center">
                   <p className="text-[9px] font-black uppercase tracking-[0.2em] text-primary opacity-50 mb-0.5 truncate">
-                      Command Pillar
+                      BASECHAN INT
                   </p>
                   <p className="text-xs font-black font-headline tracking-tighter leading-tight transition-all duration-500 group-hover:text-sm group-hover:tracking-tight animate-in fade-in slide-in-from-left-2">
                       {greeting}
@@ -115,7 +115,7 @@ export default function AppHeader({
                   <UserNav userProfile={userProfile} />
                   <ThemeToggle />
                   
-                  {/* MERGED: Intelligence Button (Debrief + Broadcast Indicator) */}
+                  {/* Intelligence Button (Debrief + Broadcast Indicator) */}
                   <button 
                     onClick={handleOpenIntelligence}
                     className="relative text-gray-400 hover:text-amber-500 transition-all p-2 rounded-full hover:bg-amber-500/5 group/btn"

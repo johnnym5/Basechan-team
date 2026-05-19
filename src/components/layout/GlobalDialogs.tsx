@@ -55,7 +55,7 @@ export function GlobalDialogs({ userProfile, permissions, onAnyDialogOpenChange 
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [initialChatPayload, setInitialChatPayload] = useState<{ initialUserId?: string; chatId?: string } | undefined>();
-  const [isInviteUserOpen, setIsInviteUserOpen] = useState(false);
+  const [isInviteUserOpen, setIsInviteOpen] = useState(false);
   const [isNewAnnouncementOpen, setIsNewAnnouncementOpen] = useState(false);
   const [isSuperAdminOpen, setIsSuperAdminOpen] = useState(false);
 
@@ -76,7 +76,7 @@ export function GlobalDialogs({ userProfile, permissions, onAnyDialogOpenChange 
     setIsProfileOpen(false);
     setIsSettingsOpen(false);
     setIsChatOpen(false);
-    setIsInviteUserOpen(false);
+    setIsInviteOpen(false);
     setIsNewAnnouncementOpen(false);
     setIsSuperAdminOpen(false);
   }, []);
@@ -133,7 +133,7 @@ export function GlobalDialogs({ userProfile, permissions, onAnyDialogOpenChange 
     const openNewRequisition = () => setIsNewRequisitionOpen(true);
     const openRequestLeave = () => setIsRequestLeaveOpen(true);
     const openNewWorkbook = () => setIsNewWorkbookOpen(true);
-    const openInviteUser = () => setIsInviteUserOpen(true);
+    const openInviteUser = () => setIsInviteOpen(true);
     const openNewAnnouncement = () => setIsNewAnnouncementOpen(true);
     const openSuperAdmin = () => setIsSuperAdminOpen(true);
 
@@ -182,11 +182,6 @@ export function GlobalDialogs({ userProfile, permissions, onAnyDialogOpenChange 
     };
   }, [closeAllDialogs]);
 
-  /**
-   * CRITICAL INTERACTIVITY FIX:
-   * We set modal={false} for all primary workstations.
-   * This ensures the Vertical Control Pillar remains clickable while a workstation is open.
-   */
   return (
     <>
       <WorkbookDialog
@@ -276,7 +271,7 @@ export function GlobalDialogs({ userProfile, permissions, onAnyDialogOpenChange 
       {isNewRequisitionOpen && userProfile && <NewRequisitionDialog open={isNewRequisitionOpen} onOpenChange={setIsNewRequisitionOpen} userProfile={userProfile} />}
       {isRequestLeaveOpen && userProfile && <RequestLeaveDialog open={isRequestLeaveOpen} onOpenChange={setIsRequestLeaveOpen} userProfile={userProfile} />}
       {isNewWorkbookOpen && userProfile && <NewWorkbookDialog open={isNewWorkbookOpen} onOpenChange={setIsNewWorkbookOpen} userProfile={userProfile} />}
-      {isInviteUserOpen && userProfile && <InviteUserDialog open={isInviteUserOpen} onOpenChange={setIsInviteUserOpen} currentUserProfile={userProfile} />}
+      {isInviteUserOpen && userProfile && <InviteUserDialog open={isInviteUserOpen} onOpenChange={setIsInviteOpen} currentUserProfile={userProfile} />}
       {permissions.canManageAnnouncements && isNewAnnouncementOpen && userProfile && (
           <NewAnnouncementDialog 
               open={isNewAnnouncementOpen}
