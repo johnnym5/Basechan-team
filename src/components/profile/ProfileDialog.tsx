@@ -13,7 +13,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Bell, Loader2, Pencil, MapPin, Calendar, Lock, Activity, ShieldCheck } from "lucide-react";
+import { Bell, Loader2, Pencil, MapPin, Lock, Activity, ShieldCheck } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useFirestore, updateDocumentNonBlocking, useUser, useAuth } from "@/firebase";
 import { doc } from "firebase/firestore";
@@ -27,7 +27,6 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { sanitizeInput } from "@/lib/utils";
-import { Separator } from "@/components/ui/separator";
 import { sendPasswordResetEmail } from "firebase/auth";
 import { useFileUpload } from "@/hooks/useFileUpload";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -179,11 +178,6 @@ export function ProfileDialog({ open, onOpenChange, userProfile, modal }: Profil
                             <p className="text-[9px] font-black uppercase tracking-widest text-primary leading-none">Security Clearance</p>
                             <p className="text-sm font-bold mt-0.5">{userProfile.role}</p>
                         </div>
-                        <div className="h-10 w-px bg-white/5 mx-2" />
-                        <Badge variant="outline" className="h-8 rounded-xl bg-emerald-500/5 text-emerald-500 border-emerald-500/20 gap-1.5">
-                            <ShieldCheck className="h-3 w-3" />
-                            <span className="text-[9px] font-black tracking-[0.1em]">NODE VERIFIED</span>
-                        </Badge>
                     </div>
                 </div>
 
