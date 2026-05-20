@@ -110,17 +110,18 @@ export function useNotificationScheduler(
     }, [user, systemConfig, attendance, escalationStep]);
 
     const triggerReminder = async (title: string, body: string, id: string, actions: any[] = []) => {
-        if (!('serviceWorker' in navigator)) return;
+        if (typeof window === 'undefined' || !('serviceWorker' in navigator) || !('Notification' in window)) return;
         
+        // Ensure permission is granted before execution
+        if (Notification.permission !== 'granted') return;
+
         const key = `${id}-${format(new Date(), 'yyyy-MM-dd')}`;
         if (lastNotifiedRef.current[key]) return;
 
         try {
             const registration = await navigator.serviceWorker.ready;
-            registration.showNotification(title, {
+            await registration.showNotification(title, {
                 body,
-                icon: '/favicon.ico',
-                badge: '/favicon.ico',
                 tag: id,
                 actions,
                 requireInteraction: true,

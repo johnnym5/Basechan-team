@@ -4,7 +4,7 @@
 
 @layer base {
   html {
-    font-size: 10.5px; /* Reduced from 14px to achieve 75% tactical scale */
+    font-size: 10.5px; /* Fixed 75% scale (14px * 0.75) */
     scroll-behavior: smooth;
     scrollbar-gutter: stable;
   }

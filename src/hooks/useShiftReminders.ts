@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
@@ -21,7 +20,6 @@ export function useShiftReminders(
 
         const interval = setInterval(() => {
             const now = new Date();
-            const todayStr = format(now, 'yyyy-MM-dd');
 
             // 1. MORNING REMINDER (10 mins before start)
             if (systemConfig.work_hours?.start && !attendance) {
@@ -67,14 +65,17 @@ export function useShiftReminders(
     }, [user, systemConfig, attendance, escalationStep]);
 
     const triggerNotification = async (title: string, body: string, tag: string, actions: any[] = []) => {
-        if (!('serviceWorker' in navigator)) return;
+        if (typeof window === 'undefined' || !('serviceWorker' in navigator) || !('Notification' in window)) return;
         
+        // Ensure permission is granted before execution
+        if (Notification.permission !== 'granted') return;
+
         const key = `${tag}-${format(new Date(), 'yyyy-MM-dd')}`;
         if (lastNotifiedRef.current[key]) return;
 
         try {
             const registration = await navigator.serviceWorker.ready;
-            registration.showNotification(title, {
+            await registration.showNotification(title, {
                 body,
                 tag,
                 actions,
