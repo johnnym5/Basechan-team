@@ -28,6 +28,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { ScrollArea } from '../ui/scroll-area';
 import { Separator } from '../ui/separator';
 import { demoDataService } from '@/services/demo-data';
+import { BatchUserImport } from './BatchUserImport';
 
 export const COLLECTIONS = [
     { id: 'requisitions', name: 'Requisitions' },
@@ -219,6 +220,8 @@ export function DataManagement() {
                     </div>
                 </CardHeader>
             </Card>
+
+            <BatchUserImport />
 
             <Card className="apple-glass border-none shadow-xl overflow-hidden">
                 <CardHeader className="bg-white/5 border-b border-white/5 pb-4">
