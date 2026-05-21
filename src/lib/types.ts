@@ -259,6 +259,12 @@ export interface ChatMessage {
     senderName: string;
     content: string;
     timestamp: string;
+    asset?: {
+        id: string;
+        type: 'TASK' | 'REQUISITION';
+        title: string;
+        serialNo?: string;
+    };
 }
 
 export interface Notification {

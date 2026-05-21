@@ -1,20 +1,21 @@
 
 'use client';
 
-import { Firestore, collection, doc, query, where, getDocs, writeBatch, arrayUnion, serverTimestamp } from 'firebase/firestore';
-import { addDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase';
+import { Firestore, collection, doc, writeBatch } from 'firebase/firestore';
+import { Database, ref, set, serverTimestamp as rtdbTimestamp } from 'firebase/database';
+import { updateDocumentNonBlocking } from '@/firebase';
 import type { Chat, ChatMessage, UserProfile, Notification } from '@/lib/types';
 import { sanitizeInput } from '@/lib/utils';
 import { activityService } from './activity-service';
 
 /**
- * Service to handle real-time communication and read receipts.
+ * Service to handle real-time communication, read receipts, and typing indicators.
  */
 export const chatService = {
     /**
      * Sends a message and updates the chat metadata in a single transaction.
      */
-    async sendMessage(db: Firestore, chat: Chat, user: UserProfile, content: string) {
+    async sendMessage(db: Firestore, chat: Chat, user: UserProfile, content: string, asset?: ChatMessage['asset']) {
         const now = new Date().toISOString();
         const messagesRef = collection(db, 'chats', chat.id, 'messages');
         const notificationsRef = collection(db, 'notifications');
@@ -28,6 +29,7 @@ export const chatService = {
             senderName: user.fullName,
             content: messageContent,
             timestamp: now,
+            asset: asset || undefined,
         };
 
         const batch = writeBatch(db);
@@ -40,12 +42,12 @@ export const chatService = {
         const chatRef = doc(db, 'chats', chat.id);
         batch.update(chatRef, {
             lastMessage: {
-                text: messageContent,
+                text: asset ? `[Shared ${asset.type}] ${asset.title}` : messageContent,
                 senderId: user.id,
                 senderName: user.fullName,
                 timestamp: now,
             },
-            [`readReceipts.${user.id}`]: now, // Automatically mark as read by sender
+            [`readReceipts.${user.id}`]: now,
             updatedAt: now
         });
         
@@ -57,7 +59,7 @@ export const chatService = {
                     orgId: user.orgId,
                     userId: participantId,
                     title: `New message from ${user.fullName}`,
-                    description: messageContent,
+                    description: asset ? `Shared a ${asset.type.toLowerCase()}` : messageContent,
                     href: `/?panel=chat&chatId=${chat.id}`,
                     isRead: false,
                     createdAt: now,
@@ -70,6 +72,14 @@ export const chatService = {
         activityService.logActivity(db, user, 1);
 
         return await batch.commit();
+    },
+
+    /**
+     * Updates the user's typing status in RTDB.
+     */
+    async setTypingStatus(rtdb: Database, chatId: string, userId: string, isTyping: boolean) {
+        const typingRef = ref(rtdb, `chats/${chatId}/typing/${userId}`);
+        return set(typingRef, isTyping ? rtdbTimestamp() : null);
     },
 
     /**
