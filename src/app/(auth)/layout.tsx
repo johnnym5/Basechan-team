@@ -1,9 +1,11 @@
 'use client';
-// This layout and its child routes are deprecated. Authentication is handled via a dialog.
-export default function DeprecatedAuthLayout({
-    children,
-}: {
-    children: React.ReactNode;
-}) {
-    return null;
+
+import React from 'react';
+
+/**
+ * @deprecated Authentication is now handled via dialogs.
+ * Rendering children prevents build-time errors during static generation.
+ */
+export default function DeprecatedAuthLayout({ children }: { children: React.ReactNode }) {
+  return <React.Fragment>{children}</React.Fragment>;
 }

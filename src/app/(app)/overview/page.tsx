@@ -1,5 +1,17 @@
 'use client';
-// This page is deprecated. The primary dashboard is at the root '/'.
+
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+
+/**
+ * @deprecated Redirecting to the primary dashboard at root.
+ */
 export default function DeprecatedOverviewPage() {
+  const router = useRouter();
+
+  useEffect(() => {
+    router.replace('/');
+  }, [router]);
+
   return null;
 }
