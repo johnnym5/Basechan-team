@@ -1,9 +1,16 @@
 'use client';
 
 import { firebaseConfig } from '@/firebase/config';
-import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
-import { getAuth, Auth } from 'firebase/auth';
-import { initializeFirestore, enableIndexedDbPersistence, getFirestore, CACHE_SIZE_UNLIMITED, Firestore } from 'firebase/firestore';
+import { initializeApp, getApps, FirebaseApp } from 'firebase/app';
+import { getAuth, Auth, setPersistence, browserLocalPersistence } from 'firebase/auth';
+import { 
+  initializeFirestore, 
+  getFirestore, 
+  CACHE_SIZE_UNLIMITED, 
+  Firestore,
+  persistentLocalCache,
+  persistentMultipleTabManager
+} from 'firebase/firestore';
 import { getStorage, FirebaseStorage } from 'firebase/storage';
 import { getDatabase, Database } from 'firebase/database';
 
@@ -43,40 +50,38 @@ export function initializeFirebase() {
   return getSdks(app);
 }
 
+/**
+ * Configures and retrieves individual Firebase service instances.
+ * Implements modern multi-tab persistent local caching for offline capability.
+ */
 export function getSdks(firebaseApp: FirebaseApp) {
-  // 1. Initialize Firestore as a singleton
+  // 1. Initialize Firestore with Persistent Local Cache
   if (!firestoreInstance) {
     try {
       firestoreInstance = initializeFirestore(firebaseApp, {
+        localCache: persistentLocalCache({
+          tabManager: persistentMultipleTabManager(),
+          cacheSizeBytes: CACHE_SIZE_UNLIMITED,
+        }),
+        // experimentalForceLongPolling is helpful for environments with proxy/firewall websocket blocks
         experimentalForceLongPolling: true,
-        cacheSizeBytes: CACHE_SIZE_UNLIMITED,
       });
     } catch (e) {
       // Fallback if already initialized (common in hot-reload scenarios)
       firestoreInstance = getFirestore(firebaseApp);
     }
+  }
 
-    // 2. Enable persistence only once per browser session
-    if (typeof window !== 'undefined') {
-      const win = window as any;
-      if (!win.__firebasePersistenceEnabled) {
-        win.__firebasePersistenceEnabled = true;
-        enableIndexedDbPersistence(firestoreInstance)
-          .catch((err) => {
-            if (err.code === 'failed-precondition') {
-              console.warn('Firestore persistence: already active in another tab.');
-            } else if (err.code === 'unimplemented') {
-              console.warn('Firestore persistence: not supported by this browser.');
-            } else {
-                console.warn('Firestore persistence initialization error:', err.message);
-            }
-          });
-      }
-    }
+  // 2. Initialize Auth with explicit Browser Local Persistence
+  if (!authInstance) {
+    authInstance = getAuth(firebaseApp);
+    // Ensure session survives browser close and remains active while offline
+    setPersistence(authInstance, browserLocalPersistence).catch((err) => {
+        console.warn("[SYSTEM] Auth persistence initialization failed:", err.message);
+    });
   }
 
   // 3. Initialize other services as singletons
-  if (!authInstance) authInstance = getAuth(firebaseApp);
   if (!storageInstance) storageInstance = getStorage(firebaseApp);
   if (!databaseInstance) databaseInstance = getDatabase(firebaseApp);
 
