@@ -14,7 +14,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Bell, Loader2, Pencil, MapPin, Lock, Activity, ShieldCheck, MonitorDot, FileCode } from "lucide-react";
+import { Bell, Loader2, Pencil, MapPin, Lock, Activity, ShieldCheck, MonitorDot, FileCode, Info } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useFirestore, updateDocumentNonBlocking, useUser, useAuth } from "@/firebase";
 import { doc } from "firebase/firestore";
@@ -28,7 +28,6 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { sanitizeInput } from "@/lib/utils";
-import { sendPasswordResetEmail } from "firebase/auth";
 import { useFileUpload } from "@/hooks/useFileUpload";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
@@ -55,7 +54,6 @@ export function ProfileDialog({ open, onOpenChange, userProfile, modal }: Profil
   const firestore = useFirestore();
   const { toast } = useToast();
   const { user } = useUser();
-  const auth = useAuth();
   const { isUploading, uploadProgress, uploadFile } = useFileUpload();
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
@@ -63,29 +61,53 @@ export function ProfileDialog({ open, onOpenChange, userProfile, modal }: Profil
   const isBusy = isSubmitting || isUploading;
 
   // Permission States
-  const [notifStatus, setNotifStatus] = useState<NotificationPermission>('default');
-  const [locationStatus, setLocationStatus] = useState<'default' | 'granted' | 'denied'>('default');
-  const [idleStatus, setIdleStatus] = useState<'default' | 'granted' | 'denied'>('default');
-  const [fsStatus, setFsStatus] = useState<'default' | 'granted' | 'denied'>('default');
+  const [notifStatus, setNotifStatus] = useState<NotificationPermission | 'unsupported'>('default');
+  const [locationStatus, setLocationStatus] = useState<'default' | 'granted' | 'denied' | 'unsupported'>('default');
+  const [idleStatus, setIdleStatus] = useState<'default' | 'granted' | 'denied' | 'unsupported'>('default');
+  const [fsStatus, setFsStatus] = useState<'default' | 'granted' | 'denied' | 'unsupported'>('default');
+
+  const checkPermissions = async () => {
+    if (typeof window === 'undefined') return;
+
+    // 1. Notifications
+    if ('Notification' in window) {
+        setNotifStatus(Notification.permission);
+    } else {
+        setNotifStatus('unsupported');
+    }
+
+    // 2. Permissions API (Location, Idle)
+    if ('permissions' in navigator) {
+        try {
+            const locRes = await navigator.permissions.query({ name: 'geolocation' as any });
+            setLocationStatus(locRes.state as any);
+            locRes.onchange = () => setLocationStatus(locRes.state as any);
+
+            if ('IdleDetector' in window) {
+                const idleRes = await navigator.permissions.query({ name: 'idle-detection' as any });
+                setIdleStatus(idleRes.state as any);
+                idleRes.onchange = () => setIdleStatus(idleRes.state as any);
+            } else {
+                setIdleStatus('unsupported');
+            }
+        } catch (e) {
+            console.warn("Permissions query failed", e);
+        }
+    }
+
+    // 3. File System
+    if ('showDirectoryPicker' in window) {
+        // There's no query for this, we rely on local storage or previous attempts
+        const hasAccess = sessionStorage.getItem('basechan-fs-authorized') === 'true';
+        setFsStatus(hasAccess ? 'granted' : 'default');
+    } else {
+        setFsStatus('unsupported');
+    }
+  };
 
   useEffect(() => {
     if (open) {
-      // Notification check
-      if ('Notification' in window) setNotifStatus(Notification.permission);
-      
-      // Geolocation check
-      if ('permissions' in navigator) {
-        navigator.permissions.query({ name: 'geolocation' as any }).then(res => {
-            setLocationStatus(res.state as any);
-        });
-        
-        // Idle Detection check
-        if ('IdleDetector' in window) {
-            navigator.permissions.query({ name: 'idle-detection' as any }).then(res => {
-                setIdleStatus(res.state as any);
-            });
-        }
-      }
+      checkPermissions();
     }
   }, [open]);
 
@@ -147,12 +169,27 @@ export function ProfileDialog({ open, onOpenChange, userProfile, modal }: Profil
   }
 
   const handleRequestPermission = async (type: 'notifications' | 'location' | 'idle' | 'fs') => {
+    const currentStatus = type === 'notifications' ? notifStatus : type === 'location' ? locationStatus : type === 'idle' ? idleStatus : fsStatus;
+    
+    if (currentStatus === 'denied') {
+        toast({ 
+            variant: 'destructive', 
+            title: "Authorization Blocked", 
+            description: `You have previously denied this request. Please reset permissions in your browser's site settings (lock icon in address bar) and reload.`,
+            duration: 6000
+        });
+        return;
+    }
+
     try {
         if (type === 'notifications') {
             const permission = await Notification.requestPermission();
             setNotifStatus(permission);
         } else if (type === 'location') {
-            navigator.geolocation.getCurrentPosition(() => setLocationStatus('granted'), () => setLocationStatus('denied'));
+            navigator.geolocation.getCurrentPosition(
+                () => { setLocationStatus('granted'); toast({ title: "Location Authorized" }); },
+                () => { setLocationStatus('denied'); toast({ variant: 'destructive', title: "Location Denied" }); }
+            );
         } else if (type === 'idle') {
             if ('IdleDetector' in window) {
                 const status = await (window as any).IdleDetector.requestPermission();
@@ -163,22 +200,22 @@ export function ProfileDialog({ open, onOpenChange, userProfile, modal }: Profil
                 try {
                     await (window as any).showDirectoryPicker();
                     setFsStatus('granted');
+                    sessionStorage.setItem('basechan-fs-authorized', 'true');
+                    toast({ title: "Storage Link Active" });
                 } catch (e) {
-                    setFsStatus('denied');
+                    // Usually user cancelled
                 }
-            } else {
-                toast({ variant: 'destructive', title: "Browser Incompatible", description: "File System API not supported by this browser." });
             }
         }
-        toast({ title: "Permission Updated", description: `Authorization for ${type} has been processed.` });
     } catch (e: any) {
-        toast({ variant: 'destructive', title: 'Authorization Failed', description: e.message });
+        toast({ variant: 'destructive', title: 'Tactical Error', description: e.message });
     }
   };
 
   const getStatusBadge = (status: string) => {
     if (status === 'granted') return <Badge className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20 text-[8px] font-black uppercase">Authorized</Badge>;
-    if (status === 'denied') return <Badge variant="destructive" className="text-[8px] font-black uppercase">Denied</Badge>;
+    if (status === 'denied') return <Badge variant="destructive" className="text-[8px] font-black uppercase">Blocked</Badge>;
+    if (status === 'unsupported') return <Badge variant="outline" className="text-[8px] font-black uppercase opacity-30">N/A</Badge>;
     return <Badge variant="outline" className="text-[8px] font-black uppercase">Awaiting</Badge>;
   }
 
@@ -196,7 +233,6 @@ export function ProfileDialog({ open, onOpenChange, userProfile, modal }: Profil
 
         <div className="flex-1 flex flex-col h-full min-h-0 overflow-y-auto [scrollbar-gutter:stable] custom-scrollbar bg-background/20 relative">
             <div className="max-w-[1600px] mx-auto w-full min-h-full border-x border-white/5 bg-background/30 p-4 md:p-8 space-y-6">
-                {/* Header Row */}
                 <div className="flex items-center justify-between">
                     <div className="flex flex-col gap-1">
                         <h1 className="text-3xl font-black font-headline tracking-tighter">My Profile</h1>
@@ -266,10 +302,11 @@ export function ProfileDialog({ open, onOpenChange, userProfile, modal }: Profil
                         </section>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <section className="apple-glass rounded-[2rem] p-6 interactive-element">
+                            {/* NOTIFICATIONS */}
+                            <section className={cn("apple-glass rounded-[2rem] p-6 interactive-element transition-all", notifStatus === 'denied' && "ring-1 ring-destructive/20 bg-destructive/5")}>
                                 <div className="flex items-center gap-3 mb-6">
-                                    <div className="p-2 rounded-xl bg-amber-500/10">
-                                        <Bell className="h-4 w-4 text-amber-500" />
+                                    <div className={cn("p-2 rounded-xl", notifStatus === 'denied' ? "bg-destructive/10" : "bg-amber-500/10")}>
+                                        <Bell className={cn("h-4 w-4", notifStatus === 'denied' ? "text-destructive" : "text-amber-500")} />
                                     </div>
                                     <div>
                                         <h3 className="text-xs font-black uppercase tracking-widest leading-none">Notifications</h3>
@@ -281,16 +318,25 @@ export function ProfileDialog({ open, onOpenChange, userProfile, modal }: Profil
                                         <span className="text-[10px] font-bold text-muted-foreground uppercase">Status</span>
                                         {getStatusBadge(notifStatus)}
                                     </div>
-                                    {notifStatus !== 'granted' && (
-                                        <Button size="sm" variant="ghost" className="w-full h-10 rounded-xl text-[9px] font-black uppercase bg-primary/10 text-primary hover:bg-primary hover:text-white transition-all" onClick={() => handleRequestPermission('notifications')}>Enable Notifications</Button>
+                                    {notifStatus !== 'granted' && notifStatus !== 'unsupported' && (
+                                        <Button size="sm" variant="ghost" className="w-full h-10 rounded-xl text-[9px] font-black uppercase bg-primary/10 text-primary hover:bg-primary hover:text-white transition-all" onClick={() => handleRequestPermission('notifications')}>
+                                            {notifStatus === 'denied' ? 'Settings Required' : 'Enable Notifications'}
+                                        </Button>
+                                    )}
+                                    {notifStatus === 'denied' && (
+                                        <div className="flex items-center gap-2 text-destructive text-[8px] font-bold uppercase leading-tight mt-1">
+                                            <Info className="h-2 w-2 shrink-0" />
+                                            Manually reset in browser lock icon settings.
+                                        </div>
                                     )}
                                 </div>
                             </section>
 
-                            <section className="apple-glass rounded-[2rem] p-6 interactive-element">
+                            {/* LOCATION */}
+                            <section className={cn("apple-glass rounded-[2rem] p-6 interactive-element transition-all", locationStatus === 'denied' && "ring-1 ring-destructive/20 bg-destructive/5")}>
                                 <div className="flex items-center gap-3 mb-6">
-                                    <div className="p-2 rounded-xl bg-primary/10">
-                                        <MapPin className="h-4 w-4 text-primary" />
+                                    <div className={cn("p-2 rounded-xl", locationStatus === 'denied' ? "bg-destructive/10" : "bg-primary/10")}>
+                                        <MapPin className={cn("h-4 w-4", locationStatus === 'denied' ? "text-destructive" : "text-primary")} />
                                     </div>
                                     <div>
                                         <h3 className="text-xs font-black uppercase tracking-widest leading-none">Location</h3>
@@ -302,16 +348,25 @@ export function ProfileDialog({ open, onOpenChange, userProfile, modal }: Profil
                                         <span className="text-[10px] font-bold text-muted-foreground uppercase">Status</span>
                                         {getStatusBadge(locationStatus)}
                                     </div>
-                                    {locationStatus !== 'granted' && (
-                                        <Button size="sm" variant="ghost" className="w-full h-10 rounded-xl text-[9px] font-black uppercase bg-primary/10 text-primary hover:bg-primary hover:text-white transition-all" onClick={() => handleRequestPermission('location')}>Enable Location</Button>
+                                    {locationStatus !== 'granted' && locationStatus !== 'unsupported' && (
+                                        <Button size="sm" variant="ghost" className="w-full h-10 rounded-xl text-[9px] font-black uppercase bg-primary/10 text-primary hover:bg-primary hover:text-white transition-all" onClick={() => handleRequestPermission('location')}>
+                                            {locationStatus === 'denied' ? 'Settings Required' : 'Enable Location'}
+                                        </Button>
+                                    )}
+                                    {locationStatus === 'denied' && (
+                                        <div className="flex items-center gap-2 text-destructive text-[8px] font-bold uppercase leading-tight mt-1">
+                                            <Info className="h-2 w-2 shrink-0" />
+                                            Manually reset in browser lock icon settings.
+                                        </div>
                                     )}
                                 </div>
                             </section>
 
-                            <section className="apple-glass rounded-[2rem] p-6 interactive-element">
+                            {/* IDLE DETECTION */}
+                            <section className={cn("apple-glass rounded-[2rem] p-6 interactive-element transition-all", idleStatus === 'denied' && "ring-1 ring-destructive/20 bg-destructive/5")}>
                                 <div className="flex items-center gap-3 mb-6">
-                                    <div className="p-2 rounded-xl bg-emerald-500/10">
-                                        <MonitorDot className="h-4 w-4 text-emerald-500" />
+                                    <div className={cn("p-2 rounded-xl", idleStatus === 'denied' ? "bg-destructive/10" : "bg-emerald-500/10")}>
+                                        <MonitorDot className={cn("h-4 w-4", idleStatus === 'denied' ? "text-destructive" : "text-emerald-500")} />
                                     </div>
                                     <div>
                                         <h3 className="text-xs font-black uppercase tracking-widest leading-none">Presence</h3>
@@ -323,16 +378,25 @@ export function ProfileDialog({ open, onOpenChange, userProfile, modal }: Profil
                                         <span className="text-[10px] font-bold text-muted-foreground uppercase">Status</span>
                                         {getStatusBadge(idleStatus)}
                                     </div>
-                                    {idleStatus !== 'granted' && (
-                                        <Button size="sm" variant="ghost" className="w-full h-10 rounded-xl text-[9px] font-black uppercase bg-primary/10 text-primary hover:bg-primary hover:text-white transition-all" onClick={() => handleRequestPermission('idle')}>Enable Detection</Button>
+                                    {idleStatus !== 'granted' && idleStatus !== 'unsupported' && (
+                                        <Button size="sm" variant="ghost" className="w-full h-10 rounded-xl text-[9px] font-black uppercase bg-primary/10 text-primary hover:bg-primary hover:text-white transition-all" onClick={() => handleRequestPermission('idle')}>
+                                            {idleStatus === 'denied' ? 'Settings Required' : 'Enable Detection'}
+                                        </Button>
+                                    )}
+                                    {idleStatus === 'denied' && (
+                                        <div className="flex items-center gap-2 text-destructive text-[8px] font-bold uppercase leading-tight mt-1">
+                                            <Info className="h-2 w-2 shrink-0" />
+                                            Manually reset in browser lock icon settings.
+                                        </div>
                                     )}
                                 </div>
                             </section>
 
-                            <section className="apple-glass rounded-[2rem] p-6 interactive-element">
+                            {/* FILE SYSTEM ACCESS */}
+                            <section className={cn("apple-glass rounded-[2rem] p-6 interactive-element transition-all", fsStatus === 'denied' && "ring-1 ring-destructive/20 bg-destructive/5")}>
                                 <div className="flex items-center gap-3 mb-6">
-                                    <div className="p-2 rounded-xl bg-blue-500/10">
-                                        <FileCode className="h-4 w-4 text-blue-500" />
+                                    <div className={cn("p-2 rounded-xl", fsStatus === 'denied' ? "bg-destructive/10" : "bg-blue-500/10")}>
+                                        <FileCode className={cn("h-4 w-4", fsStatus === 'denied' ? "text-destructive" : "text-blue-500")} />
                                     </div>
                                     <div>
                                         <h3 className="text-xs font-black uppercase tracking-widest leading-none">Data Node</h3>
@@ -344,8 +408,10 @@ export function ProfileDialog({ open, onOpenChange, userProfile, modal }: Profil
                                         <span className="text-[10px] font-bold text-muted-foreground uppercase">Status</span>
                                         {getStatusBadge(fsStatus)}
                                     </div>
-                                    {fsStatus !== 'granted' && (
-                                        <Button size="sm" variant="ghost" className="w-full h-10 rounded-xl text-[9px] font-black uppercase bg-primary/10 text-primary hover:bg-primary hover:text-white transition-all" onClick={() => handleRequestPermission('fs')}>Authorize Files</Button>
+                                    {fsStatus !== 'granted' && fsStatus !== 'unsupported' && (
+                                        <Button size="sm" variant="ghost" className="w-full h-10 rounded-xl text-[9px] font-black uppercase bg-primary/10 text-primary hover:bg-primary hover:text-white transition-all" onClick={() => handleRequestPermission('fs')}>
+                                            {fsStatus === 'denied' ? 'Reset Required' : 'Authorize Files'}
+                                        </Button>
                                     )}
                                 </div>
                             </section>
