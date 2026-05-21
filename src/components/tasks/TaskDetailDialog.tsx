@@ -31,7 +31,6 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
 import { ActivityFeed } from '../shared/ActivityFeed';
 import { ShareTaskDialog } from './ShareTaskDialog';
@@ -98,10 +97,13 @@ export function TaskDetailDialog({ task: initialTask, isOpen, onOpenChange, curr
   };
   
   const handleDeleteTask = () => {
-    if (!firestore || !task.id) return;
-    const taskRef = doc(firestore, 'tasks', task.id);
-    deleteDocumentNonBlocking(taskRef);
-    toast({ title: "Task Terminated", description: `Mission "${task.title}" has been removed from the grid.` });
+    if (!firestore || !task.id) {
+        toast({ variant: "destructive", title: "Termination Blocked", description: "Firestore instance or mission ID is missing." });
+        return;
+    }
+    const targetRef = doc(firestore, 'tasks', task.id);
+    deleteDocumentNonBlocking(targetRef);
+    toast({ title: "Mission Purged", description: `${task.serialNo} has been removed from the organizational grid.` });
     setShowDeleteConfirm(false);
     onOpenChange(false);
   }
@@ -137,13 +139,11 @@ export function TaskDetailDialog({ task: initialTask, isOpen, onOpenChange, curr
             break;
         case 'ARCHIVED':
             logText = `approved and archived the task.`;
-            // Calculate actual duration on completion
             const activeLog = task.activity.find(a => a.toStatus === 'ACTIVE');
             if (activeLog) {
                 const duration = Math.max(0, differenceInHours(new Date(now), new Date(activeLog.timestamp)));
                 updatePayload.actualHours = duration;
             } else {
-                // Fallback to creation date if no active log found
                 const duration = Math.max(0, differenceInHours(new Date(now), new Date(task.createdAt)));
                 updatePayload.actualHours = duration;
             }
@@ -203,7 +203,7 @@ export function TaskDetailDialog({ task: initialTask, isOpen, onOpenChange, curr
         }
     }
 
-    onOpenChange(false); // Close dialog on status change
+    onOpenChange(false);
     setIsSubmitting(false);
   };
 
@@ -225,8 +225,8 @@ export function TaskDetailDialog({ task: initialTask, isOpen, onOpenChange, curr
           </div>
            <DialogDescription asChild>
              <div className="flex items-center gap-4 pt-1 text-sm text-muted-foreground">
-                <Badge variant="secondary">{task.status.replace('_', ' ')}</Badge>
-                <span>
+                <Badge variant="secondary" className="uppercase text-[9px] font-black tracking-widest">{task.status.replace('_', ' ')}</Badge>
+                <span className="font-bold text-[10px] uppercase tracking-tighter">
                 Assigned to {task.assignedToName}
                 </span>
              </div>
@@ -236,17 +236,17 @@ export function TaskDetailDialog({ task: initialTask, isOpen, onOpenChange, curr
         <div className="grid md:grid-cols-3 gap-6 py-4 flex-1 overflow-y-auto">
           <div className="md:col-span-2 space-y-6 flex flex-col">
             <div className="space-y-2">
-              <h4 className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
-                <Info className="h-4 w-4" /> Details
+              <h4 className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                <Info className="h-3 w-3" /> Mission Context
               </h4>
-              <p className="text-foreground text-sm">{task.description || "No description provided."}</p>
+              <p className="text-foreground text-sm leading-relaxed">{task.description || "No description provided."}</p>
             </div>
             
             <div className="space-y-2">
-                <h4 className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
-                    <CheckSquare className="h-4 w-4" /> Checklist
+                <h4 className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                    <CheckSquare className="h-3 w-3" /> Checkpoints
                 </h4>
-                <div className="space-y-2 rounded-md border p-3">
+                <div className="space-y-2 rounded-2xl border border-white/5 bg-secondary/5 p-4">
                     {subTasks.map(st => (
                         <div key={st.id} className="flex items-center gap-3">
                             <Checkbox 
@@ -254,21 +254,21 @@ export function TaskDetailDialog({ task: initialTask, isOpen, onOpenChange, curr
                                 checked={st.completed}
                                 onCheckedChange={() => handleSubTaskToggle(st.id)}
                             />
-                            <label htmlFor={`subtask-${st.id}`} className={cn("text-sm flex-1", st.completed ? 'line-through text-muted-foreground' : 'text-foreground')}>
+                            <label htmlFor={`subtask-${st.id}`} className={cn("text-xs font-medium flex-1 cursor-pointer", st.completed ? 'line-through text-muted-foreground opacity-50' : 'text-foreground')}>
                                 {st.text}
                             </label>
                         </div>
                     ))}
-                    {subTasks.length === 0 && <p className="text-xs text-muted-foreground text-center py-2">No checklist items yet.</p>}
-                     <div className="flex items-center gap-2 pt-2 border-t">
+                    {subTasks.length === 0 && <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground text-center py-6 opacity-30">No checkpoints defined</p>}
+                     <div className="flex items-center gap-2 pt-4 border-t border-white/5">
                         <Input 
-                            placeholder="Add a checklist item..."
+                            placeholder="Add mission checkpoint..."
                             value={newSubTask}
                             onChange={(e) => setNewSubTask(e.target.value)}
                             onKeyDown={(e) => { if (e.key === 'Enter') handleAddSubTask(e) }}
-                            className="h-9"
+                            className="h-9 rounded-xl bg-background/40 border-none text-xs"
                         />
-                        <Button size="icon" variant="ghost" onClick={handleAddSubTask}>
+                        <Button size="icon" variant="ghost" onClick={handleAddSubTask} className="rounded-xl">
                             <Plus className="h-4 w-4" />
                         </Button>
                     </div>
@@ -276,10 +276,10 @@ export function TaskDetailDialog({ task: initialTask, isOpen, onOpenChange, curr
             </div>
 
             <div className="space-y-2 flex-1 flex flex-col min-h-0">
-              <h4 className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
-                <History className="h-4 w-4" /> Activity Feed
+              <h4 className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                <History className="h-3 w-3" /> Telemetry Feed
               </h4>
-              <div className="flex-1 rounded-md border p-4">
+              <div className="flex-1 rounded-2xl border border-white/5 bg-card/30 p-4">
                   <ActivityFeed
                     activity={task.activity}
                     currentUserProfile={currentUserProfile}
@@ -289,112 +289,89 @@ export function TaskDetailDialog({ task: initialTask, isOpen, onOpenChange, curr
               </div>
             </div>
           </div>
-          <div className="md:col-span-1 space-y-4 rounded-lg border bg-secondary/30 p-4 h-fit">
-            <div className="flex items-start justify-between">
-              <h4 className="font-semibold">Task Summary</h4>
-            </div>
-            <div className="space-y-3 text-sm">
+          <div className="md:col-span-1 space-y-4 rounded-[2rem] border border-white/5 bg-secondary/20 p-5 h-fit">
+            <h4 className="text-[10px] font-black uppercase tracking-widest text-primary mb-4 opacity-70">Mission Summary</h4>
+            <div className="space-y-4 text-xs">
               <div className="flex items-center justify-between">
-                <span className="flex items-center gap-2 text-muted-foreground">
-                  <User className="h-4 w-4" /> Assignee
+                <span className="flex items-center gap-2 text-muted-foreground font-bold uppercase text-[9px]">
+                  <User className="h-3 w-3" /> Assignee
                 </span>
-                <span className="font-medium">{task.assignedToName}</span>
+                <span className="font-bold text-foreground">{task.assignedToName}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="flex items-center gap-2 text-muted-foreground">
-                  <Calendar className="h-4 w-4" /> Due Date
+                <span className="flex items-center gap-2 text-muted-foreground font-bold uppercase text-[9px]">
+                  <Calendar className="h-3 w-3" /> Deadline
                 </span>
-                <span className="font-medium">
-                  {task.dueDate ? format(new Date(task.dueDate), 'PPP') : 'Not set'}
+                <span className="font-mono font-bold text-foreground">
+                  {task.dueDate ? format(new Date(task.dueDate), 'PPP') : 'OPEN'}
                 </span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="flex items-center gap-2 text-muted-foreground">
-                  <Hourglass className="h-4 w-4" /> Estimated Hours
+                <span className="flex items-center gap-2 text-muted-foreground font-bold uppercase text-[9px]">
+                  <Hourglass className="h-3 w-3" /> Estimated
                 </span>
-                <span className="font-medium">
-                  {task.estimatedHours ? `${task.estimatedHours}h` : 'Not set'}
+                <span className="font-mono font-bold text-foreground">
+                  {task.estimatedHours ? `${task.estimatedHours}h` : 'N/A'}
                 </span>
               </div>
               {task.actualHours != null && (
                  <div className="flex items-center justify-between">
-                    <span className="flex items-center gap-2 text-muted-foreground">
-                        <Check className="h-4 w-4" /> Actual Time
+                    <span className="flex items-center gap-2 text-muted-foreground font-bold uppercase text-[9px]">
+                        <Check className="h-3 w-3" /> Actual Time
                     </span>
-                    <span className="font-medium">{task.actualHours}h</span>
+                    <span className="font-mono font-bold text-emerald-500">{task.actualHours}h</span>
                 </div>
               )}
                {task.workbookId && (
-                 <div className="flex items-center justify-between">
-                    <span className="flex items-center gap-2 text-muted-foreground">
-                      <BookOpenCheck className="h-4 w-4" /> Workbook
+                 <div className="flex items-center justify-between pt-2 border-t border-white/5">
+                    <span className="flex items-center gap-2 text-muted-foreground font-bold uppercase text-[9px]">
+                      <BookOpenCheck className="h-3 w-3" /> Linked Data
                     </span>
                     <Button
                         variant="link"
-                        className="h-auto p-0 font-medium text-primary hover:underline truncate max-w-[100px]"
+                        className="h-auto p-0 text-[10px] font-black uppercase text-primary hover:underline truncate max-w-[100px]"
                         onClick={() => {
                             uiEmitter.emit('open-workbooks-dialog', { workbookId: task.workbookId!, sheetId: task.sheetId });
                             onOpenChange(false);
                         }}
                     >
-                        View Sheet
+                        View Node
                     </Button>
                   </div>
                )}
                 <div className="flex items-center justify-between">
-                  <span className="flex items-center gap-2 text-muted-foreground">
-                    <Paperclip className="h-4 w-4" /> Attachment
+                  <span className="flex items-center gap-2 text-muted-foreground font-bold uppercase text-[9px]">
+                    <Paperclip className="h-3 w-3" /> Evidence
                   </span>
                   {task.attachmentUrl ? (
-                      <Link href={task.attachmentUrl} target="_blank" rel="noopener noreferrer" className='font-medium text-primary hover:underline truncate max-w-[150px]' title={task.attachmentName || 'View File'}>
-                          {task.attachmentName || 'View File'}
+                      <Link href={task.attachmentUrl} target="_blank" rel="noopener noreferrer" className='text-[10px] font-black uppercase text-primary hover:underline truncate max-w-[150px]' title={task.attachmentName || 'View File'}>
+                          {task.attachmentName || 'Download'}
                       </Link>
                   ) : (
-                      <span className="font-medium text-muted-foreground">None</span>
+                      <span className="font-bold text-muted-foreground opacity-30 uppercase text-[9px]">None</span>
                   )}
                 </div>
             </div>
           </div>
         </div>
 
-        <DialogFooter className="sm:justify-between flex-shrink-0">
+        <DialogFooter className="sm:justify-between flex-shrink-0 pt-4 border-t border-white/5">
              <div className='flex justify-start w-full items-center'>
                 <div className='flex gap-2'>
                     {permissions.canManageStaff && (
                         <>
-                            <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
-                                <AlertDialogTrigger asChild>
-                                    <Button variant="destructive">
-                                        <Trash2 className="mr-2 h-4 w-4" />
-                                        Delete
-                                    </Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent className="apple-glass-darker border-none">
-                                    <AlertDialogHeader>
-                                        <AlertDialogTitle>Confirm Mission Termination</AlertDialogTitle>
-                                        <AlertDialogDescription>
-                                            This action is irreversible and will permanently purge the mission "{task.title}" from the organizational archives.
-                                        </AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooter>
-                                        <AlertDialogCancel>Abort</AlertDialogCancel>
-                                        <AlertDialogAction
-                                            className="bg-destructive hover:bg-destructive/90" 
-                                            onClick={handleDeleteTask}
-                                        >
-                                            Execute
-                                        </AlertDialogAction>
-                                    </AlertDialogFooter>
-                                </AlertDialogContent>
-                            </AlertDialog>
-                             <Button variant="outline" onClick={() => setShowEditDialog(true)}>
+                             <Button variant="destructive" onClick={() => setShowDeleteConfirm(true)} className="rounded-xl px-4 font-black uppercase tracking-widest active:scale-95 transition-all">
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Terminate
+                            </Button>
+                             <Button variant="outline" onClick={() => setShowEditDialog(true)} className="rounded-xl px-4 font-black uppercase tracking-widest active:scale-95 transition-all">
                                 <Pencil className="mr-2 h-4 w-4" />
                                 Edit
                             </Button>
                         </>
                     )}
                     {(permissions.canManageStaff || task.assignedTo === currentUserProfile.id) && (
-                        <Button variant="outline" onClick={() => setShowShareDialog(true)}>
+                        <Button variant="outline" onClick={() => setShowShareDialog(true)} className="rounded-xl px-4 font-black uppercase tracking-widest active:scale-95 transition-all">
                             <Share2 className="mr-2 h-4 w-4" />
                             Share
                         </Button>
@@ -402,22 +379,22 @@ export function TaskDetailDialog({ task: initialTask, isOpen, onOpenChange, curr
                 </div>
             </div>
             <div className="ml-auto flex gap-2">
-                {/* For Assignee */}
                 {task.assignedTo === currentUserProfile.id && task.status === 'QUEUED' && (
-                    <Button onClick={() => handleStatusChange('ACTIVE')} disabled={isSubmitting}>
+                    <Button onClick={() => handleStatusChange('ACTIVE')} disabled={isSubmitting} className="rounded-xl px-6 font-black uppercase tracking-widest shadow-xl shadow-primary/20">
                         {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                        Start Task
+                        Deploy Mission
                     </Button>
                 )}
                 {task.assignedTo === currentUserProfile.id && task.status === 'ACTIVE' && (
-                    <Button onClick={() => setIsCompletionBriefOpen(true)}>Submit for Review</Button>
+                    <Button onClick={() => setIsCompletionBriefOpen(true)} className="rounded-xl px-6 font-black uppercase tracking-widest shadow-xl shadow-primary/20">
+                        Signal Completion
+                    </Button>
                 )}
                 
-                {/* For Manager */}
                 {permissions.canManageStaff && task.status === 'AWAITING_REVIEW' && (
                     <>
-                        <Button variant="outline" onClick={() => handleStatusChange('ACTIVE', 'Revisions requested.')} disabled={isSubmitting}>Request Revisions</Button>
-                        <Button className="bg-emerald-600 hover:bg-emerald-700" onClick={() => handleStatusChange('ARCHIVED')} disabled={isSubmitting}>
+                        <Button variant="outline" onClick={() => handleStatusChange('ACTIVE', 'Revisions requested.')} disabled={isSubmitting} className="rounded-xl px-4 font-black uppercase tracking-widest">Reject Brief</Button>
+                        <Button className="bg-emerald-600 hover:bg-emerald-700 rounded-xl px-6 font-black uppercase tracking-widest shadow-xl shadow-emerald-500/20" onClick={() => handleStatusChange('ARCHIVED')} disabled={isSubmitting}>
                             {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Check className="mr-2 h-4 w-4" />}
                             Approve & Archive
                         </Button>
@@ -426,6 +403,34 @@ export function TaskDetailDialog({ task: initialTask, isOpen, onOpenChange, curr
             </div>
         </DialogFooter>
         
+        {/* Security Confirmation: Deletion */}
+        <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+            <AlertDialogContent className="apple-glass-darker border-none rounded-[2.5rem] p-8">
+                <AlertDialogHeader className="space-y-4">
+                    <div className="mx-auto p-4 rounded-full bg-destructive/10 w-fit">
+                        <Trash2 className="h-8 w-8 text-destructive" />
+                    </div>
+                    <div className="text-center">
+                        <AlertDialogTitle className="text-2xl font-black font-headline tracking-tighter">Terminate Mission?</AlertDialogTitle>
+                        <AlertDialogDescription className="text-xs font-bold uppercase tracking-widest mt-2 leading-relaxed">
+                            This action is irreversible. The record for <span className="text-foreground">{task.serialNo}</span> will be permanently purged from the organizational mainframe.
+                        </AlertDialogDescription>
+                    </div>
+                </AlertDialogHeader>
+                <AlertDialogFooter className="flex-col sm:flex-col gap-3 mt-6">
+                    <AlertDialogAction
+                        className="w-full h-14 bg-destructive text-white rounded-2xl font-black uppercase tracking-[0.2em] shadow-xl shadow-destructive/20 hover:bg-destructive/90 transition-all active:scale-95" 
+                        onClick={handleDeleteTask}
+                    >
+                        Confirm Termination
+                    </AlertDialogAction>
+                    <AlertDialogCancel className="w-full h-10 border-none text-[10px] font-black uppercase tracking-widest opacity-60 hover:opacity-100 hover:bg-transparent transition-all">
+                        Abort Command
+                    </AlertDialogCancel>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
+
         {showEditDialog && (
             <EditTaskDialog
                 task={task}
