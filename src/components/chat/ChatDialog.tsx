@@ -246,7 +246,17 @@ export function ChatDialog({ open, onOpenChange, currentUserProfile, permissions
                         <div className="space-y-2">
                            <div className="flex items-center justify-between px-2 mb-2">
                              <h4 className="text-[9px] font-black uppercase tracking-[0.2em] text-primary opacity-70">Operational Channels</h4>
-                             <Button variant="ghost" size="icon" className="h-6 w-6 rounded-lg bg-primary/10 text-primary" onClick={() => setIsCreateChannelOpen(true)}><PlusCircle className="h-3.5 w-3.5" /></Button>
+                             <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="h-6 w-6 rounded-lg bg-primary/10 text-primary" 
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    setIsCreateChannelOpen(true);
+                                }}
+                            >
+                                <PlusCircle className="h-3.5 w-3.5" />
+                            </Button>
                            </div>
                            <div className="space-y-1">
                                 {isLoading && Array.from({length: 3}).map((_, i) => <Skeleton key={i} className="h-12 w-full rounded-xl" />)}
