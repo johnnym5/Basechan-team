@@ -7,7 +7,7 @@ import { Clock, Loader2, Building, Briefcase, LogOut, Coffee, Play, MapPin, Aler
 import type { UserProfile, Attendance, SystemConfig, AttendanceLocation } from '@/lib/types';
 import type { Permissions } from '@/hooks/usePermissions';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, where, limit } from 'firebase/firestore';
+import { collection, query, where, limit, orderBy } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { cn, getDistanceInMeters } from '@/lib/utils';
 import { Progress } from '../ui/progress';
@@ -36,7 +36,6 @@ export function ClockControl({ userProfile, permissions, systemConfig, className
   useEffect(() => { setToday(format(new Date(), 'yyyy-MM-dd')); }, []);
 
   useEffect(() => {
-    // Role-based geofence logic
     const isExempt = permissions.canBypassGeofence;
     const shouldCheckGeofence = systemConfig?.office_coordinates && location === 'OFFICE' && (systemConfig.attendance_strict || !isExempt);
     
@@ -49,12 +48,13 @@ export function ClockControl({ userProfile, permissions, systemConfig, className
   }, [location, systemConfig, permissions.canBypassGeofence]);
 
   const attendanceQuery = useMemoFirebase(() => {
-    if (!userProfile || !today || !firestore) return null;
+    if (!userProfile?.id || !today || !firestore) return null;
     return query(
         collection(firestore, 'attendance'), 
         where('userId', '==', userProfile.id), 
         where('date', '==', today), 
         where('status', 'in', ['PENDING', 'APPROVED']), 
+        orderBy('clockIn', 'desc'),
         limit(1)
     );
   }, [firestore, userProfile?.id, today]);
@@ -77,7 +77,7 @@ export function ClockControl({ userProfile, permissions, systemConfig, className
         if (attendanceRecord.onBreak && attendanceRecord.breaks?.length) {
             const lastBreak = attendanceRecord.breaks[attendanceRecord.breaks.length - 1];
             if (!lastBreak.end) {
-                currentBreakElapsed = differenceInSeconds(now, new Date(lastBreak.start));
+                currentBreakElapsed = Math.max(0, differenceInSeconds(now, new Date(lastBreak.start)));
             }
         }
 
@@ -123,7 +123,6 @@ export function ClockControl({ userProfile, permissions, systemConfig, className
   const handleClockIn = async () => {
     if (!userProfile || !firestore) return;
 
-    // Role-based geofence check
     const isExempt = permissions.canBypassGeofence;
     const isOutOfRange = location === 'OFFICE' && systemConfig?.office_coordinates && distanceFromOffice !== null && distanceFromOffice > 200;
 

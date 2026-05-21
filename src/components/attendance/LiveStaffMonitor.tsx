@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, where } from 'firebase/firestore';
+import { collection, query, where, orderBy } from 'firebase/firestore';
 import type { Attendance, UserProfile } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -33,7 +33,8 @@ export function LiveStaffMonitor({ userProfile }: LiveStaffMonitorProps) {
         return query(
             collection(firestore, 'attendance'),
             where('orgId', '==', userProfile.orgId),
-            where('date', '==', today)
+            where('date', '==', today),
+            orderBy('clockIn', 'desc')
         );
     }, [firestore, userProfile.orgId, today]);
 
@@ -49,19 +50,20 @@ export function LiveStaffMonitor({ userProfile }: LiveStaffMonitorProps) {
     const monitoringData = useMemo(() => {
         if (!records) return [];
 
-        // Group by user to consolidate multiple shifts for the same person
+        // Consolidate multiple shifts per user for current session integrity
         const userGroups = new Map<string, Attendance[]>();
         records.forEach(r => {
+            if (!r.userId) return; // Ignore corrupted records
             const list = userGroups.get(r.userId) || [];
             list.push(r);
             userGroups.set(r.userId, list);
         });
 
         return Array.from(userGroups.values()).map(group => {
-            // The record with the latest clock-in represents the current status
-            const mainRecord = group.sort((a, b) => new Date(b.clockIn).getTime() - new Date(a.clockIn).getTime())[0];
+            // Priority given to any record WITHOUT a clock-out (the active one)
+            const activeRecord = group.find(r => !r.clockOut);
+            const mainRecord = activeRecord || group[0];
             
-            // Aggregated Metrics for the day
             let totalWorkTime = 0;
             let totalIdleTime = 0;
             let totalSessionTime = 0;
@@ -70,19 +72,17 @@ export function LiveStaffMonitor({ userProfile }: LiveStaffMonitorProps) {
                 const start = new Date(record.clockIn);
                 const end = record.clockOut ? new Date(record.clockOut) : now;
                 
-                // Calculate Current Break if active
                 let currentBreakElapsed = 0;
                 if (record.onBreak && record.breaks?.length) {
                     const lastBreak = record.breaks[record.breaks.length - 1];
                     if (!lastBreak.end) {
-                        currentBreakElapsed = differenceInSeconds(now, new Date(lastBreak.start));
+                        currentBreakElapsed = Math.max(0, differenceInSeconds(now, new Date(lastBreak.start)));
                     }
                 }
 
                 const totalElapsed = differenceInSeconds(end, start);
                 const totalBreak = (record.totalBreak || 0) + currentBreakElapsed;
                 
-                // Work Time = Active segments only (minus breaks and idle)
                 totalWorkTime += Math.max(0, totalElapsed - totalBreak - (record.idleTime || 0));
                 totalIdleTime += (record.idleTime || 0);
                 totalSessionTime += Math.max(0, totalElapsed - totalBreak);

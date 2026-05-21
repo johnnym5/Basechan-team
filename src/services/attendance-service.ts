@@ -1,7 +1,7 @@
 'use client';
 
-import { Firestore, collection, doc, query, where, limit, getDocs, increment, arrayUnion, getDoc, setDoc, updateDoc } from 'firebase/firestore';
-import { addDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase';
+import { Firestore, collection, doc, query, where, limit, getDocs, increment, arrayUnion, getDoc, setDoc, updateDoc, orderBy } from 'firebase/firestore';
+import { updateDocumentNonBlocking } from '@/firebase';
 import type { UserProfile, Attendance, AttendanceLocation } from '@/lib/types';
 import { differenceInSeconds } from 'date-fns';
 import { reportService } from './report-service';
@@ -9,46 +9,62 @@ import { uiEmitter } from '@/lib/ui-emitter';
 
 /**
  * Service to manage personnel shift lifecycle and automated reporting triggers.
- * Ensures one attendance record per user per day via deterministic IDs.
+ * Ensures one attendance record per user per day via deterministic IDs and proactive scans.
  */
 export const attendanceService = {
   /**
    * Initiates a new work session.
-   * If a record for today already exists (re-clocking), it resumes the existing session.
+   * Performs a deep scan to prevent duplicate records for the same operational cycle.
    */
   async clockIn(db: Firestore, user: UserProfile, location: AttendanceLocation, today: string) {
-    const id = `${user.id}_${today}`;
-    const docRef = doc(db, 'attendance', id);
-    const snap = await getDoc(docRef);
+    if (!user?.id) throw new Error("Personnel identity verification failed. Command aborted.");
+
+    const deterministicId = `${user.id}_${today}`;
+    const docRef = doc(db, 'attendance', deterministicId);
+    
+    // 1. PROACTIVE DUPLICATE SCAN
+    // Check if ANY record exists for this user today, not just the deterministic one.
+    const q = query(
+        collection(db, 'attendance'),
+        where('userId', '==', user.id),
+        where('date', '==', today),
+        orderBy('clockIn', 'desc'),
+        limit(1)
+    );
+    
+    const snap = await getDocs(q);
     const now = new Date();
     const nowIso = now.toISOString();
 
-    if (snap.exists()) {
-        const data = snap.data() as Attendance;
+    if (!snap.empty) {
+        const existingDoc = snap.docs[0];
+        const data = existingDoc.data() as Attendance;
+        const activeRef = doc(db, 'attendance', existingDoc.id);
+
         if (data.clockOut) {
-            // Re-clocking logic: Treat the time between last out and now as a break
+            // RESUME SESSION: Treat the gap as a break segment
             const lastOut = new Date(data.clockOut);
-            const gapSeconds = differenceInSeconds(now, lastOut);
+            const gapSeconds = Math.max(0, differenceInSeconds(now, lastOut));
             
-            await updateDoc(docRef, {
-                clockOut: null, // Clear sign-out status
+            await updateDoc(activeRef, {
+                clockOut: null,
                 onBreak: false,
                 breaks: arrayUnion({ start: data.clockOut, end: nowIso }),
                 totalBreak: increment(gapSeconds),
-                location, // Update to current deployment location
-                status: 'APPROVED' // Maintain approval status
+                location,
+                status: 'APPROVED'
             });
             
-            // Update user status
             const userRef = doc(db, 'users', user.id);
             updateDocumentNonBlocking(userRef, { status: 'ONLINE', lastSeen: nowIso });
-            
-            return docRef;
+            return activeRef;
         }
-        return docRef; // Already active in current shift
+        
+        // ALREADY ACTIVE: Just return the existing reference
+        return activeRef;
     }
 
-    // First clock-in for the day: Initialize record
+    // 2. NEW SESSION INITIALIZATION
     const newRecord: Omit<Attendance, 'id'> = {
       userId: user.id,
       userName: user.fullName,
@@ -66,7 +82,6 @@ export const attendanceService = {
     
     await setDoc(docRef, newRecord);
     
-    // Update user status
     const userRef = doc(db, 'users', user.id);
     updateDocumentNonBlocking(userRef, { status: 'ONLINE', lastSeen: nowIso });
     
@@ -109,14 +124,12 @@ export const attendanceService = {
     const attendanceRef = doc(db, 'attendance', record.id);
     const userRef = doc(db, 'users', user.id);
 
-    // 1. Finalize attendance data
     const finalUpdate: any = {
       clockOut: now.toISOString(),
       status: 'APPROVED',
       onBreak: false,
     };
 
-    // Handle active break closure on signout
     if (record.onBreak && record.breaks?.length) {
         const lastBreak = record.breaks[record.breaks.length - 1];
         if (!lastBreak.end) {
@@ -128,18 +141,15 @@ export const attendanceService = {
         }
     }
 
-    // 2. AUTOMATED EOD REPORTING
     try {
         await reportService.generateAutomatedEODReport(db, user, { ...record, ...finalUpdate });
     } catch (e) {
         console.error("Automated EOD Report failure:", e);
     }
 
-    // 3. Persist termination
     updateDocumentNonBlocking(attendanceRef, finalUpdate);
     updateDocumentNonBlocking(userRef, { status: 'OFFLINE', lastSeen: now.toISOString() });
     
-    // 4. Trigger Pulse Check Survey
     uiEmitter.emit('open-pulse-check' as any);
   }
 };
