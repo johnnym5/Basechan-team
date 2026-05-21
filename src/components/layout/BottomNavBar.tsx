@@ -61,7 +61,7 @@ export function BottomNavBar() {
         {/* Attendance */}
         <button onClick={() => uiEmitter.emit('open-attendance-dialog')} className={cn("flex-1 flex flex-col items-center gap-1.5 transition-all duration-300", isActive('attendance') ? "mobile-tab-active" : "text-muted-foreground opacity-60")}>
             <Fingerprint className="h-5 w-5" />
-            <span className="text-[8px] font-black uppercase tracking-widest">Shift</span>
+            <span className="text-[8px] font-black uppercase tracking-widest">Attendance</span>
         </button>
 
         {/* Tactical Command Center Trigger */}
@@ -115,11 +115,11 @@ export function BottomNavBar() {
             </Sheet>
         </div>
 
-        {/* Missions (Direct access for high-speed tasks) */}
+        {/* Tasks (Direct access for high-speed tasks) */}
         <button onClick={() => uiEmitter.emit('open-tasks-dialog')} className={cn("flex-1 flex flex-col items-center gap-1.5 transition-all duration-300", isActive('tasks') ? "mobile-tab-active" : "text-muted-foreground opacity-60")}>
             <LayoutGrid className="h-5 w-5 rotate-45 scale-75 opacity-50 absolute invisible" /> {/* Placeholder for layout spacing */}
-            <span className="h-5 w-5 flex items-center justify-center font-black text-[10px] bg-secondary/30 rounded-lg">M</span>
-            <span className="text-[8px] font-black uppercase tracking-widest">Missions</span>
+            <span className="h-5 w-5 flex items-center justify-center font-black text-[10px] bg-secondary/30 rounded-lg">T</span>
+            <span className="text-[8px] font-black uppercase tracking-widest">Tasks</span>
         </button>
 
         {/* Quick Profile access */}

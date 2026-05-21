@@ -21,7 +21,7 @@ import { doc, arrayUnion, collection } from 'firebase/firestore';
 import { Checkbox } from '../ui/checkbox';
 import { Input } from '../ui/input';
 import { Button } from '../ui/button';
-import { cn } from '@/lib/utils';
+import { cn, sanitizeInput } from '@/lib/utils';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -98,12 +98,12 @@ export function TaskDetailDialog({ task: initialTask, isOpen, onOpenChange, curr
   
   const handleDeleteTask = () => {
     if (!firestore || !task.id) {
-        toast({ variant: "destructive", title: "Termination Blocked", description: "Firestore instance or mission ID is missing." });
+        toast({ variant: "destructive", title: "Termination Blocked", description: "Firestore instance or task ID is missing." });
         return;
     }
     const targetRef = doc(firestore, 'tasks', task.id);
     deleteDocumentNonBlocking(targetRef);
-    toast({ title: "Mission Purged", description: `${task.serialNo} has been removed from the organizational grid.` });
+    toast({ title: "Task Purged", description: `${task.serialNo} has been removed from the organizational grid.` });
     setShowDeleteConfirm(false);
     onOpenChange(false);
   }
@@ -237,7 +237,7 @@ export function TaskDetailDialog({ task: initialTask, isOpen, onOpenChange, curr
           <div className="md:col-span-2 space-y-6 flex flex-col">
             <div className="space-y-2">
               <h4 className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-muted-foreground">
-                <Info className="h-3 w-3" /> Mission Context
+                <Info className="h-3 w-3" /> Task Context
               </h4>
               <p className="text-foreground text-sm leading-relaxed">{task.description || "No description provided."}</p>
             </div>
@@ -262,7 +262,7 @@ export function TaskDetailDialog({ task: initialTask, isOpen, onOpenChange, curr
                     {subTasks.length === 0 && <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground text-center py-6 opacity-30">No checkpoints defined</p>}
                      <div className="flex items-center gap-2 pt-4 border-t border-white/5">
                         <Input 
-                            placeholder="Add mission checkpoint..."
+                            placeholder="Add task checkpoint..."
                             value={newSubTask}
                             onChange={(e) => setNewSubTask(e.target.value)}
                             onKeyDown={(e) => { if (e.key === 'Enter') handleAddSubTask(e) }}
@@ -277,7 +277,7 @@ export function TaskDetailDialog({ task: initialTask, isOpen, onOpenChange, curr
 
             <div className="space-y-2 flex-1 flex flex-col min-h-0">
               <h4 className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-muted-foreground">
-                <History className="h-3 w-3" /> Telemetry Feed
+                <History className="h-3 w-3" /> Activity Feed
               </h4>
               <div className="flex-1 rounded-2xl border border-white/5 bg-card/30 p-4">
                   <ActivityFeed
@@ -290,7 +290,7 @@ export function TaskDetailDialog({ task: initialTask, isOpen, onOpenChange, curr
             </div>
           </div>
           <div className="md:col-span-1 space-y-4 rounded-[2rem] border border-white/5 bg-secondary/20 p-5 h-fit">
-            <h4 className="text-[10px] font-black uppercase tracking-widest text-primary mb-4 opacity-70">Mission Summary</h4>
+            <h4 className="text-[10px] font-black uppercase tracking-widest text-primary mb-4 opacity-70">Task Summary</h4>
             <div className="space-y-4 text-xs">
               <div className="flex items-center justify-between">
                 <span className="flex items-center gap-2 text-muted-foreground font-bold uppercase text-[9px]">
@@ -382,7 +382,7 @@ export function TaskDetailDialog({ task: initialTask, isOpen, onOpenChange, curr
                 {task.assignedTo === currentUserProfile.id && task.status === 'QUEUED' && (
                     <Button onClick={() => handleStatusChange('ACTIVE')} disabled={isSubmitting} className="rounded-xl px-6 font-black uppercase tracking-widest shadow-xl shadow-primary/20">
                         {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                        Deploy Mission
+                        Start Task
                     </Button>
                 )}
                 {task.assignedTo === currentUserProfile.id && task.status === 'ACTIVE' && (
@@ -411,7 +411,7 @@ export function TaskDetailDialog({ task: initialTask, isOpen, onOpenChange, curr
                         <Trash2 className="h-8 w-8 text-destructive" />
                     </div>
                     <div className="text-center">
-                        <AlertDialogTitle className="text-2xl font-black font-headline tracking-tighter">Terminate Mission?</AlertDialogTitle>
+                        <AlertDialogTitle className="text-2xl font-black font-headline tracking-tighter">Terminate Task?</AlertDialogTitle>
                         <AlertDialogDescription className="text-xs font-bold uppercase tracking-widest mt-2 leading-relaxed">
                             This action is irreversible. The record for <span className="text-foreground">{task.serialNo}</span> will be permanently purged from the organizational mainframe.
                         </AlertDialogDescription>

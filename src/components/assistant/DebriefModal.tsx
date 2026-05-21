@@ -101,7 +101,7 @@ export function DebriefModal({ userProfile }: { userProfile: UserProfile }) {
         uiEmitter.emit('open-chat-dialog');
     };
 
-    const handleJumpToMissions = () => {
+    const handleJumpToTasks = () => {
         setIsOpen(false);
         uiEmitter.emit('open-tasks-dialog');
     };
@@ -141,7 +141,7 @@ export function DebriefModal({ userProfile }: { userProfile: UserProfile }) {
                             <p className="text-[9px] font-bold text-muted-foreground uppercase">Unread Units</p>
                         </div>
                         <div 
-                            onClick={handleJumpToMissions}
+                            onClick={handleJumpToTasks}
                             className="p-4 rounded-3xl bg-secondary/20 border border-white/5 flex flex-col gap-1 cursor-pointer hover:bg-secondary/40 hover:border-primary/20 transition-all active:scale-95 group"
                         >
                             <div className="flex items-center justify-between text-primary">
