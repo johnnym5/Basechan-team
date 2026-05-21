@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
@@ -43,15 +44,14 @@ export function useIdleTimer(attendanceRecord: Attendance | null) {
             lastActivityTime.current = now;
         };
 
-        // --- System-Level Idle Detection (Experimental API) ---
+        // --- System-Level Idle Detection ---
         let controller: AbortController | null = null;
         
         const initSystemIdleDetection = async () => {
             if ('IdleDetector' in window) {
                 try {
-                    // Check for existing permission
-                    const status = await (window as any).IdleDetector.requestPermission();
-                    if (status === 'granted') {
+                    // We assume permission was requested in layout or profile
+                    if ((Notification as any).permission === 'granted') {
                         controller = new AbortController();
                         const idleDetector = new (window as any).IdleDetector();
                         
@@ -67,15 +67,12 @@ export function useIdleTimer(attendanceRecord: Attendance | null) {
                             }
                         });
 
-                        // threshold must be at least 60000ms for system level, but app level stays at 30s
                         await idleDetector.start({
-                            threshold: 60000,
+                            threshold: 60000, // System-level minimum is usually 60s
                             signal: controller.signal,
                         });
                     }
-                } catch (e) {
-                    console.warn("System Idle Detection failed to initialize:", e);
-                }
+                } catch (e) {}
             }
         };
 

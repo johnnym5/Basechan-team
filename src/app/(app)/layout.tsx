@@ -1,3 +1,4 @@
+
 'use client';
 import { useUser, useDoc, useFirestore, useMemoFirebase, useCollection } from '@/firebase';
 import { useState, useEffect, Suspense } from 'react';
@@ -11,6 +12,7 @@ import { format } from 'date-fns';
 import { useIdleTimer } from '@/hooks/useIdleTimer';
 import dynamic from 'next/dynamic';
 import { useSyncDialogsWithUrl } from '@/hooks/useSyncDialogsWithUrl';
+import { useToast } from '@/hooks/use-toast';
 
 const GlobalDialogs = dynamic(() => import('@/components/layout/GlobalDialogs').then(m => m.GlobalDialogs), { 
   ssr: false,
@@ -19,6 +21,7 @@ const GlobalDialogs = dynamic(() => import('@/components/layout/GlobalDialogs').
 
 function AppLayoutContent({ children }: { children: React.ReactNode }) {
   const { user, isUserLoading } = useUser();
+  const { toast } = useToast();
   const firestore = useFirestore();
   const [isAnyDialogOpen, setIsAnyDialogOpen] = useState(false);
   const [today, setToday] = useState('');
@@ -33,16 +36,32 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
         if (!isLoggedIn || isUserLoading || typeof window === 'undefined') return;
         const bootstrappedKey = 'basechan-perms-bootstrapped';
         if (sessionStorage.getItem(bootstrappedKey)) return;
+
+        // 1. Notifications
         if ('Notification' in window && Notification.permission === 'default') {
             try { await Notification.requestPermission(); } catch (e) {}
         }
+
+        // 2. Geolocation (Trigger prompt)
         if ('geolocation' in navigator) {
             navigator.geolocation.getCurrentPosition(() => {}, () => {}, { timeout: 5000 });
         }
+
+        // 3. Idle Detection (System level presence)
+        if ('IdleDetector' in window) {
+            try {
+                const status = await (window as any).IdleDetector.requestPermission();
+                if (status === 'granted') {
+                   console.log("Tactical Idle Detection authorized.");
+                }
+            } catch (e) {}
+        }
+
         sessionStorage.setItem(bootstrappedKey, 'true');
+        toast({ title: "Authorization Sweep", description: "Permissions verified for current session." });
     };
     bootstrapPermissions();
-  }, [isLoggedIn, isUserLoading]);
+  }, [isLoggedIn, isUserLoading, toast]);
 
   useEffect(() => {
       setToday(format(new Date(), 'yyyy-MM-dd'));

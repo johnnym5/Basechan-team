@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useForm } from "react-hook-form";
@@ -13,7 +14,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Bell, Loader2, Pencil, MapPin, Lock, Activity, ShieldCheck } from "lucide-react";
+import { Bell, Loader2, Pencil, MapPin, Lock, Activity, ShieldCheck, MonitorDot, FileCode } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useFirestore, updateDocumentNonBlocking, useUser, useAuth } from "@/firebase";
 import { doc } from "firebase/firestore";
@@ -64,14 +65,26 @@ export function ProfileDialog({ open, onOpenChange, userProfile, modal }: Profil
   // Permission States
   const [notifStatus, setNotifStatus] = useState<NotificationPermission>('default');
   const [locationStatus, setLocationStatus] = useState<'default' | 'granted' | 'denied'>('default');
+  const [idleStatus, setIdleStatus] = useState<'default' | 'granted' | 'denied'>('default');
+  const [fsStatus, setFsStatus] = useState<'default' | 'granted' | 'denied'>('default');
 
   useEffect(() => {
     if (open) {
+      // Notification check
       if ('Notification' in window) setNotifStatus(Notification.permission);
+      
+      // Geolocation check
       if ('permissions' in navigator) {
         navigator.permissions.query({ name: 'geolocation' as any }).then(res => {
             setLocationStatus(res.state as any);
         });
+        
+        // Idle Detection check
+        if ('IdleDetector' in window) {
+            navigator.permissions.query({ name: 'idle-detection' as any }).then(res => {
+                setIdleStatus(res.state as any);
+            });
+        }
       }
     }
   }, [open]);
@@ -133,13 +146,29 @@ export function ProfileDialog({ open, onOpenChange, userProfile, modal }: Profil
     }
   }
 
-  const handleRequestPermission = async (type: 'notifications' | 'location') => {
+  const handleRequestPermission = async (type: 'notifications' | 'location' | 'idle' | 'fs') => {
     try {
         if (type === 'notifications') {
             const permission = await Notification.requestPermission();
             setNotifStatus(permission);
         } else if (type === 'location') {
             navigator.geolocation.getCurrentPosition(() => setLocationStatus('granted'), () => setLocationStatus('denied'));
+        } else if (type === 'idle') {
+            if ('IdleDetector' in window) {
+                const status = await (window as any).IdleDetector.requestPermission();
+                setIdleStatus(status);
+            }
+        } else if (type === 'fs') {
+            if ('showDirectoryPicker' in window) {
+                try {
+                    await (window as any).showDirectoryPicker();
+                    setFsStatus('granted');
+                } catch (e) {
+                    setFsStatus('denied');
+                }
+            } else {
+                toast({ variant: 'destructive', title: "Browser Incompatible", description: "File System API not supported by this browser." });
+            }
         }
         toast({ title: "Permission Updated", description: `Authorization for ${type} has been processed.` });
     } catch (e: any) {
@@ -172,12 +201,6 @@ export function ProfileDialog({ open, onOpenChange, userProfile, modal }: Profil
                     <div className="flex flex-col gap-1">
                         <h1 className="text-3xl font-black font-headline tracking-tighter">My Profile</h1>
                         <p className="text-muted-foreground uppercase tracking-widest text-[10px] font-black opacity-60">Security & Activity History</p>
-                    </div>
-                    <div className="flex items-center gap-3">
-                        <div className="text-right hidden sm:block">
-                            <p className="text-[10px] font-black uppercase tracking-widest text-primary leading-none">Job Role</p>
-                            <p className="text-sm font-bold mt-1 uppercase">{userProfile.position}</p>
-                        </div>
                     </div>
                 </div>
 
@@ -227,12 +250,6 @@ export function ProfileDialog({ open, onOpenChange, userProfile, modal }: Profil
                                     </Button>
                                 </form>
                             </Form>
-                            
-                            <div className="mt-6 pt-6 border-t border-white/5">
-                                <Button variant="outline" className="w-full h-11 rounded-xl border-white/10 hover:bg-rose-500/10 hover:text-rose-500 text-[10px] font-bold uppercase tracking-widest transition-all" onClick={() => sendPasswordResetEmail(auth!, userProfile.email)}>
-                                    <Lock className="mr-2 h-3.5 w-3.5" /> Reset Password
-                                </Button>
-                            </div>
                         </section>
                     </div>
 
@@ -244,7 +261,6 @@ export function ProfileDialog({ open, onOpenChange, userProfile, modal }: Profil
                                     <Activity className="h-4 w-4 text-emerald-500" />
                                     <h3 className="text-xs font-black uppercase tracking-widest">Work Consistency</h3>
                                 </div>
-                                <span className="text-[8px] font-black uppercase tracking-[0.2em] text-muted-foreground opacity-50">ACTIVITY HISTORY</span>
                             </div>
                             <ActivityHeatmap userId={userProfile.id} orgId={userProfile.orgId} />
                         </section>
@@ -278,7 +294,7 @@ export function ProfileDialog({ open, onOpenChange, userProfile, modal }: Profil
                                     </div>
                                     <div>
                                         <h3 className="text-xs font-black uppercase tracking-widest leading-none">Location</h3>
-                                        <p className="text-[8px] font-bold text-muted-foreground uppercase tracking-tighter mt-1">Clock-in Verification</p>
+                                        <p className="text-[8px] font-bold text-muted-foreground uppercase tracking-tighter mt-1">Geofence Compliance</p>
                                     </div>
                                 </div>
                                 <div className="flex flex-col gap-4">
@@ -291,16 +307,48 @@ export function ProfileDialog({ open, onOpenChange, userProfile, modal }: Profil
                                     )}
                                 </div>
                             </section>
-                        </div>
-                        
-                        <div className="apple-glass p-6 rounded-[2rem] border-primary/10">
-                            <div className="flex items-center gap-3 text-primary mb-2">
-                                <ShieldCheck className="h-4 w-4" />
-                                <span className="text-[10px] font-black uppercase tracking-tighter">Security Reminder</span>
-                            </div>
-                            <p className="text-[9px] leading-relaxed text-foreground/70 font-medium uppercase tracking-tight">
-                                Your profile activity is monitored for safety and reporting. Please ensure location and notification settings are active for accurate clock-ins and real-time updates. Standard job roles are subject to office range limits.
-                            </p>
+
+                            <section className="apple-glass rounded-[2rem] p-6 interactive-element">
+                                <div className="flex items-center gap-3 mb-6">
+                                    <div className="p-2 rounded-xl bg-emerald-500/10">
+                                        <MonitorDot className="h-4 w-4 text-emerald-500" />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-xs font-black uppercase tracking-widest leading-none">Presence</h3>
+                                        <p className="text-[8px] font-bold text-muted-foreground uppercase tracking-tighter mt-1">System-Wide Idle</p>
+                                    </div>
+                                </div>
+                                <div className="flex flex-col gap-4">
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-[10px] font-bold text-muted-foreground uppercase">Status</span>
+                                        {getStatusBadge(idleStatus)}
+                                    </div>
+                                    {idleStatus !== 'granted' && (
+                                        <Button size="sm" variant="ghost" className="w-full h-10 rounded-xl text-[9px] font-black uppercase bg-primary/10 text-primary hover:bg-primary hover:text-white transition-all" onClick={() => handleRequestPermission('idle')}>Enable Detection</Button>
+                                    )}
+                                </div>
+                            </section>
+
+                            <section className="apple-glass rounded-[2rem] p-6 interactive-element">
+                                <div className="flex items-center gap-3 mb-6">
+                                    <div className="p-2 rounded-xl bg-blue-500/10">
+                                        <FileCode className="h-4 w-4 text-blue-500" />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-xs font-black uppercase tracking-widest leading-none">Data Node</h3>
+                                        <p className="text-[8px] font-bold text-muted-foreground uppercase tracking-tighter mt-1">File System Access</p>
+                                    </div>
+                                </div>
+                                <div className="flex flex-col gap-4">
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-[10px] font-bold text-muted-foreground uppercase">Status</span>
+                                        {getStatusBadge(fsStatus)}
+                                    </div>
+                                    {fsStatus !== 'granted' && (
+                                        <Button size="sm" variant="ghost" className="w-full h-10 rounded-xl text-[9px] font-black uppercase bg-primary/10 text-primary hover:bg-primary hover:text-white transition-all" onClick={() => handleRequestPermission('fs')}>Authorize Files</Button>
+                                    )}
+                                </div>
+                            </section>
                         </div>
                     </div>
                 </div>
