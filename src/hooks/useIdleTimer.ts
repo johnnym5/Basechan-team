@@ -5,16 +5,16 @@ import { useFirestore, updateDocumentNonBlocking } from '@/firebase';
 import { doc, increment } from 'firebase/firestore';
 import type { Attendance } from '@/lib/types';
 
-const IDLE_THRESHOLD = 300000; // 5 minutes in milliseconds
-const SYNC_INTERVAL = 60000; // Sync accumulated idle time every 1 minute if applicable
+const IDLE_THRESHOLD = 30000; // 30 seconds as requested
+const CHECK_INTERVAL = 5000;  // Check every 5 seconds
 
 /**
  * Monitors user activity and records idle time to the active attendance record.
+ * Integrates System-Level Idle Detection where supported.
  */
 export function useIdleTimer(attendanceRecord: Attendance | null) {
     const firestore = useFirestore();
     const [isIdle, setIsIdle] = useState(false);
-    const idleTimeAccumulator = useRef(0);
     const lastActivityTime = useRef(Date.now());
     const idleStartTime = useRef<number | null>(null);
 
@@ -43,6 +43,48 @@ export function useIdleTimer(attendanceRecord: Attendance | null) {
             lastActivityTime.current = now;
         };
 
+        // --- System-Level Idle Detection (Experimental API) ---
+        let controller: AbortController | null = null;
+        
+        const initSystemIdleDetection = async () => {
+            if ('IdleDetector' in window) {
+                try {
+                    // Check for existing permission
+                    const status = await (window as any).IdleDetector.requestPermission();
+                    if (status === 'granted') {
+                        controller = new AbortController();
+                        const idleDetector = new (window as any).IdleDetector();
+                        
+                        idleDetector.addEventListener('change', () => {
+                            const { userState, screenState } = idleDetector;
+                            if (userState === 'idle' || screenState === 'locked') {
+                                if (!isIdle) {
+                                    setIsIdle(true);
+                                    idleStartTime.current = Date.now();
+                                }
+                            } else {
+                                handleActivity();
+                            }
+                        });
+
+                        // threshold must be at least 60000ms for system level, but app level stays at 30s
+                        await idleDetector.start({
+                            threshold: 60000,
+                            signal: controller.signal,
+                        });
+                    }
+                } catch (e) {
+                    console.warn("System Idle Detection failed to initialize:", e);
+                }
+            }
+        };
+
+        initSystemIdleDetection();
+
+        // --- App-Level Immediate Detection ---
+        const activityEvents = ['mousedown', 'mousemove', 'keydown', 'touchstart', 'scroll', 'click'];
+        activityEvents.forEach(event => window.addEventListener(event, handleActivity));
+
         const checkIdle = () => {
             const now = Date.now();
             const timeSinceLastActivity = now - lastActivityTime.current;
@@ -53,14 +95,12 @@ export function useIdleTimer(attendanceRecord: Attendance | null) {
             }
         };
 
-        const activityEvents = ['mousedown', 'mousemove', 'keydown', 'touchstart', 'scroll'];
-        activityEvents.forEach(event => window.addEventListener(event, handleActivity));
-
-        const idleCheckInterval = setInterval(checkIdle, 10000); // Check every 10 seconds
+        const idleCheckInterval = setInterval(checkIdle, CHECK_INTERVAL);
 
         return () => {
             activityEvents.forEach(event => window.removeEventListener(event, handleActivity));
             clearInterval(idleCheckInterval);
+            if (controller) controller.abort();
         };
     }, [attendanceRecord, isIdle, firestore]);
 

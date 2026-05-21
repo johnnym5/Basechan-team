@@ -130,7 +130,7 @@ export function LiveStaffMonitor({ userProfile }: LiveStaffMonitorProps) {
                                             Idle Time <Info className="h-2 w-2 opacity-50" />
                                         </TooltipTrigger>
                                         <TooltipContent className="apple-glass-darker border-none p-2 max-w-[200px] text-[8px] font-black uppercase leading-tight">
-                                            Calculated based on 5+ minutes of inactivity (no mouse, keyboard, or scroll input detected).
+                                            Calculated based on 30 seconds of inactivity. Monitors both App interaction and System-level idle state (requires permissions).
                                         </TooltipContent>
                                     </Tooltip>
                                 </TooltipProvider>
