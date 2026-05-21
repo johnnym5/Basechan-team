@@ -12,6 +12,7 @@ import { useSystemConfig } from "@/hooks/useSystemConfig";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TeamAttendanceHistory } from "@/components/attendance/TeamAttendanceHistory";
 import { WorkforceRoster } from "@/components/attendance/WorkforceRoster";
+import { LiveStaffMonitor } from "@/components/attendance/LiveStaffMonitor";
 import { useState, useEffect } from "react";
 
 export function AttendancePageContent() {
@@ -65,6 +66,7 @@ export function AttendancePageContent() {
             <TabsTrigger value="history" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-0 pb-3 text-sm font-semibold uppercase tracking-wider">My History</TabsTrigger>
             <TabsTrigger value="roster" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-0 pb-3 text-sm font-semibold uppercase tracking-wider">Workforce Roster</TabsTrigger>
             <TabsTrigger value="online" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-0 pb-3 text-sm font-semibold uppercase tracking-wider">Who's Online</TabsTrigger>
+            {permissions.canManageStaff && <TabsTrigger value="live-monitor" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-0 pb-3 text-sm font-semibold uppercase tracking-wider">Live Monitor</TabsTrigger>}
             {permissions.canApproveHR && <TabsTrigger value="approvals" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-0 pb-3 text-sm font-semibold uppercase tracking-wider">Approvals</TabsTrigger>}
             {permissions.canManageStaff && <TabsTrigger value="team-history" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-0 pb-3 text-sm font-semibold uppercase tracking-wider">Team Reports</TabsTrigger>}
         </TabsList>
@@ -86,6 +88,12 @@ export function AttendancePageContent() {
         <TabsContent value="online" className="mt-0">
             <StatusFeed userProfile={userProfile || null} permissions={permissions} />
         </TabsContent>
+
+        {permissions.canManageStaff && userProfile && (
+            <TabsContent value="live-monitor" className="mt-0">
+                <LiveStaffMonitor userProfile={userProfile} />
+            </TabsContent>
+        )}
         
         {permissions.canApproveHR && userProfile && (
             <TabsContent value="approvals" className="mt-0">
