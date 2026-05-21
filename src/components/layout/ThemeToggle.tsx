@@ -44,19 +44,19 @@ export function ThemeToggle() {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="apple-glass border-none shadow-3xl mt-2 min-w-[140px]">
         <DropdownMenuItem 
-          onSelect={() => setTheme('light')} 
+          onClick={() => setTheme('light')} 
           className="p-3 cursor-pointer font-black text-[10px] uppercase tracking-widest focus:bg-primary/10 transition-colors"
         >
           <Sun className="mr-3 h-4 w-4 text-amber-500" /> Light Mode
         </DropdownMenuItem>
         <DropdownMenuItem 
-          onSelect={() => setTheme('dark')} 
+          onClick={() => setTheme('dark')} 
           className="p-3 cursor-pointer font-black text-[10px] uppercase tracking-widest focus:bg-primary/10 transition-colors"
         >
           <Moon className="mr-3 h-4 w-4 text-primary" /> Dark Mode
         </DropdownMenuItem>
         <DropdownMenuItem 
-          onSelect={() => setTheme('system')} 
+          onClick={() => setTheme('system')} 
           className="p-3 cursor-pointer font-black text-[10px] uppercase tracking-widest focus:bg-primary/10 transition-colors"
         >
           <Monitor className="mr-3 h-4 w-4 text-muted-foreground" /> System Default

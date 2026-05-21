@@ -115,7 +115,7 @@ export function UserNav({ userProfile }: { userProfile: UserProfile | null }) {
         <DropdownMenuSeparator className="bg-white/5" />
         <DropdownMenuItem className="p-3 cursor-pointer text-destructive focus:bg-destructive/10 focus:text-destructive group" onSelect={handleLogout}>
           <LogOut className="mr-3 h-4 w-4 transition-transform group-hover:translate-x-1" />
-          <span className="font-bold text-xs uppercase tracking-widest">Terminate Session</span>
+          <span className="font-bold text-xs uppercase tracking-widest">Sign Out</span>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

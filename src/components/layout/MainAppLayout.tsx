@@ -1,8 +1,9 @@
 'use client';
 
-import { useUser, useDoc, useFirestore, useMemoFirebase, useCollection } from '@/firebase';
+import { useUser, useDoc, useFirestore, useMemoFirebase, useCollection, useAuth } from '@/firebase';
 import { useState, useEffect, Suspense, useMemo } from 'react';
 import { doc, collection, query, where, limit } from 'firebase/firestore';
+import { signOut } from 'firebase/auth';
 import type { UserProfile, Attendance } from '@/lib/types';
 import { useSystemConfig } from '@/hooks/useSystemConfig';
 import AppHeader from '@/components/layout/AppHeader';
@@ -11,12 +12,14 @@ import { usePermissions } from '@/hooks/usePermissions';
 import { format } from 'date-fns';
 import { useIdleTimer } from '@/hooks/useIdleTimer';
 import { useSyncDialogsWithUrl } from '@/hooks/useSyncDialogsWithUrl';
-import { hexToHslString } from '@/lib/utils';
+import { hexToHslString, cn } from '@/lib/utils';
 import dynamic from 'next/dynamic';
 import { BottomNavBar } from './BottomNavBar';
 import { useShiftReminders } from '@/hooks/useShiftReminders';
 import { DebriefModal } from '@/components/dashboard/DebriefModal';
 import { PulseCheckDialog } from '@/components/shared/PulseCheckDialog';
+import { Button } from '@/components/ui/button';
+import { LogOut } from 'lucide-react';
 
 const GlobalDialogs = dynamic(() => import('@/components/layout/GlobalDialogs').then(m => m.GlobalDialogs), { 
   ssr: false,
@@ -25,6 +28,7 @@ const GlobalDialogs = dynamic(() => import('@/components/layout/GlobalDialogs').
 
 export function MainAppLayout({ children }: { children: React.ReactNode }) {
   const { user, isUserLoading } = useUser();
+  const auth = useAuth();
   const firestore = useFirestore();
   const [isAnyDialogOpen, setIsAnyDialogOpen] = useState(false);
   const [today, setToday] = useState('');
@@ -78,6 +82,17 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
     }
   }, [config, mounted]);
 
+  const handleLogout = async () => {
+    if (auth) {
+        try {
+            await signOut(auth);
+            window.location.href = '/';
+        } catch (error) {
+            console.error("Logout failed:", error);
+        }
+    }
+  };
+
   if (!mounted) return <div className="min-h-screen bg-background flex items-center justify-center"><div className="animate-pulse w-12 h-12 rounded-full bg-primary/20" /></div>;
 
   return (
@@ -100,6 +115,20 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
           <div className="flex-1 overflow-y-auto custom-scrollbar px-3 py-4">
               <PanelSwitcher isVertical />
           </div>
+
+          {/* SIGN OUT FOOTER (Visible on Pillar Expansion) */}
+          {user && (
+              <div className="p-4 border-t border-white/5 mt-auto opacity-0 group-hover:opacity-100 transition-all duration-500">
+                  <Button 
+                    variant="ghost" 
+                    className="w-full justify-start text-destructive hover:bg-destructive/10 h-10 rounded-xl px-4"
+                    onClick={handleLogout}
+                  >
+                      <LogOut className="mr-3 h-4 w-4" />
+                      <span className="font-bold text-[10px] uppercase tracking-widest">Sign Out</span>
+                  </Button>
+              </div>
+          )}
         </div>
         
         {/* MISSION WORKSPACE: SCROLLS BEHIND CONTROL CENTER */}
