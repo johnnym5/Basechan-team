@@ -1,4 +1,3 @@
-
 "use client";
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
@@ -15,7 +14,6 @@ import { Send, Loader2, PlusCircle, Hash, MessageSquare, MoreVertical, Trash2, C
 import { Skeleton } from '../ui/skeleton';
 import { cn, sanitizeInput } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
-import { CreateChannelDialog } from './CreateChannelDialog';
 import { type Permissions } from '@/hooks/usePermissions';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '../ui/dropdown-menu';
 import { AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from '../ui/alert-dialog';
@@ -226,7 +224,6 @@ export function ChatDialog({ open, onOpenChange, currentUserProfile, permissions
   const [selectedChat, setSelectedChat] = useState<Chat | null>(null);
   const [message, setMessage] = useState('');
   const [isSending, setIsSending] = useState(false);
-  const [isCreateChannelOpen, setIsCreateChannelOpen] = useState(false);
   const [channelToDelete, setChannelToDelete] = useState<Chat | null>(null);
   const [selectedAsset, setSelectedAsset] = useState<ChatMessage['asset'] | null>(null);
   const [typingUsers, setTypingUsers] = useState<string[]>([]);
@@ -399,12 +396,13 @@ export function ChatDialog({ open, onOpenChange, currentUserProfile, permissions
                            <div className="flex items-center justify-between px-2 mb-2">
                              <h4 className="text-[9px] font-black uppercase tracking-[0.2em] text-primary opacity-70">Operational Channels</h4>
                              <Button 
+                                type="button"
                                 variant="ghost" 
                                 size="icon" 
                                 className="h-6 w-6 rounded-lg bg-primary/10 text-primary" 
                                 onClick={(e) => {
                                     e.stopPropagation();
-                                    setIsCreateChannelOpen(true);
+                                    uiEmitter.emit('open-create-channel-dialog');
                                 }}
                             >
                                 <PlusCircle className="h-3.5 w-3.5" />
@@ -421,7 +419,7 @@ export function ChatDialog({ open, onOpenChange, currentUserProfile, permissions
                                             selectedChat?.id === chat.id ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20" : "hover:bg-white/5"
                                         )}
                                     >
-                                        <div className="flex items-center gap-3 min-w-0">
+                                        <div className="flex items-center gap-3 min-0">
                                             <div className={cn("p-2 rounded-xl bg-white/10 shrink-0", selectedChat?.id === chat.id ? "bg-white/20" : "group-hover:bg-primary/10 transition-colors")}>
                                                 <Hash className="h-4 w-4" />
                                             </div>
@@ -576,12 +574,6 @@ export function ChatDialog({ open, onOpenChange, currentUserProfile, permissions
         </div>
       </DialogContent>
     </Dialog>
-    
-    <CreateChannelDialog 
-        open={isCreateChannelOpen} 
-        onOpenChange={setIsCreateChannelOpen} 
-        currentUserProfile={currentUserProfile}
-    />
     
     {channelToDelete && (
         <AlertDialog open={!!channelToDelete} onOpenChange={(isOpen) => !isOpen && setChannelToDelete(null)}>

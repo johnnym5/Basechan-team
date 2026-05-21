@@ -22,6 +22,7 @@ type AppEvents = {
   'open-displays-dialog': { displayId?: string } | void;
   'open-assistant-dialog': void;
   'open-notifications-dialog': void;
+  'open-create-channel-dialog': void;
   'close-all-dialogs': void;
 };
 
