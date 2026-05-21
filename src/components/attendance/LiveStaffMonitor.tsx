@@ -9,9 +9,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { format, differenceInSeconds } from 'date-fns';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
-import { Timer, Clock, Activity, Coffee, LogOut, Loader2 } from 'lucide-react';
+import { Timer, Clock, Activity, Coffee, LogOut, Loader2, Info } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface LiveStaffMonitorProps {
     userProfile: UserProfile;
@@ -122,7 +123,18 @@ export function LiveStaffMonitor({ userProfile }: LiveStaffMonitorProps) {
                             <TableHead className="text-[9px] font-black uppercase tracking-widest pl-6">Personnel</TableHead>
                             <TableHead className="text-[9px] font-black uppercase tracking-widest">Current Status</TableHead>
                             <TableHead className="text-[9px] font-black uppercase tracking-widest text-right">Work Time</TableHead>
-                            <TableHead className="text-[9px] font-black uppercase tracking-widest text-right">Idle Time</TableHead>
+                            <TableHead className="text-[9px] font-black uppercase tracking-widest text-right">
+                                <TooltipProvider>
+                                    <Tooltip>
+                                        <TooltipTrigger className="flex items-center gap-1 ml-auto">
+                                            Idle Time <Info className="h-2 w-2 opacity-50" />
+                                        </TooltipTrigger>
+                                        <TooltipContent className="apple-glass-darker border-none p-2 max-w-[200px] text-[8px] font-black uppercase leading-tight">
+                                            Calculated based on 5+ minutes of inactivity (no mouse, keyboard, or scroll input detected).
+                                        </TooltipContent>
+                                    </Tooltip>
+                                </TooltipProvider>
+                            </TableHead>
                             <TableHead className="text-[9px] font-black uppercase tracking-widest text-right">Total Active</TableHead>
                             <TableHead className="text-[9px] font-black uppercase tracking-widest pr-6">Daily Ratio</TableHead>
                         </TableRow>
