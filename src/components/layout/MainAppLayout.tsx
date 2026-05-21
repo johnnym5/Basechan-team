@@ -100,10 +100,10 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
       <div className="flex w-full bg-background overflow-hidden relative h-full flex-row">
         
         {/* 
-            VERTICAL CONTROL PILLAR: LOCKED ON LEFT
+            VERTICAL CONTROL PILLAR: LOCKED ON LEFT (DESKTOP ONLY)
             Locked at z-[1000] to ensure it remains interactive above workstation drop-downs.
         */}
-        <div className="sticky left-0 h-full z-[1000] flex flex-col shrink-0 apple-glass-darker w-[5.5rem] lg:w-[7.5rem] group hover:w-64 transition-all duration-500 ease-apple-ease pointer-events-auto border-r border-white/5">
+        <div className="sticky left-0 h-full z-[1000] hidden md:flex flex-col shrink-0 apple-glass-darker w-[5.5rem] lg:w-[7.5rem] group hover:w-64 transition-all duration-500 ease-apple-ease pointer-events-auto border-r border-white/5">
           <AppHeader
               userProfile={stableProfile}
               onMenuClick={() => {}}
