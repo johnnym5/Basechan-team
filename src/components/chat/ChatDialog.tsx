@@ -325,7 +325,11 @@ export function ChatDialog({ open, onOpenChange, currentUserProfile, permissions
   }, [open, initialPayload, channels, personnelTransmissions, currentUserProfile]);
 
   useEffect(() => {
-      if (open && selectedChat && firestore) {
+      // Guard: Only perform maintenance if the chat exists in the database
+      // Virtual chats have a dummy updatedAt timestamp
+      const isVirtualChat = selectedChat?.updatedAt === '1970-01-01T00:00:00.000Z';
+
+      if (open && selectedChat && firestore && !isVirtualChat) {
           chatService.markAsRead(firestore, selectedChat.id, currentUserProfile.id);
           chatService.purgeOldMessages(firestore, selectedChat.id);
 

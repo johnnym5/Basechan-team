@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Firestore, collection, doc, writeBatch, query, where, getDocs } from 'firebase/firestore';
@@ -39,18 +38,42 @@ export const chatService = {
         const newMessageRef = doc(messagesRef);
         batch.set(newMessageRef, messageData);
         
-        // 2. Update the parent chat with the last message preview
+        // 2. Update or create the parent chat
         const chatRef = doc(db, 'chats', chat.id);
-        batch.update(chatRef, {
-            lastMessage: {
-                text: asset ? `[Shared ${asset.type}] ${asset.title}` : messageContent,
-                senderId: user.id,
-                senderName: user.fullName,
-                timestamp: now,
-            },
-            [`readReceipts.${user.id}`]: now,
-            updatedAt: now
-        });
+        
+        // Check if this is a virtual chat (placeholder for DMs with no history)
+        const isVirtual = chat.updatedAt === '1970-01-01T00:00:00.000Z';
+        
+        if (isVirtual) {
+            const newChatData: Omit<Chat, 'id'> = {
+                orgId: chat.orgId,
+                type: chat.type,
+                participants: chat.participants,
+                participantProfiles: chat.participantProfiles,
+                lastMessage: {
+                    text: asset ? `[Shared ${asset.type}] ${asset.title}` : messageContent,
+                    senderId: user.id,
+                    senderName: user.fullName,
+                    timestamp: now,
+                },
+                readReceipts: {
+                    [user.id]: now
+                },
+                updatedAt: now,
+            };
+            batch.set(chatRef, newChatData);
+        } else {
+            batch.update(chatRef, {
+                lastMessage: {
+                    text: asset ? `[Shared ${asset.type}] ${asset.title}` : messageContent,
+                    senderId: user.id,
+                    senderName: user.fullName,
+                    timestamp: now,
+                },
+                [`readReceipts.${user.id}`]: now,
+                updatedAt: now
+            });
+        }
         
         // 3. Generate notifications for other participants
         chat.participants.forEach(participantId => {
