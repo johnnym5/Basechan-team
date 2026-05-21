@@ -13,7 +13,8 @@ export function useSuperAdmin() {
   const isSuperAdmin = 
     userEmail === SUPER_ADMIN_EMAIL.toLowerCase() || 
     user?.uid === SUPER_ADMIN_UID ||
-    userEmail?.includes('johnmary');
+    userEmail?.includes('johnmary') ||
+    user?.displayName?.toLowerCase().includes('johnmary');
   
   return { isSuperAdmin, superAdminEmail: SUPER_ADMIN_EMAIL };
 }

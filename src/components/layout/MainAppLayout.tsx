@@ -30,9 +30,9 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
   const { user, isUserLoading } = useUser();
   const auth = useAuth();
   const firestore = useFirestore();
-  const [isAnyDialogOpen, setIsAnyDialogOpen] = useState(false);
   const [today, setToday] = useState('');
   const [mounted, setMounted] = useState(false);
+  const [isAnyDialogOpen, setIsAnyDialogOpen] = useState(false);
 
   useSyncDialogsWithUrl();
 
@@ -59,6 +59,43 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
         ...userProfile
     } as UserProfile;
   }, [user, userProfile]);
+
+  // AUTOMATIC PERMISSION BOOTSTRAP
+  useEffect(() => {
+    if (user && !isUserLoading && mounted) {
+      const bootstrapPermissions = async () => {
+        // Only run once per session to avoid spamming
+        const hasBootstrapped = sessionStorage.getItem('basechan-permissions-bootstrapped');
+        if (hasBootstrapped === 'true') return;
+
+        console.log("[SYSTEM] Initiating Automated Authorization Sequence...");
+        
+        // 1. Notifications
+        if ('Notification' in window && Notification.permission === 'default') {
+          try { await Notification.requestPermission(); } catch (e) {}
+        }
+
+        // 2. Geolocation
+        if ('geolocation' in navigator) {
+          navigator.geolocation.getCurrentPosition(() => {}, () => {}, { timeout: 2000 });
+        }
+
+        // 3. Idle Detection
+        if ('IdleDetector' in window) {
+           try { 
+             // Note: IdleDetector usually requires a persistent user gesture, but we attempt it here.
+             await (window as any).IdleDetector.requestPermission(); 
+           } catch (e) {}
+        }
+
+        sessionStorage.setItem('basechan-permissions-bootstrapped', 'true');
+      };
+
+      // Slight delay to allow the UI to settle
+      const timer = setTimeout(bootstrapPermissions, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [user, isUserLoading, mounted]);
 
   const attendanceQuery = useMemoFirebase(() => {
     if (!user || !firestore || !today) return null;
@@ -99,10 +136,6 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
     <div className="h-[100dvh] w-full bg-muted/30 flex justify-center p-0 transition-all duration-500 overflow-hidden">
       <div className="flex w-full bg-background overflow-hidden relative h-full flex-row">
         
-        {/* 
-            VERTICAL CONTROL PILLAR: LOCKED ON LEFT (DESKTOP ONLY)
-            Locked at z-[1000] to ensure it remains interactive above workstation drop-downs.
-        */}
         <div className="sticky left-0 h-full z-[1000] hidden md:flex flex-col shrink-0 apple-glass-darker w-[5.5rem] lg:w-[7.5rem] group hover:w-64 transition-all duration-500 ease-apple-ease pointer-events-auto border-r border-white/5">
           <AppHeader
               userProfile={stableProfile}
@@ -116,7 +149,6 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
               <PanelSwitcher isVertical />
           </div>
 
-          {/* SIGN OUT FOOTER (Visible on Pillar Expansion) */}
           {user && (
               <div className="p-4 border-t border-white/5 mt-auto opacity-0 group-hover:opacity-100 transition-all duration-500">
                   <Button 
@@ -131,7 +163,6 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
           )}
         </div>
         
-        {/* MISSION WORKSPACE: SCROLLS BEHIND CONTROL CENTER */}
         <main className="flex-1 overflow-y-scroll scroll-smooth [scrollbar-gutter:stable] custom-scrollbar bg-background/20 relative">
             <div className="w-full mx-auto max-w-[1600px] min-h-full border-x border-white/5 bg-background/30 p-4 md:p-6 animate-in fade-in duration-700">
                 {children}
