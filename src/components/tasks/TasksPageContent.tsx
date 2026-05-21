@@ -97,6 +97,7 @@ export function TasksPageContent({ initialPayload, currentUserProfile, permissio
                                 <SelectItem value="newest" className="text-xs font-bold uppercase tracking-widest">Newest First</SelectItem>
                                 <SelectItem value="priority" className="text-xs font-bold uppercase tracking-widest">Priority (High to Low)</SelectItem>
                                 <SelectItem value="deadline" className="text-xs font-bold uppercase tracking-widest">Deadline (Soonest)</SelectItem>
+                                <SelectItem value="user" className="text-xs font-bold uppercase tracking-widest">Staff (A-Z)</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>

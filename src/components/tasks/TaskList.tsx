@@ -72,6 +72,8 @@ export function TaskList({ userProfile, permissions, onTaskSelect, searchTerm, s
                     if (!a.dueDate) return 1;
                     if (!b.dueDate) return -1;
                     return compareAsc(parseISO(a.dueDate), parseISO(b.dueDate));
+                case 'user':
+                    return (a.assignedToName || '').localeCompare(b.assignedToName || '');
                 case 'newest':
                 default:
                     return compareDesc(parseISO(a.createdAt), parseISO(b.createdAt));
