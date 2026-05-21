@@ -1,9 +1,8 @@
-
 "use client";
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { UserProfile, Chat, ChatMessage, Task, Requisition } from '@/lib/types';
-import { useCollection, useFirestore, useMemoFirebase, deleteDocumentNonBlocking, useDatabase } from '@/firebase';
+import { useCollection, useFirestore, useMemoFirebase, deleteDocumentNonBlocking, useDatabase, useUser } from '@/firebase';
 import { collection, query, where, orderBy, doc, limit } from 'firebase/firestore';
 import { ref, onValue, off } from 'firebase/database';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -146,7 +145,7 @@ function ChatMessages({ chat, currentUserProfile, onConvertTask }: { chat: Chat,
                                             "rounded-[1.5rem] px-4 py-3 text-sm shadow-sm leading-relaxed cursor-pointer transition-all active:scale-[0.98]", 
                                             isCurrentUser 
                                                 ? "bg-primary text-primary-foreground rounded-br-none hover:bg-primary/90" 
-                                                : "bg-secondary/50 backdrop-blur-md rounded-bl-none border border-white/5 hover:bg-secondary/70"
+                                                : "bg-secondary/50 backdrop-blur-xl rounded-bl-none border border-white/5 hover:bg-secondary/70"
                                         )}>
                                             <p>{message.content}</p>
                                             <AssetPreview asset={message.asset} />
