@@ -276,7 +276,7 @@ export function EditTaskDialog({ task, open, onOpenChange, currentUserProfile }:
                     <Button type="button" variant="ghost" className="rounded-xl h-12" onClick={() => onOpenChange(false)}>Abort</Button>
                     <Button type="submit" className="h-12 px-8 rounded-xl font-black uppercase tracking-[0.2em] shadow-xl shadow-primary/20 flex-1" disabled={isBusy}>
                         {isBusy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-                        Apply Mutations
+                        Save Changes
                     </Button>
                 </DialogFooter>
             </form>
