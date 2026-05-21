@@ -61,7 +61,11 @@
 @layer base {
   * { @apply border-border; }
   html, body { height: 100%; margin: 0; padding: 0; }
-  body { @apply bg-background text-foreground overflow-hidden font-body; -webkit-font-smoothing: antialiased; }
+  body { 
+    @apply bg-background text-foreground overflow-hidden font-body; 
+    -webkit-font-smoothing: antialiased;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
 
   /* High-Visibility Tactical Scrollbar System */
   * {
@@ -100,4 +104,7 @@
     }
     .custom-scrollbar { scrollbar-gutter: stable; }
     .interactive-element { @apply transition-all duration-300 ease-apple-ease hover:-translate-y-0.5 hover:shadow-lg active:scale-95; }
+    
+    /* Fluid button sizing */
+    .btn-fluid { @apply w-full md:w-auto min-h-[44px] md:min-h-0; }
 }

@@ -139,60 +139,73 @@ export function AssignTaskDialog({ open, onOpenChange, initialData, currentUserP
     <ResponsiveDialog 
         open={open} 
         onOpenChange={onOpenChange} 
-        title="New Task Assignment" 
-        description="Assign a new task to a team member."
+        title="Deploy Mission" 
+        description="Assign a new operational unit to the team grid."
     >
         <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                 <FormField control={form.control} name="title" render={({ field }) => (
-                    <FormItem><FormLabel>Task Title</FormLabel><FormControl><Input placeholder="e.g., Update Monthly Report" {...field} value={field.value ?? ""} /></FormControl><FormMessage /></FormItem>
+                    <FormItem>
+                        <FormLabel className="text-[10px] font-black uppercase tracking-widest opacity-60">Mission Identity</FormLabel>
+                        <FormControl><Input placeholder="Brief title..." {...field} value={field.value ?? ""} className="h-12 rounded-xl bg-background/50 border-white/5" /></FormControl>
+                        <FormMessage />
+                    </FormItem>
                 )} />
+
                 <FormField control={form.control} name="description" render={({ field }) => (
-                    <FormItem><FormLabel>Task Description (Optional)</FormLabel><FormControl><Textarea placeholder="Add some details about this task..." {...field} value={field.value ?? ""} /></FormControl><FormMessage /></FormItem>
+                    <FormItem>
+                        <FormLabel className="text-[10px] font-black uppercase tracking-widest opacity-60">Objective Context</FormLabel>
+                        <FormControl><Textarea placeholder="Details and parameters..." {...field} value={field.value ?? ""} className="rounded-xl bg-background/50 border-white/5" /></FormControl>
+                        <FormMessage />
+                    </FormItem>
                 )} />
                 
-                 <div className="grid grid-cols-2 gap-4">
+                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {permissions.canManageStaff && (
                       <FormField control={form.control} name="assignedTo" render={({ field }) => (
-                          <FormItem><FormLabel>Assign To</FormLabel>
-                          <Select onValueChange={field.onChange} value={field.value || ""}>
-                              <FormControl><SelectTrigger disabled={areUsersLoading}><SelectValue placeholder="Select Staff Member" /></SelectTrigger></FormControl>
-                              <SelectContent>{users?.map(user => <SelectItem key={user.id} value={user.id}>{user.fullName}</SelectItem>)}</SelectContent>
-                          </Select>
-                          <FormMessage /></FormItem>
+                          <FormItem>
+                            <FormLabel className="text-[10px] font-black uppercase tracking-widest opacity-60">Assigned Unit</FormLabel>
+                            <Select onValueChange={field.onChange} value={field.value || ""}>
+                                <FormControl><SelectTrigger disabled={areUsersLoading} className="h-12 rounded-xl bg-background/50 border-white/5"><SelectValue placeholder="Identify Staff" /></SelectTrigger></FormControl>
+                                <SelectContent className="apple-glass-darker border-none">{users?.map(user => <SelectItem key={user.id} value={user.id}>{user.fullName}</SelectItem>)}</SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
                       )} />
                     )}
                     <FormField control={form.control} name="priority" render={({ field }) => (
-                         <FormItem><FormLabel>Priority</FormLabel>
-                         <Select onValueChange={field.onChange} value={field.value}>
-                            <FormControl><SelectTrigger><SelectValue placeholder="Select Priority" /></SelectTrigger></FormControl>
-                            <SelectContent>
-                                <SelectItem value="LEVEL_1">Low</SelectItem>
-                                <SelectItem value="LEVEL_2">Medium</SelectItem>
-                                <SelectItem value="LEVEL_3">High</SelectItem>
-                            </SelectContent>
-                         </Select>
-                         <FormMessage /></FormItem>
+                         <FormItem>
+                            <FormLabel className="text-[10px] font-black uppercase tracking-widest opacity-60">Threat Level</FormLabel>
+                            <Select onValueChange={field.onChange} value={field.value}>
+                                <FormControl><SelectTrigger className="h-12 rounded-xl bg-background/50 border-white/5"><SelectValue placeholder="Priority" /></SelectTrigger></FormControl>
+                                <SelectContent className="apple-glass-darker border-none">
+                                    <SelectItem value="LEVEL_1">Level 1 (Standard)</SelectItem>
+                                    <SelectItem value="LEVEL_2">Level 2 (Priority)</SelectItem>
+                                    <SelectItem value="LEVEL_3">Level 3 (Critical)</SelectItem>
+                                </SelectContent>
+                            </Select>
+                         <FormMessage />
+                         </FormItem>
                     )} />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <FormField
                         control={form.control}
                         name="dueDate"
                         render={({ field }) => (
                             <FormItem className="flex flex-col">
-                                <FormLabel>Due Date</FormLabel>
+                                <FormLabel className="text-[10px] font-black uppercase tracking-widest opacity-60">Deadline Node</FormLabel>
                                 <Popover>
                                     <PopoverTrigger asChild>
                                         <FormControl>
-                                            <Button variant={"outline"} className={cn("w-full pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>
-                                                {field.value ? format(field.value, "PPP") : <span>Pick a date</span>}
+                                            <Button variant={"outline"} className={cn("w-full h-12 pl-3 text-left font-normal rounded-xl bg-background/50 border-white/5", !field.value && "text-muted-foreground")}>
+                                                {field.value ? format(field.value, "PPP") : <span>Set Deadline</span>}
                                                 <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                                             </Button>
                                         </FormControl>
                                     </PopoverTrigger>
-                                    <PopoverContent className="w-auto p-0" align="start">
+                                    <PopoverContent className="w-auto p-0 apple-glass border-none" align="start">
                                         <Calendar mode="single" selected={field.value} onSelect={field.onChange} disabled={(date) => date < new Date()} initialFocus />
                                     </PopoverContent>
                                 </Popover>
@@ -201,13 +214,17 @@ export function AssignTaskDialog({ open, onOpenChange, initialData, currentUserP
                         )}
                     />
                     <FormField control={form.control} name="estimatedHours" render={({ field }) => (
-                        <FormItem><FormLabel>Est. Hours</FormLabel><FormControl><Input type="number" {...field} value={field.value ?? ""} /></FormControl><FormMessage /></FormItem>
+                        <FormItem>
+                            <FormLabel className="text-[10px] font-black uppercase tracking-widest opacity-60">Est. Man-Hours</FormLabel>
+                            <FormControl><Input type="number" placeholder="0" {...field} value={field.value ?? ""} className="h-12 rounded-xl bg-background/50 border-white/5" /></FormControl>
+                            <FormMessage />
+                        </FormItem>
                     )} />
                 </div>
 
-                <Button type="submit" className="w-full" disabled={isBusy}>
-                    {isBusy && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    {permissions.canManageStaff ? 'Assign Task' : 'Create Task'}
+                <Button type="submit" className="w-full h-14 rounded-2xl font-black uppercase tracking-[0.2em] shadow-xl shadow-primary/20 active:scale-95 transition-all" disabled={isBusy}>
+                    {isBusy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                    {permissions.canManageStaff ? 'Deploy Mission' : 'Confirm Assignment'}
                 </Button>
             </form>
         </Form>
