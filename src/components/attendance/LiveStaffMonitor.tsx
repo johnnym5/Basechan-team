@@ -48,33 +48,51 @@ export function LiveStaffMonitor({ userProfile }: LiveStaffMonitorProps) {
     const monitoringData = useMemo(() => {
         if (!records) return [];
 
-        return records.map(record => {
-            const start = new Date(record.clockIn);
-            const end = record.clockOut ? new Date(record.clockOut) : now;
-            
-            // Calculate Current Break if active
-            let currentBreakElapsed = 0;
-            if (record.onBreak && record.breaks?.length) {
-                const lastBreak = record.breaks[record.breaks.length - 1];
-                if (!lastBreak.end) {
-                    currentBreakElapsed = differenceInSeconds(now, new Date(lastBreak.start));
-                }
-            }
+        // Group by user to consolidate multiple shifts for the same person
+        const userGroups = new Map<string, Attendance[]>();
+        records.forEach(r => {
+            const list = userGroups.get(r.userId) || [];
+            list.push(r);
+            userGroups.set(r.userId, list);
+        });
 
-            const totalElapsed = differenceInSeconds(end, start);
-            const totalBreak = (record.totalBreak || 0) + currentBreakElapsed;
+        return Array.from(userGroups.values()).map(group => {
+            // The record with the latest clock-in represents the current status
+            const mainRecord = group.sort((a, b) => new Date(b.clockIn).getTime() - new Date(a.clockIn).getTime())[0];
             
-            // Active Work Time = Total Elapsed - Breaks - Idle
-            const workTime = Math.max(0, totalElapsed - totalBreak - (record.idleTime || 0));
-            // Total Time = Total Elapsed - Breaks
-            const totalShiftTime = Math.max(0, totalElapsed - totalBreak);
+            // Aggregated Metrics for the day
+            let totalWorkTime = 0;
+            let totalIdleTime = 0;
+            let totalSessionTime = 0;
+            
+            group.forEach(record => {
+                const start = new Date(record.clockIn);
+                const end = record.clockOut ? new Date(record.clockOut) : now;
+                
+                // Calculate Current Break if active
+                let currentBreakElapsed = 0;
+                if (record.onBreak && record.breaks?.length) {
+                    const lastBreak = record.breaks[record.breaks.length - 1];
+                    if (!lastBreak.end) {
+                        currentBreakElapsed = differenceInSeconds(now, new Date(lastBreak.start));
+                    }
+                }
+
+                const totalElapsed = differenceInSeconds(end, start);
+                const totalBreak = (record.totalBreak || 0) + currentBreakElapsed;
+                
+                // Work Time = Active segments only (minus breaks and idle)
+                totalWorkTime += Math.max(0, totalElapsed - totalBreak - (record.idleTime || 0));
+                totalIdleTime += (record.idleTime || 0);
+                totalSessionTime += Math.max(0, totalElapsed - totalBreak);
+            });
 
             return {
-                ...record,
-                workTime,
-                idleTime: record.idleTime || 0,
-                totalShiftTime,
-                productivityRatio: totalShiftTime > 0 ? (workTime / totalShiftTime) * 100 : 0
+                ...mainRecord,
+                workTime: totalWorkTime,
+                idleTime: totalIdleTime,
+                totalShiftTime: totalSessionTime,
+                productivityRatio: totalSessionTime > 0 ? (totalWorkTime / totalSessionTime) * 100 : 0
             };
         }).sort((a, b) => (b.clockOut ? 0 : 1) - (a.clockOut ? 0 : 1));
     }, [records, now]);
@@ -90,7 +108,7 @@ export function LiveStaffMonitor({ userProfile }: LiveStaffMonitorProps) {
                             <Activity className="h-5 w-5 text-emerald-500" />
                             Live Personnel Monitor
                         </CardTitle>
-                        <CardDescription>Real-time performance metrics for the current shift ({today}).</CardDescription>
+                        <CardDescription>Consolidated performance metrics for the current shift ({today}).</CardDescription>
                     </div>
                     <div className="p-2 rounded-xl bg-primary/10">
                         <Timer className="h-5 w-5 text-primary animate-pulse" />
@@ -102,11 +120,11 @@ export function LiveStaffMonitor({ userProfile }: LiveStaffMonitorProps) {
                     <TableHeader className="bg-secondary/10">
                         <TableRow className="border-white/5">
                             <TableHead className="text-[9px] font-black uppercase tracking-widest pl-6">Personnel</TableHead>
-                            <TableHead className="text-[9px] font-black uppercase tracking-widest">Shift Status</TableHead>
+                            <TableHead className="text-[9px] font-black uppercase tracking-widest">Current Status</TableHead>
                             <TableHead className="text-[9px] font-black uppercase tracking-widest text-right">Work Time</TableHead>
                             <TableHead className="text-[9px] font-black uppercase tracking-widest text-right">Idle Time</TableHead>
-                            <TableHead className="text-[9px] font-black uppercase tracking-widest text-right">Total Session</TableHead>
-                            <TableHead className="text-[9px] font-black uppercase tracking-widest pr-6">Activity Ratio</TableHead>
+                            <TableHead className="text-[9px] font-black uppercase tracking-widest text-right">Total Active</TableHead>
+                            <TableHead className="text-[9px] font-black uppercase tracking-widest pr-6">Daily Ratio</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -126,7 +144,7 @@ export function LiveStaffMonitor({ userProfile }: LiveStaffMonitorProps) {
                                             </div>
                                             <div>
                                                 <p className="font-bold text-sm leading-none">{record.userName}</p>
-                                                <p className="text-[8px] font-black uppercase tracking-tighter text-muted-foreground mt-1">Clocked in {format(new Date(record.clockIn), 'p')}</p>
+                                                <p className="text-[8px] font-black uppercase tracking-tighter text-muted-foreground mt-1">First In: {format(new Date(record.clockIn), 'p')}</p>
                                             </div>
                                         </div>
                                     </TableCell>

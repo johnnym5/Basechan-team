@@ -1,6 +1,6 @@
 'use client';
 
-import { Firestore, collection, query, where, getDocs, orderBy, limit } from 'firebase/firestore';
+import { Firestore, collection, query, where, getDocs, orderBy, limit, doc, setDoc } from 'firebase/firestore';
 import { addDocumentNonBlocking } from '@/firebase';
 import type { UserProfile, Attendance, Task, DailyReport, Chat } from '@/lib/types';
 import { format, startOfDay, differenceInSeconds } from 'date-fns';
@@ -13,9 +13,11 @@ import { activityService } from './activity-service';
 export const reportService = {
     /**
      * Captures system state to generate an automated end-of-day summary.
+     * Uses deterministic IDs to ensure one report per user per day.
      */
     async generateAutomatedEODReport(db: Firestore, user: UserProfile, attendance: Attendance) {
         const today = format(new Date(), 'yyyy-MM-dd');
+        const id = `${user.id}_${today}`;
         const dayStart = startOfDay(new Date()).toISOString();
 
         // 1. AGGREGATE COMPLETED TASKS
@@ -86,6 +88,7 @@ COLLABORATION:
         // Award Activity Points: +10 for automated report submission
         await activityService.logActivity(db, user, 10);
 
-        return await addDocumentNonBlocking(collection(db, 'daily_reports'), reportData);
+        // Use setDoc to ensure report is unique per day and gets updated if multiple clock-outs occur
+        return await setDoc(doc(db, 'daily_reports', id), reportData, { merge: true });
     }
 };

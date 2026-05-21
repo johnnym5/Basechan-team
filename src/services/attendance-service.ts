@@ -1,7 +1,6 @@
-
 'use client';
 
-import { Firestore, collection, doc, query, where, limit, getDocs, increment, arrayUnion } from 'firebase/firestore';
+import { Firestore, collection, doc, query, where, limit, getDocs, increment, arrayUnion, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 import { addDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase';
 import type { UserProfile, Attendance, AttendanceLocation } from '@/lib/types';
 import { differenceInSeconds } from 'date-fns';
@@ -10,18 +9,52 @@ import { uiEmitter } from '@/lib/ui-emitter';
 
 /**
  * Service to manage personnel shift lifecycle and automated reporting triggers.
+ * Ensures one attendance record per user per day via deterministic IDs.
  */
 export const attendanceService = {
   /**
    * Initiates a new work session.
+   * If a record for today already exists (re-clocking), it resumes the existing session.
    */
   async clockIn(db: Firestore, user: UserProfile, location: AttendanceLocation, today: string) {
+    const id = `${user.id}_${today}`;
+    const docRef = doc(db, 'attendance', id);
+    const snap = await getDoc(docRef);
+    const now = new Date();
+    const nowIso = now.toISOString();
+
+    if (snap.exists()) {
+        const data = snap.data() as Attendance;
+        if (data.clockOut) {
+            // Re-clocking logic: Treat the time between last out and now as a break
+            const lastOut = new Date(data.clockOut);
+            const gapSeconds = differenceInSeconds(now, lastOut);
+            
+            await updateDoc(docRef, {
+                clockOut: null, // Clear sign-out status
+                onBreak: false,
+                breaks: arrayUnion({ start: data.clockOut, end: nowIso }),
+                totalBreak: increment(gapSeconds),
+                location, // Update to current deployment location
+                status: 'APPROVED' // Maintain approval status
+            });
+            
+            // Update user status
+            const userRef = doc(db, 'users', user.id);
+            updateDocumentNonBlocking(userRef, { status: 'ONLINE', lastSeen: nowIso });
+            
+            return docRef;
+        }
+        return docRef; // Already active in current shift
+    }
+
+    // First clock-in for the day: Initialize record
     const newRecord: Omit<Attendance, 'id'> = {
       userId: user.id,
       userName: user.fullName,
       orgId: user.orgId,
       date: today,
-      clockIn: new Date().toISOString(),
+      clockIn: nowIso,
       status: 'PENDING',
       location,
       remarks: [],
@@ -30,11 +63,12 @@ export const attendanceService = {
       onBreak: false,
       breaks: [],
     };
-    const docRef = await addDocumentNonBlocking(collection(db, 'attendance'), newRecord);
+    
+    await setDoc(docRef, newRecord);
     
     // Update user status
     const userRef = doc(db, 'users', user.id);
-    updateDocumentNonBlocking(userRef, { status: 'ONLINE', lastSeen: newRecord.clockIn });
+    updateDocumentNonBlocking(userRef, { status: 'ONLINE', lastSeen: nowIso });
     
     return docRef;
   },
@@ -94,8 +128,7 @@ export const attendanceService = {
         }
     }
 
-    // 2. AUTOMATED EOD REPORTING (Epic 4)
-    // We trigger this before the final write to capture the latest telemetry
+    // 2. AUTOMATED EOD REPORTING
     try {
         await reportService.generateAutomatedEODReport(db, user, { ...record, ...finalUpdate });
     } catch (e) {
