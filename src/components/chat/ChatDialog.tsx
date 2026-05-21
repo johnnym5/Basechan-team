@@ -10,7 +10,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useState, useMemo, useRef, useEffect } from 'react';
 import { Input } from '../ui/input';
 import { Button } from '../ui/button';
-import { Send, Loader2, PlusCircle, Hash, MessageSquare, MoreVertical, Trash2, CheckCheck, History, Terminal, Paperclip, ArrowRight, ListTodo, Briefcase } from 'lucide-react';
+import { Send, Loader2, PlusCircle, Hash, MessageSquare, MoreVertical, Trash2, CheckCheck, History, Terminal, Paperclip, ArrowRight, ListTodo, Briefcase, ChevronLeft } from 'lucide-react';
 import { Skeleton } from '../ui/skeleton';
 import { cn, sanitizeInput } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
@@ -22,6 +22,7 @@ import { chatService } from '@/services/chat-service';
 import { uiEmitter } from '@/lib/ui-emitter';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
+import { useMediaQuery } from '@/hooks/use-media-query';
 
 interface ChatDialogProps {
   open: boolean;
@@ -113,7 +114,7 @@ function ChatMessages({ chat, currentUserProfile, onConvertTask }: { chat: Chat,
     }
 
     return (
-        <ScrollArea className="flex-1" ref={scrollAreaRef}>
+        <ScrollArea className="flex-1 min-h-0" ref={scrollAreaRef}>
             <div className="p-6 space-y-6">
                 {hasHiddenMessages && (
                     <div className="flex justify-center pb-4">
@@ -220,6 +221,7 @@ export function ChatDialog({ open, onOpenChange, currentUserProfile, permissions
   const firestore = useFirestore();
   const database = useDatabase();
   const { toast } = useToast();
+  const isMobile = useMediaQuery("(max-width: 768px)");
   
   const [selectedChat, setSelectedChat] = useState<Chat | null>(null);
   const [message, setMessage] = useState('');
@@ -227,6 +229,7 @@ export function ChatDialog({ open, onOpenChange, currentUserProfile, permissions
   const [channelToDelete, setChannelToDelete] = useState<Chat | null>(null);
   const [selectedAsset, setSelectedAsset] = useState<ChatMessage['asset'] | null>(null);
   const [typingUsers, setTypingUsers] = useState<string[]>([]);
+  const [mobileView, setMobileView] = useState<'list' | 'chat'>('list');
   const typingTimeoutRef = useRef<NodeJS.Timeout>(null);
 
   const chatsQuery = useMemoFirebase(() => 
@@ -247,7 +250,6 @@ export function ChatDialog({ open, onOpenChange, currentUserProfile, permissions
 
     if (!allUsers) return { channels: ch, personnelTransmissions: dms };
 
-    // Create a list of all other users, merged with their existing DM if it exists
     const otherUsers = allUsers.filter(u => u.id !== currentUserProfile.id);
     
     const dmMap = new Map<string, Chat>();
@@ -260,7 +262,6 @@ export function ChatDialog({ open, onOpenChange, currentUserProfile, permissions
       const existingChat = dmMap.get(user.id);
       if (existingChat) return existingChat;
 
-      // Create a virtual chat node for users with no history
       const virtualChat: Chat = {
         id: [currentUserProfile.id, user.id].sort().join('_'),
         orgId: currentUserProfile.orgId,
@@ -275,14 +276,12 @@ export function ChatDialog({ open, onOpenChange, currentUserProfile, permissions
       return virtualChat;
     });
 
-    // Sort by updatedAt desc (most recent first)
     return { 
         channels: ch, 
         personnelTransmissions: transmissions.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
     };
   }, [chats, allUsers, currentUserProfile]);
   
-  // Real-time Typing Indicator subscription
   useEffect(() => {
     if (!database || !selectedChat) return;
 
@@ -321,12 +320,11 @@ export function ChatDialog({ open, onOpenChange, currentUserProfile, permissions
     
     if (chatToSelect) {
       setSelectedChat(chatToSelect);
+      if (isMobile) setMobileView('chat');
     }
-  }, [open, initialPayload, channels, personnelTransmissions, currentUserProfile]);
+  }, [open, initialPayload, channels, personnelTransmissions, currentUserProfile, isMobile]);
 
   useEffect(() => {
-      // Guard: Only perform maintenance if the chat exists in the database
-      // Virtual chats have a dummy updatedAt timestamp
       const isVirtualChat = selectedChat?.updatedAt === '1970-01-01T00:00:00.000Z';
 
       if (open && selectedChat && firestore && !isVirtualChat) {
@@ -393,28 +391,37 @@ export function ChatDialog({ open, onOpenChange, currentUserProfile, permissions
     toast({ title: "Channel Deleted", description: `#${channelToDelete.name} has been removed.` });
     if (selectedChat?.id === channelToDelete.id) {
         setSelectedChat(null);
+        if (isMobile) setMobileView('list');
     }
     setChannelToDelete(null);
   }
 
+  const handleSelectChat = (chat: Chat) => {
+      setSelectedChat(chat);
+      if (isMobile) setMobileView('chat');
+  };
+
   return (
     <>
     <Dialog open={open} onOpenChange={onOpenChange} modal={modal}>
-      <DialogContent position="left" className="p-0 flex flex-col apple-glass border-none overflow-hidden">
+      <DialogContent position="left" className="p-0 flex flex-col apple-glass border-none overflow-hidden h-full">
         <DialogHeader className="sr-only">
           <DialogTitle>Internal Comms Terminal</DialogTitle>
           <DialogDescription>Secure organizational messaging hub.</DialogDescription>
         </DialogHeader>
 
-        <div className="flex-1 grid grid-cols-1 md:grid-cols-12 overflow-hidden h-full">
+        <div className="flex-1 grid grid-cols-1 md:grid-cols-12 overflow-hidden h-full min-h-0">
             {/* Sidebar Pane */}
-            <div className="col-span-1 md:col-span-4 lg:col-span-3 border-r border-white/5 flex flex-col bg-secondary/10 backdrop-blur-xl">
-                <div className="p-6 border-b border-white/5">
+            <div className={cn(
+                "col-span-1 md:col-span-4 lg:col-span-3 border-r border-white/5 flex flex-col bg-secondary/10 backdrop-blur-xl h-full min-h-0",
+                isMobile && mobileView === 'chat' && "hidden"
+            )}>
+                <div className="p-6 border-b border-white/5 flex-shrink-0">
                     <h2 className="text-2xl font-black font-headline tracking-tighter">Comms Hub</h2>
                     <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground opacity-60">Organizational Transmissions</p>
                 </div>
 
-                <ScrollArea className="flex-1">
+                <ScrollArea className="flex-1 min-h-0">
                     <div className="p-4 space-y-8">
                         <div className="space-y-2">
                            <div className="flex items-center justify-between px-2 mb-2">
@@ -437,13 +444,13 @@ export function ChatDialog({ open, onOpenChange, currentUserProfile, permissions
                                 {channels.map(chat => (
                                     <div 
                                         key={chat.id} 
-                                        onClick={() => setSelectedChat(chat)} 
+                                        onClick={() => handleSelectChat(chat)} 
                                         className={cn(
                                             "p-3 rounded-2xl cursor-pointer flex justify-between items-center transition-all group active:scale-95",
                                             selectedChat?.id === chat.id ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20" : "hover:bg-white/5"
                                         )}
                                     >
-                                        <div className="flex items-center gap-3 min-0">
+                                        <div className="flex items-center gap-3 min-w-0">
                                             <div className={cn("p-2 rounded-xl bg-white/10 shrink-0", selectedChat?.id === chat.id ? "bg-white/20" : "group-hover:bg-primary/10 transition-colors")}>
                                                 <Hash className="h-4 w-4" />
                                             </div>
@@ -480,7 +487,7 @@ export function ChatDialog({ open, onOpenChange, currentUserProfile, permissions
                                 {personnelTransmissions.map(chat => (
                                     <div 
                                         key={chat.id} 
-                                        onClick={() => setSelectedChat(chat)} 
+                                        onClick={() => handleSelectChat(chat)} 
                                         className={cn(
                                             "p-3 rounded-2xl cursor-pointer transition-all flex items-center gap-3 active:scale-95 group",
                                             selectedChat?.id === chat.id ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20" : "hover:bg-white/5"
@@ -508,11 +515,19 @@ export function ChatDialog({ open, onOpenChange, currentUserProfile, permissions
             </div>
 
             {/* Conversation Pane */}
-            <div className="col-span-1 md:col-span-8 lg:col-span-9 flex flex-col bg-background/50 relative">
+            <div className={cn(
+                "col-span-1 md:col-span-8 lg:col-span-9 flex flex-col bg-background/50 relative h-full min-h-0",
+                isMobile && mobileView === 'list' && "hidden"
+            )}>
                 {selectedChat ? (
                     <>
-                        <div className="p-6 border-b border-white/5 bg-background/40 backdrop-blur-xl flex items-center justify-between sticky top-0 z-20">
+                        <div className="p-6 border-b border-white/5 bg-background/40 backdrop-blur-xl flex items-center justify-between sticky top-0 z-20 flex-shrink-0">
                             <div className="flex items-center gap-4">
+                                {isMobile && (
+                                    <Button variant="ghost" size="icon" className="mr-1 -ml-2 rounded-xl" onClick={() => setMobileView('list')}>
+                                        <ChevronLeft className="h-6 w-6" />
+                                    </Button>
+                                )}
                                 <div className="p-2.5 rounded-2xl bg-primary/10 text-primary">
                                     {selectedChat.type === 'CHANNEL' ? <Hash className="h-5 w-5" /> : <MessageSquare className="h-5 w-5" />}
                                 </div>
@@ -529,7 +544,7 @@ export function ChatDialog({ open, onOpenChange, currentUserProfile, permissions
 
                         <ChatMessages chat={selectedChat} currentUserProfile={currentUserProfile} onConvertTask={handleConvertTask} />
 
-                        <div className="px-6 py-4 border-t border-white/5 bg-background/40 backdrop-blur-xl">
+                        <div className="px-6 py-4 border-t border-white/5 bg-background/40 backdrop-blur-xl flex-shrink-0">
                             {/* Typing Indicator */}
                             <div className="h-4 mb-2 ml-4">
                                 {typingUsers.length > 0 && (
@@ -585,7 +600,7 @@ export function ChatDialog({ open, onOpenChange, currentUserProfile, permissions
                         </div>
                     </>
                 ) : (
-                    <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground p-12 text-center">
+                    <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground p-12 text-center h-full">
                         <div className="p-8 rounded-[3rem] bg-secondary/20 border-2 border-dashed border-white/5 mb-8 animate-pulse">
                             <Terminal className="h-16 w-16 opacity-10" />
                         </div>
