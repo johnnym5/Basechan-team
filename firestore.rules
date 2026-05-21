@@ -124,7 +124,11 @@ service cloud.firestore {
       allow read: if isSuperAdmin() || request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants;
       allow create: if isSuperAdmin() || (request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants
                       && request.resource.data.senderId == request.auth.uid);
-      allow update, delete: if isSuperAdmin();
+      allow update: if isSuperAdmin();
+      allow delete: if isSuperAdmin() || (
+        request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants &&
+        timestamp(resource.data.timestamp) < (request.time - duration.value(24, 'h'))
+      );
     }
   }
 }

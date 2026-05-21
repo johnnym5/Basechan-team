@@ -1,7 +1,7 @@
 
 'use client';
 
-import { Firestore, collection, doc, writeBatch } from 'firebase/firestore';
+import { Firestore, collection, doc, writeBatch, query, where, getDocs } from 'firebase/firestore';
 import { Database, ref, set, serverTimestamp as rtdbTimestamp } from 'firebase/database';
 import { updateDocumentNonBlocking } from '@/firebase';
 import type { Chat, ChatMessage, UserProfile, Notification } from '@/lib/types';
@@ -10,6 +10,7 @@ import { activityService } from './activity-service';
 
 /**
  * Service to handle real-time communication, read receipts, and typing indicators.
+ * Includes automated message purging logic (24h ephemeral policy).
  */
 export const chatService = {
     /**
@@ -90,5 +91,30 @@ export const chatService = {
         return updateDocumentNonBlocking(chatRef, {
             [`readReceipts.${userId}`]: new Date().toISOString()
         });
+    },
+
+    /**
+     * Purges messages older than 24 hours from the specific chat.
+     * This is a self-cleaning mechanism triggered by client interaction.
+     */
+    async purgeOldMessages(db: Firestore, chatId: string) {
+        const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+        const messagesRef = collection(db, 'chats', chatId, 'messages');
+        const q = query(messagesRef, where('timestamp', '<', twentyFourHoursAgo));
+        
+        try {
+            const snap = await getDocs(q);
+            if (snap.empty) return;
+
+            const batch = writeBatch(db);
+            snap.docs.forEach(doc => {
+                batch.delete(doc.ref);
+            });
+            await batch.commit();
+            console.log(`[SYSTEM] Cleared ${snap.size} legacy transmissions from node ${chatId}.`);
+        } catch (e) {
+            // Silently fail if rules haven't propagated yet or connection is unstable
+            console.warn("Purge sequence interrupted:", e);
+        }
     }
 };

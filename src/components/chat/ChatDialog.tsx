@@ -1,8 +1,9 @@
+
 "use client";
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { UserProfile, Chat, ChatMessage, Task, Requisition } from '@/lib/types';
-import { useCollection, useFirestore, useMemoFirebase, deleteDocumentNonBlocking, useDatabase, useUser } from '@/firebase';
+import { useCollection, useFirestore, useMemoFirebase, deleteDocumentNonBlocking, useDatabase, useUser, updateDocumentNonBlocking } from '@/firebase';
 import { collection, query, where, orderBy, doc, limit } from 'firebase/firestore';
 import { ref, onValue, off } from 'firebase/database';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -304,7 +305,19 @@ export function ChatDialog({ open, onOpenChange, currentUserProfile, permissions
 
   useEffect(() => {
       if (open && selectedChat && firestore) {
+          // 1. Mark as read
           chatService.markAsRead(firestore, selectedChat.id, currentUserProfile.id);
+          
+          // 2. Self-cleaning: Purge messages older than 24h
+          chatService.purgeOldMessages(firestore, selectedChat.id);
+
+          // 3. Clear preview if expired
+          const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+          if (selectedChat.lastMessage && selectedChat.lastMessage.timestamp < twentyFourHoursAgo) {
+              updateDocumentNonBlocking(doc(firestore, 'chats', selectedChat.id), {
+                  lastMessage: null
+              });
+          }
       }
   }, [open, selectedChat?.id, selectedChat?.updatedAt, firestore, currentUserProfile.id]);
 
