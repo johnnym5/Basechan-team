@@ -232,15 +232,55 @@ export function ChatDialog({ open, onOpenChange, currentUserProfile, permissions
   const chatsQuery = useMemoFirebase(() => 
     query(collection(firestore!, 'chats'), where('participants', 'array-contains', currentUserProfile.id), orderBy('updatedAt', 'desc'))
   , [firestore, currentUserProfile.id]);
-  const { data: chats, isLoading } = useCollection<Chat>(chatsQuery);
+  const { data: chats, isLoading: isChatsLoading } = useCollection<Chat>(chatsQuery);
 
-  const { channels, directMessages } = useMemo(() => {
-    if (!chats) return { channels: [], directMessages: [] };
-    const ch: Chat[] = [];
-    const dm: Chat[] = [];
-    chats.forEach(c => c.type === 'CHANNEL' ? ch.push(c) : dm.push(c));
-    return { channels: ch, directMessages: dm };
-  }, [chats]);
+  const allUsersQuery = useMemoFirebase(() => 
+    query(collection(firestore!, 'users'), where('orgId', '==', currentUserProfile.orgId))
+  , [firestore, currentUserProfile.orgId]);
+  const { data: allUsers, isLoading: isUsersLoading } = useCollection<UserProfile>(allUsersQuery);
+
+  const { channels, personnelTransmissions } = useMemo(() => {
+    if (!chats) return { channels: [], personnelTransmissions: [] };
+    
+    const ch: Chat[] = chats.filter(c => c.type === 'CHANNEL');
+    const dms: Chat[] = chats.filter(c => c.type === 'DIRECT');
+
+    if (!allUsers) return { channels: ch, personnelTransmissions: dms };
+
+    // Create a list of all other users, merged with their existing DM if it exists
+    const otherUsers = allUsers.filter(u => u.id !== currentUserProfile.id);
+    
+    const dmMap = new Map<string, Chat>();
+    dms.forEach(dm => {
+      const otherId = dm.participants.find(p => p !== currentUserProfile.id);
+      if (otherId) dmMap.set(otherId, dm);
+    });
+
+    const transmissions = otherUsers.map(user => {
+      const existingChat = dmMap.get(user.id);
+      if (existingChat) return existingChat;
+
+      // Create a virtual chat node for users with no history
+      const virtualChat: Chat = {
+        id: [currentUserProfile.id, user.id].sort().join('_'),
+        orgId: currentUserProfile.orgId,
+        type: 'DIRECT',
+        participants: [currentUserProfile.id, user.id],
+        participantProfiles: {
+            [currentUserProfile.id]: { fullName: currentUserProfile.fullName },
+            [user.id]: { fullName: user.fullName }
+        },
+        updatedAt: '1970-01-01T00:00:00.000Z'
+      };
+      return virtualChat;
+    });
+
+    // Sort by updatedAt desc (most recent first)
+    return { 
+        channels: ch, 
+        personnelTransmissions: transmissions.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+    };
+  }, [chats, allUsers, currentUserProfile]);
   
   // Real-time Typing Indicator subscription
   useEffect(() => {
@@ -267,48 +307,28 @@ export function ChatDialog({ open, onOpenChange, currentUserProfile, permissions
   }, [database, selectedChat, currentUserProfile.id]);
 
   useEffect(() => {
-    if (!open || !chats) return;
+    if (!open || !personnelTransmissions.length) return;
 
     let chatToSelect: Chat | null = null;
 
     if (initialPayload?.chatId) {
-        chatToSelect = chats.find(c => c.id === initialPayload.chatId) || null;
+        chatToSelect = channels.find(c => c.id === initialPayload.chatId) || personnelTransmissions.find(c => c.id === initialPayload.chatId) || null;
     } else if (initialPayload?.initialUserId) {
         const userId = initialPayload.initialUserId;
         const dmId = [currentUserProfile.id, userId].sort().join('_');
-        
-        const existingDM = directMessages.find(dm => dm.id === dmId);
-        if (existingDM) {
-            chatToSelect = existingDM;
-        } else {
-             chatToSelect = {
-                id: dmId,
-                orgId: currentUserProfile.orgId,
-                type: 'DIRECT',
-                participants: [currentUserProfile.id, userId],
-                participantProfiles: {
-                    [currentUserProfile.id]: { fullName: currentUserProfile.fullName },
-                    [userId]: { fullName: "Loading..." }
-                },
-                updatedAt: new Date().toISOString()
-            };
-        }
+        chatToSelect = personnelTransmissions.find(dm => dm.id === dmId) || null;
     }
     
     if (chatToSelect) {
       setSelectedChat(chatToSelect);
     }
-  }, [open, initialPayload, chats, directMessages, currentUserProfile]);
+  }, [open, initialPayload, channels, personnelTransmissions, currentUserProfile]);
 
   useEffect(() => {
       if (open && selectedChat && firestore) {
-          // 1. Mark as read
           chatService.markAsRead(firestore, selectedChat.id, currentUserProfile.id);
-          
-          // 2. Self-cleaning: Purge messages older than 24h
           chatService.purgeOldMessages(firestore, selectedChat.id);
 
-          // 3. Clear preview if expired
           const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
           if (selectedChat.lastMessage && selectedChat.lastMessage.timestamp < twentyFourHoursAgo) {
               updateDocumentNonBlocking(doc(firestore, 'chats', selectedChat.id), {
@@ -409,7 +429,7 @@ export function ChatDialog({ open, onOpenChange, currentUserProfile, permissions
                             </Button>
                            </div>
                            <div className="space-y-1">
-                                {isLoading && Array.from({length: 3}).map((_, i) => <Skeleton key={i} className="h-12 w-full rounded-xl" />)}
+                                {isChatsLoading && Array.from({length: 3}).map((_, i) => <Skeleton key={i} className="h-12 w-full rounded-xl" />)}
                                 {channels.map(chat => (
                                     <div 
                                         key={chat.id} 
@@ -452,8 +472,8 @@ export function ChatDialog({ open, onOpenChange, currentUserProfile, permissions
                         <div className="space-y-2">
                            <h4 className="text-[9px] font-black uppercase tracking-[0.2em] text-primary opacity-70 px-2 mb-2">Personnel Transmissions</h4>
                            <div className="space-y-1">
-                                {isLoading && Array.from({length: 4}).map((_, i) => <Skeleton key={i} className="h-14 w-full rounded-xl" />)}
-                                {directMessages.map(chat => (
+                                {(isChatsLoading || isUsersLoading) && Array.from({length: 4}).map((_, i) => <Skeleton key={i} className="h-14 w-full rounded-xl" />)}
+                                {personnelTransmissions.map(chat => (
                                     <div 
                                         key={chat.id} 
                                         onClick={() => setSelectedChat(chat)} 
@@ -468,7 +488,6 @@ export function ChatDialog({ open, onOpenChange, currentUserProfile, permissions
                                                     {getDirectMessageTitle(chat).split(' ').map(n=>n[0]).join('')}
                                                 </AvatarFallback>
                                             </Avatar>
-                                            <div className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full bg-emerald-500 border-2 border-background" />
                                         </div>
                                         <div className="min-w-0 flex-1">
                                                 <p className="font-bold text-sm truncate">{getDirectMessageTitle(chat)}</p>
