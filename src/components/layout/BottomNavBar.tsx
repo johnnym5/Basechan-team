@@ -1,13 +1,13 @@
 'use client';
 
 import { uiEmitter } from "@/lib/ui-emitter";
-import { Plus, LayoutDashboard, Fingerprint, LayoutGrid, X } from 'lucide-react';
+import { Plus, LayoutDashboard, Fingerprint, LayoutGrid, X, Sparkles, Bell } from 'lucide-react';
 import { useSearchParams } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { useUser, useDoc, useMemoFirebase, useFirestore } from "@/firebase";
+import { useUser, useDoc, useMemoFirebase, useFirestore, useCollection } from "@/firebase";
 import { usePermissions } from "@/hooks/usePermissions";
-import { doc } from "firebase/firestore";
-import type { UserProfile } from "@/lib/types";
+import { doc, collection, query, where, orderBy, limit } from "firebase/firestore";
+import type { UserProfile, Notification } from "@/lib/types";
 import { mainNavItems } from "@/lib/nav-items";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetDescription } from '@/components/ui/sheet';
 import { ScrollArea } from "../ui/scroll-area";
@@ -25,6 +25,12 @@ export function BottomNavBar() {
   const { data: userProfile } = useDoc<UserProfile>(userProfileRef);
   const permissions = usePermissions(userProfile);
   
+  const notificationsQuery = useMemoFirebase(() => 
+    firestore && user ? query(collection(firestore, 'notifications'), where('userId', '==', user.uid), where('isRead', '==', false), limit(1)) : null
+  , [firestore, user]);
+  const { data: unreadNotifications } = useCollection<Notification>(notificationsQuery);
+  const hasUnread = (unreadNotifications?.length || 0) > 0;
+
   if (!user || !userProfile) return null;
 
   const currentPanel = searchParams.get('panel');
@@ -52,16 +58,22 @@ export function BottomNavBar() {
       <div className="absolute inset-0 bg-background/80 backdrop-blur-2xl border-t border-white/10 shadow-[0_-8px_32px_0_rgba(0,0,0,0.1)]" />
       
       <div className="relative h-20 max-w-lg mx-auto flex items-center justify-between px-2 pb-safe">
-        {/* Dash */}
-        <button onClick={() => window.location.href = '/'} className={cn("flex-1 flex flex-col items-center gap-1.5 transition-all duration-300", !currentPanel ? "mobile-tab-active" : "text-muted-foreground opacity-60")}>
-            <LayoutDashboard className="h-5 w-5" />
-            <span className="text-[8px] font-black uppercase tracking-widest">Home</span>
+        {/* Assistant (Replacing Home) */}
+        <button 
+            onClick={() => uiEmitter.emit('open-assistant-dialog')} 
+            className={cn("flex-1 flex flex-col items-center gap-1.5 transition-all duration-300", isActive('assistant') ? "mobile-tab-active" : "text-muted-foreground opacity-60")}
+        >
+            <Sparkles className="h-5 w-5" />
+            <span className="text-[8px] font-black uppercase tracking-widest text-center leading-none">Assistant</span>
         </button>
 
         {/* Attendance */}
-        <button onClick={() => uiEmitter.emit('open-attendance-dialog')} className={cn("flex-1 flex flex-col items-center gap-1.5 transition-all duration-300", isActive('attendance') ? "mobile-tab-active" : "text-muted-foreground opacity-60")}>
+        <button 
+            onClick={() => uiEmitter.emit('open-attendance-dialog')} 
+            className={cn("flex-1 flex flex-col items-center gap-1.5 transition-all duration-300", isActive('attendance') ? "mobile-tab-active" : "text-muted-foreground opacity-60")}
+        >
             <Fingerprint className="h-5 w-5" />
-            <span className="text-[8px] font-black uppercase tracking-widest">Attendance</span>
+            <span className="text-[8px] font-black uppercase tracking-widest text-center leading-none">Attendance</span>
         </button>
 
         {/* Tactical Command Center Trigger */}
@@ -115,19 +127,27 @@ export function BottomNavBar() {
             </Sheet>
         </div>
 
-        {/* Tasks (Direct access for high-speed tasks) */}
-        <button onClick={() => uiEmitter.emit('open-tasks-dialog')} className={cn("flex-1 flex flex-col items-center gap-1.5 transition-all duration-300", isActive('tasks') ? "mobile-tab-active" : "text-muted-foreground opacity-60")}>
-            <LayoutGrid className="h-5 w-5 rotate-45 scale-75 opacity-50 absolute invisible" /> {/* Placeholder for layout spacing */}
-            <span className="h-5 w-5 flex items-center justify-center font-black text-[10px] bg-secondary/30 rounded-lg">T</span>
-            <span className="text-[8px] font-black uppercase tracking-widest">Tasks</span>
+        {/* Notifications (Replacing Tasks) */}
+        <button 
+            onClick={() => uiEmitter.emit('open-notifications-dialog' as any)} 
+            className={cn("flex-1 flex flex-col items-center gap-1.5 transition-all duration-300 relative", isActive('notifications') ? "mobile-tab-active" : "text-muted-foreground opacity-60")}
+        >
+            <Bell className="h-5 w-5" />
+            {hasUnread && (
+                <span className="absolute top-0 right-1/4 h-2 w-2 rounded-full bg-destructive border-2 border-background animate-pulse" />
+            )}
+            <span className="text-[8px] font-black uppercase tracking-widest text-center leading-none">Alerts</span>
         </button>
 
         {/* Quick Profile access */}
-        <button onClick={() => uiEmitter.emit('open-profile-dialog')} className={cn("flex-1 flex flex-col items-center gap-1.5 transition-all duration-300", isActive('profile') ? "mobile-tab-active" : "text-muted-foreground opacity-60")}>
+        <button 
+            onClick={() => uiEmitter.emit('open-profile-dialog')} 
+            className={cn("flex-1 flex flex-col items-center gap-1.5 transition-all duration-300", isActive('profile') ? "mobile-tab-active" : "text-muted-foreground opacity-60")}
+        >
              <div className="h-5 w-5 rounded-full border border-current flex items-center justify-center overflow-hidden">
                 <span className="text-[8px] font-black">{userProfile.fullName.charAt(0)}</span>
              </div>
-            <span className="text-[8px] font-black uppercase tracking-widest">Me</span>
+            <span className="text-[8px] font-black uppercase tracking-widest text-center leading-none">Me</span>
         </button>
       </div>
     </nav>

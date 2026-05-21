@@ -21,6 +21,7 @@ type AppEvents = {
   'open-library-dialog': void;
   'open-displays-dialog': { displayId?: string } | void;
   'open-assistant-dialog': void;
+  'open-notifications-dialog': void;
   'close-all-dialogs': void;
 };
 

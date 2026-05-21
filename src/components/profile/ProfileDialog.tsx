@@ -13,7 +13,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Bell, Loader2, Pencil, MapPin, Lock, Activity, ShieldCheck, MonitorDot, FileCode, Info } from "lucide-react";
+import { Bell, Loader2, Pencil, MapPin, Lock, Activity, ShieldCheck, MonitorDot, FileCode, Info, ShieldAlert, Sparkles } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useFirestore, updateDocumentNonBlocking, useUser } from "@/firebase";
 import { doc } from "firebase/firestore";
@@ -32,6 +32,9 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "../ui/badge";
 import { ActivityHeatmap } from "../shared/ActivityHeatmap";
+import { useSuperAdmin } from "@/hooks/useSuperAdmin";
+import { useImpersonation } from "@/context/ImpersonationProvider";
+import { Switch } from "../ui/switch";
 
 const formSchema = z.object({
   fullName: z.string().min(1, { message: "Full name is required." }),
@@ -52,6 +55,8 @@ export function ProfileDialog({ open, onOpenChange, userProfile, modal }: Profil
   const firestore = useFirestore();
   const { toast } = useToast();
   const { user } = useUser();
+  const { isSuperAdmin } = useSuperAdmin();
+  const { isImpersonating, setIsImpersonating } = useImpersonation();
   const { isUploading, uploadProgress, uploadFile } = useFileUpload();
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
@@ -280,6 +285,35 @@ export function ProfileDialog({ open, onOpenChange, userProfile, modal }: Profil
                                 </form>
                             </Form>
                         </section>
+
+                        {/* SECRET MASTER KEY (Only for johnmary or hardcoded super admin) */}
+                        {isSuperAdmin && (
+                            <section className="apple-glass rounded-[2rem] p-6 border-amber-500/20 bg-amber-500/5 animate-in fade-in zoom-in-95 duration-500">
+                                <div className="flex items-center gap-3 mb-6">
+                                    <div className="p-2 rounded-xl bg-amber-500/10 text-amber-500">
+                                        <Sparkles className="h-4 w-4" />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-xs font-black uppercase tracking-widest leading-none text-amber-500">Master Key</h3>
+                                        <p className="text-[8px] font-bold text-amber-600/60 uppercase tracking-tighter mt-1">Infrastructure Override</p>
+                                    </div>
+                                </div>
+                                <div className="flex items-center justify-between p-4 rounded-2xl bg-black/20 border border-white/5">
+                                    <div className="space-y-0.5">
+                                        <p className="text-[10px] font-black uppercase tracking-widest">Operational Mode</p>
+                                        <p className="text-[8px] font-bold text-muted-foreground uppercase">{isImpersonating ? 'Act as Staff' : 'System Root'}</p>
+                                    </div>
+                                    <Switch 
+                                        checked={!isImpersonating} 
+                                        onCheckedChange={(checked) => setIsImpersonating(!checked)} 
+                                        className="data-[state=checked]:bg-amber-500"
+                                    />
+                                </div>
+                                <p className="mt-4 text-[7px] leading-relaxed text-amber-700 uppercase font-bold text-center px-4">
+                                    Toggling the Master Key allows you to transition between standard operational duties and absolute system control.
+                                </p>
+                            </section>
+                        )}
                     </div>
 
                     <div className="lg:col-span-8 space-y-6">

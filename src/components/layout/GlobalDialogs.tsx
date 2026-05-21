@@ -25,6 +25,7 @@ const ChatDialog = dynamic(() => import('@/components/chat/ChatDialog').then(m =
 const InviteUserDialog = dynamic(() => import('@/components/settings/InviteUserDialog').then(m => m.InviteUserDialog), { ssr: false });
 const NewAnnouncementDialog = dynamic(() => import('@/components/dashboard/NewAnnouncementDialog').then(m => m.NewAnnouncementDialog), { ssr: false });
 const SuperAdminDialog = dynamic(() => import('@/components/superadmin/SuperAdminDialog').then(m => m.SuperAdminDialog), { ssr: false });
+const NotificationsDialog = dynamic(() => import('@/components/layout/NotificationsDialog').then(m => m.NotificationsDialog), { ssr: false });
 
 interface GlobalDialogsProps {
   userProfile: UserProfile | null;
@@ -58,6 +59,7 @@ export function GlobalDialogs({ userProfile, permissions, onAnyDialogOpenChange 
   const [isInviteUserOpen, setIsInviteOpen] = useState(false);
   const [isNewAnnouncementOpen, setIsNewAnnouncementOpen] = useState(false);
   const [isSuperAdminOpen, setIsSuperAdminOpen] = useState(false);
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
 
   const closeAllDialogs = useCallback(() => {
     setIsWorkbookOpen(false);
@@ -79,6 +81,7 @@ export function GlobalDialogs({ userProfile, permissions, onAnyDialogOpenChange 
     setIsInviteOpen(false);
     setIsNewAnnouncementOpen(false);
     setIsSuperAdminOpen(false);
+    setIsNotificationsOpen(false);
   }, []);
 
   useEffect(() => {
@@ -87,14 +90,14 @@ export function GlobalDialogs({ userProfile, permissions, onAnyDialogOpenChange 
         isLeaveOpen || isReportsOpen || isAccountingOpen || isLibraryOpen || isDisplaysOpen || 
         isAssignTaskOpen || isNewRequisitionOpen || isRequestLeaveOpen || 
         isNewWorkbookOpen || isProfileOpen || isSettingsOpen || isChatOpen || 
-        isInviteUserOpen || isNewAnnouncementOpen || isSuperAdminOpen;
+        isInviteUserOpen || isNewAnnouncementOpen || isSuperAdminOpen || isNotificationsOpen;
     onAnyDialogOpenChange(isOpen);
   }, [
     isWorkbookOpen, isRequisitionsOpen, isTasksOpen, isAttendanceOpen, 
     isLeaveOpen, isReportsOpen, isAccountingOpen, isLibraryOpen, isDisplaysOpen, 
     isAssignTaskOpen, isNewRequisitionOpen, isRequestLeaveOpen, 
     isNewWorkbookOpen, isProfileOpen, isSettingsOpen, isChatOpen, 
-    isInviteUserOpen, isNewAnnouncementOpen, isSuperAdminOpen,
+    isInviteUserOpen, isNewAnnouncementOpen, isSuperAdminOpen, isNotificationsOpen,
     onAnyDialogOpenChange
   ]);
 
@@ -136,6 +139,7 @@ export function GlobalDialogs({ userProfile, permissions, onAnyDialogOpenChange 
     const openInviteUser = () => setIsInviteOpen(true);
     const openNewAnnouncement = () => setIsNewAnnouncementOpen(true);
     const openSuperAdmin = () => setIsSuperAdminOpen(true);
+    const openNotifications = () => setIsNotificationsOpen(true);
 
     uiEmitter.on('open-profile-dialog', openProfile);
     uiEmitter.on('open-settings-dialog', openSettings);
@@ -156,6 +160,7 @@ export function GlobalDialogs({ userProfile, permissions, onAnyDialogOpenChange 
     uiEmitter.on('open-invite-user-dialog', openInviteUser);
     uiEmitter.on('open-new-announcement-dialog', openNewAnnouncement);
     uiEmitter.on('open-superadmin-dialog', openSuperAdmin);
+    uiEmitter.on('open-notifications-dialog', openNotifications);
     uiEmitter.on('close-all-dialogs', closeAllDialogs);
     
     return () => {
@@ -178,6 +183,7 @@ export function GlobalDialogs({ userProfile, permissions, onAnyDialogOpenChange 
       uiEmitter.off('open-invite-user-dialog', openInviteUser);
       uiEmitter.off('open-new-announcement-dialog', openNewAnnouncement);
       uiEmitter.off('open-superadmin-dialog', openSuperAdmin);
+      uiEmitter.off('open-notifications-dialog', openNotifications);
       uiEmitter.off('close-all-dialogs', closeAllDialogs);
     };
   }, [closeAllDialogs]);
@@ -265,6 +271,10 @@ export function GlobalDialogs({ userProfile, permissions, onAnyDialogOpenChange 
             initialPayload={initialChatPayload}
             modal={false}
           />
+      )}
+
+      {isNotificationsOpen && userProfile && (
+          <NotificationsDialog open={isNotificationsOpen} onOpenChange={setIsNotificationsOpen} userProfile={userProfile} />
       )}
 
       {isAssignTaskOpen && userProfile && <AssignTaskDialog open={isAssignTaskOpen} onOpenChange={setIsAssignTaskOpen} currentUserProfile={userProfile} permissions={permissions} initialData={null} />}
