@@ -11,7 +11,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
 import { uiEmitter } from '@/lib/ui-emitter';
 
 
@@ -162,11 +161,9 @@ export function UniversalSearch({ userProfile }: UniversalSearchProps) {
             </Button>
             <Dialog open={open} onOpenChange={setOpen}>
                 <DialogContent className="p-0 top-[15vh] sm:top-[15vh] max-w-lg">
-                    <DialogHeader>
-                        <VisuallyHidden>
-                            <DialogTitle>Universal Search</DialogTitle>
-                            <DialogDescription>Search for tasks, users, documents, and more.</DialogDescription>
-                        </VisuallyHidden>
+                    <DialogHeader className="sr-only">
+                        <DialogTitle>Universal Search</DialogTitle>
+                        <DialogDescription>Search for tasks, users, documents, and more.</DialogDescription>
                     </DialogHeader>
                     <div className="flex items-center border-b px-3">
                         <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />

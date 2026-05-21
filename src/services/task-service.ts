@@ -1,11 +1,9 @@
-
 'use client';
 
 import { Firestore, collection, doc, query, where, getDocs, arrayUnion, setDoc } from 'firebase/firestore';
 import { addDocumentNonBlocking, updateDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase';
 import type { Task, UserProfile, ActivityEntry, TaskStatus, Notification, TaskPriority } from '@/lib/types';
 import { sanitizeInput } from '@/lib/utils';
-import { auditService } from './activity-service';
 import { activityService } from './activity-service';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
@@ -94,9 +92,6 @@ export const taskService = {
         }
     });
 
-    // 5. Audit & Notify (Non-blocking)
-    // activityService.logActivity(db, currentUser, 2); // Optional: points for assigner
-    
     if (currentUser.id !== assignee.id) {
         const notification: Omit<Notification, 'id'> = {
             orgId: currentUser.orgId,

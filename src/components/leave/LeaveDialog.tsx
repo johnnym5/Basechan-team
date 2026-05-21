@@ -14,12 +14,10 @@ export function LeaveDialog({ open, onOpenChange }: LeaveDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent position="left" className="flex flex-col p-0">
-        <div className="sr-only">
-          <DialogHeader>
-            <DialogTitle>Leave Management</DialogTitle>
-            <DialogDescription>Request time off and manage your leave balance.</DialogDescription>
-          </DialogHeader>
-        </div>
+        <DialogHeader className="sr-only">
+          <DialogTitle>Leave Management</DialogTitle>
+          <DialogDescription>Request time off and manage your leave balance.</DialogDescription>
+        </DialogHeader>
         <ScrollArea className="flex-1">
             <div className="p-6">
                 <LeavePageContent />

@@ -13,12 +13,10 @@ export function AttendanceDialog({ open, onOpenChange }: AttendanceDialogProps) 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent position="left" className="flex flex-col p-0">
-        <div className="sr-only">
-          <DialogHeader>
-              <DialogTitle>Attendance Center</DialogTitle>
-              <DialogDescription>Manage your work hours and see who's currently online.</DialogDescription>
-          </DialogHeader>
-        </div>
+        <DialogHeader className="sr-only">
+            <DialogTitle>Attendance Center</DialogTitle>
+            <DialogDescription>Manage your work hours and see who's currently online.</DialogDescription>
+        </DialogHeader>
         <ScrollArea className="flex-1">
             <div className="p-6">
                 <AttendancePageContent />

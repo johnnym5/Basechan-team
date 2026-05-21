@@ -38,6 +38,7 @@ import { ShareTaskDialog } from './ShareTaskDialog';
 import { EditTaskDialog } from './EditTaskDialog';
 import { uiEmitter } from '@/lib/ui-emitter';
 import { CompletionBriefDialog } from './CompletionBriefDialog';
+import { useToast } from '@/hooks/use-toast';
 
 interface TaskDetailDialogProps {
   task: Task;
@@ -49,6 +50,7 @@ interface TaskDetailDialogProps {
 
 export function TaskDetailDialog({ task: initialTask, isOpen, onOpenChange, currentUserProfile, permissions }: TaskDetailDialogProps) {
   const firestore = useFirestore();
+  const { toast } = useToast();
 
   const taskRef = useMemoFirebase(() =>
     (firestore && initialTask) ? doc(firestore, 'tasks', initialTask.id) : null,
@@ -74,6 +76,7 @@ export function TaskDetailDialog({ task: initialTask, isOpen, onOpenChange, curr
 
 
   const handleSubTaskToggle = (subTaskId: string) => {
+    if (!firestore) return;
     const updatedSubTasks = subTasks.map(st => 
         st.id === subTaskId ? { ...st, completed: !st.completed } : st
     );
@@ -84,7 +87,7 @@ export function TaskDetailDialog({ task: initialTask, isOpen, onOpenChange, curr
 
   const handleAddSubTask = (e: React.MouseEvent | React.KeyboardEvent) => {
       e.preventDefault();
-      if (!newSubTask.trim()) return;
+      if (!newSubTask.trim() || !firestore) return;
       const newId = Date.now().toString() + Math.random().toString(36).substring(2, 9);
       const newSubTaskItem: SubTask = { id: newId, text: newSubTask, completed: false };
       const updatedSubTasks = [...subTasks, newSubTaskItem];
@@ -94,12 +97,13 @@ export function TaskDetailDialog({ task: initialTask, isOpen, onOpenChange, curr
       updateDocumentNonBlocking(taskRef, { subTasks: updatedSubTasks });
   };
   
-  const handleDeleteTask = (e: React.MouseEvent) => {
-    e.preventDefault();
+  const handleDeleteTask = () => {
+    if (!firestore || !task.id) return;
     const taskRef = doc(firestore, 'tasks', task.id);
     deleteDocumentNonBlocking(taskRef);
-    setShowDeleteConfirm(false); // close confirmation
-    onOpenChange(false); // Close the main dialog
+    toast({ title: "Task Terminated", description: `Mission "${task.title}" has been removed from the grid.` });
+    setShowDeleteConfirm(false);
+    onOpenChange(false);
   }
 
   const handleAddComment = (commentText: string) => {
@@ -120,6 +124,7 @@ export function TaskDetailDialog({ task: initialTask, isOpen, onOpenChange, curr
   }
 
   const handleStatusChange = (newStatus: TaskStatus, comment?: string) => {
+    if (!firestore) return;
     setIsSubmitting(true);
     const taskRef = doc(firestore, 'tasks', task.id);
     const now = new Date().toISOString();
@@ -232,14 +237,14 @@ export function TaskDetailDialog({ task: initialTask, isOpen, onOpenChange, curr
           <div className="md:col-span-2 space-y-6 flex flex-col">
             <div className="space-y-2">
               <h4 className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
-                <span className="material-symbols-outlined text-[1.125rem]">info</span> Details
+                <Info className="h-4 w-4" /> Details
               </h4>
               <p className="text-foreground text-sm">{task.description || "No description provided."}</p>
             </div>
             
             <div className="space-y-2">
                 <h4 className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
-                    <span className="material-symbols-outlined text-[1.125rem]">checklist</span> Checklist
+                    <CheckSquare className="h-4 w-4" /> Checklist
                 </h4>
                 <div className="space-y-2 rounded-md border p-3">
                     {subTasks.map(st => (
@@ -305,7 +310,7 @@ export function TaskDetailDialog({ task: initialTask, isOpen, onOpenChange, curr
               </div>
               <div className="flex items-center justify-between">
                 <span className="flex items-center gap-2 text-muted-foreground">
-                  <span className="material-symbols-outlined text-[1.125rem]">timer</span> Estimated Hours
+                  <Hourglass className="h-4 w-4" /> Estimated Hours
                 </span>
                 <span className="font-medium">
                   {task.estimatedHours ? `${task.estimatedHours}h` : 'Not set'}
@@ -314,7 +319,7 @@ export function TaskDetailDialog({ task: initialTask, isOpen, onOpenChange, curr
               {task.actualHours != null && (
                  <div className="flex items-center justify-between">
                     <span className="flex items-center gap-2 text-muted-foreground">
-                    <span className="material-symbols-outlined text-[1.125rem]">done_all</span> Actual Time
+                        <Check className="h-4 w-4" /> Actual Time
                     </span>
                     <span className="font-medium">{task.actualHours}h</span>
                 </div>
@@ -364,20 +369,20 @@ export function TaskDetailDialog({ task: initialTask, isOpen, onOpenChange, curr
                                         Delete
                                     </Button>
                                 </AlertDialogTrigger>
-                                <AlertDialogContent>
+                                <AlertDialogContent className="apple-glass-darker border-none">
                                     <AlertDialogHeader>
-                                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                        <AlertDialogTitle>Confirm Mission Termination</AlertDialogTitle>
                                         <AlertDialogDescription>
-                                            This action cannot be undone. This will permanently delete the task "{task.title}".
+                                            This action is irreversible and will permanently purge the mission "{task.title}" from the organizational archives.
                                         </AlertDialogDescription>
                                     </AlertDialogHeader>
                                     <AlertDialogFooter>
-                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                        <AlertDialogCancel>Abort</AlertDialogCancel>
                                         <AlertDialogAction
                                             className="bg-destructive hover:bg-destructive/90" 
                                             onClick={handleDeleteTask}
                                         >
-                                            Delete
+                                            Execute
                                         </AlertDialogAction>
                                     </AlertDialogFooter>
                                 </AlertDialogContent>

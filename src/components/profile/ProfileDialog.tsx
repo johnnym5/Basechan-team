@@ -15,7 +15,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Bell, Loader2, Pencil, MapPin, Lock, Activity, ShieldCheck, MonitorDot, FileCode, Info } from "lucide-react";
 import { useState, useEffect } from "react";
-import { useFirestore, updateDocumentNonBlocking, useUser, useAuth } from "@/firebase";
+import { useFirestore, updateDocumentNonBlocking, useUser } from "@/firebase";
 import { doc } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import type { UserProfile } from "@/lib/types";
@@ -32,7 +32,6 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "../ui/badge";
 import { ActivityHeatmap } from "../shared/ActivityHeatmap";
-import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 
 const formSchema = z.object({
   fullName: z.string().min(1, { message: "Full name is required." }),
@@ -96,7 +95,6 @@ export function ProfileDialog({ open, onOpenChange, userProfile, modal }: Profil
 
     // 3. File System
     if ('showDirectoryPicker' in window) {
-        // There's no query for this, we rely on local storage or previous attempts
         const hasAccess = sessionStorage.getItem('basechan-fs-authorized') === 'true';
         setFsStatus(hasAccess ? 'granted' : 'default');
     } else {
@@ -202,7 +200,6 @@ export function ProfileDialog({ open, onOpenChange, userProfile, modal }: Profil
                     sessionStorage.setItem('basechan-fs-authorized', 'true');
                     toast({ title: "Storage Link Active" });
                 } catch (e) {
-                    // Usually user cancelled
                 }
             }
         }
@@ -221,12 +218,10 @@ export function ProfileDialog({ open, onOpenChange, userProfile, modal }: Profil
   return (
     <Dialog open={open} onOpenChange={onOpenChange} modal={modal}>
       <DialogContent position="left" className="flex flex-col p-0 overflow-hidden">
-        <VisuallyHidden>
-            <DialogHeader>
-                <DialogTitle>My Profile & Security</DialogTitle>
-                <DialogDescription>Manage your information and app permissions.</DialogDescription>
-            </DialogHeader>
-        </VisuallyHidden>
+        <DialogHeader className="sr-only">
+            <DialogTitle>My Profile & Security</DialogTitle>
+            <DialogDescription>Manage your information and app permissions.</DialogDescription>
+        </DialogHeader>
         
         <Progress value={uploadProgress} className={isUploading ? "w-full rounded-none h-1 flex-shrink-0" : "hidden"} />
 
@@ -240,7 +235,6 @@ export function ProfileDialog({ open, onOpenChange, userProfile, modal }: Profil
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 pb-20">
-                    {/* LEFT COLUMN: Identity & Credentials */}
                     <div className="lg:col-span-4 space-y-6">
                         <section className="apple-glass rounded-[2rem] p-6 flex flex-col items-center text-center interactive-element">
                             <div className="relative mb-6 group">
@@ -288,7 +282,6 @@ export function ProfileDialog({ open, onOpenChange, userProfile, modal }: Profil
                         </section>
                     </div>
 
-                    {/* RIGHT COLUMN: History & Permissions */}
                     <div className="lg:col-span-8 space-y-6">
                         <section className="apple-glass rounded-[2rem] p-6 shadow-inner">
                             <div className="flex items-center justify-between mb-8">
