@@ -59,7 +59,7 @@ export function GlobalDialogs({ userProfile, permissions, onAnyDialogOpenChange 
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [initialChatPayload, setInitialChatPayload] = useState<{ initialUserId?: string; chatId?: string } | undefined>();
-  const [isInviteUserOpen, setIsInviteOpen] = useState(false);
+  const [isInviteOpen, setIsInviteOpen] = useState(false);
   const [isNewAnnouncementOpen, setIsNewAnnouncementOpen] = useState(false);
   const [isSuperAdminOpen, setIsSuperAdminOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
@@ -300,7 +300,7 @@ export function GlobalDialogs({ userProfile, permissions, onAnyDialogOpenChange 
       {isNewRequisitionOpen && userProfile && <NewRequisitionDialog open={isNewRequisitionOpen} onOpenChange={setIsNewRequisitionOpen} userProfile={userProfile} />}
       {isRequestLeaveOpen && userProfile && <RequestLeaveDialog open={isRequestLeaveOpen} onOpenChange={setIsRequestLeaveOpen} userProfile={userProfile} />}
       {isNewWorkbookOpen && userProfile && <NewWorkbookDialog open={isNewWorkbookOpen} onOpenChange={setIsNewWorkbookOpen} userProfile={userProfile} />}
-      {isInviteUserOpen && userProfile && <InviteUserDialog open={isInviteUserOpen} onOpenChange={setIsInviteOpen} currentUserProfile={userProfile} />}
+      {isInviteOpen && userProfile && <InviteUserDialog open={isInviteOpen} onOpenChange={setIsInviteOpen} currentUserProfile={userProfile} />}
       {permissions.canManageAnnouncements && isNewAnnouncementOpen && userProfile && (
           <NewAnnouncementDialog 
               open={isNewAnnouncementOpen}
