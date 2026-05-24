@@ -135,7 +135,18 @@
         "activeSessionId": { "type": "string", "description": "Unique ID for enforcement of single device login." },
         "deviceType": { "type": "string", "enum": ["MOBILE", "PC"] },
         "lastHeartbeat": { "type": "string", "format": "date-time" },
-        "pendingCommand": { "type": "string", "enum": ["SCREENSHOT", "NONE"] }
+        "pendingCommand": { "type": "string", "enum": ["SCREENSHOT", "SCREEN_SHARE", "NONE"] },
+        "customPermissions": {
+          "type": "object",
+          "properties": {
+            "canAccessRequisitions": { "type": "boolean" },
+            "canAccessChat": { "type": "boolean" },
+            "canManageAccounting": { "type": "boolean" },
+            "canAccessLibrary": { "type": "boolean" },
+            "canManageAnnouncements": { "type": "boolean" },
+            "canViewAudit": { "type": "boolean" }
+          }
+        }
       },
       "required": ["orgId", "email", "fullName", "role", "username", "joinedDate"]
     },

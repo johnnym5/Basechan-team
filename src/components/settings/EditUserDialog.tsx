@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, KeyRound } from "lucide-react";
+import { Loader2, KeyRound, ShieldCheck, Ban, CheckCircle2 } from "lucide-react";
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useFirestore, updateDocumentNonBlocking } from "@/firebase";
 import { doc } from "firebase/firestore";
@@ -18,6 +18,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { getRoleFromPosition, PREDEFINED_DEPARTMENTS, ROLES_BY_DEPARTMENT } from "@/lib/roles-and-departments";
 import { sanitizeInput } from "@/lib/utils";
 import { Separator } from "../ui/separator";
+import { Switch } from "../ui/switch";
+import { ScrollArea } from "../ui/scroll-area";
 
 const formSchema = z.object({
   fullName: z.string().min(1, "Identity name is required."),
@@ -26,6 +28,14 @@ const formSchema = z.object({
   phoneNumber: z.string().optional(),
   position: z.string().min(1, "Position is required."),
   departmentName: z.string({ required_error: "Department is required." }),
+  customPermissions: z.object({
+    canAccessRequisitions: z.boolean().optional(),
+    canAccessChat: z.boolean().optional(),
+    canManageAccounting: z.boolean().optional(),
+    canAccessLibrary: z.boolean().optional(),
+    canManageAnnouncements: z.boolean().optional(),
+    canViewAudit: z.boolean().optional(),
+  }).optional(),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -57,8 +67,9 @@ export function EditUserDialog({ open, onOpenChange, userToEdit }: EditUserDialo
         phoneNumber: userToEdit.phoneNumber || '',
         position: userToEdit.position,
         departmentName: userToEdit.departmentName,
+        customPermissions: userToEdit.customPermissions || {},
       });
-      isInitialRender.current = true; // Reset for next time dialog opens
+      isInitialRender.current = true;
     }
   }, [userToEdit, form]);
   
@@ -73,13 +84,10 @@ export function EditUserDialog({ open, onOpenChange, userToEdit }: EditUserDialo
   const rolesForSelectedDepartment = useMemo(() => {
     if (!selectedDepartment) return [];
     const departmentRoles = ROLES_BY_DEPARTMENT[selectedDepartment as keyof typeof ROLES_BY_DEPARTMENT] || [];
-    
     const rolesToShow = [...new Set(['Staff', ...departmentRoles])];
-    
     if (userToEdit && !rolesToShow.includes(userToEdit.position)) {
         rolesToShow.push(userToEdit.position);
     }
-    
     return rolesToShow;
   }, [selectedDepartment, userToEdit]);
 
@@ -98,11 +106,12 @@ export function EditUserDialog({ open, onOpenChange, userToEdit }: EditUserDialo
         position: values.position,
         departmentName: values.departmentName,
         role: getRoleFromPosition(values.position as UserPosition),
+        customPermissions: values.customPermissions,
       });
 
       toast({
-        title: "User Updated",
-        description: `${userToEdit.fullName}'s profile has been updated.`,
+        title: "User Synchronized",
+        description: `Personnel records and authorizations for ${userToEdit.fullName} have been updated.`,
       });
       onOpenChange(false);
     } catch (error: any) {
@@ -116,93 +125,110 @@ export function EditUserDialog({ open, onOpenChange, userToEdit }: EditUserDialo
     }
   }
 
+  const PermissionToggle = ({ name, label, description }: { name: keyof NonNullable<FormData['customPermissions']>, label: string, description: string }) => (
+    <FormField
+        control={form.control}
+        name={`customPermissions.${name}`}
+        render={({ field }) => (
+            <FormItem className="flex flex-row items-center justify-between rounded-2xl border border-white/5 p-4 bg-black/20 group hover:border-primary/20 transition-all">
+                <div className="space-y-0.5">
+                    <FormLabel className="text-xs font-black uppercase tracking-widest leading-none flex items-center gap-2">
+                        {field.value === false ? <Ban className="h-3 w-3 text-destructive" /> : field.value === true ? <CheckCircle2 className="h-3 w-3 text-emerald-500" /> : <ShieldCheck className="h-3 w-3 opacity-30" />}
+                        {label}
+                    </FormLabel>
+                    <FormDescription className="text-[9px] font-bold uppercase tracking-tight opacity-50">{description}</FormDescription>
+                </div>
+                <FormControl>
+                    <Switch
+                        checked={field.value ?? false}
+                        onCheckedChange={field.onChange}
+                    />
+                </FormControl>
+            </FormItem>
+        )}
+    />
+  );
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl">
-        <DialogHeader>
-          <DialogTitle className="text-2xl font-bold font-headline uppercase tracking-wider">Security Clearance</DialogTitle>
-          <DialogDescription>Personnel Authorization for {userToEdit.fullName}</DialogDescription>
+      <DialogContent className="sm:max-w-3xl h-[85vh] flex flex-col p-0 overflow-hidden">
+        <DialogHeader className="p-8 pb-4 flex-shrink-0">
+          <DialogTitle className="text-2xl font-black font-headline tracking-tighter uppercase">Authorization Override</DialogTitle>
+          <DialogDescription className="text-[10px] font-black uppercase tracking-widest opacity-60">Identity Ref: {userToEdit.id}</DialogDescription>
         </DialogHeader>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 pt-4">
-             <div>
-                <h3 className="text-sm font-semibold uppercase tracking-wider text-primary/80 mb-4">Credential Control</h3>
-                <div className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <FormField control={form.control} name="fullName" render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Identity Name</FormLabel>
-                                <FormControl><Input {...field} /></FormControl>
-                                <FormMessage />
-                            </FormItem>
-                        )}/>
-                        <FormField control={form.control} name="username" render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Username</FormLabel>
-                                <FormControl><Input placeholder="e.g., jdoe" {...field} /></FormControl>
-                                <FormMessage />
-                            </FormItem>
-                        )}/>
-                        <FormField control={form.control} name="email" render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Contact Email</FormLabel>
-                                <FormControl><Input type="email" {...field} /></FormControl>
-                                <FormMessage />
-                            </FormItem>
-                        )}/>
-                        <FormField control={form.control} name="phoneNumber" render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Contact Phone</FormLabel>
-                                <FormControl><Input type="tel" {...field} /></FormControl>
-                                <FormMessage />
-                            </FormItem>
-                        )}/>
+
+        <ScrollArea className="flex-1 bg-background/20">
+            <Form {...form}>
+                <form onSubmit={form.handleSubmit(onSubmit)} className="p-8 pt-0 space-y-8">
+                    <div className="space-y-6">
+                        <div className="flex items-center gap-2">
+                            <div className="p-1.5 rounded-lg bg-primary/10 text-primary"><KeyRound className="h-3.5 w-3.5" /></div>
+                            <h3 className="text-xs font-black uppercase tracking-widest">Base Identity</h3>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <FormField control={form.control} name="fullName" render={({ field }) => (
+                                <FormItem><FormLabel className="text-[9px] uppercase font-black opacity-50">Legal Name</FormLabel><FormControl><Input {...field} className="rounded-xl h-11 bg-background/50" /></FormControl><FormMessage /></FormItem>
+                            )}/>
+                            <FormField control={form.control} name="username" render={({ field }) => (
+                                <FormItem><FormLabel className="text-[9px] uppercase font-black opacity-50">Username</FormLabel><FormControl><Input {...field} className="rounded-xl h-11 bg-background/50" /></FormControl><FormMessage /></FormItem>
+                            )}/>
+                            <FormField control={form.control} name="email" render={({ field }) => (
+                                <FormItem><FormLabel className="text-[9px] uppercase font-black opacity-50">Auth Email</FormLabel><FormControl><Input type="email" {...field} className="rounded-xl h-11 bg-background/50" /></FormControl><FormMessage /></FormItem>
+                            )}/>
+                            <FormField control={form.control} name="phoneNumber" render={({ field }) => (
+                                <FormItem><FormLabel className="text-[9px] uppercase font-black opacity-50">Emergency Comms</FormLabel><FormControl><Input type="tel" {...field} className="rounded-xl h-11 bg-background/50" /></FormControl><FormMessage /></FormItem>
+                            )}/>
+                        </div>
                     </div>
-                     <FormItem>
-                        <FormLabel className="flex items-center gap-2"><KeyRound className="h-4 w-4" /> Terminal Password</FormLabel>
-                        <FormControl>
-                            <Input type="password" value="••••••••••••••••" disabled />
-                        </FormControl>
-                        <FormDescription className="text-xs">
-                            For security, passwords are encrypted and cannot be viewed. To reset a user's password, use the "Reset Pass" button on the main team page.
-                        </FormDescription>
-                    </FormItem>
-                </div>
-             </div>
-            
-            <Separator />
+                    
+                    <Separator className="bg-white/5" />
 
-             <div>
-                <h3 className="text-sm font-semibold uppercase tracking-wider text-primary/80 mb-4">Role Assignment</h3>
-                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <FormField control={form.control} name="departmentName" render={({ field }) => (
-                        <FormItem><FormLabel>Department</FormLabel>
-                            <Select onValueChange={field.onChange} value={field.value}>
-                            <FormControl><SelectTrigger><SelectValue placeholder="Select a department" /></SelectTrigger></FormControl>
-                            <SelectContent>
-                                {PREDEFINED_DEPARTMENTS.map(dep => <SelectItem key={dep} value={dep}>{dep}</SelectItem>)}
-                            </SelectContent>
-                            </Select>
-                        <FormMessage /></FormItem>
-                    )}/>
-                    <FormField control={form.control} name="position" render={({ field }) => (
-                        <FormItem><FormLabel>Position</FormLabel>
-                            <Select onValueChange={field.onChange} value={field.value} disabled={userToEdit.position === 'Organization Administrator' || !selectedDepartment}>
-                            <FormControl><SelectTrigger><SelectValue placeholder="Select a role" /></SelectTrigger></FormControl>
-                            <SelectContent>
-                                {rolesForSelectedDepartment.map(role => <SelectItem key={role} value={role}>{role}</SelectItem>)}
-                            </SelectContent>
-                            </Select>
-                        <FormMessage /></FormItem>
-                    )}/>
-                </div>
-            </div>
+                    <div className="space-y-6">
+                        <div className="flex items-center gap-2">
+                            <div className="p-1.5 rounded-lg bg-amber-500/10 text-amber-500"><ShieldCheck className="h-3.5 w-3.5" /></div>
+                            <h3 className="text-xs font-black uppercase tracking-widest">Functional Clearances</h3>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <FormField control={form.control} name="departmentName" render={({ field }) => (
+                                <FormItem><FormLabel className="text-[9px] uppercase font-black opacity-50">Sector</FormLabel>
+                                    <Select onValueChange={field.onChange} value={field.value}>
+                                    <FormControl><SelectTrigger className="rounded-xl h-11 bg-background/50"><SelectValue /></SelectTrigger></FormControl>
+                                    <SelectContent className="apple-glass-darker border-none">{PREDEFINED_DEPARTMENTS.map(dep => <SelectItem key={dep} value={dep}>{dep}</SelectItem>)}</SelectContent>
+                                    </Select>
+                                <FormMessage /></FormItem>
+                            )}/>
+                            <FormField control={form.control} name="position" render={({ field }) => (
+                                <FormItem><FormLabel className="text-[9px] uppercase font-black opacity-50">Designation</FormLabel>
+                                    <Select onValueChange={field.onChange} value={field.value} disabled={userToEdit.position === 'Organization Administrator' || !selectedDepartment}>
+                                    <FormControl><SelectTrigger className="rounded-xl h-11 bg-background/50"><SelectValue /></SelectTrigger></FormControl>
+                                    <SelectContent className="apple-glass-darker border-none">{rolesForSelectedDepartment.map(role => <SelectItem key={role} value={role}>{role}</SelectItem>)}</SelectContent>
+                                    </Select>
+                                <FormMessage /></FormItem>
+                            )}/>
+                        </div>
+                        
+                        {/* THE PERMISSION MATRIX */}
+                        <div className="mt-8 space-y-4">
+                            <h4 className="text-[9px] font-black uppercase tracking-[0.25em] text-primary">Override Matrix</h4>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                <PermissionToggle name="canManageAccounting" label="Accounting Terminal" description="Direct access to Chart of Accounts & GL." />
+                                <PermissionToggle name="canAccessRequisitions" label="Procurement Hub" description="Submit and review financial requisitions." />
+                                <PermissionToggle name="canAccessChat" label="Secure Messaging" description="Authorization to transmit in encrypted channels." />
+                                <PermissionToggle name="canAccessLibrary" label="Knowledge Base" description="View Standard Operating Procedures (SOPs)." />
+                                <PermissionToggle name="canManageAnnouncements" label="Broadcasting" description="Permission to post organization-wide updates." />
+                                <PermissionToggle name="canViewAudit" label="Infrastructure Audit" description="Review system interaction telemetry logs." />
+                            </div>
+                        </div>
+                    </div>
 
-            <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Save Changes"}
-            </Button>
-          </form>
-        </Form>
+                    <div className="pt-8">
+                        <Button type="submit" className="w-full h-14 rounded-2xl font-black uppercase tracking-[0.2em] shadow-xl shadow-primary/20" disabled={isLoading}>
+                            {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Deploy Authorization Profile"}
+                        </Button>
+                    </div>
+                </form>
+            </Form>
+        </ScrollArea>
       </DialogContent>
     </Dialog>
   );

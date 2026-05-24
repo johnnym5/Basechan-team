@@ -1,3 +1,4 @@
+
 'use client';
 import type { UserProfile, UserRole } from '@/lib/types';
 import { useSuperAdmin } from './useSuperAdmin';
@@ -182,6 +183,8 @@ export function usePermissions(userProfile: UserProfile | null): Permissions {
     if (typeof customPerms.canManageLibrary === 'boolean') perms.canManageLibrary = customPerms.canManageLibrary;
     if (typeof customPerms.canViewAudit === 'boolean') perms.canViewAudit = customPerms.canViewAudit;
     if (typeof customPerms.canManageDisplays === 'boolean') perms.canManageDisplays = customPerms.canManageDisplays;
+    if (typeof customPerms.canManageAccounting === 'boolean') perms.canManageAccounting = customPerms.canManageAccounting;
+    if (typeof customPerms.canAccessLibrary === 'boolean') perms.canAccessLibrary = customPerms.canAccessLibrary;
     
     perms.canEditOwnProfile = effectiveRole !== 'STAFF' || (systemConfig?.allow_self_edit ?? true);
     perms.canViewTeam = perms.canManageStaff || (systemConfig?.admin_tools ?? false);

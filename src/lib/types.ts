@@ -70,6 +70,8 @@ export interface UserProfile {
     canManageLibrary?: boolean;
     canViewAudit?: boolean;
     canManageDisplays?: boolean;
+    canManageAccounting?: boolean;
+    canAccessLibrary?: boolean;
   };
 }
 
