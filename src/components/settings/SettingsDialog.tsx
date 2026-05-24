@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
@@ -8,11 +9,12 @@ import { SystemPane } from './SystemPane';
 import { AuditPane } from './AuditPane';
 import { MaintenancePane } from './MaintenancePane';
 import { usePermissions } from '@/hooks/usePermissions';
-import { ShieldAlert, Shield } from 'lucide-react';
+import { ShieldAlert, Shield, Users, Cog, Hammer, Lock, Zap } from 'lucide-react';
 import { Button } from '../ui/button';
 import { useSuperAdmin } from '@/hooks/useSuperAdmin';
 import { cn } from '@/lib/utils';
 import { uiEmitter } from '@/lib/ui-emitter';
+import { ScrollArea } from '../ui/scroll-area';
 
 interface SettingsDialogProps {
   open: boolean;
@@ -24,14 +26,8 @@ export function SettingsDialog({ open, onOpenChange, userProfile }: SettingsDial
   const permissions = usePermissions(userProfile);
   const { isSuperAdmin } = useSuperAdmin();
 
-  // If the user profile is absolutely missing, we can't show settings.
-  // Sidebar handles most of this gating, but we check here for security.
-  if (!userProfile) {
-    return null;
-  }
+  if (!userProfile) return null;
 
-  // Check if the user has organizational clearance.
-  // Note: We use canViewTeam as the primary gate for the console.
   const hasAccess = permissions.canViewTeam || userProfile.role === 'ORG_ADMIN' || isSuperAdmin;
 
   if (!hasAccess) {
@@ -60,64 +56,82 @@ export function SettingsDialog({ open, onOpenChange, userProfile }: SettingsDial
     uiEmitter.emit('open-superadmin-dialog');
   }
 
-  const tabCount = [
-    true, // Team
-    permissions.canManageCompany, // System
-    true, // Maintenance is useful for anyone with team access
-    permissions.canViewAudit, // Audit
-    isSuperAdmin // SuperAdmin
-  ].filter(Boolean).length;
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent position="left" className="flex flex-col p-0">
-        <DialogHeader className="p-6 pb-0">
-          <DialogTitle>Management Console</DialogTitle>
-          <DialogDescription>
-            Administer personnel, system policies, and inspect the organizational audit trail.
-          </DialogDescription>
+      <DialogContent position="left" className="flex flex-col p-0 overflow-hidden bg-background">
+        <DialogHeader className="p-8 pb-4 flex-shrink-0">
+          <div className="flex items-center gap-4">
+              <div className="p-3 rounded-2xl bg-primary/10 text-primary">
+                  <Cog className="h-6 w-6" />
+              </div>
+              <div>
+                  <DialogTitle className="text-2xl font-black font-headline tracking-tighter uppercase">Management Console</DialogTitle>
+                  <DialogDescription className="text-[10px] font-black uppercase tracking-widest opacity-60">Organizational Root & Infrastructure Control</DialogDescription>
+              </div>
+          </div>
         </DialogHeader>
-        <Tabs defaultValue="team" className="w-full flex-1 flex flex-col overflow-hidden">
-          <div className="px-6">
-            <TabsList className={cn(
-                "grid w-full",
-                tabCount === 5 ? "grid-cols-5" : tabCount === 4 ? "grid-cols-4" : tabCount === 3 ? "grid-cols-3" : "grid-cols-2"
-            )}>
-                <TabsTrigger value="team">Team</TabsTrigger>
-                {permissions.canManageCompany && <TabsTrigger value="system">System</TabsTrigger>}
-                <TabsTrigger value="maintenance">Maintenance</TabsTrigger>
-                {permissions.canViewAudit && <TabsTrigger value="audit">Audit Trail</TabsTrigger>}
-                {isSuperAdmin && <TabsTrigger value="superadmin">Super Admin</TabsTrigger>}
+
+        <Tabs defaultValue="team" className="flex-1 flex flex-col min-h-0">
+          <div className="px-8 flex-shrink-0">
+            <TabsList className="bg-secondary/20 rounded-2xl p-1 w-fit">
+                <TabsTrigger value="team" className="rounded-xl px-6 font-black uppercase text-[10px] tracking-widest data-[state=active]:bg-background">
+                    <Users className="h-3 w-3 mr-2" /> Team
+                </TabsTrigger>
+                {permissions.canManageCompany && (
+                    <TabsTrigger value="system" className="rounded-xl px-6 font-black uppercase text-[10px] tracking-widest data-[state=active]:bg-background">
+                        <Zap className="h-3 w-3 mr-2" /> Configuration
+                    </TabsTrigger>
+                )}
+                <TabsTrigger value="maintenance" className="rounded-xl px-6 font-black uppercase text-[10px] tracking-widest data-[state=active]:bg-background">
+                    <Hammer className="h-3 w-3 mr-2" /> Radar
+                </TabsTrigger>
+                {permissions.canViewAudit && (
+                    <TabsTrigger value="audit" className="rounded-xl px-6 font-black uppercase text-[10px] tracking-widest data-[state=active]:bg-background">
+                        <Lock className="h-3 w-3 mr-2" /> Audit
+                    </TabsTrigger>
+                )}
+                {isSuperAdmin && (
+                    <TabsTrigger value="superadmin" className="rounded-xl px-6 font-black uppercase text-[10px] tracking-widest data-[state=active]:bg-background">
+                        <Shield className="h-3 w-3 mr-2" /> Root
+                    </TabsTrigger>
+                )}
             </TabsList>
           </div>
-          <TabsContent value="team" className="flex-1 overflow-y-auto mt-4 px-6 pb-6">
-            <TeamPane currentUserProfile={userProfile} permissions={permissions} />
-          </TabsContent>
-          {permissions.canManageCompany && (
-            <TabsContent value="system" className="flex-1 overflow-y-auto mt-4 px-6 pb-6">
-                <SystemPane currentUserProfile={userProfile} />
-            </TabsContent>
-          )}
-          <TabsContent value="maintenance" className="flex-1 overflow-y-auto mt-4 px-6 pb-6">
-            <MaintenancePane currentUserProfile={userProfile} />
-          </TabsContent>
-          {permissions.canViewAudit && (
-             <TabsContent value="audit" className="flex-1 overflow-y-auto mt-4 px-6 pb-6">
-                <AuditPane currentUserProfile={userProfile} />
-            </TabsContent>
-          )}
-          {isSuperAdmin && (
-             <TabsContent value="superadmin" className="flex-1 overflow-y-auto mt-4 px-6 pb-6">
-                <div className="flex flex-col items-center justify-center h-full text-center p-8 border-2 border-dashed rounded-[2.5rem] bg-secondary/10">
-                    <Shield className="w-16 h-16 text-primary mb-4" />
-                    <h2 className="text-xl font-bold">Super Admin Access</h2>
-                    <p className="text-muted-foreground mt-2 max-w-sm">You have absolute infrastructure control. Access the master console for global telemetry and disaster recovery.</p>
-                    <Button onClick={handleOpenSuperAdmin} className="mt-6 rounded-xl">
-                        Go to Master Console
-                    </Button>
+
+          <div className="flex-1 mt-6 overflow-hidden">
+            <ScrollArea className="h-full [scrollbar-gutter:stable] custom-scrollbar">
+                <div className="px-8 pb-32 max-w-[1600px] mx-auto">
+                    <TabsContent value="team" className="m-0 focus-visible:ring-0 outline-none animate-in fade-in duration-500">
+                        <TeamPane currentUserProfile={userProfile} permissions={permissions} />
+                    </TabsContent>
+                    {permissions.canManageCompany && (
+                        <TabsContent value="system" className="m-0 focus-visible:ring-0 outline-none animate-in fade-in duration-500">
+                            <SystemPane currentUserProfile={userProfile} />
+                        </TabsContent>
+                    )}
+                    <TabsContent value="maintenance" className="m-0 focus-visible:ring-0 outline-none animate-in fade-in duration-500">
+                        <MaintenancePane currentUserProfile={userProfile} />
+                    </TabsContent>
+                    {permissions.canViewAudit && (
+                        <TabsContent value="audit" className="m-0 focus-visible:ring-0 outline-none animate-in fade-in duration-500">
+                            <AuditPane currentUserProfile={userProfile} />
+                        </TabsContent>
+                    )}
+                    {isSuperAdmin && (
+                        <TabsContent value="superadmin" className="m-0 focus-visible:ring-0 outline-none animate-in fade-in duration-500">
+                            <div className="flex flex-col items-center justify-center py-32 text-center p-8 border-2 border-dashed rounded-[3rem] bg-secondary/10 opacity-60">
+                                <Shield className="w-16 h-16 text-primary mb-4" />
+                                <h2 className="text-xl font-bold uppercase tracking-widest">Super Admin Clearance</h2>
+                                <p className="text-xs mt-2 max-w-sm font-bold opacity-70">Access the Master Terminal for global telemetry and disaster recovery operations.</p>
+                                <Button onClick={handleOpenSuperAdmin} className="mt-8 h-12 px-10 rounded-2xl font-black uppercase tracking-widest shadow-xl shadow-primary/20">
+                                    Initialize Master Terminal
+                                </Button>
+                            </div>
+                        </TabsContent>
+                    )}
                 </div>
-            </TabsContent>
-          )}
+            </ScrollArea>
+          </div>
         </Tabs>
       </DialogContent>
     </Dialog>

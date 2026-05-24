@@ -35,6 +35,13 @@ export interface SystemConfig {
   currency_symbol: string;
   branding_color?: string | null;
   accent_color?: string | null;
+  document_template?: {
+    header_text: string;
+    footer_text: string;
+    logo_url?: string;
+    company_address: string;
+    terms_conditions: string;
+  };
 }
 
 export interface UserProfile {

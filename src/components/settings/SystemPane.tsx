@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useForm } from "react-hook-form";
@@ -7,7 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
-import { Loader2, MapPin, Clock, Palette } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { Loader2, MapPin, Clock, Palette, FileText, Info } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useFirestore, updateDocumentNonBlocking } from "@/firebase";
 import { doc } from "firebase/firestore";
@@ -16,7 +18,7 @@ import type { UserProfile, SystemConfig } from "@/lib/types";
 import { useSystemConfig } from "@/hooks/useSystemConfig";
 import { Skeleton } from "../ui/skeleton";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../ui/card";
-import { hexToHslString } from "@/lib/utils";
+import { hexToHslString, sanitizeInput } from "@/lib/utils";
 
 const formSchema = z.object({
   branding_color: z.string().optional(),
@@ -30,6 +32,11 @@ const formSchema = z.object({
   reporting_deadline: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, "Invalid time format (HH:mm)"),
   office_lat: z.coerce.number().optional().nullable(),
   office_lng: z.coerce.number().optional().nullable(),
+  // Document Template Settings
+  template_header: z.string().optional(),
+  template_footer: z.string().optional(),
+  template_address: z.string().optional(),
+  template_terms: z.string().optional(),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -71,6 +78,10 @@ export function SystemPane({ currentUserProfile }: SystemPaneProps) {
             reporting_deadline: config.reporting_schedule?.deadline ?? "17:30",
             office_lat: config.office_coordinates?.lat,
             office_lng: config.office_coordinates?.lng,
+            template_header: config.document_template?.header_text || "OFFICIAL FINANCIAL RECORD",
+            template_footer: config.document_template?.footer_text || "Authorized signature required.",
+            template_address: config.document_template?.company_address || "Basechan International HQ",
+            template_terms: config.document_template?.terms_conditions || "Payment is due within 30 days.",
         });
     }
   }, [config, form]);
@@ -112,6 +123,12 @@ export function SystemPane({ currentUserProfile }: SystemPaneProps) {
         office_coordinates: (values.office_lat != null && values.office_lng != null) 
             ? { lat: values.office_lat, lng: values.office_lng } 
             : null,
+        document_template: {
+            header_text: sanitizeInput(values.template_header || ""),
+            footer_text: sanitizeInput(values.template_footer || ""),
+            company_address: sanitizeInput(values.template_address || ""),
+            terms_conditions: sanitizeInput(values.template_terms || ""),
+        }
     };
 
     try {
@@ -146,8 +163,8 @@ export function SystemPane({ currentUserProfile }: SystemPaneProps) {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-        <Card className="apple-glass border-none">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-12">
+        <Card className="apple-glass border-none shadow-xl">
             <CardHeader>
                 <div className="flex items-center gap-3">
                     <div className="p-2 rounded-xl bg-primary/20"><Palette className="h-5 w-5 text-primary" /></div>
@@ -194,8 +211,43 @@ export function SystemPane({ currentUserProfile }: SystemPaneProps) {
                 )}/>
             </CardContent>
         </Card>
+
+        {/* New Document Template Settings */}
+        <Card className="apple-glass border-none shadow-xl">
+            <CardHeader>
+                <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-xl bg-blue-500/10 text-blue-500"><FileText className="h-5 w-5" /></div>
+                    <div>
+                        <CardTitle>Finance Reporting Templates</CardTitle>
+                        <CardDescription>Configure the layout and branding for generated Word/Excel invoices.</CardDescription>
+                    </div>
+                </div>
+            </CardHeader>
+            <CardContent className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <FormField control={form.control} name="template_header" render={({ field }) => (
+                        <FormItem><FormLabel>Document Banner Title</FormLabel><FormControl><Input placeholder="e.g., TAX INVOICE" {...field} className="rounded-xl" /></FormControl><FormMessage /></FormItem>
+                    )}/>
+                    <FormField control={form.control} name="template_address" render={({ field }) => (
+                        <FormItem><FormLabel>Organization Physical Address</FormLabel><FormControl><Input placeholder="123 Corporate Blvd..." {...field} className="rounded-xl" /></FormControl><FormMessage /></FormItem>
+                    )}/>
+                </div>
+                <FormField control={form.control} name="template_terms" render={({ field }) => (
+                    <FormItem><FormLabel>Legal / Terms of Business</FormLabel><FormControl><Textarea placeholder="Terms and conditions..." {...field} className="rounded-xl min-h-[80px]" /></FormControl><FormMessage /></FormItem>
+                )}/>
+                <FormField control={form.control} name="template_footer" render={({ field }) => (
+                    <FormItem><FormLabel>Document Footer / Sign-off</FormLabel><FormControl><Input placeholder="e.g., Authorized Signature" {...field} className="rounded-xl" /></FormControl><FormMessage /></FormItem>
+                )}/>
+                <div className="p-4 rounded-2xl bg-blue-500/5 border border-blue-500/10 flex gap-3 text-blue-500">
+                    <Info className="h-5 w-5 shrink-0" />
+                    <p className="text-[10px] font-bold uppercase leading-relaxed tracking-tight">
+                        These parameters are dynamically injected into the Word (.doc) and Excel (.xlsx) billing exports generated in the Finance Command center.
+                    </p>
+                </div>
+            </CardContent>
+        </Card>
         
-         <Card className="apple-glass border-none">
+         <Card className="apple-glass border-none shadow-xl">
             <CardHeader>
                 <CardTitle>Operating Policies</CardTitle>
                 <CardDescription>Enable or disable specific modules and compliance behaviors.</CardDescription>
@@ -238,7 +290,7 @@ export function SystemPane({ currentUserProfile }: SystemPaneProps) {
             </CardContent>
         </Card>
 
-        <Card className="apple-glass border-none">
+        <Card className="apple-glass border-none shadow-xl">
             <CardHeader>
                 <CardTitle>Site Coordinates</CardTitle>
                 <CardDescription>Set the office location for geofencing enforcement.</CardDescription>
@@ -263,8 +315,8 @@ export function SystemPane({ currentUserProfile }: SystemPaneProps) {
             </CardContent>
         </Card>
 
-        <Button type="submit" disabled={isSubmitting || isConfigLoading} className="w-full h-14 text-base font-black uppercase tracking-widest rounded-2xl interactive-element">
-            {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Authorize & Apply Configuration"}
+        <Button type="submit" disabled={isSubmitting || isConfigLoading} className="w-full h-16 text-base font-black uppercase tracking-[0.25em] rounded-2xl shadow-2xl shadow-primary/30 active:scale-95 transition-all">
+            {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Deploy System Updates"}
         </Button>
       </form>
     </Form>

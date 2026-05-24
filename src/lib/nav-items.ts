@@ -25,11 +25,10 @@ export const mainNavItems = [
   { dialog: "tasks", icon: ListTodo, label: "Tasks" },
   { dialog: "workbooks", icon: BookOpenCheck, label: "Workbooks" },
   { dialog: "displays", icon: MonitorDot, label: "Live Displays" },
-  { dialog: "requisitions", icon: ReceiptText, label: "Requisitions", permission: 'canAccessRequisitions' },
-  { dialog: "accounting", icon: Landmark, label: "Accounting", permission: 'canManageAccounting' },
+  { dialog: "finance", icon: Landmark, label: "Finance", permission: 'canAccessRequisitions' },
   { dialog: "library", icon: Library, label: "Library", permission: 'canAccessLibrary' },
   { dialog: "reports", icon: BarChart, label: "Reports" },
   { isSeparator: true },
   { dialog: "chat", icon: MessageSquare, label: "Chat", permission: "canAccessChat"},
-  { dialog: "settings", icon: Settings, label: "Settings", permission: "canViewTeam"},
+  { dialog: "settings", icon: Settings, label: "Management Console", permission: "canViewTeam"},
 ];

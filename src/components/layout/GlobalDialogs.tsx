@@ -8,12 +8,11 @@ import type { UserProfile, Permissions } from '@/lib/types';
 
 // Dynamically import heavy dialog components
 const WorkbookDialog = dynamic(() => import('@/components/workbook/WorkbookDialog').then(m => m.WorkbookDialog), { ssr: false });
-const RequisitionsDialog = dynamic(() => import('@/components/requisitions/RequisitionsDialog').then(m => m.RequisitionsDialog), { ssr: false });
+const FinanceHubDialog = dynamic(() => import('@/components/finance/FinanceHubDialog').then(m => m.FinanceHubDialog), { ssr: false });
 const TasksDialog = dynamic(() => import('@/components/tasks/TasksDialog').then(m => m.TasksDialog), { ssr: false });
 const AttendanceDialog = dynamic(() => import('@/components/attendance/AttendanceDialog').then(m => m.AttendanceDialog), { ssr: false });
 const LeaveDialog = dynamic(() => import('@/components/leave/LeaveDialog').then(m => m.LeaveDialog), { ssr: false });
 const ReportsDialog = dynamic(() => import('@/components/reports/ReportsDialog').then(m => m.ReportsDialog), { ssr: false });
-const AccountingDialog = dynamic(() => import('@/components/accounting/AccountingDialog').then(m => m.AccountingDialog), { ssr: false });
 const LibraryDialog = dynamic(() => import('@/components/library/LibraryDialog').then(m => m.LibraryDialog), { ssr: false });
 const DisplaysDialog = dynamic(() => import('@/components/dashboards/WebDashboardDialog').then(m => m.WebDashboardDialog), { ssr: false });
 const AssignTaskDialog = dynamic(() => import('@/components/tasks/AssignTaskDialog').then(m => m.AssignTaskDialog), { ssr: false });
@@ -39,15 +38,14 @@ interface GlobalDialogsProps {
 export function GlobalDialogs({ userProfile, permissions, onAnyDialogOpenChange }: GlobalDialogsProps) {
   const [isWorkbookOpen, setIsWorkbookOpen] = useState(false);
   const [initialWorkbookPayload, setInitialWorkbookPayload] = useState<{ workbookId?: string; sheetId?: string | null } | undefined>();
-  const [isRequisitionsOpen, setIsRequisitionsOpen] = useState(false);
-  const [initialReqPayload, setInitialReqPayload] = useState<{ reqId?: string } | undefined>();
+  const [isFinanceOpen, setIsFinanceOpen] = useState(false);
+  const [initialFinancePayload, setInitialFinancePayload] = useState<{ reqId?: string; tab?: string } | undefined>();
   const [isTasksOpen, setIsTasksOpen] = useState(false);
   const [initialTaskPayload, setInitialTaskPayload] = useState<{ taskId?: string } | undefined>();
   const [isAttendanceOpen, setIsAttendanceOpen] = useState(false);
   const [isLeaveOpen, setIsLeaveOpen] = useState(false);
   const [isReportsOpen, setIsReportsOpen] = useState(false);
   const [initialReportsPayload, setInitialReportsPayload] = useState<{ tab?: string } | undefined>();
-  const [isAccountingOpen, setIsAccountingOpen] = useState(false);
   const [isLibraryOpen, setIsLibraryOpen] = useState(false);
   const [isDisplaysOpen, setIsDisplaysOpen] = useState(false);
   const [initialDisplaysPayload, setInitialDisplaysPayload] = useState<{ displayId?: string } | undefined>();
@@ -69,12 +67,11 @@ export function GlobalDialogs({ userProfile, permissions, onAnyDialogOpenChange 
 
   const closeAllDialogs = useCallback(() => {
     setIsWorkbookOpen(false);
-    setIsRequisitionsOpen(false);
+    setIsFinanceOpen(false);
     setIsTasksOpen(false);
     setIsAttendanceOpen(false);
     setIsLeaveOpen(false);
     setIsReportsOpen(false);
-    setIsAccountingOpen(false);
     setIsLibraryOpen(false);
     setIsDisplaysOpen(false);
     setIsAssignTaskOpen(false);
@@ -94,16 +91,16 @@ export function GlobalDialogs({ userProfile, permissions, onAnyDialogOpenChange 
 
   useEffect(() => {
     const isOpen = 
-        isWorkbookOpen || isRequisitionsOpen || isTasksOpen || isAttendanceOpen || 
-        isLeaveOpen || isReportsOpen || isAccountingOpen || isLibraryOpen || isDisplaysOpen || 
+        isWorkbookOpen || isFinanceOpen || isTasksOpen || isAttendanceOpen || 
+        isLeaveOpen || isReportsOpen || isLibraryOpen || isDisplaysOpen || 
         isAssignTaskOpen || isNewRequisitionOpen || isRequestLeaveOpen || 
         isNewWorkbookOpen || isProfileOpen || isSettingsOpen || isChatOpen || 
         isInviteOpen || isNewAnnouncementOpen || isSuperAdminOpen || isNotificationsOpen ||
         isCreateChannelOpen || isLiveMonitorOpen;
     onAnyDialogOpenChange(isOpen);
   }, [
-    isWorkbookOpen, isRequisitionsOpen, isTasksOpen, isAttendanceOpen, 
-    isLeaveOpen, isReportsOpen, isAccountingOpen, isLibraryOpen, isDisplaysOpen, 
+    isWorkbookOpen, isFinanceOpen, isTasksOpen, isAttendanceOpen, 
+    isLeaveOpen, isReportsOpen, isLibraryOpen, isDisplaysOpen, 
     isAssignTaskOpen, isNewRequisitionOpen, isRequestLeaveOpen, 
     isNewWorkbookOpen, isProfileOpen, isSettingsOpen, isChatOpen, 
     isInviteOpen, isNewAnnouncementOpen, isSuperAdminOpen, isNotificationsOpen,
@@ -126,9 +123,9 @@ export function GlobalDialogs({ userProfile, permissions, onAnyDialogOpenChange 
       if (payload) setInitialWorkbookPayload(payload);
       setIsWorkbookOpen(true);
     };
-    const openRequisitions = (payload?: any) => {
-        if (payload) setInitialReqPayload(payload);
-        setIsRequisitionsOpen(true);
+    const openFinance = (payload?: any) => {
+        if (payload) setInitialFinancePayload(payload);
+        setIsFinanceOpen(true);
     };
     const openAttendance = () => setIsAttendanceOpen(true);
     const openLeave = () => setIsLeaveOpen(true);
@@ -136,7 +133,6 @@ export function GlobalDialogs({ userProfile, permissions, onAnyDialogOpenChange 
         if (payload) setInitialReportsPayload(payload);
         setIsReportsOpen(true);
     };
-    const openAccounting = () => setIsAccountingOpen(true);
     const openLibrary = () => setIsLibraryOpen(true);
     const openDisplays = (payload?: any) => {
         if (payload) setInitialDisplaysPayload(payload);
@@ -161,11 +157,10 @@ export function GlobalDialogs({ userProfile, permissions, onAnyDialogOpenChange 
     uiEmitter.on('open-chat-dialog', openChat);
     uiEmitter.on('open-tasks-dialog', openTasks);
     uiEmitter.on('open-workbooks-dialog', openWorkbooks);
-    uiEmitter.on('open-requisitions-dialog', openRequisitions);
+    uiEmitter.on('open-finance-dialog' as any, openFinance);
     uiEmitter.on('open-attendance-dialog', openAttendance);
     uiEmitter.on('open-leave-dialog', openLeave);
     uiEmitter.on('open-reports-dialog', openReports);
-    uiEmitter.on('open-accounting-dialog', openAccounting);
     uiEmitter.on('open-library-dialog', openLibrary);
     uiEmitter.on('open-displays-dialog', openDisplays);
     uiEmitter.on('open-assign-task-dialog', openAssignTask);
@@ -186,11 +181,10 @@ export function GlobalDialogs({ userProfile, permissions, onAnyDialogOpenChange 
       uiEmitter.off('open-chat-dialog', openChat);
       uiEmitter.off('open-tasks-dialog', openTasks);
       uiEmitter.off('open-workbooks-dialog', openWorkbooks);
-      uiEmitter.off('open-requisitions-dialog', openRequisitions);
+      uiEmitter.off('open-finance-dialog' as any, openFinance);
       uiEmitter.off('open-attendance-dialog', openAttendance);
       uiEmitter.off('open-leave-dialog', openLeave);
       uiEmitter.off('open-reports-dialog', openReports);
-      uiEmitter.off('open-accounting-dialog', openAccounting);
       uiEmitter.off('open-library-dialog', openLibrary);
       uiEmitter.off('open-displays-dialog', openDisplays);
       uiEmitter.off('open-assign-task-dialog', openAssignTask);
@@ -218,13 +212,13 @@ export function GlobalDialogs({ userProfile, permissions, onAnyDialogOpenChange 
           initialPayload={initialWorkbookPayload}
           modal={false}
       />
-      <RequisitionsDialog
-          open={isRequisitionsOpen}
+      <FinanceHubDialog
+          open={isFinanceOpen}
           onOpenChange={(isOpen) => {
-              setIsRequisitionsOpen(isOpen);
-              if (!isOpen) setInitialReqPayload(undefined);
+              setIsFinanceOpen(isOpen);
+              if (!isOpen) setInitialFinancePayload(undefined);
           }}
-          initialPayload={initialReqPayload}
+          initialPayload={initialFinancePayload}
           modal={false}
       />
       <TasksDialog
@@ -249,7 +243,6 @@ export function GlobalDialogs({ userProfile, permissions, onAnyDialogOpenChange 
           initialPayload={initialReportsPayload}
           modal={false}
       />
-      <AccountingDialog open={isAccountingOpen} onOpenChange={setIsAccountingOpen} modal={false} />
       <LibraryDialog open={isLibraryOpen} onOpenChange={setIsLibraryOpen} modal={false} />
       <DisplaysDialog 
         open={isDisplaysOpen} 
