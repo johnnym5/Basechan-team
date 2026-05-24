@@ -61,7 +61,7 @@ export function AuditPane({ currentUserProfile }: AuditPaneProps) {
             <div className="flex items-center justify-between">
                 <div>
                     <h3 className="text-lg font-bold font-headline flex items-center gap-2">
-                        <Shield className="h-5 w-5 text-primary" />
+                        < Shield className="h-5 w-5 text-primary" />
                         Organizational Audit Trail
                     </h3>
                     <p className="text-xs text-muted-foreground">Immutable record of high-priority system interactions.</p>

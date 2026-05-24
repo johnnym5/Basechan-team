@@ -179,6 +179,21 @@
         "resourceType": { "type": "string" },
         "timestamp": { "type": "string", "format": "date-time" }
       }
+    },
+    "ErrorLog": {
+      "title": "Error Log",
+      "type": "object",
+      "description": "A record of an application error or exception.",
+      "properties": {
+        "orgId": { "type": "string" },
+        "userId": { "type": "string" },
+        "userName": { "type": "string" },
+        "errorMessage": { "type": "string" },
+        "stackTrace": { "type": "string" },
+        "componentStack": { "type": "string" },
+        "path": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      }
     }
   },
   "auth": { "providers": ["password"] },
@@ -192,7 +207,8 @@
       { "path": "/library_items/{id}", "definition": { "entityName": "LibraryItem", "schema": { "$ref": "#/entities/LibraryItem" } } },
       { "path": "/users/{id}", "definition": { "entityName": "UserProfile", "schema": { "$ref": "#/entities/UserProfile" } } },
       { "path": "/kudos/{id}", "definition": { "entityName": "Kudos", "schema": { "$ref": "#/entities/Kudos" } } },
-      { "path": "/audit_logs/{id}", "definition": { "entityName": "AuditLog", "schema": { "$ref": "#/entities/AuditLog" } } }
+      { "path": "/audit_logs/{id}", "definition": { "entityName": "AuditLog", "schema": { "$ref": "#/entities/AuditLog" } } },
+      { "path": "/error_logs/{id}", "definition": { "entityName": "ErrorLog", "schema": { "$ref": "#/entities/ErrorLog" } } }
     ]
   }
 }

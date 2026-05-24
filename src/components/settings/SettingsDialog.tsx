@@ -8,6 +8,7 @@ import { TeamPane } from './TeamPane';
 import { SystemPane } from './SystemPane';
 import { AuditPane } from './AuditPane';
 import { MaintenancePane } from './MaintenancePane';
+import { ErrorLogViewer } from '../superadmin/ErrorLogViewer';
 import { usePermissions } from '@/hooks/usePermissions';
 import { ShieldAlert, Shield, Users, Cog, Hammer, Lock, Zap } from 'lucide-react';
 import { Button } from '../ui/button';
@@ -113,8 +114,9 @@ export function SettingsDialog({ open, onOpenChange, userProfile }: SettingsDial
                         <MaintenancePane currentUserProfile={userProfile} />
                     </TabsContent>
                     {permissions.canViewAudit && (
-                        <TabsContent value="audit" className="m-0 focus-visible:ring-0 outline-none animate-in fade-in duration-500">
+                        <TabsContent value="audit" className="m-0 space-y-8 focus-visible:ring-0 outline-none animate-in fade-in duration-500">
                             <AuditPane currentUserProfile={userProfile} />
+                            <ErrorLogViewer />
                         </TabsContent>
                     )}
                     {isSuperAdmin && (
