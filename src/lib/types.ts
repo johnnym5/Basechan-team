@@ -55,7 +55,7 @@ export interface UserProfile {
   activeSessionId?: string | null;
   deviceType?: 'MOBILE' | 'PC' | null;
   lastHeartbeat?: string | null;
-  pendingCommand?: 'SCREENSHOT' | 'NONE' | null;
+  pendingCommand?: 'SCREENSHOT' | 'SCREEN_SHARE' | 'NONE' | null;
   notificationPreferences?: {
     requisitionUpdates?: boolean;
     taskAssignments?: boolean;

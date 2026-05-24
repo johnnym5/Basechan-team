@@ -1,3 +1,4 @@
+
 'use client';
 
 type AppEvents = {
@@ -23,7 +24,9 @@ type AppEvents = {
   'open-assistant-dialog': void;
   'open-notifications-dialog': void;
   'open-create-channel-dialog': void;
+  'open-live-monitor-dialog': { targetUserId: string; targetUserName: string } | void;
   'close-all-dialogs': void;
+  'open-pulse-check': void;
 };
 
 type Callback<T> = (data: T) => void;

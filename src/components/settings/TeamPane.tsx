@@ -7,7 +7,7 @@ import { collection, query, where, doc, deleteDoc, updateDoc } from 'firebase/fi
 import type { UserProfile } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { PlusCircle, Trash2, Edit, Loader2, Search, KeyRound, Monitor, Smartphone, Camera } from 'lucide-react';
+import { PlusCircle, Trash2, Edit, Loader2, Search, KeyRound, Monitor, Smartphone, Camera, MonitorPlay } from 'lucide-react';
 import { Skeleton } from '../ui/skeleton';
 import { Input } from '../ui/input';
 import { InviteUserDialog } from './InviteUserDialog';
@@ -19,6 +19,7 @@ import { sendPasswordResetEmail } from 'firebase/auth';
 import { Permissions } from '@/hooks/usePermissions';
 import { formatDistanceToNow } from 'date-fns';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { uiEmitter } from '@/lib/ui-emitter';
 
 interface TeamPaneProps {
     currentUserProfile: UserProfile;
@@ -68,6 +69,26 @@ export function TeamPane({ currentUserProfile, permissions }: TeamPaneProps) {
             toast({ variant: 'destructive', title: 'Signal Failed', description: e.message });
         } finally {
             setTimeout(() => setIsProcessingCommand(null), 2000);
+        }
+    };
+
+    const handleRequestLiveMonitor = async (user: UserProfile) => {
+        if (!firestore) return;
+        if (user.deviceType !== 'PC') {
+            toast({ variant: 'destructive', title: 'Action Denied', description: 'Live monitoring is strictly restricted to PC nodes.' });
+            return;
+        }
+
+        setIsProcessingCommand(user.id);
+        try {
+            const userRef = doc(firestore, 'users', user.id);
+            await updateDoc(userRef, { pendingCommand: 'SCREEN_SHARE' });
+            uiEmitter.emit('open-live-monitor-dialog', { targetUserId: user.id, targetUserName: user.fullName });
+            toast({ title: 'Live Signal Initializing', description: `Establishing telemetry link with ${user.fullName.split(' ')[0]}.` });
+        } catch (e: any) {
+            toast({ variant: 'destructive', title: 'Signal Failed', description: e.message });
+        } finally {
+            setTimeout(() => setIsProcessingCommand(null), 1000);
         }
     };
 
@@ -169,20 +190,36 @@ export function TeamPane({ currentUserProfile, permissions }: TeamPaneProps) {
                                 {permissions.canManageStaff && (
                                     <>
                                         {user.deviceType === 'PC' && user.status === 'ONLINE' && (
-                                            <Tooltip>
-                                                <TooltipTrigger asChild>
-                                                    <Button 
-                                                        variant="outline" 
-                                                        size="icon" 
-                                                        className="h-9 w-9 rounded-xl border-white/10 hover:bg-primary/10 hover:text-primary" 
-                                                        onClick={() => handleRequestScreenshot(user)}
-                                                        disabled={isProcessingCommand === user.id}
-                                                    >
-                                                        {isProcessingCommand === user.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Camera className="h-4 w-4" />}
-                                                    </Button>
-                                                </TooltipTrigger>
-                                                <TooltipContent className="apple-glass-darker border-none text-[9px] font-black uppercase">Capture PC Screen</TooltipContent>
-                                            </Tooltip>
+                                            <>
+                                                <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                        <Button 
+                                                            variant="outline" 
+                                                            size="icon" 
+                                                            className="h-9 w-9 rounded-xl border-white/10 hover:bg-emerald-500/10 hover:text-emerald-500" 
+                                                            onClick={() => handleRequestLiveMonitor(user)}
+                                                            disabled={isProcessingCommand === user.id}
+                                                        >
+                                                            {isProcessingCommand === user.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <MonitorPlay className="h-4 w-4" />}
+                                                        </Button>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent className="apple-glass-darker border-none text-[9px] font-black uppercase">Live Monitor Feed</TooltipContent>
+                                                </Tooltip>
+                                                <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                        <Button 
+                                                            variant="outline" 
+                                                            size="icon" 
+                                                            className="h-9 w-9 rounded-xl border-white/10 hover:bg-primary/10 hover:text-primary" 
+                                                            onClick={() => handleRequestScreenshot(user)}
+                                                            disabled={isProcessingCommand === user.id}
+                                                        >
+                                                            {isProcessingCommand === user.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Camera className="h-4 w-4" />}
+                                                        </Button>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent className="apple-glass-darker border-none text-[9px] font-black uppercase">Capture PC Screen</TooltipContent>
+                                                </Tooltip>
+                                            </>
                                         )}
                                         <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl text-primary/70 hover:text-primary hover:bg-primary/10" onClick={() => setUserToEdit(user)}>
                                             <Edit className="h-4 w-4" />

@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
@@ -27,6 +28,7 @@ const NewAnnouncementDialog = dynamic(() => import('@/components/dashboard/NewAn
 const SuperAdminDialog = dynamic(() => import('@/components/superadmin/SuperAdminDialog').then(m => m.SuperAdminDialog), { ssr: false });
 const NotificationsDialog = dynamic(() => import('@/components/layout/NotificationsDialog').then(m => m.NotificationsDialog), { ssr: false });
 const CreateChannelDialog = dynamic(() => import('@/components/chat/CreateChannelDialog').then(m => m.CreateChannelDialog), { ssr: false });
+const LiveMonitorDialog = dynamic(() => import('@/components/superadmin/LiveMonitorDialog').then(m => m.LiveMonitorDialog), { ssr: false });
 
 interface GlobalDialogsProps {
   userProfile: UserProfile | null;
@@ -62,6 +64,8 @@ export function GlobalDialogs({ userProfile, permissions, onAnyDialogOpenChange 
   const [isSuperAdminOpen, setIsSuperAdminOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isCreateChannelOpen, setIsCreateChannelOpen] = useState(false);
+  const [isLiveMonitorOpen, setIsLiveMonitorOpen] = useState(false);
+  const [liveMonitorPayload, setLiveMonitorPayload] = useState<{ targetUserId: string; targetUserName: string } | null>(null);
 
   const closeAllDialogs = useCallback(() => {
     setIsWorkbookOpen(false);
@@ -85,6 +89,7 @@ export function GlobalDialogs({ userProfile, permissions, onAnyDialogOpenChange 
     setIsSuperAdminOpen(false);
     setIsNotificationsOpen(false);
     setIsCreateChannelOpen(false);
+    setIsLiveMonitorOpen(false);
   }, []);
 
   useEffect(() => {
@@ -93,16 +98,16 @@ export function GlobalDialogs({ userProfile, permissions, onAnyDialogOpenChange 
         isLeaveOpen || isReportsOpen || isAccountingOpen || isLibraryOpen || isDisplaysOpen || 
         isAssignTaskOpen || isNewRequisitionOpen || isRequestLeaveOpen || 
         isNewWorkbookOpen || isProfileOpen || isSettingsOpen || isChatOpen || 
-        isInviteUserOpen || isNewAnnouncementOpen || isSuperAdminOpen || isNotificationsOpen ||
-        isCreateChannelOpen;
+        isInviteOpen || isNewAnnouncementOpen || isSuperAdminOpen || isNotificationsOpen ||
+        isCreateChannelOpen || isLiveMonitorOpen;
     onAnyDialogOpenChange(isOpen);
   }, [
     isWorkbookOpen, isRequisitionsOpen, isTasksOpen, isAttendanceOpen, 
     isLeaveOpen, isReportsOpen, isAccountingOpen, isLibraryOpen, isDisplaysOpen, 
     isAssignTaskOpen, isNewRequisitionOpen, isRequestLeaveOpen, 
     isNewWorkbookOpen, isProfileOpen, isSettingsOpen, isChatOpen, 
-    isInviteUserOpen, isNewAnnouncementOpen, isSuperAdminOpen, isNotificationsOpen,
-    isCreateChannelOpen,
+    isInviteOpen, isNewAnnouncementOpen, isSuperAdminOpen, isNotificationsOpen,
+    isCreateChannelOpen, isLiveMonitorOpen,
     onAnyDialogOpenChange
   ]);
 
@@ -146,6 +151,10 @@ export function GlobalDialogs({ userProfile, permissions, onAnyDialogOpenChange 
     const openSuperAdmin = () => setIsSuperAdminOpen(true);
     const openNotifications = () => setIsNotificationsOpen(true);
     const openCreateChannel = () => setIsCreateChannelOpen(true);
+    const openLiveMonitor = (payload: any) => {
+        setLiveMonitorPayload(payload);
+        setIsLiveMonitorOpen(true);
+    };
 
     uiEmitter.on('open-profile-dialog', openProfile);
     uiEmitter.on('open-settings-dialog', openSettings);
@@ -168,6 +177,7 @@ export function GlobalDialogs({ userProfile, permissions, onAnyDialogOpenChange 
     uiEmitter.on('open-superadmin-dialog', openSuperAdmin);
     uiEmitter.on('open-notifications-dialog', openNotifications);
     uiEmitter.on('open-create-channel-dialog', openCreateChannel);
+    uiEmitter.on('open-live-monitor-dialog', openLiveMonitor);
     uiEmitter.on('close-all-dialogs', closeAllDialogs);
     
     return () => {
@@ -192,6 +202,7 @@ export function GlobalDialogs({ userProfile, permissions, onAnyDialogOpenChange 
       uiEmitter.off('open-superadmin-dialog', openSuperAdmin);
       uiEmitter.off('open-notifications-dialog', openNotifications);
       uiEmitter.off('open-create-channel-dialog', openCreateChannel);
+      uiEmitter.off('open-live-monitor-dialog', openLiveMonitor);
       uiEmitter.off('close-all-dialogs', closeAllDialogs);
     };
   }, [closeAllDialogs]);
@@ -302,6 +313,14 @@ export function GlobalDialogs({ userProfile, permissions, onAnyDialogOpenChange 
               open={isCreateChannelOpen} 
               onOpenChange={setIsCreateChannelOpen} 
               currentUserProfile={userProfile} 
+          />
+      )}
+      {isLiveMonitorOpen && liveMonitorPayload && (
+          <LiveMonitorDialog
+            open={isLiveMonitorOpen}
+            onOpenChange={setIsLiveMonitorOpen}
+            targetUserId={liveMonitorPayload.targetUserId}
+            targetUserName={liveMonitorPayload.targetUserName}
           />
       )}
     </>

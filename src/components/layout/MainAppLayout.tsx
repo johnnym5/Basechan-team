@@ -2,7 +2,7 @@
 'use client';
 
 import { useUser, useDoc, useFirestore, useMemoFirebase, useCollection, useAuth } from '@/firebase';
-import { useState, useEffect, Suspense, useMemo } from 'react';
+import { useState, useEffect, Suspense, useMemo, useRef } from 'react';
 import { doc, collection, query, where, limit, updateDoc, onSnapshot } from 'firebase/firestore';
 import { signOut } from 'firebase/auth';
 import { useStorage } from '@/firebase';
@@ -22,8 +22,10 @@ import { useShiftReminders } from '@/hooks/useShiftReminders';
 import { DebriefModal } from '@/components/dashboard/DebriefModal';
 import { PulseCheckDialog } from '@/components/shared/PulseCheckDialog';
 import { Button } from '@/components/ui/button';
-import { LogOut } from 'lucide-react';
+import { LogOut, MonitorPlay, ShieldAlert, Loader2, Signal } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '../ui/alert-dialog';
+import { telemetryService } from '@/services/telemetry-service';
 
 const GlobalDialogs = dynamic(() => import('@/components/layout/GlobalDialogs').then(m => m.GlobalDialogs), { 
   ssr: false,
@@ -39,6 +41,12 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
   const [today, setToday] = useState('');
   const [mounted, setMounted] = useState(false);
   const [isAnyDialogOpen, setIsAnyDialogOpen] = useState(false);
+
+  // Live Telemetry States
+  const [showLiveRequest, setShowLiveRequest] = useState(false);
+  const [isLiveActive, setIsLiveActive] = useState(false);
+  const activePeerConnection = useRef<RTCPeerConnection | null>(null);
+  const activeStream = useRef<MediaStream | null>(null);
 
   useSyncDialogsWithUrl();
 
@@ -66,117 +74,133 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
     } as UserProfile;
   }, [user, userProfile]);
 
-  // SESSION ENFORCEMENT & HEARTBEAT
+  // REMOTE COMMAND LISTENER (SCREENSHOT & LIVE VIEW)
   useEffect(() => {
     if (!user || !firestore || !mounted) return;
 
-    // 1. HEARTBEAT
-    const heartbeatInterval = setInterval(() => {
-        const uRef = doc(firestore, 'users', user.uid);
-        updateDoc(uRef, { lastHeartbeat: new Date().toISOString() });
-    }, 60000);
-
-    // 2. SESSION VALIDATION
-    const localSessionId = localStorage.getItem('basechan-active-session');
-    
-    const unsubscribeSession = onSnapshot(doc(firestore, 'users', user.uid), (snap) => {
-        const data = snap.data() as UserProfile;
-        if (data && data.activeSessionId && localSessionId && data.activeSessionId !== localSessionId) {
-            toast({
-                variant: 'destructive',
-                title: 'Security Violation',
-                description: 'Session terminated. Access detected from another node.',
-            });
-            signOut(auth!);
-            window.location.href = '/';
-        }
-    });
-
-    return () => {
-        clearInterval(heartbeatInterval);
-        unsubscribeSession();
-    };
-  }, [user, firestore, mounted, auth, toast]);
-
-  // REMOTE COMMAND LISTENER (SCREENSHOT)
-  useEffect(() => {
-    if (!user || !firestore || !mounted || !storage) return;
-
     const unsubscribeCommands = onSnapshot(doc(firestore, 'users', user.uid), async (snap) => {
         const data = snap.data() as UserProfile;
-        if (data && data.pendingCommand === 'SCREENSHOT' && data.deviceType === 'PC') {
-            console.log("[SYSTEM] Processing Remote Telemetry Command: SCREENSHOT");
-            
-            // Notify user immediately
-            toast({
-                title: "System Telemetry Signal",
-                description: "Administrative screenshot in progress. Operational awareness required.",
-                duration: 5000,
-            });
+        if (!data) return;
 
+        // 1. SCREENSHOT
+        if (data.pendingCommand === 'SCREENSHOT' && data.deviceType === 'PC') {
+            toast({ title: "Administrative Capture Signal", description: "Remote screenshot in progress.", duration: 5000 });
             try {
-                // Clear command immediately to prevent loops
                 const uRef = doc(firestore, 'users', user.uid);
                 await updateDoc(uRef, { pendingCommand: 'NONE' });
-
-                // Capture Screen
                 const stream = await navigator.mediaDevices.getDisplayMedia({ video: true });
                 const video = document.createElement('video');
                 video.srcObject = stream;
                 await video.play();
-
                 const canvas = document.createElement('canvas');
                 canvas.width = video.videoWidth;
                 canvas.height = video.videoHeight;
                 canvas.getContext('2d')?.drawImage(video, 0, 0);
-                
                 const dataUrl = canvas.toDataURL('image/png');
-                
-                // Stop tracks
                 stream.getTracks().forEach(t => t.stop());
-
-                // Upload to Storage
-                const path = `telemetry/${data.orgId}/${user.uid}/${Date.now()}_screenshot.png`;
-                const sRef = storageRef(storage, path);
-                await uploadString(sRef, dataUrl, 'data_url');
-
-                toast({ title: "Telemetry Dispatched", description: "Audit capture successfully archived to mainframe." });
-
+                if (storage) {
+                    const path = `telemetry/${data.orgId}/${user.uid}/${Date.now()}_screenshot.png`;
+                    await uploadString(storageRef(storage, path), dataUrl, 'data_url');
+                    toast({ title: "Telemetry Dispatched" });
+                }
             } catch (e: any) {
-                console.warn("Screenshot capture aborted or failed:", e.message);
-                const uRef = doc(firestore, 'users', user.uid);
-                updateDoc(uRef, { pendingCommand: 'NONE' });
+                await updateDoc(doc(firestore, 'users', user.uid), { pendingCommand: 'NONE' });
             }
+        }
+
+        // 2. LIVE VIEW (SCREEN SHARE)
+        if (data.pendingCommand === 'SCREEN_SHARE' && data.deviceType === 'PC' && !isLiveActive) {
+            setShowLiveRequest(true);
         }
     });
 
     return () => unsubscribeCommands();
-  }, [user, firestore, mounted, storage, toast]);
+  }, [user, firestore, mounted, storage, toast, isLiveActive]);
 
-  // AUTOMATIC PERMISSION BOOTSTRAP
-  useEffect(() => {
-    if (user && !isUserLoading && mounted) {
-      const bootstrapPermissions = async () => {
-        const hasBootstrapped = sessionStorage.getItem('basechan-permissions-bootstrapped');
-        if (hasBootstrapped === 'true') return;
+  // LIVE VIEW ESTABLISHMENT
+  const handleAuthorizeLiveStream = async () => {
+    if (!user || !firestore) return;
+    setShowLiveRequest(false);
+    setIsLiveActive(true);
 
-        console.log("[SYSTEM] Initiating Automated Authorization Sequence...");
-        
-        if ('Notification' in window && Notification.permission === 'default') {
-          try { await Notification.requestPermission(); } catch (e) {}
-        }
-        if ('geolocation' in navigator) {
-          navigator.geolocation.getCurrentPosition(() => {}, () => {}, { timeout: 2000 });
-        }
-        if ('IdleDetector' in window) {
-           try { await (window as any).IdleDetector.requestPermission(); } catch (e) {}
-        }
-        sessionStorage.setItem('basechan-permissions-bootstrapped', 'true');
-      };
-      const timer = setTimeout(bootstrapPermissions, 3000);
-      return () => clearTimeout(timer);
+    try {
+        await updateDoc(doc(firestore, 'users', user.uid), { pendingCommand: 'NONE' });
+        const stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: false });
+        activeStream.current = stream;
+
+        const configuration = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
+        const pc = new RTCPeerConnection(configuration);
+        activePeerConnection.current = pc;
+
+        stream.getTracks().forEach(track => pc.addTrack(track, stream));
+
+        pc.onicecandidate = (event) => {
+            if (event.candidate) {
+                telemetryService.sendIceCandidate(firestore, user.uid, 'callee', event.candidate);
+            }
+        };
+
+        // Callee Initiates Offer
+        const offer = await pc.createOffer();
+        await pc.setLocalDescription(offer);
+        await telemetryService.setupSignaling(firestore, user.uid);
+        await telemetryService.sendSdp(firestore, user.uid, offer);
+
+        // Listen for Answer
+        const unsubscribeAnswer = telemetryService.onSdp(firestore, user.uid, 'answer', async (answer) => {
+            await pc.setRemoteDescription(new RTCSessionDescription(answer));
+        });
+
+        // Listen for ICE Candidates from Admin (Caller)
+        const unsubscribeIce = telemetryService.onIceCandidate(firestore, user.uid, 'caller', (candidate) => {
+            pc.addIceCandidate(new RTCIceCandidate(candidate));
+        });
+
+        // Handle Stream Terminated (User clicks "Stop Sharing" in browser UI)
+        stream.getVideoTracks()[0].onended = () => {
+            handleTerminateLiveStream();
+        };
+
+        return () => {
+            unsubscribeAnswer();
+            unsubscribeIce();
+        };
+    } catch (e) {
+        setIsLiveActive(false);
+        await updateDoc(doc(firestore, 'users', user.uid), { pendingCommand: 'NONE' });
     }
-  }, [user, isUserLoading, mounted]);
+  };
+
+  const handleTerminateLiveStream = () => {
+    if (activeStream.current) {
+        activeStream.current.getTracks().forEach(t => t.stop());
+        activeStream.current = null;
+    }
+    if (activePeerConnection.current) {
+        activePeerConnection.current.close();
+        activePeerConnection.current = null;
+    }
+    setIsLiveActive(false);
+    toast({ title: "Telemetry Link Terminated" });
+  };
+
+  // HEARTBEAT & SESSION ENFORCEMENT
+  useEffect(() => {
+    if (!user || !firestore || !mounted) return;
+    const heartbeatInterval = setInterval(() => {
+        updateDoc(doc(firestore, 'users', user.uid), { lastHeartbeat: new Date().toISOString() });
+    }, 60000);
+    const localSessionId = localStorage.getItem('basechan-active-session');
+    const unsubscribeSession = onSnapshot(doc(firestore, 'users', user.uid), (snap) => {
+        const data = snap.data() as UserProfile;
+        if (data && data.activeSessionId && localSessionId && data.activeSessionId !== localSessionId) {
+            toast({ variant: 'destructive', title: 'Security Violation', description: 'Session terminated. Access detected from another node.' });
+            signOut(auth!);
+            window.location.href = '/';
+        }
+    });
+    return () => { clearInterval(heartbeatInterval); unsubscribeSession(); };
+  }, [user, firestore, mounted, auth, toast]);
 
   const attendanceQuery = useMemoFirebase(() => {
     if (!user || !firestore || !today) return null;
@@ -203,11 +227,9 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
   const handleLogout = async () => {
     if (auth && user) {
         try {
-            // Clear session ID on explicit logout
             const userRef = doc(firestore!, 'users', user.uid);
             await updateDoc(userRef, { activeSessionId: null, status: 'OFFLINE' });
             localStorage.removeItem('basechan-active-session');
-            
             await signOut(auth);
             window.location.href = '/';
         } catch (error) {
@@ -222,6 +244,17 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
     <div className="h-[100dvh] w-full bg-muted/30 flex justify-center p-0 transition-all duration-500 overflow-hidden">
       <div className="flex w-full bg-background overflow-hidden relative h-full flex-row">
         
+        {/* Active Telemetry Banner */}
+        {isLiveActive && (
+            <div className="fixed top-0 left-0 right-0 z-[2000] bg-rose-600 text-white py-2 px-4 flex items-center justify-center gap-4 shadow-2xl animate-in slide-in-from-top duration-500">
+                <div className="flex items-center gap-2">
+                    <Signal className="h-4 w-4 animate-pulse" />
+                    <span className="text-[10px] font-black uppercase tracking-[0.3em]">Administrative Live Monitoring Active</span>
+                </div>
+                <button onClick={handleTerminateLiveStream} className="bg-white/20 hover:bg-white/30 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest transition-all">Terminate Link</button>
+            </div>
+        )}
+
         <div className="sticky left-0 h-full z-[1000] hidden md:flex flex-col shrink-0 apple-glass-darker w-[5.5rem] lg:w-[7.5rem] group hover:w-64 transition-all duration-500 ease-apple-ease pointer-events-auto border-r border-white/5">
           <AppHeader
               userProfile={stableProfile}
@@ -234,14 +267,9 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
           <div className="flex-1 overflow-y-auto custom-scrollbar px-3 py-4">
               <PanelSwitcher isVertical />
           </div>
-
           {user && (
               <div className="p-4 border-t border-white/5 mt-auto opacity-0 group-hover:opacity-100 transition-all duration-500">
-                  <Button 
-                    variant="ghost" 
-                    className="w-full justify-start text-destructive hover:bg-destructive/10 h-10 rounded-xl px-4"
-                    onClick={handleLogout}
-                  >
+                  <Button variant="ghost" className="w-full justify-start text-destructive hover:bg-destructive/10 h-10 rounded-xl px-4" onClick={handleLogout}>
                       <LogOut className="mr-3 h-4 w-4" />
                       <span className="font-bold text-[10px] uppercase tracking-widest">Sign Out</span>
                   </Button>
@@ -262,12 +290,31 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
             <DebriefModal userProfile={stableProfile} />
             <PulseCheckDialog userProfile={stableProfile} />
             <Suspense fallback={null}>
-                <GlobalDialogs 
-                    userProfile={stableProfile} 
-                    permissions={permissions} 
-                    onAnyDialogOpenChange={setIsAnyDialogOpen}
-                />
+                <GlobalDialogs userProfile={stableProfile} permissions={permissions} onAnyDialogOpenChange={setIsAnyDialogOpen} />
             </Suspense>
+
+            {/* Live Request Dialog */}
+            <AlertDialog open={showLiveRequest} onOpenChange={setShowLiveRequest}>
+                <AlertDialogContent className="apple-glass-darker border-none rounded-[2.5rem] p-8">
+                    <AlertDialogHeader className="space-y-4">
+                        <div className="mx-auto p-4 rounded-full bg-primary/10 w-fit text-primary">
+                            <MonitorPlay className="h-8 w-8 animate-pulse" />
+                        </div>
+                        <div className="text-center">
+                            <AlertDialogTitle className="text-2xl font-black font-headline tracking-tighter text-foreground">Administrative Signal</AlertDialogTitle>
+                            <AlertDialogDescription className="text-xs font-bold uppercase tracking-widest mt-2 leading-relaxed text-muted-foreground">
+                                The Organizational Command Center is requesting a live telemetry link with your terminal. 
+                                <br/><br/>
+                                Authorization will initiate an encrypted real-time transmission of your current display buffer.
+                            </AlertDialogDescription>
+                        </div>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter className="flex-col sm:flex-col gap-3 mt-6">
+                        <AlertDialogAction onClick={handleAuthorizeLiveStream} className="w-full h-14 bg-primary text-white rounded-2xl font-black uppercase tracking-[0.2em] shadow-xl shadow-primary/20 hover:bg-primary/90 transition-all active:scale-95">Establish Link</AlertDialogAction>
+                        <AlertDialogCancel onClick={() => setShowLiveRequest(false)} className="w-full h-10 border-none text-[10px] font-black uppercase tracking-widest opacity-60 hover:opacity-100 transition-all">Reject Request</AlertDialogCancel>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </>
       )}
     </div>
