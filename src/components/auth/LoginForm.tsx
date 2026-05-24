@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useForm } from "react-hook-form";
@@ -27,7 +26,7 @@ import { ORG_ID } from "@/lib/config";
 import { differenceInMinutes } from 'date-fns';
 
 const formSchema = z.object({
-  username: z.string().min(1, "Identity is required."),
+  username: z.string().min(1, "Username is required."),
   password: z.string().min(1, "Password is required."),
 });
 
@@ -78,7 +77,7 @@ export function LoginForm() {
           const userSnapshot = await getDocs(userQuery);
           
           if (userSnapshot.empty) {
-              throw new Error("Identity not found in organization records.");
+              throw new Error("User not found in organization records.");
           }
 
           userData = { id: userSnapshot.docs[0].id, ...userSnapshot.docs[0].data() } as UserProfile;
@@ -100,7 +99,7 @@ export function LoginForm() {
           
           // If session was active in the last 3 minutes, prevent login
           if (diff < 3) {
-              throw new Error(`Operational Violation: This account is already active on a ${userData.deviceType} node. Please sign out from that device first.`);
+              throw new Error(`Security Alert: This account is already logged in on another ${userData.deviceType === 'PC' ? 'Desktop' : 'Mobile'} device. Please sign out from that device first.`);
           }
       }
 
@@ -120,14 +119,14 @@ export function LoginForm() {
       localStorage.setItem('basechan-active-session', sessionId);
 
       toast({ 
-          title: "Authorized", 
-          description: `Access granted via ${deviceType} node.` 
+          title: "Logged In", 
+          description: `Access granted via ${deviceType === 'PC' ? 'Desktop' : 'Mobile'}.` 
       });
 
     } catch (error: any) {
        let message = "Please check your credentials and try again.";
        if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
-           message = "Invalid identity or access key.";
+           message = "Invalid username or password.";
        } else if (error.message) {
            message = error.message;
        }
@@ -151,11 +150,11 @@ export function LoginForm() {
             name="username"
             render={({ field }) => (
                 <FormItem>
-                <FormLabel>Identity</FormLabel>
+                <FormLabel>Username</FormLabel>
                 <FormControl>
                     <Input placeholder="Username or Email" {...field} />
                 </FormControl>
-                <FormDescription className="text-[0.625rem] uppercase tracking-widest opacity-50">Enter your organizational ID or email</FormDescription>
+                <FormDescription className="text-[0.625rem] uppercase tracking-widest opacity-50">Enter your company ID or email</FormDescription>
                 <FormMessage />
                 </FormItem>
             )}
@@ -165,7 +164,7 @@ export function LoginForm() {
             name="password"
             render={({ field }) => (
                 <FormItem>
-                <FormLabel>Access Key</FormLabel>
+                <FormLabel>Password</FormLabel>
                 <FormControl>
                     <Input type="password" placeholder="••••••••" {...field} />
                 </FormControl>
@@ -177,7 +176,7 @@ export function LoginForm() {
                 {isSubmitting ? (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 ) : (
-                    <>Initialize Node</>
+                    <>Login</>
                 )}
             </Button>
         </form>
@@ -186,11 +185,11 @@ export function LoginForm() {
         <div className="flex items-center justify-center gap-6 pt-2 opacity-30">
             <div className="flex flex-col items-center gap-1">
                 <Monitor className="h-4 w-4" />
-                <span className="text-[8px] font-black uppercase">PC Node</span>
+                <span className="text-[8px] font-black uppercase">Desktop</span>
             </div>
             <div className="flex flex-col items-center gap-1">
                 <Smartphone className="h-4 w-4" />
-                <span className="text-[8px] font-black uppercase">Mobile Node</span>
+                <span className="text-[8px] font-black uppercase">Mobile</span>
             </div>
         </div>
     </div>

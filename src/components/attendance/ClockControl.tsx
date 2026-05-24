@@ -169,7 +169,7 @@ export function ClockControl({ userProfile, permissions, systemConfig, className
       {isOnBreak && <div className="absolute top-0 left-0 w-full h-1 bg-amber-500 animate-pulse" />}
       <div className="mb-4 flex items-center gap-2 text-muted-foreground uppercase tracking-[0.2em] text-[10px] font-black">
         <Clock className="w-4 h-4" />
-        {isClockedIn ? (isOnBreak ? 'On Break' : 'Work Status') : 'Ready to Clock In'}
+        {isClockedIn ? (isOnBreak ? 'On Break' : 'Work Status') : 'Ready to Start'}
       </div>
       
       <div className="flex flex-col items-center gap-2 mb-6">
@@ -211,18 +211,18 @@ export function ClockControl({ userProfile, permissions, systemConfig, className
             </div>
         ) : (
             <Button className="w-full h-16 md:h-20 bg-primary hover:bg-primary/90 text-white rounded-2xl text-lg md:text-xl font-black uppercase shadow-xl shadow-primary/20 interactive-element" onClick={handleClockIn} disabled={isSubmitting}>
-                {isSubmitting ? <Loader2 className="animate-spin" /> : 'Deploy Shift'}
+                {isSubmitting ? <Loader2 className="animate-spin" /> : 'Start Working'}
             </Button>
         )}
       </div>
 
       <div className="flex items-center justify-center space-x-8 pt-6 border-t border-white/5 w-full">
           <div onClick={() => !isClockedIn && setLocation('OFFICE')} className={cn("flex items-center gap-2 cursor-pointer transition-all", location === 'OFFICE' ? "text-primary" : "text-muted-foreground opacity-50")}>
-              <Building className="w-5 h-5" /><span className="text-[10px] font-black uppercase tracking-widest">Office Node</span>
+              <Building className="w-5 h-5" /><span className="text-[10px] font-black uppercase tracking-widest">Office</span>
           </div>
           <div className="h-5 w-px bg-white/10" />
           <div onClick={() => !isClockedIn && setLocation('REMOTE')} className={cn("flex items-center gap-2 cursor-pointer transition-all", location === 'REMOTE' ? "text-primary" : "text-muted-foreground opacity-50")}>
-              <Briefcase className="w-5 h-5" /><span className="text-[10px] font-black uppercase tracking-widest">Remote Node</span>
+              <Briefcase className="w-5 h-5" /><span className="text-[10px] font-black uppercase tracking-widest">Remote</span>
           </div>
       </div>
     </section>

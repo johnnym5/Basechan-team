@@ -58,7 +58,7 @@ export function BottomNavBar() {
       <div className="absolute inset-0 bg-background/80 backdrop-blur-2xl border-t border-white/10 shadow-[0_-8px_32px_0_rgba(0,0,0,0.1)]" />
       
       <div className="relative h-20 max-w-lg mx-auto flex items-center justify-between px-2 pb-safe">
-        {/* Assistant (Replacing Home) */}
+        {/* Assistant */}
         <button 
             onClick={() => uiEmitter.emit('open-assistant-dialog')} 
             className={cn("flex-1 flex flex-col items-center gap-1.5 transition-all duration-300", isActive('assistant') ? "mobile-tab-active" : "text-muted-foreground opacity-60")}
@@ -76,7 +76,7 @@ export function BottomNavBar() {
             <span className="text-[8px] font-black uppercase tracking-widest text-center leading-none">Attendance</span>
         </button>
 
-        {/* Tactical Command Center Trigger */}
+        {/* Main Menu Trigger */}
         <div className="relative -top-6 px-2">
             <Sheet open={isMenuOpen} onOpenChange={setIsMenuOpen}>
                 <SheetTrigger asChild>
@@ -89,8 +89,8 @@ export function BottomNavBar() {
                     
                     <div className="flex flex-col h-full pt-10">
                         <SheetHeader className="px-8 pb-6 text-left">
-                            <SheetTitle className="text-3xl font-black font-headline tracking-tighter">Command Center</SheetTitle>
-                            <SheetDescription className="text-[10px] font-black uppercase tracking-[0.2em] opacity-50">Select operational workstation</SheetDescription>
+                            <SheetTitle className="text-3xl font-black font-headline tracking-tighter">Main Menu</SheetTitle>
+                            <SheetDescription className="text-[10px] font-black uppercase tracking-[0.2em] opacity-50">Select a section</SheetDescription>
                         </SheetHeader>
                         
                         <ScrollArea className="flex-1 px-6 pb-20">
@@ -127,7 +127,7 @@ export function BottomNavBar() {
             </Sheet>
         </div>
 
-        {/* Notifications (Replacing Tasks) */}
+        {/* Alerts */}
         <button 
             onClick={() => uiEmitter.emit('open-notifications-dialog' as any)} 
             className={cn("flex-1 flex flex-col items-center gap-1.5 transition-all duration-300 relative", isActive('notifications') ? "mobile-tab-active" : "text-muted-foreground opacity-60")}
@@ -139,7 +139,7 @@ export function BottomNavBar() {
             <span className="text-[8px] font-black uppercase tracking-widest text-center leading-none">Alerts</span>
         </button>
 
-        {/* Quick Profile access */}
+        {/* Profile */}
         <button 
             onClick={() => uiEmitter.emit('open-profile-dialog')} 
             className={cn("flex-1 flex flex-col items-center gap-1.5 transition-all duration-300", isActive('profile') ? "mobile-tab-active" : "text-muted-foreground opacity-60")}

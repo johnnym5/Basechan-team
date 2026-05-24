@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -56,7 +55,7 @@ export function TeamPane({ currentUserProfile, permissions }: TeamPaneProps) {
     const handleRequestScreenshot = async (user: UserProfile) => {
         if (!firestore) return;
         if (user.deviceType !== 'PC') {
-            toast({ variant: 'destructive', title: 'Action Denied', description: 'Remote capture is strictly restricted to PC nodes.' });
+            toast({ variant: 'destructive', title: 'Action Denied', description: 'Screen capture is only available for Desktop users.' });
             return;
         }
 
@@ -64,9 +63,9 @@ export function TeamPane({ currentUserProfile, permissions }: TeamPaneProps) {
         try {
             const userRef = doc(firestore, 'users', user.id);
             await updateDoc(userRef, { pendingCommand: 'SCREENSHOT' });
-            toast({ title: 'Signal Dispatched', description: `Requesting telemetry from ${user.fullName.split(' ')[0]}'s node.` });
+            toast({ title: 'Request Sent', description: `Requesting a screenshot from ${user.fullName.split(' ')[0]}.` });
         } catch (e: any) {
-            toast({ variant: 'destructive', title: 'Signal Failed', description: e.message });
+            toast({ variant: 'destructive', title: 'Failed', description: e.message });
         } finally {
             setTimeout(() => setIsProcessingCommand(null), 2000);
         }
@@ -75,7 +74,7 @@ export function TeamPane({ currentUserProfile, permissions }: TeamPaneProps) {
     const handleRequestLiveMonitor = async (user: UserProfile) => {
         if (!firestore) return;
         if (user.deviceType !== 'PC') {
-            toast({ variant: 'destructive', title: 'Action Denied', description: 'Live monitoring is strictly restricted to PC nodes.' });
+            toast({ variant: 'destructive', title: 'Action Denied', description: 'Screen sharing is only available for Desktop users.' });
             return;
         }
 
@@ -84,9 +83,9 @@ export function TeamPane({ currentUserProfile, permissions }: TeamPaneProps) {
             const userRef = doc(firestore, 'users', user.id);
             await updateDoc(userRef, { pendingCommand: 'SCREEN_SHARE' });
             uiEmitter.emit('open-live-monitor-dialog', { targetUserId: user.id, targetUserName: user.fullName });
-            toast({ title: 'Live Signal Initializing', description: `Establishing telemetry link with ${user.fullName.split(' ')[0]}.` });
+            toast({ title: 'Sharing Request Sent', description: `Connecting to ${user.fullName.split(' ')[0]}'s screen.` });
         } catch (e: any) {
-            toast({ variant: 'destructive', title: 'Signal Failed', description: e.message });
+            toast({ variant: 'destructive', title: 'Failed', description: e.message });
         } finally {
             setTimeout(() => setIsProcessingCommand(null), 1000);
         }
@@ -94,14 +93,14 @@ export function TeamPane({ currentUserProfile, permissions }: TeamPaneProps) {
 
     const handlePasswordReset = async (user: UserProfile) => {
         if (!auth || !user.email) {
-            toast({ variant: 'destructive', title: 'Error', description: 'Could not send reset email. User email not found.' });
+            toast({ variant: 'destructive', title: 'Error', description: 'Could not send reset email.' });
             return;
         }
         try {
             await sendPasswordResetEmail(auth, user.email);
-            toast({ title: 'Reset Dispatched', description: `Instructions sent to ${user.email}.` });
+            toast({ title: 'Reset Email Sent', description: `Instructions sent to ${user.email}.` });
         } catch (error: any) {
-            toast({ variant: 'destructive', title: 'Dispatch Failed', description: error.message });
+            toast({ variant: 'destructive', title: 'Failed', description: error.message });
         }
     };
     
@@ -110,10 +109,10 @@ export function TeamPane({ currentUserProfile, permissions }: TeamPaneProps) {
         setIsDeleting(true);
         try {
             await deleteDoc(doc(firestore, 'users', userToDelete.id));
-            toast({ title: 'User Purged', description: `${userToDelete.fullName} removed from mainframe.` });
+            toast({ title: 'User Removed', description: `${userToDelete.fullName} has been deleted.` });
             setUserToDelete(null);
         } catch (error: any) {
-             toast({ variant: 'destructive', title: 'Purge Failed', description: error.message });
+             toast({ variant: 'destructive', title: 'Failed', description: error.message });
         } finally {
             setIsDeleting(false);
         }
@@ -125,7 +124,7 @@ export function TeamPane({ currentUserProfile, permissions }: TeamPaneProps) {
                 <div className="relative flex-1">
                     <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                     <Input 
-                        placeholder="Search team by name, email, role..."
+                        placeholder="Search team member..."
                         className="pl-8 rounded-xl h-10"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
@@ -134,17 +133,17 @@ export function TeamPane({ currentUserProfile, permissions }: TeamPaneProps) {
                 {permissions.canManageStaff && (
                     <Button onClick={() => setIsInviteOpen(true)} className="rounded-xl h-10 px-4 font-bold">
                         <PlusCircle className="mr-2 h-4 w-4" />
-                        Invite User
+                        Add Member
                     </Button>
                 )}
             </div>
 
             <div className="border border-white/5 rounded-2xl bg-card/30 backdrop-blur-xl shadow-xl overflow-hidden">
                 <div className="grid grid-cols-12 gap-4 p-4 border-b bg-secondary/20 font-black text-[9px] uppercase tracking-widest text-muted-foreground">
-                    <div className="col-span-4">Identity & Status</div>
+                    <div className="col-span-4">Staff Member</div>
                     <div className="col-span-2">Department / Role</div>
-                    <div className="col-span-2">Node Environment</div>
-                    <div className="col-span-4 text-right">Operational Control</div>
+                    <div className="col-span-2">Device</div>
+                    <div className="col-span-4 text-right">Actions</div>
                 </div>
 
                 <div className="divide-y divide-white/5">
@@ -175,15 +174,15 @@ export function TeamPane({ currentUserProfile, permissions }: TeamPaneProps) {
                                 {user.deviceType === 'PC' ? (
                                     <div className="flex items-center gap-2 text-primary">
                                         <Monitor className="h-4 w-4" />
-                                        <span className="text-[10px] font-black tracking-widest">PC</span>
+                                        <span className="text-[10px] font-black tracking-widest">Desktop</span>
                                     </div>
                                 ) : user.deviceType === 'MOBILE' ? (
                                     <div className="flex items-center gap-2 text-amber-500">
                                         <Smartphone className="h-4 w-4" />
-                                        <span className="text-[10px] font-black tracking-widest">MOBILE</span>
+                                        <span className="text-[10px] font-black tracking-widest">Mobile</span>
                                     </div>
                                 ) : (
-                                    <span className="text-[9px] opacity-30 uppercase font-black">Unknown</span>
+                                    <span className="text-[9px] opacity-30 uppercase font-black">N/A</span>
                                 )}
                             </div>
                             <div className="col-span-4 flex items-center justify-end gap-1.5">
@@ -203,7 +202,7 @@ export function TeamPane({ currentUserProfile, permissions }: TeamPaneProps) {
                                                             {isProcessingCommand === user.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <MonitorPlay className="h-4 w-4" />}
                                                         </Button>
                                                     </TooltipTrigger>
-                                                    <TooltipContent className="apple-glass-darker border-none text-[9px] font-black uppercase">Live Monitor Feed</TooltipContent>
+                                                    <TooltipContent className="apple-glass-darker border-none text-[9px] font-black uppercase">View Screen</TooltipContent>
                                                 </Tooltip>
                                                 <Tooltip>
                                                     <TooltipTrigger asChild>
@@ -217,7 +216,7 @@ export function TeamPane({ currentUserProfile, permissions }: TeamPaneProps) {
                                                             {isProcessingCommand === user.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Camera className="h-4 w-4" />}
                                                         </Button>
                                                     </TooltipTrigger>
-                                                    <TooltipContent className="apple-glass-darker border-none text-[9px] font-black uppercase">Capture PC Screen</TooltipContent>
+                                                    <TooltipContent className="apple-glass-darker border-none text-[9px] font-black uppercase">Capture Screenshot</TooltipContent>
                                                 </Tooltip>
                                             </>
                                         )}
@@ -241,7 +240,7 @@ export function TeamPane({ currentUserProfile, permissions }: TeamPaneProps) {
                     ))}
                      {!isLoading && filteredUsers.length === 0 && (
                         <div className="text-center text-sm text-muted-foreground py-16 uppercase font-black tracking-widest opacity-20">
-                            Zero matches in sector
+                            No matching members
                         </div>
                     )}
                 </div>
@@ -264,16 +263,16 @@ export function TeamPane({ currentUserProfile, permissions }: TeamPaneProps) {
                             <div className="mx-auto p-4 rounded-full bg-destructive/10 w-fit">
                                 <Trash2 className="h-8 w-8 text-destructive" />
                             </div>
-                            <AlertDialogTitle className="text-2xl font-black font-headline tracking-tighter">Terminate Authorization?</AlertDialogTitle>
+                            <AlertDialogTitle className="text-2xl font-black font-headline tracking-tighter">Delete User?</AlertDialogTitle>
                             <AlertDialogDescription className="text-xs font-bold uppercase tracking-widest">
-                                Deleting {userToDelete.fullName} will purge all node assignments and audit history. This action is irreversible.
+                                Are you sure you want to remove {userToDelete.fullName}? This action cannot be undone.
                             </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter className="flex-col sm:flex-col gap-3 mt-6">
                             <AlertDialogAction onClick={handleDeleteUser} disabled={isDeleting} className="w-full h-14 bg-destructive text-white rounded-2xl font-black uppercase tracking-[0.2em] shadow-xl shadow-destructive/20 hover:bg-destructive/90 transition-all active:scale-95">
-                                {isDeleting ? <Loader2 className="mr-2 animate-spin h-4 w-4" /> : "Confirm Termination"}
+                                {isDeleting ? <Loader2 className="mr-2 animate-spin h-4 w-4" /> : "Delete Member"}
                             </AlertDialogAction>
-                            <AlertDialogCancel className="w-full h-10 border-none text-[10px] font-black uppercase tracking-widest opacity-60 hover:opacity-100 hover:bg-transparent transition-all">Abort Command</AlertDialogCancel>
+                            <AlertDialogCancel className="w-full h-10 border-none text-[10px] font-black uppercase tracking-widest opacity-60 hover:opacity-100 hover:bg-transparent transition-all">Cancel</AlertDialogCancel>
                         </AlertDialogFooter>
                     </AlertDialogContent>
                 </AlertDialog>

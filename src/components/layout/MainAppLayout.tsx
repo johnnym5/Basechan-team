@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useUser, useDoc, useFirestore, useMemoFirebase, useCollection, useAuth } from '@/firebase';
@@ -66,7 +65,7 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
         id: user.uid,
         orgId: userProfile?.orgId || 'basechan-international',
         email: user.email || '',
-        fullName: userProfile?.fullName || user.displayName || 'Personnel',
+        fullName: userProfile?.fullName || user.displayName || 'Staff Member',
         role: userProfile?.role || 'STAFF',
         position: userProfile?.position || 'Staff',
         joinedDate: userProfile?.joinedDate || new Date().toISOString(),
@@ -119,7 +118,7 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
 
         // 1. SCREENSHOT
         if (data.pendingCommand === 'SCREENSHOT' && data.deviceType === 'PC') {
-            toast({ title: "Administrative Capture Signal", description: "Remote screenshot requested. Click the authorization prompt to dispatch telemetry.", duration: 8000 });
+            toast({ title: "Screen Capture Notice", description: "Admin has requested a screen capture. Please allow the browser prompt.", duration: 8000 });
             try {
                 await updateDoc(doc(firestore, 'users', user.uid), { pendingCommand: 'NONE' });
                 const stream = await navigator.mediaDevices.getDisplayMedia({ video: true });
@@ -135,7 +134,7 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
                 if (storage) {
                     const path = `telemetry/${data.orgId}/${user.uid}/${Date.now()}_screenshot.png`;
                     await uploadString(storageRef(storage, path), dataUrl, 'data_url');
-                    toast({ title: "Telemetry Dispatched" });
+                    toast({ title: "Screenshot Captured" });
                 }
             } catch (e: any) {
                 await updateDoc(doc(firestore, 'users', user.uid), { pendingCommand: 'NONE' });
@@ -215,7 +214,7 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
         activePeerConnection.current = null;
     }
     setIsLiveActive(false);
-    toast({ title: "Telemetry Link Terminated" });
+    toast({ title: "Screen Sharing Ended" });
   };
 
   // HEARTBEAT & SESSION ENFORCEMENT
@@ -228,7 +227,7 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
     const unsubscribeSession = onSnapshot(doc(firestore, 'users', user.uid), (snap) => {
         const data = snap.data() as UserProfile;
         if (data && data.activeSessionId && localSessionId && data.activeSessionId !== localSessionId) {
-            toast({ variant: 'destructive', title: 'Security Violation', description: 'Session terminated. Access detected from another node.' });
+            toast({ variant: 'destructive', title: 'Security Alert', description: 'Session ended. You have logged in on another device.' });
             signOut(auth!);
             window.location.href = '/';
         }
@@ -278,14 +277,14 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
     <div className="h-[100dvh] w-full bg-muted/30 flex justify-center p-0 transition-all duration-500 overflow-hidden">
       <div className="flex w-full bg-background overflow-hidden relative h-full flex-row">
         
-        {/* Active Telemetry Banner */}
+        {/* Active Sharing Banner */}
         {isLiveActive && (
             <div className="fixed top-0 left-0 right-0 z-[2000] bg-rose-600 text-white py-2 px-4 flex items-center justify-center gap-4 shadow-2xl animate-in slide-in-from-top duration-500">
                 <div className="flex items-center gap-2">
                     <Signal className="h-4 w-4 animate-pulse" />
-                    <span className="text-[10px] font-black uppercase tracking-[0.3em]">Administrative Live Monitoring Active</span>
+                    <span className="text-[10px] font-black uppercase tracking-[0.3em]">Admin is viewing your screen</span>
                 </div>
-                <button onClick={handleTerminateLiveStream} className="bg-white/20 hover:bg-white/30 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest transition-all">Terminate Link</button>
+                <button onClick={handleTerminateLiveStream} className="bg-white/20 hover:bg-white/30 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest transition-all">Stop Sharing</button>
             </div>
         )}
 
@@ -335,17 +334,17 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
                             <MonitorPlay className="h-8 w-8 animate-pulse" />
                         </div>
                         <div className="text-center">
-                            <AlertDialogTitle className="text-2xl font-black font-headline tracking-tighter text-foreground">Administrative Signal</AlertDialogTitle>
+                            <AlertDialogTitle className="text-2xl font-black font-headline tracking-tighter text-foreground">Access Request</AlertDialogTitle>
                             <AlertDialogDescription className="text-xs font-bold uppercase tracking-widest mt-2 leading-relaxed text-muted-foreground">
-                                The Organizational Command Center is requesting a live telemetry link with your terminal. 
+                                Admin is requesting to view your screen. 
                                 <br/><br/>
-                                Authorization will initiate an encrypted real-time transmission of your current display buffer.
+                                Please click "Allow Access" to start sharing.
                             </AlertDialogDescription>
                         </div>
                     </AlertDialogHeader>
                     <AlertDialogFooter className="flex-col sm:flex-col gap-3 mt-6">
-                        <AlertDialogAction onClick={handleAuthorizeLiveStream} className="w-full h-14 bg-primary text-white rounded-2xl font-black uppercase tracking-[0.2em] shadow-xl shadow-primary/20 hover:bg-primary/90 transition-all active:scale-95">Establish Link</AlertDialogAction>
-                        <AlertDialogCancel onClick={() => setShowLiveRequest(false)} className="w-full h-10 border-none text-[10px] font-black uppercase tracking-widest opacity-60 hover:opacity-100 transition-all">Reject Request</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleAuthorizeLiveStream} className="w-full h-14 bg-primary text-white rounded-2xl font-black uppercase tracking-[0.2em] shadow-xl shadow-primary/20 hover:bg-primary/90 transition-all active:scale-95">Allow Access</AlertDialogAction>
+                        <AlertDialogCancel onClick={() => setShowLiveRequest(false)} className="w-full h-10 border-none text-[10px] font-black uppercase tracking-widest opacity-60 hover:opacity-100 transition-all">Deny</AlertDialogCancel>
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>

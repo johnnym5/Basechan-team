@@ -38,7 +38,7 @@ function AssetPreview({ asset }: { asset: ChatMessage['asset'] }) {
     const Icon = asset.type === 'TASK' ? ListTodo : Briefcase;
     
     const handleNavigate = () => {
-        uiEmitter.emit(asset.type === 'TASK' ? 'open-tasks-dialog' : 'open-requisitions-dialog', { [asset.type === 'TASK' ? 'taskId' : 'reqId']: asset.id });
+        uiEmitter.emit(asset.type === 'TASK' ? 'open-tasks-dialog' : 'open-finance-dialog', { [asset.type === 'TASK' ? 'taskId' : 'reqId']: asset.id });
     };
 
     return (
@@ -88,7 +88,7 @@ function ChatMessages({ chat, currentUserProfile, onConvertTask }: { chat: Chat,
         return (
             <div className="flex-1 flex flex-col items-center justify-center opacity-30">
                 <Terminal className="h-12 w-12 mb-4" />
-                <p className="text-xs font-black uppercase tracking-widest text-center">Encrypted Channel Established<br/>Awaiting Transmissions</p>
+                <p className="text-xs font-black uppercase tracking-widest text-center">Secure Chat Started<br/>Awaiting Messages</p>
             </div>
         )
     }
@@ -125,7 +125,7 @@ function ChatMessages({ chat, currentUserProfile, onConvertTask }: { chat: Chat,
                             className="rounded-full text-[9px] font-black uppercase tracking-[0.2em] bg-secondary/30 hover:bg-primary/10 hover:text-primary transition-all group"
                         >
                             <History className="h-3 w-3 mr-2 group-hover:rotate-[-45deg] transition-transform" />
-                            Load {messages.length - 15} Previous Transmissions
+                            Load {messages.length - 15} Previous Messages
                         </Button>
                     </div>
                 )}
@@ -210,7 +210,7 @@ function AssetPicker({ onPick }: { onPick: (asset: ChatMessage['asset']) => void
                             <span className="text-[8px] font-mono opacity-50 group-hover:text-primary">{r.serialNo}</span>
                         </div>
                     ))}
-                    {reqs?.length === 0 && <p className="text-[10px] text-center opacity-30 py-8 uppercase font-black">No Requisitions Found</p>}
+                    {reqs?.length === 0 && <p className="text-[10px] text-center opacity-30 py-8 uppercase font-black">No Requests Found</p>}
                 </TabsContent>
             </ScrollArea>
         </Tabs>
@@ -292,7 +292,7 @@ export function ChatDialog({ open, onOpenChange, currentUserProfile, permissions
             const now = Date.now();
             const activeTypers = Object.entries(data)
                 .filter(([uid, timestamp]) => uid !== currentUserProfile.id && now - (timestamp as number) < 5000)
-                .map(([uid]) => selectedChat.participantProfiles[uid]?.fullName || 'Personnel');
+                .map(([uid]) => selectedChat.participantProfiles[uid]?.fullName || 'Someone');
             setTypingUsers(activeTypers);
         } else {
             setTypingUsers([]);
@@ -372,7 +372,7 @@ export function ChatDialog({ open, onOpenChange, currentUserProfile, permissions
     onOpenChange(false);
     setTimeout(() => {
         uiEmitter.emit('open-assign-task-dialog', {
-            title: `From Comms: ${msg.senderName}`,
+            title: `From Chat: ${msg.senderName}`,
             description: msg.content,
             priority: 'LEVEL_2'
         });
@@ -406,8 +406,8 @@ export function ChatDialog({ open, onOpenChange, currentUserProfile, permissions
     <Dialog open={open} onOpenChange={onOpenChange} modal={modal}>
       <DialogContent position="left" className="p-0 flex flex-col apple-glass border-none overflow-hidden h-full">
         <DialogHeader className="sr-only">
-          <DialogTitle>Internal Comms Terminal</DialogTitle>
-          <DialogDescription>Secure organizational messaging hub.</DialogDescription>
+          <DialogTitle>Chat Hub</DialogTitle>
+          <DialogDescription>Secure messaging for the organization.</DialogDescription>
         </DialogHeader>
 
         <div className="flex-1 grid grid-cols-1 md:grid-cols-12 overflow-hidden h-full min-h-0">
@@ -417,15 +417,15 @@ export function ChatDialog({ open, onOpenChange, currentUserProfile, permissions
                 isMobile && mobileView === 'chat' && "hidden"
             )}>
                 <div className="p-6 border-b border-white/5 flex-shrink-0">
-                    <h2 className="text-2xl font-black font-headline tracking-tighter">Comms Hub</h2>
-                    <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground opacity-60">Organizational Transmissions</p>
+                    <h2 className="text-2xl font-black font-headline tracking-tighter">Chat Hub</h2>
+                    <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground opacity-60">Company Messages</p>
                 </div>
 
                 <ScrollArea className="flex-1 min-h-0">
                     <div className="p-4 space-y-8">
                         <div className="space-y-2">
                            <div className="flex items-center justify-between px-2 mb-2">
-                             <h4 className="text-[9px] font-black uppercase tracking-[0.2em] text-primary opacity-70">Operational Channels</h4>
+                             <h4 className="text-[9px] font-black uppercase tracking-[0.2em] text-primary opacity-70">Public Channels</h4>
                              <Button 
                                 type="button"
                                 variant="ghost" 
@@ -470,7 +470,7 @@ export function ChatDialog({ open, onOpenChange, currentUserProfile, permissions
                                                 </DropdownMenuTrigger>
                                                 <DropdownMenuContent align="end" className="apple-glass-darker border-none">
                                                     <DropdownMenuItem className="text-destructive focus:text-destructive text-[10px] font-black uppercase tracking-widest" onSelect={() => setChannelToDelete(chat)}>
-                                                        <Trash2 className="mr-2 h-3.5 w-3.5" /> Terminate Node
+                                                        <Trash2 className="mr-2 h-3.5 w-3.5" /> Remove Channel
                                                     </DropdownMenuItem>
                                                 </DropdownMenuContent>
                                             </DropdownMenu>
@@ -481,7 +481,7 @@ export function ChatDialog({ open, onOpenChange, currentUserProfile, permissions
                         </div>
 
                         <div className="space-y-2">
-                           <h4 className="text-[9px] font-black uppercase tracking-[0.2em] text-primary opacity-70 px-2 mb-2">Personnel Transmissions</h4>
+                           <h4 className="text-[9px] font-black uppercase tracking-[0.2em] text-primary opacity-70 px-2 mb-2">Private Messages</h4>
                            <div className="space-y-1">
                                 {(isChatsLoading || isUsersLoading) && Array.from({length: 4}).map((_, i) => <Skeleton key={i} className="h-14 w-full rounded-xl" />)}
                                 {personnelTransmissions.map(chat => (
@@ -503,7 +503,7 @@ export function ChatDialog({ open, onOpenChange, currentUserProfile, permissions
                                         <div className="min-w-0 flex-1">
                                                 <p className="font-bold text-sm truncate">{getDirectMessageTitle(chat)}</p>
                                                 <p className={cn("text-[9px] font-medium truncate opacity-60", selectedChat?.id === chat.id && "opacity-80")}>
-                                                    {chat.lastMessage?.text || "Secure Link Active"}
+                                                    {chat.lastMessage?.text || "Conversation started"}
                                                 </p>
                                         </div>
                                     </div>
@@ -536,7 +536,7 @@ export function ChatDialog({ open, onOpenChange, currentUserProfile, permissions
                                         {selectedChat.type === 'CHANNEL' ? selectedChat.name : getDirectMessageTitle(selectedChat)}
                                     </h3>
                                     <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground opacity-50 mt-1">
-                                        {selectedChat.type === 'CHANNEL' ? `${selectedChat.participants.length} Units Connected` : 'Peer-to-Peer Encryption Active'}
+                                        {selectedChat.type === 'CHANNEL' ? `${selectedChat.participants.length} People in chat` : 'Direct Messaging'}
                                     </p>
                                 </div>
                             </div>
@@ -549,7 +549,7 @@ export function ChatDialog({ open, onOpenChange, currentUserProfile, permissions
                             <div className="h-4 mb-2 ml-4">
                                 {typingUsers.length > 0 && (
                                     <p className="text-[9px] font-black uppercase tracking-widest text-primary animate-pulse">
-                                        {typingUsers.join(', ')} {typingUsers.length === 1 ? 'is' : 'are'} transmitting...
+                                        {typingUsers.join(', ')} {typingUsers.length === 1 ? 'is' : 'are'} typing...
                                     </p>
                                 )}
                             </div>
@@ -572,16 +572,16 @@ export function ChatDialog({ open, onOpenChange, currentUserProfile, permissions
                                             </Button>
                                         </PopoverTrigger>
                                         <PopoverContent side="top" align="start" className="w-80 apple-glass-darker border-none p-4">
-                                            <h4 className="text-[10px] font-black uppercase tracking-widest mb-3 opacity-60">Select Operational Asset</h4>
+                                            <h4 className="text-[10px] font-black uppercase tracking-widest mb-3 opacity-60">Share an Item</h4>
                                             <AssetPicker onPick={(asset) => {
                                                 setSelectedAsset(asset);
-                                                toast({ title: 'Asset Linked', description: `${asset.type} ready for transmission.` });
+                                                toast({ title: 'Item Linked', description: `${asset.type} ready to send.` });
                                             }} />
                                         </PopoverContent>
                                     </Popover>
                                     
                                     <Input 
-                                        placeholder="Dispatch transmission..." 
+                                        placeholder="Write a message..." 
                                         className="border-none bg-transparent focus-visible:ring-0 h-12 text-sm pl-2"
                                         value={message}
                                         onChange={handleInputChange}
@@ -604,8 +604,8 @@ export function ChatDialog({ open, onOpenChange, currentUserProfile, permissions
                         <div className="p-8 rounded-[3rem] bg-secondary/20 border-2 border-dashed border-white/5 mb-8 animate-pulse">
                             <Terminal className="h-16 w-16 opacity-10" />
                         </div>
-                        <h3 className="text-xl font-black font-headline text-foreground uppercase tracking-widest">Awaiting Command</h3>
-                        <p className="text-xs max-w-xs mt-3 leading-relaxed opacity-50 uppercase font-bold tracking-tighter">Select an organizational node or personnel identity from the sidebar to establish a secure transmission link.</p>
+                        <h3 className="text-xl font-black font-headline text-foreground uppercase tracking-widest">No Chat Selected</h3>
+                        <p className="text-xs max-w-xs mt-3 leading-relaxed opacity-50 uppercase font-bold tracking-tighter">Select a channel or a person from the list to start a conversation.</p>
                     </div>
                 )}
             </div>
@@ -621,15 +621,15 @@ export function ChatDialog({ open, onOpenChange, currentUserProfile, permissions
                         <Trash2 className="h-8 w-8 text-destructive" />
                     </div>
                     <div className="text-center">
-                        <AlertDialogTitle className="text-2xl font-black font-headline tracking-tighter">Terminate Channel?</AlertDialogTitle>
+                        <AlertDialogTitle className="text-2xl font-black font-headline tracking-tighter">Delete Channel?</AlertDialogTitle>
                         <AlertDialogDescription className="text-xs font-bold uppercase tracking-widest mt-2 leading-relaxed">
-                            This will permanently remove the channel <span className="text-foreground">#{channelToDelete.name}</span> and purge all associated transmission history from the infrastructure.
+                            This will permanently remove the channel <span className="text-foreground">#{channelToDelete.name}</span> and delete all messages.
                         </AlertDialogDescription>
                     </div>
                 </AlertDialogHeader>
                 <AlertDialogFooter className="flex-col sm:flex-col gap-3 mt-6">
-                    <AlertDialogAction onClick={handleDeleteChannel} className="w-full h-14 bg-destructive text-white rounded-2xl font-black uppercase tracking-[0.2em] shadow-xl shadow-destructive/20 hover:bg-destructive/90 transition-all active:scale-95">Confirm Termination</AlertDialogAction>
-                    <AlertDialogCancel className="w-full h-10 border-none text-[10px] font-black uppercase tracking-widest opacity-60 hover:opacity-100 hover:bg-transparent transition-all">Abort Command</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleDeleteChannel} className="w-full h-14 bg-destructive text-white rounded-2xl font-black uppercase tracking-[0.2em] shadow-xl shadow-destructive/20 hover:bg-destructive/90 transition-all active:scale-95">Delete Channel</AlertDialogAction>
+                    <AlertDialogCancel className="w-full h-10 border-none text-[10px] font-black uppercase tracking-widest opacity-60 hover:opacity-100 hover:bg-transparent transition-all">Cancel</AlertDialogCancel>
                 </AlertDialogFooter>
             </AlertDialogContent>
         </AlertDialog>
