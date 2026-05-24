@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
@@ -9,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Loader2, MonitorPlay, X, Wifi, ShieldAlert, SignalHigh } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { Badge } from '@/components/ui/badge';
 
 interface LiveMonitorDialogProps {
     open: boolean;
@@ -24,7 +24,6 @@ export function LiveMonitorDialog({ open, onOpenChange, targetUserId, targetUser
     const peerConnection = useRef<RTCPeerConnection | null>(null);
     
     const [status, setStatus] = useState<'INITIALIZING' | 'SIGNALING' | 'CONNECTED' | 'DISCONNECTED' | 'FAILED'>('INITIALIZING');
-    const [bitrate, setBitrate] = useState<string>('0');
 
     const initializeConnection = async () => {
         if (!firestore) return;
@@ -96,50 +95,63 @@ export function LiveMonitorDialog({ open, onOpenChange, targetUserId, targetUser
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-[95vw] sm:max-w-4xl h-[85vh] apple-glass-darker border-none p-0 overflow-hidden flex flex-col">
-                <div className="p-6 border-b border-white/5 flex items-center justify-between flex-shrink-0">
+            <DialogContent className="max-w-[95vw] sm:max-w-5xl h-[85vh] apple-glass-darker border-none p-0 overflow-hidden flex flex-col">
+                <div className="p-6 border-b border-white/5 flex items-center justify-between flex-shrink-0 bg-background/40 backdrop-blur-xl">
                     <div className="flex items-center gap-4">
                         <div className={cn(
-                            "p-2.5 rounded-2xl",
-                            status === 'CONNECTED' ? "bg-emerald-500/10 text-emerald-500" : "bg-primary/10 text-primary"
+                            "p-2.5 rounded-2xl transition-all duration-500",
+                            status === 'CONNECTED' ? "bg-emerald-500/10 text-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.2)]" : "bg-primary/10 text-primary"
                         )}>
                             <MonitorPlay className={cn("h-6 w-6", status === 'SIGNALING' && "animate-pulse")} />
                         </div>
                         <div>
-                            <DialogTitle className="text-xl font-black font-headline tracking-tighter">Live Monitor: {targetUserName}</DialogTitle>
+                            <DialogTitle className="text-xl font-black font-headline tracking-tighter uppercase">Live Telemetry: {targetUserName}</DialogTitle>
                             <div className="flex items-center gap-2 mt-1">
                                 <Badge variant="outline" className={cn(
-                                    "text-[8px] font-black uppercase tracking-widest px-2 py-0.5",
-                                    status === 'CONNECTED' ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/20" : 
-                                    status === 'FAILED' ? "bg-rose-500/20 text-rose-400 border-rose-500/20" :
-                                    "bg-amber-500/20 text-amber-400 border-amber-500/20 animate-pulse"
+                                    "text-[8px] font-black uppercase tracking-widest px-2 py-0.5 border-none",
+                                    status === 'CONNECTED' ? "bg-emerald-500 text-white" : 
+                                    status === 'FAILED' ? "bg-rose-500 text-white" :
+                                    "bg-amber-500 text-black animate-pulse"
                                 )}>
                                     {status}
                                 </Badge>
                                 {status === 'CONNECTED' && (
-                                    <span className="text-[8px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-1">
-                                        <Wifi className="h-2.5 w-2.5" /> Direct Link Secure
+                                    <span className="text-[8px] font-black uppercase tracking-widest text-emerald-500 flex items-center gap-1">
+                                        <SignalHigh className="h-3 w-3" /> P2P Link Established
                                     </span>
                                 )}
                             </div>
                         </div>
                     </div>
+                    <Button variant="ghost" size="icon" onClick={() => onOpenChange(false)} className="rounded-xl hover:bg-white/5">
+                        <X className="h-5 w-5" />
+                    </Button>
                 </div>
 
-                <div className="flex-1 bg-black/40 relative flex items-center justify-center min-h-0">
+                <div className="flex-1 bg-black relative flex items-center justify-center min-h-0 shadow-inner">
                     {status !== 'CONNECTED' && (
-                        <div className="text-center space-y-4 z-10 p-12 max-w-md">
+                        <div className="text-center space-y-6 z-10 p-12 max-w-md animate-in fade-in zoom-in-95 duration-700">
                             {status === 'FAILED' ? (
                                 <>
-                                    <ShieldAlert className="h-12 w-12 text-rose-500 mx-auto" />
-                                    <p className="text-sm font-bold uppercase tracking-widest text-rose-400">Handshake Interrupted</p>
-                                    <Button variant="outline" onClick={() => initializeConnection()} className="rounded-xl h-10">Retry Connection</Button>
+                                    <div className="p-5 rounded-full bg-rose-500/10 w-fit mx-auto border border-rose-500/20">
+                                        <ShieldAlert className="h-12 w-12 text-rose-500" />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <p className="text-sm font-bold uppercase tracking-widest text-rose-400">Handshake Interrupted</p>
+                                        <p className="text-[10px] text-muted-foreground uppercase leading-relaxed">The direct link could not be negotiated. Ensure both units have stable connectivity.</p>
+                                    </div>
+                                    <Button variant="outline" onClick={() => initializeConnection()} className="rounded-xl h-12 px-8 font-black uppercase tracking-widest border-rose-500/20 hover:bg-rose-500/10">Retry Connection</Button>
                                 </>
                             ) : (
                                 <>
-                                    <Loader2 className="h-12 w-12 text-primary animate-spin mx-auto" />
-                                    <p className="text-sm font-bold uppercase tracking-widest text-primary">Awaiting Callee Authorization...</p>
-                                    <p className="text-[10px] text-muted-foreground uppercase leading-relaxed">The target node must authorize the browser's screen capture request before the live feed can initialize.</p>
+                                    <div className="relative">
+                                        <Loader2 className="h-16 w-16 text-primary animate-spin mx-auto opacity-20" />
+                                        <MonitorPlay className="h-6 w-6 text-primary absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-pulse" />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <p className="text-sm font-bold uppercase tracking-widest text-primary">Awaiting Callee Authorization...</p>
+                                        <p className="text-[10px] text-muted-foreground uppercase leading-relaxed font-medium">The target node has been signaled. Authorization is required on their terminal before the stream can initialize.</p>
+                                    </div>
                                 </>
                             )}
                         </div>
@@ -149,26 +161,27 @@ export function LiveMonitorDialog({ open, onOpenChange, targetUserId, targetUser
                         ref={videoRef} 
                         autoPlay 
                         playsInline 
-                        className={cn("w-full h-full object-contain transition-opacity duration-1000", status === 'CONNECTED' ? "opacity-100" : "opacity-0")} 
+                        className={cn("w-full h-full object-contain transition-opacity duration-1000 bg-black", status === 'CONNECTED' ? "opacity-100" : "opacity-0")} 
                     />
 
                     {status === 'CONNECTED' && (
-                        <div className="absolute top-4 right-4 flex items-center gap-3">
-                            <div className="bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/10 flex items-center gap-2">
-                                <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-ping" />
-                                <span className="text-[8px] font-black uppercase tracking-[0.2em] text-white">Live Stream</span>
+                        <div className="absolute top-6 right-6 flex items-center gap-3">
+                            <div className="bg-black/60 backdrop-blur-xl px-4 py-2 rounded-2xl border border-white/10 flex items-center gap-3 shadow-2xl">
+                                <div className="h-2 w-2 rounded-full bg-emerald-500 animate-ping" />
+                                <span className="text-[9px] font-black uppercase tracking-[0.2em] text-white">Live Stream Active</span>
                             </div>
                         </div>
                     )}
                 </div>
 
-                <div className="p-4 border-t border-white/5 bg-background/40 flex items-center justify-between flex-shrink-0">
-                    <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground opacity-40">
-                        Operational Telemetry Node: {targetUserId}
+                <div className="p-4 border-t border-white/5 bg-background/60 backdrop-blur-xl flex items-center justify-between flex-shrink-0">
+                    <div className="flex items-center gap-2 text-[9px] font-black uppercase tracking-widest text-muted-foreground opacity-40">
+                        <Wifi className="h-3 w-3" />
+                        Node ID: {targetUserId}
+                    </div>
+                    <p className="text-[8px] font-bold uppercase tracking-widest text-muted-foreground">
+                        Encrypted Tactical Stream via WebRTC
                     </p>
-                    <Button variant="ghost" onClick={() => onOpenChange(false)} className="rounded-xl h-9 text-[10px] font-black uppercase">
-                        Terminate Feed
-                    </Button>
                 </div>
             </DialogContent>
         </Dialog>

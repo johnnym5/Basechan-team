@@ -6,7 +6,7 @@ import { collection, query, where, doc, deleteDoc, updateDoc } from 'firebase/fi
 import type { UserProfile } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { PlusCircle, Trash2, Edit, Loader2, Search, KeyRound, Monitor, Smartphone, Camera, MonitorPlay } from 'lucide-react';
+import { PlusCircle, Trash2, Edit, Loader2, Search, KeyRound, Monitor, Smartphone, Camera, MonitorPlay, ShieldCheck } from 'lucide-react';
 import { Skeleton } from '../ui/skeleton';
 import { Input } from '../ui/input';
 import { InviteUserDialog } from './InviteUserDialog';
@@ -128,30 +128,39 @@ export function TeamPane({ currentUserProfile, permissions }: TeamPaneProps) {
     
     return (
         <TooltipProvider delayDuration={0}>
-            <div className="flex justify-between items-center mb-4 gap-4">
-                <div className="relative flex-1">
-                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <Input 
-                        placeholder="Search team member..."
-                        className="pl-8 rounded-xl h-10 border-white/5 bg-background/50"
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                    />
+            <div className="flex justify-between items-center mb-6 gap-4">
+                <div className="flex flex-col gap-1">
+                    <h3 className="text-xl font-black font-headline tracking-tighter uppercase flex items-center gap-2">
+                        <ShieldCheck className="h-5 w-5 text-primary" />
+                        Command Center
+                    </h3>
+                    <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground opacity-60">Manage Team Authorization & Oversight</p>
                 </div>
-                {permissions.canManageStaff && (
-                    <Button onClick={() => setIsInviteOpen(true)} className="rounded-xl h-10 px-4 font-bold shadow-lg shadow-primary/20">
-                        <PlusCircle className="mr-2 h-4 w-4" />
-                        Add Member
-                    </Button>
-                )}
+                <div className="flex items-center gap-3">
+                    <div className="relative">
+                        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input 
+                            placeholder="Filter personnel..."
+                            className="pl-8 rounded-xl h-10 border-white/5 bg-background/50 w-64"
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                        />
+                    </div>
+                    {permissions.canManageStaff && (
+                        <Button onClick={() => setIsInviteOpen(true)} className="rounded-xl h-10 px-4 font-bold shadow-lg shadow-primary/20">
+                            <PlusCircle className="mr-2 h-4 w-4" />
+                            Add Member
+                        </Button>
+                    )}
+                </div>
             </div>
 
             <div className="border border-white/5 rounded-2xl bg-card/30 backdrop-blur-xl shadow-xl overflow-hidden">
                 <div className="grid grid-cols-12 gap-4 p-4 border-b bg-secondary/20 font-black text-[9px] uppercase tracking-widest text-muted-foreground">
                     <div className="col-span-4">Staff Member</div>
-                    <div className="col-span-2">Department / Role</div>
-                    <div className="col-span-2">Device</div>
-                    <div className="col-span-4 text-right">Actions</div>
+                    <div className="col-span-2">Position / Sector</div>
+                    <div className="col-span-2">Device Node</div>
+                    <div className="col-span-4 text-right">Oversight Actions</div>
                 </div>
 
                 <div className="divide-y divide-white/5">
@@ -197,40 +206,46 @@ export function TeamPane({ currentUserProfile, permissions }: TeamPaneProps) {
                                 {permissions.canManageStaff && (
                                     <>
                                         {user.deviceType === 'PC' && user.status === 'ONLINE' && (
-                                            <>
+                                            <div className="flex items-center gap-1.5 p-1 rounded-2xl bg-primary/5 border border-primary/10">
                                                 <Tooltip>
                                                     <TooltipTrigger asChild>
                                                         <Button 
-                                                            variant="outline" 
+                                                            variant="ghost" 
                                                             size="icon" 
-                                                            className="h-9 w-9 rounded-xl border-white/10 hover:bg-emerald-500/10 hover:text-emerald-500 transition-all active:scale-95" 
+                                                            className="h-8 w-8 rounded-xl hover:bg-emerald-500/10 hover:text-emerald-500 transition-all active:scale-95" 
                                                             onClick={() => handleRequestLiveMonitor(user)}
                                                             disabled={isProcessingCommand === user.id}
                                                         >
-                                                            {isProcessingCommand === user.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <MonitorPlay className="h-4 w-4" />}
+                                                            {isProcessingCommand === user.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <MonitorPlay className="h-3.5 w-3.5" />}
                                                         </Button>
                                                     </TooltipTrigger>
-                                                    <TooltipContent className="apple-glass-darker border-none text-[9px] font-black uppercase">View Screen</TooltipContent>
+                                                    <TooltipContent className="apple-glass-darker border-none text-[9px] font-black uppercase">Live Screen Stream</TooltipContent>
                                                 </Tooltip>
                                                 <Tooltip>
                                                     <TooltipTrigger asChild>
                                                         <Button 
-                                                            variant="outline" 
+                                                            variant="ghost" 
                                                             size="icon" 
-                                                            className="h-9 w-9 rounded-xl border-white/10 hover:bg-primary/10 hover:text-primary transition-all active:scale-95" 
+                                                            className="h-8 w-8 rounded-xl hover:bg-primary/10 hover:text-primary transition-all active:scale-95" 
                                                             onClick={() => handleRequestScreenshot(user)}
                                                             disabled={isProcessingCommand === user.id}
                                                         >
-                                                            {isProcessingCommand === user.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Camera className="h-4 w-4" />}
+                                                            {isProcessingCommand === user.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Camera className="h-3.5 w-3.5" />}
                                                         </Button>
                                                     </TooltipTrigger>
-                                                    <TooltipContent className="apple-glass-darker border-none text-[9px] font-black uppercase">Capture Screenshot</TooltipContent>
+                                                    <TooltipContent className="apple-glass-darker border-none text-[9px] font-black uppercase">Capture Immediate Screenshot</TooltipContent>
                                                 </Tooltip>
-                                            </>
+                                            </div>
                                         )}
-                                        <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl text-primary/70 hover:text-primary hover:bg-primary/10 transition-all active:scale-95" onClick={() => setUserToEdit(user)}>
-                                            <Edit className="h-4 w-4" />
-                                        </Button>
+                                        <Tooltip>
+                                            <TooltipTrigger asChild>
+                                                <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl text-primary/70 hover:text-primary hover:bg-primary/10 transition-all active:scale-95" onClick={() => setUserToEdit(user)}>
+                                                    <Edit className="h-4 w-4" />
+                                                </Button>
+                                            </TooltipTrigger>
+                                            <TooltipContent className="apple-glass-darker border-none text-[9px] font-black uppercase">Edit Authorization</TooltipContent>
+                                        </Tooltip>
+                                        
                                         {user.id !== currentUserProfile.id && (
                                             <Tooltip>
                                                 <TooltipTrigger asChild>
@@ -244,7 +259,7 @@ export function TeamPane({ currentUserProfile, permissions }: TeamPaneProps) {
                                                         {isProcessingCommand === user.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <KeyRound className="h-4 w-4" />}
                                                     </Button>
                                                 </TooltipTrigger>
-                                                <TooltipContent className="apple-glass-darker border-none text-[9px] font-black uppercase">Reset Password</TooltipContent>
+                                                <TooltipContent className="apple-glass-darker border-none text-[9px] font-black uppercase">Reset Secure Access</TooltipContent>
                                             </Tooltip>
                                         )}
                                         {user.position !== "Organization Administrator" && user.id !== currentUserProfile.id && (
