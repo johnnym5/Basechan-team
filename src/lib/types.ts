@@ -52,6 +52,10 @@ export interface UserProfile {
   joinedDate: string;
   status?: UserStatus;
   lastSeen?: string;
+  activeSessionId?: string | null;
+  deviceType?: 'MOBILE' | 'PC' | null;
+  lastHeartbeat?: string | null;
+  pendingCommand?: 'SCREENSHOT' | 'NONE' | null;
   notificationPreferences?: {
     requisitionUpdates?: boolean;
     taskAssignments?: boolean;
@@ -371,6 +375,7 @@ export interface Permissions {
   canViewFiles: boolean;
   canViewAudit: boolean;
   canManageDisplays: boolean;
+  canBypassGeofence: boolean;
 }
 
 export type LeaveType = "ANNUAL" | "SICK" | "UNPAID" | "MATERNITY" | "PATERNITY";

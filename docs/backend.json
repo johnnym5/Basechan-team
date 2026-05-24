@@ -131,7 +131,11 @@
         "position": { "type": "string" },
         "departmentName": { "type": "string" },
         "joinedDate": { "type": "string", "format": "date-time" },
-        "status": { "type": "string", "enum": ["ONLINE", "OFFLINE", "ON_LEAVE"] }
+        "status": { "type": "string", "enum": ["ONLINE", "OFFLINE", "ON_LEAVE"] },
+        "activeSessionId": { "type": "string", "description": "Unique ID for enforcement of single device login." },
+        "deviceType": { "type": "string", "enum": ["MOBILE", "PC"] },
+        "lastHeartbeat": { "type": "string", "format": "date-time" },
+        "pendingCommand": { "type": "string", "enum": ["SCREENSHOT", "NONE"] }
       },
       "required": ["orgId", "email", "fullName", "role", "username", "joinedDate"]
     },

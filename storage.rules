@@ -1,3 +1,4 @@
+
 rules_version = '2';
 
 service firebase.storage {
@@ -5,6 +6,10 @@ service firebase.storage {
     
     function isUserInOrg(orgId) {
       return request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.orgId == orgId;
+    }
+
+    function isAdmin() {
+        return request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['ORG_ADMIN', 'MANAGING_DIRECTOR'];
     }
 
     match /requisitions/{orgId}/{fileName} {
@@ -15,11 +20,14 @@ service firebase.storage {
       allow read, write: if isUserInOrg(orgId);
     }
 
+    match /telemetry/{orgId}/{userId}/{fileName} {
+      allow read: if isAdmin() && isUserInOrg(orgId);
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+
     match /avatars/{userId}/{fileName} {
       allow read: if request.auth != null;
       allow write: if request.auth != null && request.auth.uid == userId;
     }
   }
 }
-
-    

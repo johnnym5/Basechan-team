@@ -15,16 +15,16 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Loader2 } from "lucide-react";
+import { Loader2, Monitor, Smartphone } from "lucide-react";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth, useFirestore } from "@/firebase";
 import { signInWithEmailAndPassword } from "firebase/auth";
-import { query, collection, where, getDocs } from "firebase/firestore";
+import { query, collection, where, getDocs, doc, updateDoc, getDoc } from "firebase/firestore";
 import type { UserProfile } from "@/lib/types";
 import { sanitizeInput } from "@/lib/utils";
 import { ORG_ID } from "@/lib/config";
-
+import { differenceInMinutes } from 'date-fns';
 
 const formSchema = z.object({
   username: z.string().min(1, "Identity is required."),
@@ -45,37 +45,84 @@ export function LoginForm() {
     },
   });
 
+  const getDeviceType = () => {
+    if (typeof window === 'undefined') return 'PC';
+    const ua = navigator.userAgent;
+    if (/(tablet|ipad|playbook|silk)|(android(?!.*mobi))/i.test(ua)) return 'PC';
+    if (/Mobile|iP(hone|od|ad)|Android|BlackBerry|IEMobile|Kindle|NetFront|Silk-Accelerated|(hpw|web)OS|Fennec|Minimo|Opera M(obi|ini)|Blazer|Dolfin|Dolphin|Skyfire|Zune/i.test(ua)) {
+      return 'MOBILE';
+    }
+    return 'PC';
+  };
+
   async function onSubmit(values: z.infer<typeof formSchema>) {
     if (!auth || !firestore) return;
     setIsSubmitting(true);
     
     const identity = values.username.toLowerCase();
+    const deviceType = getDeviceType();
+    const sessionId = crypto.randomUUID();
     
     try {
-      // 1. Check if it's an email (Direct Auth)
-      if (identity.includes('@')) {
-          await signInWithEmailAndPassword(auth, identity, values.password);
-          toast({ title: "Authorized", description: "Access granted to secure terminal." });
-          return;
+      let userData: UserProfile | null = null;
+      let userEmail = identity;
+
+      // 1. Resolve User Identity
+      if (!identity.includes('@')) {
+          const usersRef = collection(firestore, "users");
+          const userQuery = query(
+            usersRef, 
+            where("orgId", "==", ORG_ID),
+            where("username", "==", sanitizeInput(identity))
+          );
+          const userSnapshot = await getDocs(userQuery);
+          
+          if (userSnapshot.empty) {
+              throw new Error("Identity not found in organization records.");
+          }
+
+          userData = { id: userSnapshot.docs[0].id, ...userSnapshot.docs[0].data() } as UserProfile;
+          userEmail = userData.email;
+      } else {
+          // If login by email, we still need to fetch the profile to check session
+          const usersRef = collection(firestore, "users");
+          const userQuery = query(usersRef, where("email", "==", identity));
+          const userSnapshot = await getDocs(userQuery);
+          if (!userSnapshot.empty) {
+              userData = { id: userSnapshot.docs[0].id, ...userSnapshot.docs[0].data() } as UserProfile;
+          }
       }
 
-      // 2. Check if it's a username (Lookup then Auth)
-      const orgId = ORG_ID;
-      const usersRef = collection(firestore, "users");
-      const userQuery = query(
-        usersRef, 
-        where("orgId", "==", orgId),
-        where("username", "==", sanitizeInput(identity))
-      );
-      const userSnapshot = await getDocs(userQuery);
+      // 2. CHECK FOR ACTIVE SESSION (Heartbeat logic)
+      if (userData && userData.activeSessionId && userData.lastHeartbeat) {
+          const lastHeartbeat = new Date(userData.lastHeartbeat);
+          const diff = differenceInMinutes(new Date(), lastHeartbeat);
+          
+          // If session was active in the last 3 minutes, prevent login
+          if (diff < 3) {
+              throw new Error(`Operational Violation: This account is already active on a ${userData.deviceType} node. Please sign out from that device first.`);
+          }
+      }
+
+      // 3. Authenticate
+      const userCredential = await signInWithEmailAndPassword(auth, userEmail, values.password);
       
-      if (userSnapshot.empty) {
-          throw new Error("Identity not found in organization records.");
-      }
+      // 4. Register Session & Node Info
+      const userRef = doc(firestore, 'users', userCredential.user.uid);
+      await updateDoc(userRef, {
+          activeSessionId: sessionId,
+          deviceType: deviceType,
+          lastHeartbeat: new Date().toISOString(),
+          status: 'ONLINE'
+      });
 
-      const userData = userSnapshot.docs[0].data() as UserProfile;
-      await signInWithEmailAndPassword(auth, userData.email, values.password);
-      toast({ title: "Authorized", description: `Welcome back, ${userData.fullName}.` });
+      // Store sessionId locally for verification
+      localStorage.setItem('basechan-active-session', sessionId);
+
+      toast({ 
+          title: "Authorized", 
+          description: `Access granted via ${deviceType} node.` 
+      });
 
     } catch (error: any) {
        let message = "Please check your credentials and try again.";
@@ -127,11 +174,25 @@ export function LoginForm() {
             )}
             />
             <Button type="submit" className="w-full" disabled={isSubmitting}>
-            {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Access Terminal
+                {isSubmitting ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                    <>Initialize Node</>
+                )}
             </Button>
         </form>
         </Form>
+        
+        <div className="flex items-center justify-center gap-6 pt-2 opacity-30">
+            <div className="flex flex-col items-center gap-1">
+                <Monitor className="h-4 w-4" />
+                <span className="text-[8px] font-black uppercase">PC Node</span>
+            </div>
+            <div className="flex flex-col items-center gap-1">
+                <Smartphone className="h-4 w-4" />
+                <span className="text-[8px] font-black uppercase">Mobile Node</span>
+            </div>
+        </div>
     </div>
   );
 }
