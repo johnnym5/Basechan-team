@@ -37,12 +37,13 @@ export function FirebaseErrorListener() {
     };
 
     const handleGenericError = (error: any) => {
-      // Check for missing index error URL
       const message = error.message || '';
-      const indexMatch = message.match(/(https:\/\/console\.firebase\.google\.com\/v1\/r\/project\/[^\s]*)/);
+      
+      // IMPROVED INDEX ERROR DETECTION
+      const indexMatch = message.match(/https:\/\/console\.firebase\.google\.com[^\s]*/);
 
-      if (indexMatch) {
-        const url = indexMatch[0];
+      if (indexMatch || message.toLowerCase().includes('index')) {
+        const url = indexMatch ? indexMatch[0] : `https://console.firebase.google.com/v1/r/project/${firestore?.app.options.projectId}/firestore/indexes`;
         
         if (firestore) {
           logErrorToFirestore(firestore, error, null, userProfile);
@@ -52,14 +53,15 @@ export function FirebaseErrorListener() {
           variant: 'destructive',
           title: 'Database Index Required',
           description: 'This operational query requires a specialized index. Click below to initialize.',
-          duration: 10000,
+          duration: 15000,
           action: (
             <ToastAction 
-                altText="Create Index" 
+                altText="Fix Index" 
                 onClick={() => {
                     navigator.clipboard.writeText(url);
                     window.open(url, '_blank');
                 }}
+                className="bg-white text-destructive font-black uppercase tracking-widest text-[9px] hover:bg-white/90"
             >
               Initialize Index
             </ToastAction>

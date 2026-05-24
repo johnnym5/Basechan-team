@@ -6,7 +6,7 @@ import { format, differenceInSeconds, isAfter } from 'date-fns';
 import { Clock, Loader2, Building, Briefcase, LogOut, Coffee, Play, MapPin, AlertTriangle, Hourglass } from 'lucide-react';
 import type { UserProfile, Attendance, SystemConfig, AttendanceLocation } from '@/lib/types';
 import type { Permissions } from '@/hooks/usePermissions';
-import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { useFirestore, useCollection, useMemoFirebase, errorEmitter } from '@/firebase';
 import { collection, query, where, limit, orderBy } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { cn, getDistanceInMeters } from '@/lib/utils';
@@ -139,7 +139,10 @@ export function ClockControl({ userProfile, permissions, systemConfig, className
     try {
       await attendanceService.clockIn(firestore, userProfile, location, today);
       toast({ title: 'Shift Started' });
-    } catch (error: any) { toast({ variant: "destructive", title: "Error", description: error.message }); }
+    } catch (error: any) { 
+        // Dispatch to global error handler for specialized handling (like index repair links)
+        errorEmitter.emit('firestore-error', error);
+    }
     finally { setIsSubmitting(false); }
   };
 
@@ -148,7 +151,7 @@ export function ClockControl({ userProfile, permissions, systemConfig, className
       setIsSubmitting(true);
       try {
           await attendanceService.toggleBreak(firestore, attendanceRecord);
-      } catch (e: any) { toast({ variant: 'destructive', title: 'Error', description: e.message }); }
+      } catch (e: any) { errorEmitter.emit('firestore-error', e); }
       finally { setIsSubmitting(false); }
   }
 
@@ -158,7 +161,7 @@ export function ClockControl({ userProfile, permissions, systemConfig, className
      try {
        await attendanceService.clockOut(firestore, userProfile, attendanceRecord);
        toast({ title: 'Shift Ended' });
-     } catch (e: any) { toast({ variant: 'destructive', title: 'Error', description: e.message }); }
+     } catch (e: any) { errorEmitter.emit('firestore-error', e); }
      finally { setIsSubmitting(false); }
   };
 
@@ -206,7 +209,7 @@ export function ClockControl({ userProfile, permissions, systemConfig, className
                     {isSubmitting ? <Loader2 className="animate-spin" /> : (isOnBreak ? <><Play className="mr-2 h-5 w-5" /> Resume</> : <><Coffee className="mr-2 h-5 w-5" /> Break</>)}
                 </Button>
                 <Button className="h-14 md:h-16 bg-rose-600 hover:bg-rose-700 text-white rounded-2xl text-xs font-black uppercase" onClick={handleClockOut} disabled={isSubmitting}>
-                    {isSubmitting ? <Loader2 className="animate-spin" /> : <><LogOut className="mr-2 h-5 w-5" /> Clock Out</>}
+                    {isSubmitting ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <><LogOut className="mr-2 h-5 w-5" /> Clock Out</>}
                 </Button>
             </div>
         ) : (

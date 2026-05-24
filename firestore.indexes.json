@@ -61,7 +61,7 @@
       "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "userId", "order": "ASCENDING" },
-        { "fieldPath": "date", "order": "DESCENDING" },
+        { "fieldPath": "date", "order": "ASCENDING" },
         { "fieldPath": "clockIn", "order": "DESCENDING" }
       ]
     },
