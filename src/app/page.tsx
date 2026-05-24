@@ -101,7 +101,7 @@ export default function DashboardPage() {
                     <ClockControl userProfile={userProfile || null} permissions={permissions} systemConfig={systemConfig} />
                 </section>
 
-                <section className="col-span-12 lg:col-span-7 xl:col-span-8 interactive-element h-fit">
+                <section className="col-span-12 lg:col-span-7 xl:col-span-8 h-full">
                     <PerformanceCard userProfile={userProfile || null} />
                 </section>
 
