@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useForm } from "react-hook-form";
@@ -70,10 +69,10 @@ export function SystemPane({ currentUserProfile }: SystemPaneProps) {
             branding_color: config.branding_color || '#3b82f6',
             accent_color: config.accent_color || '#1e293b',
             currency_symbol: config.currency_symbol || '$',
-            finance_access: config.finance_access,
-            chat_enabled: config.chat_enabled,
-            attendance_strict: config.attendance_strict,
-            allow_self_edit: config.allow_self_edit,
+            finance_access: config.finance_access ?? true,
+            chat_enabled: config.chat_enabled ?? true,
+            attendance_strict: config.attendance_strict ?? false,
+            allow_self_edit: config.allow_self_edit ?? true,
             reporting_required: config.reporting_schedule?.required ?? true,
             reporting_deadline: config.reporting_schedule?.deadline ?? "17:30",
             office_lat: config.office_coordinates?.lat,
@@ -133,9 +132,9 @@ export function SystemPane({ currentUserProfile }: SystemPaneProps) {
 
     try {
       const configRef = doc(firestore, 'system_configs', config.id);
-      await updateDocumentNonBlocking(configRef, updateData);
+      updateDocumentNonBlocking(configRef, updateData);
 
-      // Apply theme update immediately
+      // Apply theme update immediately for real-time visual feedback
       const root = document.documentElement;
       if (updateData.branding_color) {
         const hslString = hexToHslString(updateData.branding_color);
@@ -147,25 +146,25 @@ export function SystemPane({ currentUserProfile }: SystemPaneProps) {
       }
 
       toast({
-        title: "Settings Saved",
-        description: "Your organization's system settings have been updated.",
+        title: "Configuration Deployed",
+        description: "Your organization's system parameters have been successfully updated.",
       });
     } catch (error: any) {
-        toast({ variant: "destructive", title: "Update Failed", description: error.message });
+        toast({ variant: "destructive", title: "Deployment Failure", description: error.message || "Failed to commit system updates to the infrastructure." });
     } finally {
         setIsSubmitting(false);
     }
   }
   
   if (isConfigLoading) {
-    return <Skeleton className="h-96 w-full" />
+    return <div className="space-y-6">{Array.from({length: 3}).map((_, i) => <Skeleton key={i} className="h-48 w-full rounded-2xl" />)}</div>
   }
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-12">
-        <Card className="apple-glass border-none shadow-xl">
-            <CardHeader>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-12 animate-in fade-in duration-700">
+        <Card className="apple-glass border-none shadow-xl overflow-hidden">
+            <CardHeader className="bg-white/5 border-b border-white/5">
                 <div className="flex items-center gap-3">
                     <div className="p-2 rounded-xl bg-primary/20"><Palette className="h-5 w-5 text-primary" /></div>
                     <div>
@@ -174,150 +173,149 @@ export function SystemPane({ currentUserProfile }: SystemPaneProps) {
                     </div>
                 </div>
             </CardHeader>
-            <CardContent className="space-y-6">
+            <CardContent className="space-y-6 pt-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <FormField control={form.control} name="branding_color" render={({ field }) => (
                         <FormItem>
-                            <FormLabel>Primary Color</FormLabel>
+                            <FormLabel className="text-[10px] font-black uppercase tracking-widest opacity-60">Primary Brand Color</FormLabel>
                             <FormControl>
                                 <div className="flex items-center gap-3">
-                                    <div className="h-10 w-10 rounded-full border shadow-inner shrink-0" style={{ backgroundColor: field.value }} />
-                                    <Input {...field} placeholder="#3b82f6" className="rounded-xl font-mono" />
+                                    <div className="h-10 w-10 rounded-full border border-white/10 shadow-inner shrink-0" style={{ backgroundColor: field.value }} />
+                                    <Input {...field} placeholder="#3b82f6" className="rounded-xl font-mono bg-background/50 border-white/5" />
                                     <Input type="color" value={field.value || '#000000'} onChange={field.onChange} className="w-12 h-10 p-0 border-none bg-transparent cursor-pointer shrink-0"/>
                                 </div>
                             </FormControl>
-                            <FormDescription className="text-[10px]">Controls main buttons, gauges, and active states.</FormDescription>
+                            <FormDescription className="text-[9px] uppercase tracking-tighter opacity-50">Controls buttons, gauges, and active states.</FormDescription>
                         <FormMessage /></FormItem>
                     )}/>
                      <FormField control={form.control} name="accent_color" render={({ field }) => (
                         <FormItem>
-                            <FormLabel>Accent Color</FormLabel>
+                            <FormLabel className="text-[10px] font-black uppercase tracking-widest opacity-60">Accent Highlight</FormLabel>
                              <FormControl>
                                 <div className="flex items-center gap-3">
-                                    <div className="h-10 w-10 rounded-full border shadow-inner shrink-0" style={{ backgroundColor: field.value }} />
-                                    <Input {...field} placeholder="#1e293b" className="rounded-xl font-mono" />
+                                    <div className="h-10 w-10 rounded-full border border-white/10 shadow-inner shrink-0" style={{ backgroundColor: field.value }} />
+                                    <Input {...field} placeholder="#1e293b" className="rounded-xl font-mono bg-background/50 border-white/5" />
                                     <Input type="color" value={field.value || '#000000'} onChange={field.onChange} className="w-12 h-10 p-0 border-none bg-transparent cursor-pointer shrink-0"/>
                                 </div>
                             </FormControl>
-                            <FormDescription className="text-[10px]">Controls highlights and secondary visual elements.</FormDescription>
+                            <FormDescription className="text-[9px] uppercase tracking-tighter opacity-50">Controls secondary visual accents.</FormDescription>
                         <FormMessage /></FormItem>
                     )}/>
                 </div>
                  <FormField control={form.control} name="currency_symbol" render={({ field }) => (
-                    <FormItem><FormLabel>Fiscal Symbol</FormLabel>
-                        <FormControl><Input {...field} placeholder="$" className="w-24 rounded-xl text-center font-bold text-lg" /></FormControl>
-                        <FormDescription className="text-[10px]">Prefix for all financial data.</FormDescription>
+                    <FormItem><FormLabel className="text-[10px] font-black uppercase tracking-widest opacity-60">Fiscal Symbol</FormLabel>
+                        <FormControl><Input {...field} placeholder="$" className="w-24 rounded-xl text-center font-black text-lg bg-background/50 border-white/5 h-12" /></FormControl>
+                        <FormDescription className="text-[9px] uppercase tracking-tighter opacity-50">Prefix for all financial data nodes.</FormDescription>
                     <FormMessage /></FormItem>
                 )}/>
             </CardContent>
         </Card>
 
-        {/* New Document Template Settings */}
-        <Card className="apple-glass border-none shadow-xl">
-            <CardHeader>
+        <Card className="apple-glass border-none shadow-xl overflow-hidden">
+            <CardHeader className="bg-white/5 border-b border-white/5">
                 <div className="flex items-center gap-3">
                     <div className="p-2 rounded-xl bg-blue-500/10 text-blue-500"><FileText className="h-5 w-5" /></div>
                     <div>
                         <CardTitle>Finance Reporting Templates</CardTitle>
-                        <CardDescription>Configure the layout and branding for generated Word/Excel invoices.</CardDescription>
+                        <CardDescription>Configure layouts for generated Word/Excel exports.</CardDescription>
                     </div>
                 </div>
             </CardHeader>
-            <CardContent className="space-y-6">
+            <CardContent className="space-y-6 pt-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <FormField control={form.control} name="template_header" render={({ field }) => (
-                        <FormItem><FormLabel>Document Banner Title</FormLabel><FormControl><Input placeholder="e.g., TAX INVOICE" {...field} className="rounded-xl" /></FormControl><FormMessage /></FormItem>
+                        <FormItem><FormLabel className="text-[10px] font-black uppercase tracking-widest opacity-60">Banner Title</FormLabel><FormControl><Input placeholder="e.g., TAX INVOICE" {...field} className="rounded-xl bg-background/50 border-white/5" /></FormControl><FormMessage /></FormItem>
                     )}/>
                     <FormField control={form.control} name="template_address" render={({ field }) => (
-                        <FormItem><FormLabel>Organization Physical Address</FormLabel><FormControl><Input placeholder="123 Corporate Blvd..." {...field} className="rounded-xl" /></FormControl><FormMessage /></FormItem>
+                        <FormItem><FormLabel className="text-[10px] font-black uppercase tracking-widest opacity-60">Address Node</FormLabel><FormControl><Input placeholder="123 Corporate Blvd..." {...field} className="rounded-xl bg-background/50 border-white/5" /></FormControl><FormMessage /></FormItem>
                     )}/>
                 </div>
                 <FormField control={form.control} name="template_terms" render={({ field }) => (
-                    <FormItem><FormLabel>Legal / Terms of Business</FormLabel><FormControl><Textarea placeholder="Terms and conditions..." {...field} className="rounded-xl min-h-[80px]" /></FormControl><FormMessage /></FormItem>
+                    <FormItem><FormLabel className="text-[10px] font-black uppercase tracking-widest opacity-60">Legal Meta / Terms</FormLabel><FormControl><Textarea placeholder="Terms and conditions..." {...field} className="rounded-2xl bg-background/50 border-white/5 min-h-[80px]" /></FormControl><FormMessage /></FormItem>
                 )}/>
                 <FormField control={form.control} name="template_footer" render={({ field }) => (
-                    <FormItem><FormLabel>Document Footer / Sign-off</FormLabel><FormControl><Input placeholder="e.g., Authorized Signature" {...field} className="rounded-xl" /></FormControl><FormMessage /></FormItem>
+                    <FormItem><FormLabel className="text-[10px] font-black uppercase tracking-widest opacity-60">Footer Sign-off</FormLabel><FormControl><Input placeholder="e.g., Authorized Signature" {...field} className="rounded-xl bg-background/50 border-white/5" /></FormControl><FormMessage /></FormItem>
                 )}/>
-                <div className="p-4 rounded-2xl bg-blue-500/5 border border-blue-500/10 flex gap-3 text-blue-500">
-                    <Info className="h-5 w-5 shrink-0" />
-                    <p className="text-[10px] font-bold uppercase leading-relaxed tracking-tight">
-                        These parameters are dynamically injected into the Word (.doc) and Excel (.xlsx) billing exports generated in the Finance Command center.
-                    </p>
-                </div>
             </CardContent>
         </Card>
         
-         <Card className="apple-glass border-none shadow-xl">
-            <CardHeader>
+         <Card className="apple-glass border-none shadow-xl overflow-hidden">
+            <CardHeader className="bg-white/5 border-b border-white/5">
                 <CardTitle>Operating Policies</CardTitle>
                 <CardDescription>Enable or disable specific modules and compliance behaviors.</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-4 pt-6">
                 <FormField control={form.control} name="finance_access" render={({ field }) => (
                     <FormItem className="flex flex-row items-center justify-between rounded-2xl border p-4 shadow-sm bg-secondary/10 border-white/5">
-                        <div className="space-y-0.5"><FormLabel>Requisitions Module</FormLabel><FormDescription className="text-xs">Enable procurement workflows.</FormDescription></div>
+                        <div className="space-y-0.5"><FormLabel className="text-sm font-bold">Finance Module</FormLabel><FormDescription className="text-[10px] uppercase font-medium">Enable procurement and ledger station.</FormDescription></div>
                         <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
                     </FormItem>
                 )}/>
                  <FormField control={form.control} name="chat_enabled" render={({ field }) => (
                     <FormItem className="flex flex-row items-center justify-between rounded-2xl border p-4 shadow-sm bg-secondary/10 border-white/5">
-                        <div className="space-y-0.5"><FormLabel>Secure Messaging</FormLabel><FormDescription className="text-xs">Allow encrypted staff communication.</FormDescription></div>
+                        <div className="space-y-0.5"><FormLabel className="text-sm font-bold">Internal Comms</FormLabel><FormDescription className="text-[10px] uppercase font-medium">Allow encrypted staff messaging.</FormDescription></div>
                         <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
                     </FormItem>
                 )}/>
                 <FormField control={form.control} name="attendance_strict" render={({ field }) => (
                     <FormItem className="flex flex-row items-center justify-between rounded-2xl border p-4 shadow-sm bg-secondary/10 border-white/5">
-                        <div className="space-y-0.5"><FormLabel>Strict Geofencing</FormLabel><FormDescription className="text-xs">Enforce location-based clock-ins.</FormDescription></div>
+                        <div className="space-y-0.5"><FormLabel className="text-sm font-bold">Geofence Enforcement</FormLabel><FormDescription className="text-[10px] uppercase font-medium">Verify physical location on clock-in.</FormDescription></div>
                         <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
                     </FormItem>
                 )}/>
                 
-                <div className="pt-4 space-y-4">
-                    <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">Automated Reporting</h4>
-                    <FormField control={form.control} name="reporting_required" render={({ field }) => (
-                        <FormItem className="flex flex-row items-center justify-between rounded-2xl border p-4 shadow-sm bg-secondary/10 border-white/5">
-                            <div className="space-y-0.5"><FormLabel>Daily Activity Reports</FormLabel><FormDescription className="text-xs">Require staff to submit EOD summaries.</FormDescription></div>
-                            <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
-                        </FormItem>
-                    )}/>
-                    <FormField control={form.control} name="reporting_deadline" render={({ field }) => (
-                        <FormItem><FormLabel className="flex items-center gap-2"><Clock className="h-3 w-3" /> Submission Deadline (HH:mm)</FormLabel>
-                            <FormControl><Input placeholder="17:00" {...field} className="rounded-xl w-32" /></FormControl>
-                            <FormDescription className="text-xs">KPIs will flag overdue reports after this time.</FormDescription>
-                        <FormMessage /></FormItem>
-                    )}/>
+                <div className="pt-6 space-y-4">
+                    <h4 className="text-[9px] font-black uppercase tracking-[0.25em] text-primary">Automated Reporting Compliance</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <FormField control={form.control} name="reporting_required" render={({ field }) => (
+                            <FormItem className="flex flex-row items-center justify-between rounded-2xl border p-4 shadow-sm bg-secondary/10 border-white/5">
+                                <div className="space-y-0.5"><FormLabel className="text-sm font-bold">EOD Summaries</FormLabel><FormDescription className="text-[10px] uppercase font-medium">Require daily mission logs.</FormDescription></div>
+                                <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                            </FormItem>
+                        )}/>
+                        <FormField control={form.control} name="reporting_deadline" render={({ field }) => (
+                            <FormItem className="p-4 rounded-2xl bg-secondary/10 border border-white/5">
+                                <FormLabel className="text-[10px] font-black uppercase tracking-widest opacity-60 flex items-center gap-2"><Clock className="h-3 w-3" /> Submission Deadline</FormLabel>
+                                <FormControl><Input placeholder="17:00" {...field} className="rounded-xl w-full h-10 mt-2 bg-background/50 border-white/5 font-mono" /></FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}/>
+                    </div>
                 </div>
             </CardContent>
         </Card>
 
-        <Card className="apple-glass border-none shadow-xl">
-            <CardHeader>
-                <CardTitle>Site Coordinates</CardTitle>
-                <CardDescription>Set the office location for geofencing enforcement.</CardDescription>
+        <Card className="apple-glass border-none shadow-xl overflow-hidden">
+            <CardHeader className="bg-white/5 border-b border-white/5">
+                <CardTitle>Site Telemetry (Coordinates)</CardTitle>
+                <CardDescription>Define the office center point for geofencing.</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <CardContent className="space-y-6 pt-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <FormField control={form.control} name="office_lat" render={({ field }) => (
-                        <FormItem><FormLabel>Latitude</FormLabel>
-                        <FormControl><Input type="number" step="any" {...field} value={field.value ?? ''} className="rounded-xl" /></FormControl>
+                        <FormItem><FormLabel className="text-[10px] font-black uppercase tracking-widest opacity-60">Latitude</FormLabel>
+                        <FormControl><Input type="number" step="any" {...field} value={field.value ?? ''} className="rounded-xl h-12 bg-background/50 border-white/5 font-mono" /></FormControl>
                         <FormMessage /></FormItem>
                     )}/>
                     <FormField control={form.control} name="office_lng" render={({ field }) => (
-                        <FormItem><FormLabel>Longitude</FormLabel>
-                        <FormControl><Input type="number" step="any" {...field} value={field.value ?? ''} className="rounded-xl" /></FormControl>
+                        <FormItem><FormLabel className="text-[10px] font-black uppercase tracking-widest opacity-60">Longitude</FormLabel>
+                        <FormControl><Input type="number" step="any" {...field} value={field.value ?? ''} className="rounded-xl h-12 bg-background/50 border-white/5 font-mono" /></FormControl>
                         <FormMessage /></FormItem>
                     )}/>
                 </div>
-                <Button type="button" variant="outline" onClick={handleGetCurrentLocation} disabled={isGettingLocation} className="rounded-xl">
+                <Button type="button" variant="outline" onClick={handleGetCurrentLocation} disabled={isGettingLocation} className="w-full h-12 rounded-xl border-primary/20 text-primary hover:bg-primary/10">
                     {isGettingLocation ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <MapPin className="mr-2 h-4 w-4" />}
-                    Capture Device Location
+                    Capture Current Device Coordinates
                 </Button>
             </CardContent>
         </Card>
 
-        <Button type="submit" disabled={isSubmitting || isConfigLoading} className="w-full h-16 text-base font-black uppercase tracking-[0.25em] rounded-2xl shadow-2xl shadow-primary/30 active:scale-95 transition-all">
-            {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Deploy System Updates"}
-        </Button>
+        <div className="pt-8 sticky bottom-8 z-50">
+            <Button type="submit" disabled={isSubmitting || isConfigLoading} className="w-full h-18 text-base font-black uppercase tracking-[0.3em] rounded-[2.5rem] shadow-2xl shadow-primary/40 active:scale-95 transition-all py-8">
+                {isSubmitting ? <Loader2 className="mr-3 h-6 w-6 animate-spin" /> : null}
+                Execute Global Deployment
+            </Button>
+        </div>
       </form>
     </Form>
   );

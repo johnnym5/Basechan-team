@@ -92,15 +92,23 @@ export function TeamPane({ currentUserProfile, permissions }: TeamPaneProps) {
     };
 
     const handlePasswordReset = async (user: UserProfile) => {
-        if (!auth || !user.email) {
-            toast({ variant: 'destructive', title: 'Error', description: 'Could not send reset email.' });
+        if (!auth) {
+            toast({ variant: 'destructive', title: 'System Error', description: 'Authentication service not initialized.' });
             return;
         }
+        if (!user.email) {
+            toast({ variant: 'destructive', title: 'Identity Error', description: 'No authorized email address found for this user.' });
+            return;
+        }
+
+        setIsProcessingCommand(user.id);
         try {
             await sendPasswordResetEmail(auth, user.email);
-            toast({ title: 'Reset Email Sent', description: `Instructions sent to ${user.email}.` });
+            toast({ title: 'Instructions Dispatched', description: `A secure password reset link has been sent to ${user.email}.` });
         } catch (error: any) {
-            toast({ variant: 'destructive', title: 'Failed', description: error.message });
+            toast({ variant: 'destructive', title: 'Dispatch Failed', description: error.message || "The identity recovery sequence was interrupted." });
+        } finally {
+            setTimeout(() => setIsProcessingCommand(null), 1000);
         }
     };
     
@@ -125,13 +133,13 @@ export function TeamPane({ currentUserProfile, permissions }: TeamPaneProps) {
                     <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                     <Input 
                         placeholder="Search team member..."
-                        className="pl-8 rounded-xl h-10"
+                        className="pl-8 rounded-xl h-10 border-white/5 bg-background/50"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                     />
                 </div>
                 {permissions.canManageStaff && (
-                    <Button onClick={() => setIsInviteOpen(true)} className="rounded-xl h-10 px-4 font-bold">
+                    <Button onClick={() => setIsInviteOpen(true)} className="rounded-xl h-10 px-4 font-bold shadow-lg shadow-primary/20">
                         <PlusCircle className="mr-2 h-4 w-4" />
                         Add Member
                     </Button>
@@ -153,7 +161,7 @@ export function TeamPane({ currentUserProfile, permissions }: TeamPaneProps) {
                     {!isLoading && filteredUsers.map(user => (
                         <div key={user.id} className="grid grid-cols-12 gap-4 p-3 items-center hover:bg-white/5 transition-colors">
                             <div className="col-span-4 flex items-center gap-3 truncate">
-                                <Avatar className="h-10 w-10 border-2 border-white/10">
+                                <Avatar className="h-10 w-10 border-2 border-white/10 shadow-inner">
                                     <AvatarFallback className="font-black bg-secondary text-xs">{user.fullName.split(' ').map(n => n[0]).join('')}</AvatarFallback>
                                 </Avatar>
                                 <div className="truncate">
@@ -195,7 +203,7 @@ export function TeamPane({ currentUserProfile, permissions }: TeamPaneProps) {
                                                         <Button 
                                                             variant="outline" 
                                                             size="icon" 
-                                                            className="h-9 w-9 rounded-xl border-white/10 hover:bg-emerald-500/10 hover:text-emerald-500" 
+                                                            className="h-9 w-9 rounded-xl border-white/10 hover:bg-emerald-500/10 hover:text-emerald-500 transition-all active:scale-95" 
                                                             onClick={() => handleRequestLiveMonitor(user)}
                                                             disabled={isProcessingCommand === user.id}
                                                         >
@@ -209,7 +217,7 @@ export function TeamPane({ currentUserProfile, permissions }: TeamPaneProps) {
                                                         <Button 
                                                             variant="outline" 
                                                             size="icon" 
-                                                            className="h-9 w-9 rounded-xl border-white/10 hover:bg-primary/10 hover:text-primary" 
+                                                            className="h-9 w-9 rounded-xl border-white/10 hover:bg-primary/10 hover:text-primary transition-all active:scale-95" 
                                                             onClick={() => handleRequestScreenshot(user)}
                                                             disabled={isProcessingCommand === user.id}
                                                         >
@@ -220,16 +228,27 @@ export function TeamPane({ currentUserProfile, permissions }: TeamPaneProps) {
                                                 </Tooltip>
                                             </>
                                         )}
-                                        <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl text-primary/70 hover:text-primary hover:bg-primary/10" onClick={() => setUserToEdit(user)}>
+                                        <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl text-primary/70 hover:text-primary hover:bg-primary/10 transition-all active:scale-95" onClick={() => setUserToEdit(user)}>
                                             <Edit className="h-4 w-4" />
                                         </Button>
                                         {user.id !== currentUserProfile.id && (
-                                            <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl text-amber-500/70 hover:text-amber-500 hover:bg-amber-500/10" onClick={() => handlePasswordReset(user)}>
-                                                <KeyRound className="h-4 w-4" />
-                                            </Button>
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <Button 
+                                                        variant="ghost" 
+                                                        size="icon" 
+                                                        className="h-9 w-9 rounded-xl text-amber-500/70 hover:text-amber-500 hover:bg-amber-500/10 transition-all active:scale-95" 
+                                                        onClick={() => handlePasswordReset(user)}
+                                                        disabled={isProcessingCommand === user.id}
+                                                    >
+                                                        {isProcessingCommand === user.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <KeyRound className="h-4 w-4" />}
+                                                    </Button>
+                                                </TooltipTrigger>
+                                                <TooltipContent className="apple-glass-darker border-none text-[9px] font-black uppercase">Reset Password</TooltipContent>
+                                            </Tooltip>
                                         )}
                                         {user.position !== "Organization Administrator" && user.id !== currentUserProfile.id && (
-                                             <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl text-destructive/70 hover:text-destructive hover:bg-destructive/10" onClick={() => setUserToDelete(user)}>
+                                             <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl text-destructive/70 hover:text-destructive hover:bg-destructive/10 transition-all active:scale-95" onClick={() => setUserToDelete(user)}>
                                                 <Trash2 className="h-4 w-4" />
                                             </Button>
                                         )}
@@ -240,7 +259,7 @@ export function TeamPane({ currentUserProfile, permissions }: TeamPaneProps) {
                     ))}
                      {!isLoading && filteredUsers.length === 0 && (
                         <div className="text-center text-sm text-muted-foreground py-16 uppercase font-black tracking-widest opacity-20">
-                            No matching members
+                            No matching members found in current sector
                         </div>
                     )}
                 </div>
@@ -265,7 +284,7 @@ export function TeamPane({ currentUserProfile, permissions }: TeamPaneProps) {
                             </div>
                             <AlertDialogTitle className="text-2xl font-black font-headline tracking-tighter">Delete User?</AlertDialogTitle>
                             <AlertDialogDescription className="text-xs font-bold uppercase tracking-widest">
-                                Are you sure you want to remove {userToDelete.fullName}? This action cannot be undone.
+                                Are you sure you want to remove {userToDelete.fullName}? This action cannot be undone and will purge all associated telemetry records.
                             </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter className="flex-col sm:flex-col gap-3 mt-6">

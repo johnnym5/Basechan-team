@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useForm } from "react-hook-form";
@@ -50,7 +49,7 @@ export function EditUserDialog({ open, onOpenChange, userToEdit }: EditUserDialo
   const [isLoading, setIsLoading] = useState(false);
   const firestore = useFirestore();
   const { toast } = useToast();
-  const isInitialRender = useRef(true);
+  const prevDeptRef = useRef<string | null>(null);
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -58,8 +57,9 @@ export function EditUserDialog({ open, onOpenChange, userToEdit }: EditUserDialo
 
   const selectedDepartment = form.watch('departmentName');
 
+  // 1. INITIALIZATION: Sync form with user data
   useEffect(() => {
-    if (userToEdit) {
+    if (userToEdit && open) {
       form.reset({
         fullName: userToEdit.fullName,
         email: userToEdit.email,
@@ -69,22 +69,24 @@ export function EditUserDialog({ open, onOpenChange, userToEdit }: EditUserDialo
         departmentName: userToEdit.departmentName,
         customPermissions: userToEdit.customPermissions || {},
       });
-      isInitialRender.current = true;
+      prevDeptRef.current = userToEdit.departmentName || null;
     }
-  }, [userToEdit, form]);
+  }, [userToEdit, form, open]);
   
+  // 2. TACTICAL OVERRIDE: Reset position ONLY if department is changed manually
   useEffect(() => {
-    if (isInitialRender.current) {
-        isInitialRender.current = false;
-        return;
+    if (prevDeptRef.current && prevDeptRef.current !== selectedDepartment) {
+        form.setValue('position', '');
     }
-    form.resetField('position');
+    prevDeptRef.current = selectedDepartment || null;
   }, [selectedDepartment, form]);
 
   const rolesForSelectedDepartment = useMemo(() => {
     if (!selectedDepartment) return [];
     const departmentRoles = ROLES_BY_DEPARTMENT[selectedDepartment as keyof typeof ROLES_BY_DEPARTMENT] || [];
     const rolesToShow = [...new Set(['Staff', ...departmentRoles])];
+    
+    // Ensure the user's CURRENT position is always visible even if it's special
     if (userToEdit && !rolesToShow.includes(userToEdit.position)) {
         rolesToShow.push(userToEdit.position);
     }
@@ -93,12 +95,14 @@ export function EditUserDialog({ open, onOpenChange, userToEdit }: EditUserDialo
 
 
   async function onSubmit(values: FormData) {
-    if (!firestore) return;
+    if (!firestore || !userToEdit) return;
     setIsLoading(true);
 
     try {
       const userRef = doc(firestore, 'users', userToEdit.id);
-      await updateDocumentNonBlocking(userRef, {
+      
+      // Execute non-blocking update to maintain high-velocity performance
+      updateDocumentNonBlocking(userRef, {
         fullName: sanitizeInput(values.fullName),
         email: sanitizeInput(values.email.toLowerCase()),
         username: sanitizeInput(values.username.toLowerCase()),
@@ -118,7 +122,7 @@ export function EditUserDialog({ open, onOpenChange, userToEdit }: EditUserDialo
       toast({
         variant: "destructive",
         title: "Update Failed",
-        description: error.message || "An unexpected error occurred.",
+        description: error.message || "An unexpected error occurred during profile synchronization.",
       });
     } finally {
       setIsLoading(false);
@@ -167,16 +171,16 @@ export function EditUserDialog({ open, onOpenChange, userToEdit }: EditUserDialo
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <FormField control={form.control} name="fullName" render={({ field }) => (
-                                <FormItem><FormLabel className="text-[9px] uppercase font-black opacity-50">Legal Name</FormLabel><FormControl><Input {...field} className="rounded-xl h-11 bg-background/50" /></FormControl><FormMessage /></FormItem>
+                                <FormItem><FormLabel className="text-[9px] uppercase font-black opacity-50">Legal Name</FormLabel><FormControl><Input {...field} className="rounded-xl h-11 bg-background/50 border-white/5" /></FormControl><FormMessage /></FormItem>
                             )}/>
                             <FormField control={form.control} name="username" render={({ field }) => (
-                                <FormItem><FormLabel className="text-[9px] uppercase font-black opacity-50">Username</FormLabel><FormControl><Input {...field} className="rounded-xl h-11 bg-background/50" /></FormControl><FormMessage /></FormItem>
+                                <FormItem><FormLabel className="text-[9px] uppercase font-black opacity-50">Username</FormLabel><FormControl><Input {...field} className="rounded-xl h-11 bg-background/50 border-white/5" /></FormControl><FormMessage /></FormItem>
                             )}/>
                             <FormField control={form.control} name="email" render={({ field }) => (
-                                <FormItem><FormLabel className="text-[9px] uppercase font-black opacity-50">Auth Email</FormLabel><FormControl><Input type="email" {...field} className="rounded-xl h-11 bg-background/50" /></FormControl><FormMessage /></FormItem>
+                                <FormItem><FormLabel className="text-[9px] uppercase font-black opacity-50">Auth Email</FormLabel><FormControl><Input type="email" {...field} className="rounded-xl h-11 bg-background/50 border-white/5" /></FormControl><FormMessage /></FormItem>
                             )}/>
                             <FormField control={form.control} name="phoneNumber" render={({ field }) => (
-                                <FormItem><FormLabel className="text-[9px] uppercase font-black opacity-50">Emergency Comms</FormLabel><FormControl><Input type="tel" {...field} className="rounded-xl h-11 bg-background/50" /></FormControl><FormMessage /></FormItem>
+                                <FormItem><FormLabel className="text-[9px] uppercase font-black opacity-50">Emergency Comms</FormLabel><FormControl><Input type="tel" {...field} className="rounded-xl h-11 bg-background/50 border-white/5" /></FormControl><FormMessage /></FormItem>
                             )}/>
                         </div>
                     </div>
@@ -192,22 +196,21 @@ export function EditUserDialog({ open, onOpenChange, userToEdit }: EditUserDialo
                             <FormField control={form.control} name="departmentName" render={({ field }) => (
                                 <FormItem><FormLabel className="text-[9px] uppercase font-black opacity-50">Sector</FormLabel>
                                     <Select onValueChange={field.onChange} value={field.value}>
-                                    <FormControl><SelectTrigger className="rounded-xl h-11 bg-background/50"><SelectValue /></SelectTrigger></FormControl>
+                                    <FormControl><SelectTrigger className="rounded-xl h-11 bg-background/50 border-white/5"><SelectValue /></SelectTrigger></FormControl>
                                     <SelectContent className="apple-glass-darker border-none">{PREDEFINED_DEPARTMENTS.map(dep => <SelectItem key={dep} value={dep}>{dep}</SelectItem>)}</SelectContent>
                                     </Select>
                                 <FormMessage /></FormItem>
                             )}/>
                             <FormField control={form.control} name="position" render={({ field }) => (
                                 <FormItem><FormLabel className="text-[9px] uppercase font-black opacity-50">Designation</FormLabel>
-                                    <Select onValueChange={field.onChange} value={field.value} disabled={userToEdit.position === 'Organization Administrator' || !selectedDepartment}>
-                                    <FormControl><SelectTrigger className="rounded-xl h-11 bg-background/50"><SelectValue /></SelectTrigger></FormControl>
+                                    <Select onValueChange={field.onChange} value={field.value} disabled={!selectedDepartment}>
+                                    <FormControl><SelectTrigger className="rounded-xl h-11 bg-background/50 border-white/5"><SelectValue placeholder="Select Designation" /></SelectTrigger></FormControl>
                                     <SelectContent className="apple-glass-darker border-none">{rolesForSelectedDepartment.map(role => <SelectItem key={role} value={role}>{role}</SelectItem>)}</SelectContent>
                                     </Select>
                                 <FormMessage /></FormItem>
                             )}/>
                         </div>
                         
-                        {/* THE PERMISSION MATRIX */}
                         <div className="mt-8 space-y-4">
                             <h4 className="text-[9px] font-black uppercase tracking-[0.25em] text-primary">Override Matrix</h4>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -222,7 +225,7 @@ export function EditUserDialog({ open, onOpenChange, userToEdit }: EditUserDialo
                     </div>
 
                     <div className="pt-8">
-                        <Button type="submit" className="w-full h-14 rounded-2xl font-black uppercase tracking-[0.2em] shadow-xl shadow-primary/20" disabled={isLoading}>
+                        <Button type="submit" className="w-full h-14 rounded-2xl font-black uppercase tracking-[0.2em] shadow-xl shadow-primary/20 interactive-element" disabled={isLoading}>
                             {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Deploy Authorization Profile"}
                         </Button>
                     </div>
