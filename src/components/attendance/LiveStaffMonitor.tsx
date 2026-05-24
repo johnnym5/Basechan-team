@@ -9,7 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { format, differenceInSeconds } from 'date-fns';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
-import { Timer, Clock, Activity, Coffee, LogOut, Loader2, Info } from 'lucide-react';
+import { Timer, Clock, Activity, Coffee, LogOut, Loader2, Info, UserCheck } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -21,15 +21,17 @@ interface LiveStaffMonitorProps {
 export function LiveStaffMonitor({ userProfile }: LiveStaffMonitorProps) {
     const firestore = useFirestore();
     const [now, setNow] = useState(new Date());
-    const today = format(new Date(), 'yyyy-MM-dd');
+    const [today, setToday] = useState<string>('');
 
+    // Hydration-safe date initialization
     useEffect(() => {
+        setToday(format(new Date(), 'yyyy-MM-dd'));
         const timer = setInterval(() => setNow(new Date()), 1000);
         return () => clearInterval(timer);
     }, []);
 
     const attendanceQuery = useMemoFirebase(() => {
-        if (!firestore) return null;
+        if (!firestore || !today) return null;
         return query(
             collection(firestore, 'attendance'),
             where('orgId', '==', userProfile.orgId),
@@ -98,7 +100,7 @@ export function LiveStaffMonitor({ userProfile }: LiveStaffMonitorProps) {
         }).sort((a, b) => (b.clockOut ? 0 : 1) - (a.clockOut ? 0 : 1));
     }, [records, now]);
 
-    if (isLoading) return <Skeleton className="h-96 w-full rounded-[2rem]" />;
+    if (isLoading || !today) return <Skeleton className="h-96 w-full rounded-[2rem]" />;
 
     return (
         <Card className="apple-glass border-none shadow-xl overflow-hidden">
@@ -117,94 +119,96 @@ export function LiveStaffMonitor({ userProfile }: LiveStaffMonitorProps) {
                 </div>
             </CardHeader>
             <CardContent className="p-0">
-                <Table>
-                    <TableHeader className="bg-secondary/10">
-                        <TableRow className="border-white/5">
-                            <TableHead className="text-[9px] font-black uppercase tracking-widest pl-6">Personnel</TableHead>
-                            <TableHead className="text-[9px] font-black uppercase tracking-widest">Current Status</TableHead>
-                            <TableHead className="text-[9px] font-black uppercase tracking-widest text-right">Work Time</TableHead>
-                            <TableHead className="text-[9px] font-black uppercase tracking-widest text-right">
-                                <TooltipProvider>
-                                    <Tooltip>
-                                        <TooltipTrigger className="flex items-center gap-1 ml-auto">
-                                            Idle Time <Info className="h-2 w-2 opacity-50" />
-                                        </TooltipTrigger>
-                                        <TooltipContent className="apple-glass-darker border-none p-2 max-w-[200px] text-[8px] font-black uppercase leading-tight">
-                                            Calculated based on 30 seconds of inactivity. Monitors both App interaction and System-level idle state (requires permissions).
-                                        </TooltipContent>
-                                    </Tooltip>
-                                </TooltipProvider>
-                            </TableHead>
-                            <TableHead className="text-[9px] font-black uppercase tracking-widest text-right">Total Active</TableHead>
-                            <TableHead className="text-[9px] font-black uppercase tracking-widest pr-6">Daily Ratio</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {monitoringData.length === 0 ? (
-                            <TableRow>
-                                <TableCell colSpan={6} className="h-48 text-center text-muted-foreground uppercase font-black text-[9px] tracking-widest opacity-30">
-                                    No personnel detected in current cycle
-                                </TableCell>
+                <div className="overflow-x-auto">
+                    <Table>
+                        <TableHeader className="bg-secondary/10">
+                            <TableRow className="border-white/5 hover:bg-transparent">
+                                <TableHead className="text-[9px] font-black uppercase tracking-widest pl-6 h-10">Personnel</TableHead>
+                                <TableHead className="text-[9px] font-black uppercase tracking-widest h-10">Current Status</TableHead>
+                                <TableHead className="text-[9px] font-black uppercase tracking-widest text-right h-10">Work Time</TableHead>
+                                <TableHead className="text-[9px] font-black uppercase tracking-widest text-right h-10">
+                                    <TooltipProvider>
+                                        <Tooltip>
+                                            <TooltipTrigger className="flex items-center gap-1 ml-auto">
+                                                Idle Time <Info className="h-2 w-2 opacity-50" />
+                                            </TooltipTrigger>
+                                            <TooltipContent className="apple-glass-darker border-none p-2 max-w-[200px] text-[8px] font-black uppercase leading-tight">
+                                                Calculated based on activity telemetry. Monitors both App interaction and System-level idle state where authorized.
+                                            </TooltipContent>
+                                        </Tooltip>
+                                    </TooltipProvider>
+                                </TableHead>
+                                <TableHead className="text-[9px] font-black uppercase tracking-widest text-right h-10">Total Active</TableHead>
+                                <TableHead className="text-[9px] font-black uppercase tracking-widest pr-6 h-10">Daily Ratio</TableHead>
                             </TableRow>
-                        ) : (
-                            monitoringData.map((record) => (
-                                <TableRow key={record.id} className="border-white/5 hover:bg-white/5 transition-colors group">
-                                    <TableCell className="pl-6 py-4">
-                                        <div className="flex items-center gap-3">
-                                            <div className="h-8 w-8 rounded-full bg-secondary flex items-center justify-center font-bold text-xs uppercase shadow-inner">
-                                                {record.userName.charAt(0)}
-                                            </div>
-                                            <div>
-                                                <p className="font-bold text-sm leading-none">{record.userName}</p>
-                                                <p className="text-[8px] font-black uppercase tracking-tighter text-muted-foreground mt-1">First In: {format(new Date(record.clockIn), 'p')}</p>
-                                            </div>
-                                        </div>
-                                    </TableCell>
-                                    <TableCell>
-                                        {record.clockOut ? (
-                                            <Badge variant="outline" className="gap-1.5 text-[8px] font-black uppercase bg-muted/20 text-muted-foreground border-white/5">
-                                                <LogOut className="h-2.5 w-2.5" /> Signed Out
-                                            </Badge>
-                                        ) : record.onBreak ? (
-                                            <Badge variant="outline" className="gap-1.5 text-[8px] font-black uppercase bg-amber-500/10 text-amber-500 border-amber-500/20 animate-pulse">
-                                                <Coffee className="h-2.5 w-2.5" /> On Break
-                                            </Badge>
-                                        ) : (
-                                            <Badge variant="outline" className="gap-1.5 text-[8px] font-black uppercase bg-emerald-500/10 text-emerald-500 border-emerald-500/20">
-                                                <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-ping" /> Active
-                                            </Badge>
-                                        )}
-                                    </TableCell>
-                                    <TableCell className="text-right font-mono font-bold text-primary text-xs">
-                                        {formatDuration(record.workTime)}
-                                    </TableCell>
-                                    <TableCell className="text-right font-mono text-muted-foreground text-xs">
-                                        {formatDuration(record.idleTime)}
-                                    </TableCell>
-                                    <TableCell className="text-right font-mono font-black text-foreground text-xs">
-                                        {formatDuration(record.totalShiftTime)}
-                                    </TableCell>
-                                    <TableCell className="pr-6 min-w-[120px]">
-                                        <div className="space-y-1">
-                                            <div className="flex justify-between text-[7px] font-black uppercase text-muted-foreground tracking-tighter">
-                                                <span>Ratio</span>
-                                                <span>{Math.round(record.productivityRatio)}%</span>
-                                            </div>
-                                            <Progress 
-                                                value={record.productivityRatio} 
-                                                className="h-1 bg-white/5" 
-                                                indicatorClassName={cn(
-                                                    record.productivityRatio > 80 ? "bg-emerald-500" :
-                                                    record.productivityRatio > 50 ? "bg-primary" : "bg-rose-500"
-                                                )}
-                                            />
-                                        </div>
+                        </TableHeader>
+                        <TableBody>
+                            {monitoringData.length === 0 ? (
+                                <TableRow>
+                                    <TableCell colSpan={6} className="h-48 text-center text-muted-foreground uppercase font-black text-[9px] tracking-widest opacity-30">
+                                        No personnel detected in current cycle
                                     </TableCell>
                                 </TableRow>
-                            ))
-                        )}
-                    </TableBody>
-                </Table>
+                            ) : (
+                                monitoringData.map((record) => (
+                                    <TableRow key={record.id} className="border-white/5 hover:bg-white/5 transition-colors group">
+                                        <TableCell className="pl-6 py-4">
+                                            <div className="flex items-center gap-3">
+                                                <div className="h-8 w-8 rounded-full bg-secondary flex items-center justify-center font-bold text-xs uppercase shadow-inner">
+                                                    {record.userName.charAt(0)}
+                                                </div>
+                                                <div>
+                                                    <p className="font-bold text-sm leading-none">{record.userName}</p>
+                                                    <p className="text-[8px] font-black uppercase tracking-tighter text-muted-foreground mt-1">First In: {format(new Date(record.clockIn), 'p')}</p>
+                                                </div>
+                                            </div>
+                                        </TableCell>
+                                        <TableCell>
+                                            {record.clockOut ? (
+                                                <Badge variant="outline" className="gap-1.5 text-[8px] font-black uppercase bg-muted/20 text-muted-foreground border-white/5">
+                                                    <LogOut className="h-2.5 w-2.5" /> Signed Out
+                                                </Badge>
+                                            ) : record.onBreak ? (
+                                                <Badge variant="outline" className="gap-1.5 text-[8px] font-black uppercase bg-amber-500/10 text-amber-500 border-amber-500/20 animate-pulse">
+                                                    <Coffee className="h-2.5 w-2.5" /> On Break
+                                                </Badge>
+                                            ) : (
+                                                <Badge variant="outline" className="gap-1.5 text-[8px] font-black uppercase bg-emerald-500/10 text-emerald-500 border-emerald-500/20">
+                                                    <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-ping" /> Active
+                                                </Badge>
+                                            )}
+                                        </TableCell>
+                                        <TableCell className="text-right font-mono font-bold text-primary text-xs">
+                                            {formatDuration(record.workTime)}
+                                        </TableCell>
+                                        <TableCell className="text-right font-mono text-muted-foreground text-xs">
+                                            {formatDuration(record.idleTime)}
+                                        </TableCell>
+                                        <TableCell className="text-right font-mono font-black text-foreground text-xs">
+                                            {formatDuration(record.totalShiftTime)}
+                                        </TableCell>
+                                        <TableCell className="pr-6 min-w-[120px]">
+                                            <div className="space-y-1">
+                                                <div className="flex justify-between text-[7px] font-black uppercase text-muted-foreground tracking-tighter">
+                                                    <span>Ratio</span>
+                                                    <span>{Math.round(record.productivityRatio)}%</span>
+                                                </div>
+                                                <Progress 
+                                                    value={record.productivityRatio} 
+                                                    className="h-1 bg-white/5" 
+                                                    indicatorClassName={cn(
+                                                        record.productivityRatio > 80 ? "bg-emerald-500" :
+                                                        record.productivityRatio > 50 ? "bg-primary" : "bg-rose-500"
+                                                    )}
+                                                />
+                                            </div>
+                                        </TableCell>
+                                    </TableRow>
+                                ))
+                            )}
+                        </TableBody>
+                    </Table>
+                </div>
             </CardContent>
         </Card>
     );
