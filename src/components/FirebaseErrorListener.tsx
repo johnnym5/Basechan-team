@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useEffect } from 'react';
@@ -23,6 +22,7 @@ export function FirebaseErrorListener() {
 
   useEffect(() => {
     const handlePermissionError = (error: FirestorePermissionError) => {
+      // Don't log recursive errors for the log collection itself
       if (error.request.path.includes('error_logs')) return;
 
       if (firestore) {
@@ -37,22 +37,31 @@ export function FirebaseErrorListener() {
     };
 
     const handleGenericError = (error: any) => {
-      // Check for missing index error
+      // Check for missing index error URL
       const message = error.message || '';
       const indexMatch = message.match(/(https:\/\/console\.firebase\.google\.com\/v1\/r\/project\/[^\s]*)/);
 
       if (indexMatch) {
         const url = indexMatch[0];
+        
+        if (firestore) {
+          logErrorToFirestore(firestore, error, null, userProfile);
+        }
+
         toast({
           variant: 'destructive',
-          title: 'Index Required',
-          description: 'This query requires a composite index. Link copied to clipboard.',
+          title: 'Database Index Required',
+          description: 'This operational query requires a specialized index. Click below to initialize.',
+          duration: 10000,
           action: (
-            <ToastAction altText="Create Index" onClick={() => {
-                navigator.clipboard.writeText(url);
-                window.open(url, '_blank');
-            }}>
-              Fix in Console
+            <ToastAction 
+                altText="Create Index" 
+                onClick={() => {
+                    navigator.clipboard.writeText(url);
+                    window.open(url, '_blank');
+                }}
+            >
+              Initialize Index
             </ToastAction>
           ),
         });
