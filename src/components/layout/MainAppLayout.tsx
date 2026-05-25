@@ -96,7 +96,8 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
         // 3. Idle Detection (Requires permission + notification permission)
         if ('IdleDetector' in window && (Notification as any).permission === 'granted') {
             try {
-                await (window as any).IdleDetector.requestPermission();
+                // Wrap in try-catch to prevent permission exceptions from breaking the layout
+                await (window as any).IdleDetector.requestPermission().catch(() => {});
             } catch (e) {}
         }
 
@@ -132,9 +133,12 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
             setIsLiveActive(false);
             toast({ variant: 'destructive', title: "Oversight Link Severed", description: "Administrative access has been disconnected." });
         };
-    } catch (e) {
+    } catch (e: any) {
         setShowOversightPrompt(false);
-        toast({ variant: 'destructive', title: "Oversight Denied", description: "Administrative viewing is disabled for this session." });
+        // Silently catch and log if needed, but don't show the red error overlay
+        if (e.name !== 'NotAllowedError') {
+             console.warn("Screen capture failed:", e.message);
+        }
     }
   };
 
