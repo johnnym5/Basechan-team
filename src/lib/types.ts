@@ -84,6 +84,7 @@ export interface UserProfile {
 
 export type AttendanceStatus = "PENDING" | "APPROVED" | "REJECTED";
 export type AttendanceLocation = "OFFICE" | "REMOTE";
+export type AttendanceRemark = 'EARLY' | 'LATE' | 'OVERTIME' | 'UNDERTIME';
 
 export interface Attendance {
     id: string;
@@ -97,7 +98,7 @@ export interface Attendance {
     location: AttendanceLocation;
     approvedBy?: string;
     approvedAt?: string;
-    remarks?: Array<'EARLY' | 'LATE' | 'OVERTIME' | 'UNDERTIME'>;
+    remarks?: AttendanceRemark[];
     duration?: number;
     idleTime?: number;
     overtime?: number;

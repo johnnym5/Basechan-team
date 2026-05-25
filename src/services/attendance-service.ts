@@ -1,9 +1,10 @@
+
 'use client';
 
 import { Firestore, collection, doc, query, where, limit, getDocs, increment, arrayUnion, getDoc, setDoc, updateDoc, orderBy } from 'firebase/firestore';
 import { updateDocumentNonBlocking } from '@/firebase';
-import type { UserProfile, Attendance, AttendanceLocation } from '@/lib/types';
-import { differenceInSeconds } from 'date-fns';
+import type { UserProfile, Attendance, AttendanceLocation, SystemConfig, AttendanceRemark } from '@/lib/types';
+import { differenceInSeconds, parse, isAfter, isBefore } from 'date-fns';
 import { reportService } from './report-service';
 import { uiEmitter } from '@/lib/ui-emitter';
 
@@ -16,14 +17,13 @@ export const attendanceService = {
    * Initiates a new work session.
    * Performs a deep scan to prevent duplicate records for the same operational cycle.
    */
-  async clockIn(db: Firestore, user: UserProfile, location: AttendanceLocation, today: string) {
+  async clockIn(db: Firestore, user: UserProfile, location: AttendanceLocation, today: string, systemConfig: SystemConfig | null) {
     if (!user?.id) throw new Error("Personnel identity verification failed. Command aborted.");
 
     const deterministicId = `${user.id}_${today}`;
     const docRef = doc(db, 'attendance', deterministicId);
     
     // 1. PROACTIVE DUPLICATE SCAN
-    // Check if ANY record exists for this user today, not just the deterministic one.
     const q = query(
         collection(db, 'attendance'),
         where('userId', '==', user.id),
@@ -35,6 +35,15 @@ export const attendanceService = {
     const snap = await getDocs(q);
     const now = new Date();
     const nowIso = now.toISOString();
+
+    // Calculate Late Remark
+    const remarks: AttendanceRemark[] = [];
+    if (systemConfig?.work_hours?.start) {
+        const startTime = parse(systemConfig.work_hours.start, 'HH:mm', now);
+        if (isAfter(now, startTime)) {
+            remarks.push('LATE');
+        }
+    }
 
     if (!snap.empty) {
         const existingDoc = snap.docs[0];
@@ -60,7 +69,6 @@ export const attendanceService = {
             return activeRef;
         }
         
-        // ALREADY ACTIVE: Just return the existing reference
         return activeRef;
     }
 
@@ -73,7 +81,7 @@ export const attendanceService = {
       clockIn: nowIso,
       status: 'PENDING',
       location,
-      remarks: [],
+      remarks,
       idleTime: 0,
       totalBreak: 0,
       onBreak: false,
@@ -119,15 +127,34 @@ export const attendanceService = {
   /**
    * Terminates the work session and triggers automated EOD reporting.
    */
-  async clockOut(db: Firestore, user: UserProfile, record: Attendance) {
+  async clockOut(db: Firestore, user: UserProfile, record: Attendance, systemConfig: SystemConfig | null) {
     const now = new Date();
     const attendanceRef = doc(db, 'attendance', record.id);
     const userRef = doc(db, 'users', user.id);
+
+    const remarks = [...(record.remarks || [])];
+    
+    // Analytics: Early Departure (UNDERTIME)
+    if (systemConfig?.work_hours?.end) {
+        const endTime = parse(systemConfig.work_hours.end, 'HH:mm', now);
+        if (isBefore(now, endTime)) {
+            remarks.push('UNDERTIME');
+        }
+    }
+
+    // Analytics: Work Volume (OVERTIME)
+    const clockInTime = new Date(record.clockIn);
+    const totalDurationSec = differenceInSeconds(now, clockInTime);
+    if (totalDurationSec > 32400) { // More than 9 hours total (8h work + 1h break approx)
+        remarks.push('OVERTIME');
+    }
 
     const finalUpdate: any = {
       clockOut: now.toISOString(),
       status: 'APPROVED',
       onBreak: false,
+      remarks: Array.from(new Set(remarks)),
+      duration: totalDurationSec - (record.totalBreak || 0) - (record.idleTime || 0)
     };
 
     if (record.onBreak && record.breaks?.length) {

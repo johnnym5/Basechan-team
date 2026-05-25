@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -137,10 +138,9 @@ export function ClockControl({ userProfile, permissions, systemConfig, className
 
     setIsSubmitting(true);
     try {
-      await attendanceService.clockIn(firestore, userProfile, location, today);
+      await attendanceService.clockIn(firestore, userProfile, location, today, systemConfig);
       toast({ title: 'Shift Started' });
     } catch (error: any) { 
-        // Dispatch to global error handler for specialized handling (like index repair links)
         errorEmitter.emit('firestore-error', error);
     }
     finally { setIsSubmitting(false); }
@@ -159,7 +159,7 @@ export function ClockControl({ userProfile, permissions, systemConfig, className
      if (!userProfile || !attendanceRecord || !firestore) return;
      setIsSubmitting(true);
      try {
-       await attendanceService.clockOut(firestore, userProfile, attendanceRecord);
+       await attendanceService.clockOut(firestore, userProfile, attendanceRecord, systemConfig);
        toast({ title: 'Shift Ended' });
      } catch (e: any) { errorEmitter.emit('firestore-error', e); }
      finally { setIsSubmitting(false); }

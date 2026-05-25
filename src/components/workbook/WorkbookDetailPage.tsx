@@ -1,10 +1,11 @@
+
 'use client';
 
 import { useFirestore, useDoc, useCollection, useMemoFirebase, useUser, deleteDocumentNonBlocking } from '@/firebase';
-import { doc, collection, query } from 'firebase/firestore';
+import { doc, collection, query, getDocs } from 'firebase/firestore';
 import type { Workbook, Sheet, UserProfile } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ShieldAlert, Plus, ArrowLeft, Search } from 'lucide-react';
+import { ShieldAlert, Plus, ArrowLeft, Search, Download, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { SheetDataTable } from '@/components/workbook/SheetDataTable';
 import { useState, useMemo, useEffect } from 'react';
@@ -15,6 +16,8 @@ import { AssignTaskDialog } from '@/components/tasks/AssignTaskDialog';
 import { usePermissions } from '@/hooks/usePermissions';
 import { SheetCard } from './SheetCard';
 import { Input } from '../ui/input';
+import * as XLSX from 'xlsx';
+import { useToast } from '@/hooks/use-toast';
 
 
 interface WorkbookPermissions {
@@ -56,6 +59,7 @@ interface WorkbookDetailPageProps {
 export default function WorkbookDetailPage({ workbookId, onBack, initialSheetId }: WorkbookDetailPageProps) {
     const firestore = useFirestore();
     const { user: authUser } = useUser();
+    const { toast } = useToast();
 
     const [selectedSheet, setSelectedSheet] = useState<Sheet | null>(null);
     const [isAddSheetOpen, setIsAddSheetOpen] = useState(false);
@@ -63,6 +67,7 @@ export default function WorkbookDetailPage({ workbookId, onBack, initialSheetId 
     const [sheetToDelete, setSheetToDelete] = useState<Sheet | null>(null);
     const [sheetToMakeTask, setSheetToMakeTask] = useState<Sheet | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
+    const [isExportingAll, setIsExportingAll] = useState(false);
 
     const userProfileRef = useMemoFirebase(() => 
         firestore && authUser ? doc(firestore, 'users', authUser.uid) : null,
@@ -98,6 +103,32 @@ export default function WorkbookDetailPage({ workbookId, onBack, initialSheetId 
             sheet.name.toLowerCase().includes(searchTerm.toLowerCase())
         );
     }, [sheets, searchTerm]);
+
+    const handleExportFullWorkbook = async () => {
+        if (!workbook || !sheets || !firestore) return;
+        setIsExportingAll(true);
+        try {
+            const wb = XLSX.utils.book_new();
+            
+            for (const sheet of sheets) {
+                if (sheet.headers.length > 0) {
+                    const sheetData = [
+                        sheet.headers,
+                        ...sheet.data.map(row => sheet.headers.map(h => row[h] ?? ''))
+                    ];
+                    const ws = XLSX.utils.aoa_to_sheet(sheetData);
+                    XLSX.utils.book_append_sheet(wb, ws, sheet.name.substring(0, 31)); // Excel limit
+                }
+            }
+            
+            XLSX.writeFile(wb, `${workbook.title}_Consolidated.xlsx`);
+            toast({ title: 'Full Export Complete', description: `All ${sheets.length} data sheets have been archived.` });
+        } catch (e: any) {
+            toast({ variant: 'destructive', title: 'Export Failed', description: e.message });
+        } finally {
+            setIsExportingAll(false);
+        }
+    };
 
     const handleDeleteSheet = () => {
         if (!sheetToDelete || !workbookPermissions.canEdit || !workbookId) return;
@@ -160,14 +191,20 @@ export default function WorkbookDetailPage({ workbookId, onBack, initialSheetId 
     return (
         <>
             <div className="space-y-6 p-6">
-                <div className="flex items-center gap-4">
-                     <Button variant="ghost" size="icon" onClick={onBack} className="-ml-2">
-                        <ArrowLeft className="h-5 w-5" />
-                    </Button>
-                    <div>
-                        <h1 className="text-3xl font-bold font-headline tracking-tight">{workbook.title}</h1>
-                        <p className="text-muted-foreground">{workbook.description || 'Manage sheets for this workbook.'}</p>
+                <div className="flex items-start justify-between flex-wrap gap-4">
+                    <div className="flex items-center gap-4">
+                         <Button variant="ghost" size="icon" onClick={onBack} className="-ml-2">
+                            <ArrowLeft className="h-5 w-5" />
+                        </Button>
+                        <div>
+                            <h1 className="text-3xl font-bold font-headline tracking-tight">{workbook.title}</h1>
+                            <p className="text-muted-foreground">{workbook.description || 'Manage sheets for this workbook.'}</p>
+                        </div>
                     </div>
+                    <Button variant="outline" onClick={handleExportFullWorkbook} disabled={isExportingAll || sheets?.length === 0} className="rounded-xl">
+                        {isExportingAll ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Download className="h-4 w-4 mr-2" />}
+                        Archive All Sheets
+                    </Button>
                 </div>
                 
                 <div className="flex flex-col sm:flex-row gap-4 justify-between items-center">
