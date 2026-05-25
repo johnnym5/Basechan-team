@@ -9,8 +9,8 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2, KeyRound, ShieldCheck, Ban, CheckCircle2, Save } from "lucide-react";
 import { useState, useEffect, useMemo, useRef } from "react";
-import { useFirestore, updateDocumentNonBlocking } from "@/firebase";
-import { doc } from "firebase/firestore";
+import { useFirestore, useUser } from "@/firebase";
+import { doc, updateDoc } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import type { UserProfile, UserPosition } from "@/lib/types";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
@@ -82,7 +82,7 @@ export function EditUserDialog({ open, onOpenChange, userToEdit }: EditUserDialo
   }, [userToEdit, form, open]);
   
   useEffect(() => {
-    if (prevDeptRef.current && prevDeptRef.current !== selectedDepartment && selectedDepartment !== "") {
+    if (prevDeptRef.current && prevDeptRef.current !== selectedDepartment && selectedDepartment !== "" && prevDeptRef.current !== "") {
         form.setValue('position', '');
     }
     prevDeptRef.current = selectedDepartment || null;
@@ -107,7 +107,8 @@ export function EditUserDialog({ open, onOpenChange, userToEdit }: EditUserDialo
     try {
       const userRef = doc(firestore, 'users', userToEdit.id);
       
-      updateDocumentNonBlocking(userRef, {
+      // We use direct updateDoc and await it for critical admin actions
+      await updateDoc(userRef, {
         fullName: sanitizeInput(values.fullName),
         email: sanitizeInput(values.email.toLowerCase()),
         username: sanitizeInput(values.username.toLowerCase()),
@@ -124,6 +125,7 @@ export function EditUserDialog({ open, onOpenChange, userToEdit }: EditUserDialo
       });
       onOpenChange(false);
     } catch (error: any) {
+      console.error("Administrative Sync Failure:", error);
       toast({
         variant: "destructive",
         title: "Update Failed",
