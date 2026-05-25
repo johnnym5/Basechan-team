@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Firestore, collection, doc, writeBatch, query, where, getDocs } from 'firebase/firestore';
@@ -22,15 +23,20 @@ export const chatService = {
 
         const messageContent = sanitizeInput(content);
         
-        const messageData: Omit<ChatMessage, 'id'> = {
+        // Define messageData dynamically to avoid passing undefined values to Firestore
+        const messageData: any = {
             chatId: chat.id,
             orgId: user.orgId,
             senderId: user.id,
             senderName: user.fullName,
             content: messageContent,
             timestamp: now,
-            asset: asset || undefined,
         };
+
+        // Only include the asset if it was explicitly provided to prevent "undefined" field error
+        if (asset) {
+            messageData.asset = asset;
+        }
 
         const batch = writeBatch(db);
         
@@ -44,18 +50,20 @@ export const chatService = {
         // Check if this is a virtual chat (placeholder for DMs with no history)
         const isVirtual = chat.updatedAt === '1970-01-01T00:00:00.000Z';
         
+        const lastMessageUpdate = {
+            text: asset ? `[Shared ${asset.type}] ${asset.title}` : messageContent,
+            senderId: user.id,
+            senderName: user.fullName,
+            timestamp: now,
+        };
+
         if (isVirtual) {
             const newChatData: Omit<Chat, 'id'> = {
                 orgId: chat.orgId,
                 type: chat.type,
                 participants: chat.participants,
                 participantProfiles: chat.participantProfiles,
-                lastMessage: {
-                    text: asset ? `[Shared ${asset.type}] ${asset.title}` : messageContent,
-                    senderId: user.id,
-                    senderName: user.fullName,
-                    timestamp: now,
-                },
+                lastMessage: lastMessageUpdate,
                 readReceipts: {
                     [user.id]: now
                 },
@@ -64,12 +72,7 @@ export const chatService = {
             batch.set(chatRef, newChatData);
         } else {
             batch.update(chatRef, {
-                lastMessage: {
-                    text: asset ? `[Shared ${asset.type}] ${asset.title}` : messageContent,
-                    senderId: user.id,
-                    senderName: user.fullName,
-                    timestamp: now,
-                },
+                lastMessage: lastMessageUpdate,
                 [`readReceipts.${user.id}`]: now,
                 updatedAt: now
             });

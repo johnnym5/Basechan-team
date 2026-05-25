@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Firestore, collection, doc, query, where, getDocs, arrayUnion, setDoc } from 'firebase/firestore';
@@ -61,13 +62,13 @@ export const taskService = {
         serialNo: newSerialNo,
         orgId: assignee.orgId,
         title: sanitizeInput(values.title),
-        description: sanitizeInput(values.description),
+        description: sanitizeInput(values.description || ""),
         assignedTo: assignee.id,
         assignedToName: assignee.fullName,
         priority: values.priority,
-        estimatedHours: values.estimatedHours,
+        estimatedHours: values.estimatedHours || null,
         status: 'QUEUED',
-        dueDate: values.dueDate ? values.dueDate.toISOString() : null,
+        dueDate: values.dueDate ? (values.dueDate instanceof Date ? values.dueDate.toISOString() : values.dueDate) : null,
         createdBy: currentUser.id,
         activity: [initialActivity],
         createdAt: now,
@@ -89,6 +90,8 @@ export const taskService = {
                 requestResourceData: newTask,
             } satisfies SecurityRuleContext);
             errorEmitter.emit('permission-error', permissionError);
+        } else {
+            console.error("Task creation error:", error);
         }
     });
 
