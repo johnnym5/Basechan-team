@@ -96,12 +96,13 @@ service cloud.firestore {
       allow update, delete: if (getUserRole() in ['ORG_ADMIN', 'MANAGING_DIRECTOR'] || isSuperAdmin()) && isRequestingUserInOrg(resource.data.orgId);
     }
 
-    match /{collection}/{docId} 
-        where collection in ['departments', 'attendance', 'tasks', 'system_configs', 'announcements', 'workbooks', 'notifications', 'leave_requests', 'daily_reports', 'chats', 'journal_entries'] {
-      
-      allow read, delete: if isRequestingUserInOrg(resource.data.orgId) || isSuperAdmin();
-      allow create: if isCreatingInOwnOrg() || isSuperAdmin();
-      allow update: if isRequestingUserInOrg(resource.data.orgId) || isSuperAdmin();
+    match /{collection}/{docId} {
+      allow read, delete: if (collection in ['departments', 'attendance', 'tasks', 'system_configs', 'announcements', 'workbooks', 'notifications', 'leave_requests', 'daily_reports', 'chats', 'journal_entries']) 
+                          && (isRequestingUserInOrg(resource.data.orgId) || isSuperAdmin());
+      allow create: if (collection in ['departments', 'attendance', 'tasks', 'system_configs', 'announcements', 'workbooks', 'notifications', 'leave_requests', 'daily_reports', 'chats', 'journal_entries']) 
+                    && (isCreatingInOwnOrg() || isSuperAdmin());
+      allow update: if (collection in ['departments', 'attendance', 'tasks', 'system_configs', 'announcements', 'workbooks', 'notifications', 'leave_requests', 'daily_reports', 'chats', 'journal_entries']) 
+                    && (isRequestingUserInOrg(resource.data.orgId) || isSuperAdmin());
     }
 
     match /feedback/{feedbackId} {
