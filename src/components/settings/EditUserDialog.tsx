@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useForm } from "react-hook-form";
@@ -75,7 +76,7 @@ export function EditUserDialog({ open, onOpenChange, userToEdit }: EditUserDialo
         username: userToEdit.username || "",
         phoneNumber: userToEdit.phoneNumber || "",
         position: userToEdit.position || "",
-        departmentName: userToEdit.departmentName || "",
+        departmentName: userToEdit.departmentName || undefined, // Use undefined so required validation triggers correctly
         customPermissions: userToEdit.customPermissions || {},
       });
       prevDeptRef.current = userToEdit.departmentName || null;
@@ -139,7 +140,7 @@ export function EditUserDialog({ open, onOpenChange, userToEdit }: EditUserDialo
   }
 
   const onValidationError = (errors: any) => {
-    console.error("Authorization Profile Validation Failure:", errors);
+    console.error("Authorization Profile Validation Failure Details:", JSON.parse(JSON.stringify(errors)));
     toast({
         variant: "destructive",
         title: "Deployment Blocked",
