@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useForm } from "react-hook-form";
@@ -8,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, KeyRound, ShieldCheck, Ban, CheckCircle2 } from "lucide-react";
+import { Loader2, KeyRound, ShieldCheck, Ban, CheckCircle2, Save } from "lucide-react";
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useFirestore, updateDocumentNonBlocking } from "@/firebase";
 import { doc } from "firebase/firestore";
@@ -27,7 +26,7 @@ const formSchema = z.object({
   email: z.string().email("Invalid email format."),
   phoneNumber: z.string().optional().nullable(),
   position: z.string().min(1, "Position is required."),
-  departmentName: z.string({ required_error: "Department is required." }).min(1, "Department is required."),
+  departmentName: z.string().min(1, "Department is required."),
   customPermissions: z.object({
     canAccessRequisitions: z.boolean().optional(),
     canAccessChat: z.boolean().optional(),
@@ -67,7 +66,6 @@ export function EditUserDialog({ open, onOpenChange, userToEdit }: EditUserDialo
 
   const selectedDepartment = form.watch('departmentName');
 
-  // 1. INITIALIZATION: Sync form with user data
   useEffect(() => {
     if (userToEdit && open) {
       form.reset({
@@ -76,16 +74,15 @@ export function EditUserDialog({ open, onOpenChange, userToEdit }: EditUserDialo
         username: userToEdit.username || "",
         phoneNumber: userToEdit.phoneNumber || "",
         position: userToEdit.position || "",
-        departmentName: userToEdit.departmentName || undefined, // Use undefined so required validation triggers correctly
+        departmentName: userToEdit.departmentName || "",
         customPermissions: userToEdit.customPermissions || {},
       });
       prevDeptRef.current = userToEdit.departmentName || null;
     }
   }, [userToEdit, form, open]);
   
-  // 2. TACTICAL OVERRIDE: Reset position ONLY if department is changed manually
   useEffect(() => {
-    if (prevDeptRef.current && prevDeptRef.current !== selectedDepartment) {
+    if (prevDeptRef.current && prevDeptRef.current !== selectedDepartment && selectedDepartment !== "") {
         form.setValue('position', '');
     }
     prevDeptRef.current = selectedDepartment || null;
@@ -96,8 +93,7 @@ export function EditUserDialog({ open, onOpenChange, userToEdit }: EditUserDialo
     const departmentRoles = ROLES_BY_DEPARTMENT[selectedDepartment as keyof typeof ROLES_BY_DEPARTMENT] || [];
     const rolesToShow = [...new Set(['Staff', ...departmentRoles])];
     
-    // Ensure the user's CURRENT position is always visible even if it's special
-    if (userToEdit && !rolesToShow.includes(userToEdit.position)) {
+    if (userToEdit && userToEdit.position && !rolesToShow.includes(userToEdit.position)) {
         rolesToShow.push(userToEdit.position);
     }
     return rolesToShow;
@@ -111,7 +107,6 @@ export function EditUserDialog({ open, onOpenChange, userToEdit }: EditUserDialo
     try {
       const userRef = doc(firestore, 'users', userToEdit.id);
       
-      // Execute non-blocking update to maintain high-velocity performance
       updateDocumentNonBlocking(userRef, {
         fullName: sanitizeInput(values.fullName),
         email: sanitizeInput(values.email.toLowerCase()),
@@ -140,11 +135,11 @@ export function EditUserDialog({ open, onOpenChange, userToEdit }: EditUserDialo
   }
 
   const onValidationError = (errors: any) => {
-    console.error("Authorization Profile Validation Failure Details:", JSON.parse(JSON.stringify(errors)));
+    console.error("Authorization Profile Validation Failure Details:", errors);
     toast({
         variant: "destructive",
         title: "Deployment Blocked",
-        description: "Missing or invalid parameters detected. Please verify identity and clearance fields.",
+        description: "Please ensure all required identity and clearance fields are correctly populated.",
     });
   };
 
@@ -222,7 +217,7 @@ export function EditUserDialog({ open, onOpenChange, userToEdit }: EditUserDialo
                             )}/>
                             <FormField control={form.control} name="position" render={({ field }) => (
                                 <FormItem><FormLabel className="text-[9px] uppercase font-black opacity-50">Designation</FormLabel>
-                                    <Select onValueChange={field.onChange} value={field.value} disabled={!selectedDepartment}>
+                                    <Select onValueChange={field.onChange} value={field.value} disabled={!selectedDepartment || selectedDepartment === ""}>
                                     <FormControl><SelectTrigger className="rounded-xl h-11 bg-background/50 border-white/5"><SelectValue placeholder="Select Designation" /></SelectTrigger></FormControl>
                                     <SelectContent className="apple-glass-darker border-none">{rolesForSelectedDepartment.map(role => <SelectItem key={role} value={role}>{role}</SelectItem>)}</SelectContent>
                                     </Select>
@@ -245,7 +240,8 @@ export function EditUserDialog({ open, onOpenChange, userToEdit }: EditUserDialo
 
                     <div className="pt-8">
                         <Button type="submit" className="w-full h-14 rounded-2xl font-black uppercase tracking-[0.2em] shadow-xl shadow-primary/20 interactive-element" disabled={isLoading}>
-                            {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Deploy Authorization Profile"}
+                            {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                            Save Changes
                         </Button>
                     </div>
                 </form>
