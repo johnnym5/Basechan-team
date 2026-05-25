@@ -9,8 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { format, differenceInSeconds } from 'date-fns';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
-import { Timer, Clock, Activity, Coffee, LogOut, Loader2, Info, Monitor, Smartphone, MonitorPlay, Camera, ShieldAlert } from 'lucide-react';
-import { Progress } from '@/components/ui/progress';
+import { Timer, Clock, Activity, Coffee, LogOut, Loader2, Monitor, Smartphone, MonitorPlay, Camera } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useContextMenu } from '@/hooks/useContextMenu';

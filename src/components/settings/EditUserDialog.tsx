@@ -144,7 +144,7 @@ export function EditUserDialog({ open, onOpenChange, userToEdit }: EditUserDialo
 
       toast({
         title: "User Synchronized",
-        description: `Personnel records and authorizations for ${userToEdit.fullName} have been updated.`,
+        description: `Personnel records for ${userToEdit.fullName} have been updated.`,
       });
       onOpenChange(false);
     } catch (error: any) {
@@ -152,7 +152,7 @@ export function EditUserDialog({ open, onOpenChange, userToEdit }: EditUserDialo
       toast({
         variant: "destructive",
         title: "Update Failed",
-        description: error.message || "An unexpected error occurred during profile synchronization.",
+        description: error.message || "Failed to commit system updates.",
       });
     } finally {
       setIsLoading(false);
@@ -164,7 +164,7 @@ export function EditUserDialog({ open, onOpenChange, userToEdit }: EditUserDialo
     toast({
         variant: "destructive",
         title: "Deployment Blocked",
-        description: "Please ensure all required identity and clearance fields are correctly populated.",
+        description: "Please ensure all required identity fields are correctly populated.",
     });
   };
 

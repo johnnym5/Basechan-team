@@ -1,4 +1,3 @@
-
 rules_version = '2';
 
 service cloud.firestore {
@@ -20,7 +19,6 @@ service cloud.firestore {
     }
 
     function getUserRole() {
-      // Dynamic role resolution in rules isn't easy with strings, but we trust the role field for security
       return getUserData().role;
     }
 
@@ -87,9 +85,12 @@ service cloud.firestore {
       allow create: if isSuperAdmin() || request.auth.uid == userId;
       allow update: if isSuperAdmin() || request.auth.uid == userId || isHRManager();
       allow delete: if isSuperAdmin();
+      
+      match /telemetry/{docId} {
+          allow read, write: if isRequestingUserInOrg(getUserData().orgId);
+      }
     }
     
-    // Live Displays: Only Admins or Managing Directors can manage links
     match /external_displays/{displayId} {
       allow read: if isRequestingUserInOrg(resource.data.orgId) || isSuperAdmin();
       allow create: if (getUserRole() in ['ORG_ADMIN', 'MANAGING_DIRECTOR'] || isSuperAdmin()) && isCreatingInOwnOrg();
@@ -97,11 +98,11 @@ service cloud.firestore {
     }
 
     match /{collection}/{docId} {
-      allow read, delete: if (collection in ['departments', 'attendance', 'tasks', 'system_configs', 'announcements', 'workbooks', 'notifications', 'leave_requests', 'daily_reports', 'chats', 'journal_entries']) 
+      allow read, delete: if (collection in ['departments', 'attendance', 'tasks', 'system_configs', 'announcements', 'workbooks', 'notifications', 'leave_requests', 'daily_reports', 'chats', 'journal_entries', 'pulse_checks', 'activity_points', 'kudos', 'rosters']) 
                           && (isRequestingUserInOrg(resource.data.orgId) || isSuperAdmin());
-      allow create: if (collection in ['departments', 'attendance', 'tasks', 'system_configs', 'announcements', 'workbooks', 'notifications', 'leave_requests', 'daily_reports', 'chats', 'journal_entries']) 
+      allow create: if (collection in ['departments', 'attendance', 'tasks', 'system_configs', 'announcements', 'workbooks', 'notifications', 'leave_requests', 'daily_reports', 'chats', 'journal_entries', 'pulse_checks', 'activity_points', 'kudos', 'rosters']) 
                     && (isCreatingInOwnOrg() || isSuperAdmin());
-      allow update: if (collection in ['departments', 'attendance', 'tasks', 'system_configs', 'announcements', 'workbooks', 'notifications', 'leave_requests', 'daily_reports', 'chats', 'journal_entries']) 
+      allow update: if (collection in ['departments', 'attendance', 'tasks', 'system_configs', 'announcements', 'workbooks', 'notifications', 'leave_requests', 'daily_reports', 'chats', 'journal_entries', 'pulse_checks', 'activity_points', 'kudos', 'rosters']) 
                     && (isRequestingUserInOrg(resource.data.orgId) || isSuperAdmin());
     }
 

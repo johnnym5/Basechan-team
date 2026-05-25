@@ -8,8 +8,7 @@ import {
   getFirestore, 
   CACHE_SIZE_UNLIMITED, 
   Firestore,
-  persistentLocalCache,
-  persistentMultipleTabManager
+  persistentLocalCache
 } from 'firebase/firestore';
 import { getStorage, FirebaseStorage } from 'firebase/storage';
 import { getDatabase, Database } from 'firebase/database';
@@ -24,8 +23,7 @@ let databaseInstance: Database | null = null;
 
 /**
  * Initializes the Firebase Client SDKs.
- * Uses a singleton pattern to prevent "INTERNAL ASSERTION FAILED" errors 
- * caused by multiple initializations in development environments.
+ * Uses a singleton pattern to prevent errors caused by multiple initializations.
  */
 export function initializeFirebase() {
   if (!isFirebaseConfigAvailable) {
@@ -52,22 +50,18 @@ export function initializeFirebase() {
 
 /**
  * Configures and retrieves individual Firebase service instances.
- * Implements modern multi-tab persistent local caching for offline capability.
+ * Uses persistent local cache to ensure offline utility.
  */
 export function getSdks(firebaseApp: FirebaseApp) {
-  // 1. Initialize Firestore with Persistent Local Cache
+  // 1. Initialize Firestore with Persistent Local Cache (Single Tab Manager to avoid CA9 errors)
   if (!firestoreInstance) {
     try {
       firestoreInstance = initializeFirestore(firebaseApp, {
         localCache: persistentLocalCache({
-          tabManager: persistentMultipleTabManager(),
           cacheSizeBytes: CACHE_SIZE_UNLIMITED,
         }),
-        // experimentalForceLongPolling is helpful for environments with proxy/firewall websocket blocks
-        experimentalForceLongPolling: true,
       });
     } catch (e) {
-      // Fallback if already initialized (common in hot-reload scenarios)
       firestoreInstance = getFirestore(firebaseApp);
     }
   }
@@ -75,7 +69,6 @@ export function getSdks(firebaseApp: FirebaseApp) {
   // 2. Initialize Auth with explicit Browser Local Persistence
   if (!authInstance) {
     authInstance = getAuth(firebaseApp);
-    // Ensure session survives browser close and remains active while offline
     setPersistence(authInstance, browserLocalPersistence).catch((err) => {
         console.warn("[SYSTEM] Auth persistence initialization failed:", err.message);
     });
