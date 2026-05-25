@@ -138,7 +138,7 @@ export function EditUserDialog({ open, onOpenChange, userToEdit }: EditUserDialo
     }
   }
 
-  const onError = (errors: any) => {
+  const onValidationError = (errors: any) => {
     console.error("Authorization Profile Validation Failure:", errors);
     toast({
         variant: "destructive",
@@ -181,7 +181,7 @@ export function EditUserDialog({ open, onOpenChange, userToEdit }: EditUserDialo
 
         <ScrollArea className="flex-1 bg-background/20">
             <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit, onError)} className="p-8 pt-0 space-y-8">
+                <form onSubmit={form.handleSubmit(onSubmit, onValidationError)} className="p-8 pt-0 space-y-8">
                     <div className="space-y-6">
                         <div className="flex items-center gap-2">
                             <div className="p-1.5 rounded-lg bg-primary/10 text-primary"><KeyRound className="h-3.5 w-3.5" /></div>

@@ -17,6 +17,7 @@ import { useContextMenu } from '@/hooks/useContextMenu';
 import { ContextMenu, type ContextMenuItem } from '../shared/ContextMenu';
 import { uiEmitter } from '@/lib/ui-emitter';
 import { useToast } from '@/hooks/use-toast';
+import { Button } from '@/components/ui/button';
 
 interface LiveStaffMonitorProps {
     userProfile: UserProfile;
