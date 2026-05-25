@@ -1,9 +1,9 @@
 'use client';
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import type { UserProfile, Task, DailyReport, Attendance } from "@/lib/types";
 import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
-import { collection, query, where, doc } from "firebase/firestore";
-import { format, subDays, eachDayOfInterval, isSameDay, parseISO } from "date-fns";
+import { collection, query, where } from "firebase/firestore";
+import { format, subDays, eachDayOfInterval } from "date-fns";
 import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid } from 'recharts';
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
@@ -18,6 +18,11 @@ type ReportType = 'summary' | 'tasks' | 'attendance' | 'reports';
 export function PerformanceCard({ userProfile }: PerformanceCardProps) {
     const firestore = useFirestore();
     const [activeReport, setActiveReport] = useState<ReportType>('summary');
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        setMounted(true);
+    }, []);
     
     // 1. DATA ACQUISITION: Filter for current user only
     const tasksQuery = useMemoFirebase(() => {
@@ -41,7 +46,7 @@ export function PerformanceCard({ userProfile }: PerformanceCardProps) {
 
     // 2. ANALYTICS ENGINE: Last 7 days
     const chartData = useMemo(() => {
-        if (!userTasks || !userReports || !userAttendance) return [];
+        if (!userTasks || !userReports || !userAttendance || !mounted) return [];
 
         const days = eachDayOfInterval({
             start: subDays(new Date(), 6),
@@ -76,7 +81,7 @@ export function PerformanceCard({ userProfile }: PerformanceCardProps) {
                 reports: reportSubmitted,
             };
         });
-    }, [userTasks, userReports, userAttendance]);
+    }, [userTasks, userReports, userAttendance, mounted]);
 
     const stats = useMemo(() => {
         if (!chartData.length) return { success: 0, attendance: 0, reporting: 0 };
@@ -89,7 +94,7 @@ export function PerformanceCard({ userProfile }: PerformanceCardProps) {
         };
     }, [chartData]);
 
-    if (isTasksLoading || isReportsLoading || isAttLoading) {
+    if (isTasksLoading || isReportsLoading || isAttLoading || !mounted) {
         return <Skeleton className="h-[300px] w-full rounded-2xl" />;
     }
 

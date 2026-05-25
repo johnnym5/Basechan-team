@@ -4,12 +4,13 @@ import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import type { Workbook, Sheet, UserProfile } from '@/lib/types';
 import { useState, useEffect } from 'react';
-import { Hammer, AlertTriangle, CheckCircle2, ChevronRight, Settings2 } from 'lucide-react';
+import { Hammer, AlertTriangle, CheckCircle2, ChevronRight, Settings2, PlusCircle } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { uiEmitter } from '@/lib/ui-emitter';
 import { isBefore, addDays, parseISO } from 'date-fns';
 import { ORG_ID } from '@/lib/config';
+import { Button } from '../ui/button';
 
 interface MaintenanceCardProps {
     userProfile: UserProfile | null;
@@ -107,9 +108,20 @@ export function MaintenanceCard({ userProfile }: MaintenanceCardProps) {
         uiEmitter.emit('open-workbooks-dialog', { workbookId: alert.workbookId, sheetId: alert.sheetId });
     };
 
+    const handleDispatchFix = (e: React.MouseEvent, alert: MaintenanceAlert) => {
+        e.stopPropagation();
+        uiEmitter.emit('open-assign-task-dialog', {
+            title: `Maintenance: ${alert.assetName}`,
+            description: `Required maintenance for ${alert.assetName} flagged on ${new Date(alert.date).toLocaleDateString()}. Please inspect and verify completion.`,
+            priority: alert.status === 'OVERDUE' ? 'LEVEL_3' : 'LEVEL_2',
+            workbookId: alert.workbookId,
+            sheetId: alert.sheetId
+        });
+    };
+
     if (isLoading) {
         return (
-            <section className="card-bg rounded-2xl p-4 shadow-lg">
+            <section className="apple-glass rounded-2xl p-4 shadow-lg">
                 <Skeleton className="h-5 w-1/2 mb-3" />
                 <div className="space-y-2">
                     <Skeleton className="h-10 w-full rounded-xl" />
@@ -120,7 +132,7 @@ export function MaintenanceCard({ userProfile }: MaintenanceCardProps) {
     }
 
     return (
-        <section className="card-bg rounded-2xl p-4 shadow-lg animate-in fade-in slide-in-from-bottom-2 duration-500">
+        <section className="apple-glass rounded-2xl p-4 shadow-lg animate-in fade-in slide-in-from-bottom-2 duration-500 interactive-element">
             <div className="flex items-center justify-between mb-3">
                 <h3 className="text-xs font-bold font-headline flex items-center gap-2">
                     <Hammer className="h-3.5 w-3.5 text-primary" />
@@ -149,9 +161,9 @@ export function MaintenanceCard({ userProfile }: MaintenanceCardProps) {
                                 alert.status === 'OVERDUE' ? "border-rose-500/10 bg-rose-500/5" : "border-amber-500/10 bg-amber-500/5"
                             )}
                         >
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 min-w-0">
                                 <div className={cn(
-                                    "p-1 rounded-lg",
+                                    "p-1 rounded-lg shrink-0",
                                     alert.status === 'OVERDUE' ? "bg-rose-500/10 text-rose-500" : "bg-amber-500/10 text-amber-500"
                                 )}>
                                     <Settings2 className="h-3 w-3" />
@@ -166,7 +178,14 @@ export function MaintenanceCard({ userProfile }: MaintenanceCardProps) {
                                     </div>
                                 </div>
                             </div>
-                            <ChevronRight className="h-3 w-3 text-muted-foreground group-hover:text-foreground group-hover:translate-x-0.5 transition-all" />
+                            <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="h-7 w-7 rounded-lg hover:bg-primary/10 text-primary opacity-0 group-hover:opacity-100 transition-all"
+                                onClick={(e) => handleDispatchFix(e, alert)}
+                            >
+                                <PlusCircle className="h-3.5 w-3.5" />
+                            </Button>
                         </div>
                     ))
                 )}

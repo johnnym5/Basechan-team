@@ -1,11 +1,10 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import type { Workbook, Sheet, UserProfile } from '@/lib/types';
-import { Hammer, AlertTriangle, CheckCircle2, ChevronRight, Settings2, Info, Search } from 'lucide-react';
+import { Hammer, AlertTriangle, CheckCircle2, ChevronRight, Settings2, Info, Search, PlusCircle } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { uiEmitter } from '@/lib/ui-emitter';
@@ -14,6 +13,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Input } from '../ui/input';
 import { ScrollArea } from '../ui/scroll-area';
 import { Badge } from '../ui/badge';
+import { Button } from '../ui/button';
 
 interface MaintenanceAlert {
     assetName: string;
@@ -117,6 +117,18 @@ export function MaintenancePane({ currentUserProfile }: { currentUserProfile: Us
         }, 100);
     };
 
+    const handleDispatchTask = (e: React.MouseEvent, alert: MaintenanceAlert) => {
+        e.stopPropagation();
+        uiEmitter.emit('open-assign-task-dialog', {
+            title: `Mission: ${alert.assetName} Service`,
+            description: `Automatic maintenance mission for ${alert.assetName}. Logged in ${alert.workbookTitle} - ${alert.sheetName}. Flagged date: ${new Date(alert.date).toLocaleDateString()}.`,
+            priority: alert.status === 'OVERDUE' ? 'LEVEL_3' : 'LEVEL_2',
+            workbookId: alert.workbookId,
+            sheetId: alert.sheetId,
+            dueDate: new Date(alert.date)
+        });
+    };
+
     if (isLoading) {
         return (
             <div className="space-y-4">
@@ -192,7 +204,7 @@ export function MaintenancePane({ currentUserProfile }: { currentUserProfile: Us
                                 <CardTitle className="text-lg mt-3">{alert.assetName}</CardTitle>
                                 <CardDescription className="text-xs font-mono">{alert.workbookTitle} — {alert.sheetName}</CardDescription>
                             </CardHeader>
-                            <CardContent>
+                            <CardContent className="space-y-4">
                                 <div className="flex items-center justify-between pt-2 border-t border-white/5">
                                     <div className="flex items-center gap-1.5 text-muted-foreground">
                                         <AlertTriangle className="h-3.5 w-3.5" />
@@ -202,6 +214,12 @@ export function MaintenancePane({ currentUserProfile }: { currentUserProfile: Us
                                         <ChevronRight className="h-4 w-4" />
                                     </div>
                                 </div>
+                                <Button 
+                                    className="w-full h-10 rounded-xl font-black uppercase text-[9px] tracking-widest gap-2"
+                                    onClick={(e) => handleDispatchTask(e, alert)}
+                                >
+                                    <PlusCircle className="h-3.5 w-3.5" /> Dispatch Mission
+                                </Button>
                             </CardContent>
                         </Card>
                     ))}

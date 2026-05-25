@@ -1,11 +1,11 @@
 'use client';
 import { Button } from "@/components/ui/button";
-import { ShieldAlert, PlusCircle } from "lucide-react";
+import { ShieldAlert, PlusCircle, Banknote, Landmark, ReceiptText } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RequisitionTable } from "@/components/requisitions/RequisitionTable";
-import { useState, useEffect } from "react";
-import { useUser, useDoc, useMemoFirebase, useFirestore } from "@/firebase";
-import { doc } from "firebase/firestore";
+import { useState, useEffect, useMemo } from "react";
+import { useUser, useDoc, useMemoFirebase, useFirestore, useCollection } from "@/firebase";
+import { collection, doc, query, where } from "firebase/firestore";
 import type { Requisition, UserProfile } from "@/lib/types";
 import { useSuperAdmin } from "@/hooks/useSuperAdmin";
 import { usePermissions, type Permissions } from "@/hooks/usePermissions";
@@ -16,6 +16,8 @@ import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { NewRequisitionDialog } from "@/components/requisitions/NewRequisitionDialog";
 import { VendorsTab } from "./VendorsTab";
 import { PurchaseOrdersTab } from "./PurchaseOrdersTab";
+import { Card, CardContent } from "../ui/card";
+import { cn } from "@/lib/utils";
 
 
 const getVisibleTabs = (permissions: Permissions, isStaff: boolean) => {
@@ -62,6 +64,24 @@ export function RequisitionsPageContent({ initialPayload }: { initialPayload?: {
   const { data: userProfile, isLoading: isProfileLoading } = useDoc<UserProfile>(userProfileRef);
   const permissions = usePermissions(userProfile);
   const { config: systemConfig } = useSystemConfig(userProfile?.orgId);
+
+  const allReqsQuery = useMemoFirebase(() => {
+    if (!firestore || !userProfile) return null;
+    return query(collection(firestore, 'requisitions'), where('orgId', '==', userProfile.orgId));
+  }, [firestore, userProfile]);
+  const { data: allRequisitions } = useCollection<Requisition>(allReqsQuery);
+
+  const fiscalStats = useMemo(() => {
+    if (!allRequisitions) return { pending: 0, approved: 0 };
+    return allRequisitions.reduce((acc, req) => {
+        if (['PENDING_HR', 'PENDING_FINANCE', 'PENDING_MD'].includes(req.status)) {
+            acc.pending += req.amount;
+        } else if (req.status === 'APPROVED' || req.status === 'PAID') {
+            acc.approved += req.amount;
+        }
+        return acc;
+    }, { pending: 0, approved: 0 });
+  }, [allRequisitions]);
 
   const reqIdToOpen = initialPayload?.reqId;
   const reqFromPayloadRef = useMemoFirebase(() => 
@@ -122,15 +142,30 @@ export function RequisitionsPageContent({ initialPayload }: { initialPayload?: {
 
   return (
     <div className="space-y-6 flex flex-col h-full overflow-hidden">
-       <div className="flex items-center justify-between flex-shrink-0">
+       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 flex-shrink-0">
             <div>
-                <h1 className="text-3xl font-bold font-headline tracking-tight">Procurement & Requisitions</h1>
-                <p className="text-muted-foreground">Manage financial requests, purchase orders, and external vendors.</p>
+                <h1 className="text-3xl font-black font-headline tracking-tighter">Procurement Terminal</h1>
+                <p className="text-muted-foreground uppercase tracking-widest text-[10px] font-bold">Manage financial requests and external vendors.</p>
             </div>
-            <Button onClick={() => setIsNewRequestOpen(true)}>
-                <PlusCircle className="mr-2"/>
-                New Requisition
-            </Button>
+            <div className="flex items-center gap-3">
+                 {permissions.canApproveHR && (
+                     <div className="flex items-center gap-3 mr-4">
+                        <div className="flex flex-col items-end">
+                            <span className="text-[8px] font-black uppercase tracking-widest text-amber-500">Pending Liability</span>
+                            <span className="text-sm font-black font-mono">{currencySymbol}{fiscalStats.pending.toLocaleString()}</span>
+                        </div>
+                        <div className="w-px h-8 bg-white/10" />
+                        <div className="flex flex-col items-end">
+                            <span className="text-[8px] font-black uppercase tracking-widest text-emerald-500">Approved Impact</span>
+                            <span className="text-sm font-black font-mono">{currencySymbol}{fiscalStats.approved.toLocaleString()}</span>
+                        </div>
+                     </div>
+                 )}
+                <Button onClick={() => setIsNewRequestOpen(true)} className="rounded-xl h-11 px-6 font-black uppercase tracking-widest shadow-xl shadow-primary/20">
+                    <PlusCircle className="mr-2 h-4 w-4"/>
+                    New Request
+                </Button>
+            </div>
         </div>
       {isProfileLoading ? (
         <Skeleton className="flex-1 w-full" />
@@ -138,16 +173,20 @@ export function RequisitionsPageContent({ initialPayload }: { initialPayload?: {
         <div className="flex-1 flex flex-col min-h-0">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
                 <ScrollArea className="w-full pb-2 whitespace-nowrap flex-shrink-0">
-                    <TabsList>
-                        {visibleTabs.map(tab => <TabsTrigger key={tab} value={tab}>{tab}</TabsTrigger>)}
+                    <TabsList className="bg-secondary/20 rounded-2xl p-1">
+                        {visibleTabs.map(tab => (
+                            <TabsTrigger key={tab} value={tab} className="rounded-xl px-6 font-black uppercase text-[10px] tracking-widest data-[state=active]:bg-background">
+                                {tab}
+                            </TabsTrigger>
+                        ))}
                     </TabsList>
                     <ScrollBar orientation="horizontal" />
                 </ScrollArea>
                 
-                <div className="flex-1 mt-4 overflow-hidden border rounded-xl bg-card/30">
-                    <ScrollArea className="h-full p-4">
+                <div className="flex-1 mt-4 overflow-hidden border border-white/5 rounded-3xl bg-background/20 backdrop-blur-sm">
+                    <ScrollArea className="h-full p-6">
                         {visibleTabs.map(tab => (
-                            <TabsContent key={tab} value={tab} className="m-0">
+                            <TabsContent key={tab} value={tab} className="m-0 focus-visible:ring-0 outline-none">
                                 {tab === 'Vendors' ? (
                                     <VendorsTab userProfile={userProfile!} permissions={permissions} />
                                 ) : tab === 'Purchase Orders' ? (
