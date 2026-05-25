@@ -15,9 +15,10 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 interface SuperAdminDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  modal?: boolean;
 }
 
-export function SuperAdminDialog({ open, onOpenChange }: SuperAdminDialogProps) {
+export function SuperAdminDialog({ open, onOpenChange, modal = false }: SuperAdminDialogProps) {
     const firestore = useFirestore();
     const [showFeedback, setShowFeedback] = useState(false);
     const [isInviteOpen, setIsInviteOpen] = useState(false);
@@ -30,8 +31,8 @@ export function SuperAdminDialog({ open, onOpenChange }: SuperAdminDialogProps) 
 
     return (
         <>
-            <Dialog open={open} onOpenChange={onOpenChange}>
-                <DialogContent position="left" className="flex flex-col p-0">
+            <Dialog open={open} onOpenChange={onOpenChange} modal={modal}>
+                <DialogContent position={modal ? "center" : "left"} className="flex flex-col p-0">
                     <DialogHeader className="p-6 pb-4 border-b flex-shrink-0">
                         <DialogTitle className="flex items-center gap-2 text-2xl font-bold font-headline">
                             <Shield className="h-6 w-6 text-primary" />

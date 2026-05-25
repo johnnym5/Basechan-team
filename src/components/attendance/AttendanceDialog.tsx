@@ -7,12 +7,13 @@ import { AttendancePageContent } from './AttendancePageContent';
 interface AttendanceDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  modal?: boolean;
 }
 
-export function AttendanceDialog({ open, onOpenChange }: AttendanceDialogProps) {
+export function AttendanceDialog({ open, onOpenChange, modal = false }: AttendanceDialogProps) {
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent position="left" className="flex flex-col p-0">
+    <Dialog open={open} onOpenChange={onOpenChange} modal={modal}>
+      <DialogContent position={modal ? "center" : "left"} className="flex flex-col p-0">
         <DialogHeader className="sr-only">
             <DialogTitle>Attendance Center</DialogTitle>
             <DialogDescription>Manage your work hours and see who's currently online.</DialogDescription>

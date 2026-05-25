@@ -10,6 +10,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import type { UserProfile } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { useRef } from 'react';
 
 interface PanelSwitcherProps {
     isVertical?: boolean;
@@ -20,6 +21,7 @@ export function PanelSwitcher({ isVertical }: PanelSwitcherProps) {
     const firestore = useFirestore();
     const router = useRouter();
     const searchParams = useSearchParams();
+    const longPressTimer = useRef<NodeJS.Timeout | null>(null);
 
     const userProfileRef = useMemoFirebase(() => 
         firestore && user ? doc(firestore, 'users', user.uid) : null
@@ -27,21 +29,30 @@ export function PanelSwitcher({ isVertical }: PanelSwitcherProps) {
     const { data: userProfile } = useDoc<UserProfile>(userProfileRef);
     const permissions = usePermissions(userProfile);
 
-    /**
-     * TACTICAL MODULE ACTIVATION:
-     * Switches the active module/workstation.
-     * Triggered strictly by click as per mission parameters.
-     */
-    const handleSwitch = (item: any) => {
+    const handleSwitch = (item: any, modal = false) => {
         uiEmitter.emit('close-all-dialogs');
-        if ('href' in item) {
+        if ('href' in item && !modal) {
             router.push(item.href);
         } else if (item.dialog) {
-            // Slight delay ensures close-all-dialogs cleanup is processed by the event loop
             setTimeout(() => {
-                uiEmitter.emit(`open-${item.dialog}-dialog` as any);
+                uiEmitter.emit(`open-${item.dialog}-dialog` as any, { modal });
             }, 50);
         }
+    };
+
+    const handleContextMenu = (e: React.MouseEvent, item: any) => {
+        e.preventDefault();
+        handleSwitch(item, true);
+    };
+
+    const handleTouchStart = (item: any) => {
+        longPressTimer.current = setTimeout(() => {
+            handleSwitch(item, true);
+        }, 600);
+    };
+
+    const handleTouchEnd = () => {
+        if (longPressTimer.current) clearTimeout(longPressTimer.current);
     };
 
     if (isVertical) {
@@ -65,7 +76,10 @@ export function PanelSwitcher({ isVertical }: PanelSwitcherProps) {
                                                 ? "bg-primary/20 text-primary" 
                                                 : "bg-transparent hover:bg-primary/10 text-muted-foreground"
                                         )}
-                                        onClick={() => handleSwitch(item)}
+                                        onClick={() => handleSwitch(item, false)}
+                                        onContextMenu={(e) => handleContextMenu(e, item)}
+                                        onTouchStart={() => handleTouchStart(item)}
+                                        onTouchEnd={handleTouchEnd}
                                     >
                                         <item.icon className={cn("h-5 w-5 shrink-0 transition-colors", isActive ? "text-primary" : "group-hover:text-primary")} />
                                         <span className={cn(
@@ -77,7 +91,7 @@ export function PanelSwitcher({ isVertical }: PanelSwitcherProps) {
                                     </Button>
                                 </TooltipTrigger>
                                 <TooltipContent side="right" className="apple-glass-darker border-none px-3 py-1.5 text-[10px] font-black uppercase tracking-widest">
-                                    {item.label}
+                                    {item.label} (R-Click for Modal)
                                 </TooltipContent>
                             </Tooltip>
                         );
@@ -107,7 +121,10 @@ export function PanelSwitcher({ isVertical }: PanelSwitcherProps) {
                                         ? "bg-primary/20 text-primary border-primary/30 shadow-lg shadow-primary/10" 
                                         : "bg-background/40 hover:bg-primary/10 hover:border-primary/20"
                                 )}
-                                onClick={() => handleSwitch(item)}
+                                onClick={() => handleSwitch(item, false)}
+                                onContextMenu={(e) => handleContextMenu(e, item)}
+                                onTouchStart={() => handleTouchStart(item)}
+                                onTouchEnd={handleTouchEnd}
                             >
                                 <item.icon className={cn("h-4 w-4 transition-colors", isActive ? "text-primary" : "text-muted-foreground group-hover:text-primary")} />
                                 <span className={cn(

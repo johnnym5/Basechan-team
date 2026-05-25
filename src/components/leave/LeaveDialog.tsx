@@ -7,13 +7,14 @@ import { LeavePageContent } from './LeavePageContent';
 interface LeaveDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  modal?: boolean;
 }
 
-export function LeaveDialog({ open, onOpenChange }: LeaveDialogProps) {
+export function LeaveDialog({ open, onOpenChange, modal = false }: LeaveDialogProps) {
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent position="left" className="flex flex-col p-0">
+    <Dialog open={open} onOpenChange={onOpenChange} modal={modal}>
+      <DialogContent position={modal ? "center" : "left"} className="flex flex-col p-0">
         <DialogHeader className="sr-only">
           <DialogTitle>Leave Management</DialogTitle>
           <DialogDescription>Request time off and manage your leave balance.</DialogDescription>

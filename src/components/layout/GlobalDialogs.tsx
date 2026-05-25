@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
@@ -37,29 +36,55 @@ interface GlobalDialogsProps {
 
 export function GlobalDialogs({ userProfile, permissions, onAnyDialogOpenChange }: GlobalDialogsProps) {
   const [isWorkbookOpen, setIsWorkbookOpen] = useState(false);
+  const [isWorkbookModal, setIsWorkbookModal] = useState(false);
   const [initialWorkbookPayload, setInitialWorkbookPayload] = useState<{ workbookId?: string; sheetId?: string | null } | undefined>();
+  
   const [isFinanceOpen, setIsFinanceOpen] = useState(false);
+  const [isFinanceModal, setIsFinanceModal] = useState(false);
   const [initialFinancePayload, setInitialFinancePayload] = useState<{ reqId?: string; tab?: string } | undefined>();
+  
   const [isTasksOpen, setIsTasksOpen] = useState(false);
+  const [isTasksModal, setIsTasksModal] = useState(false);
   const [initialTaskPayload, setInitialTaskPayload] = useState<{ taskId?: string } | undefined>();
+  
   const [isAttendanceOpen, setIsAttendanceOpen] = useState(false);
+  const [isAttendanceModal, setIsAttendanceModal] = useState(false);
+  
   const [isLeaveOpen, setIsLeaveOpen] = useState(false);
+  const [isLeaveModal, setIsLeaveModal] = useState(false);
+  
   const [isReportsOpen, setIsReportsOpen] = useState(false);
+  const [isReportsModal, setIsReportsModal] = useState(false);
   const [initialReportsPayload, setInitialReportsPayload] = useState<{ tab?: string } | undefined>();
+  
   const [isLibraryOpen, setIsLibraryOpen] = useState(false);
+  const [isLibraryModal, setIsLibraryModal] = useState(false);
+  
   const [isDisplaysOpen, setIsDisplaysOpen] = useState(false);
+  const [isDisplaysModal, setIsDisplaysModal] = useState(false);
   const [initialDisplaysPayload, setInitialDisplaysPayload] = useState<{ displayId?: string } | undefined>();
+  
   const [isAssignTaskOpen, setIsAssignTaskOpen] = useState(false);
   const [isNewRequisitionOpen, setIsNewRequisitionOpen] = useState(false);
   const [isRequestLeaveOpen, setIsRequestLeaveOpen] = useState(false);
   const [isNewWorkbookOpen, setIsNewWorkbookOpen] = useState(false);
+  
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isProfileModal, setIsProfileModal] = useState(false);
+  
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isSettingsModal, setIsSettingsModal] = useState(false);
+  
   const [isChatOpen, setIsChatOpen] = useState(false);
+  const [isChatModal, setIsChatModal] = useState(false);
   const [initialChatPayload, setInitialChatPayload] = useState<{ initialUserId?: string; chatId?: string } | undefined>();
+  
   const [isInviteOpen, setIsInviteOpen] = useState(false);
   const [isNewAnnouncementOpen, setIsNewAnnouncementOpen] = useState(false);
+  
   const [isSuperAdminOpen, setIsSuperAdminOpen] = useState(false);
+  const [isSuperAdminModal, setIsSuperAdminModal] = useState(false);
+  
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isCreateChannelOpen, setIsCreateChannelOpen] = useState(false);
   const [isLiveMonitorOpen, setIsLiveMonitorOpen] = useState(false);
@@ -109,33 +134,39 @@ export function GlobalDialogs({ userProfile, permissions, onAnyDialogOpenChange 
   ]);
 
   useEffect(() => {
-    const openProfile = () => setIsProfileOpen(true);
-    const openSettings = () => setIsSettingsOpen(true);
+    const openProfile = (p?: any) => { setIsProfileModal(!!p?.modal); setIsProfileOpen(true); };
+    const openSettings = (p?: any) => { setIsSettingsModal(!!p?.modal); setIsSettingsOpen(true); };
     const openChat = (payload?: any) => {
       if (payload) setInitialChatPayload(payload);
+      setIsChatModal(!!payload?.modal);
       setIsChatOpen(true);
     };
     const openTasks = (payload?: any) => {
         if (payload) setInitialTaskPayload(payload);
+        setIsTasksModal(!!payload?.modal);
         setIsTasksOpen(true);
     };
     const openWorkbooks = (payload?: any) => {
       if (payload) setInitialWorkbookPayload(payload);
+      setIsWorkbookModal(!!payload?.modal);
       setIsWorkbookOpen(true);
     };
     const openFinance = (payload?: any) => {
         if (payload) setInitialFinancePayload(payload);
+        setIsFinanceModal(!!payload?.modal);
         setIsFinanceOpen(true);
     };
-    const openAttendance = () => setIsAttendanceOpen(true);
-    const openLeave = () => setIsLeaveOpen(true);
+    const openAttendance = (p?: any) => { setIsAttendanceModal(!!p?.modal); setIsAttendanceOpen(true); };
+    const openLeave = (p?: any) => { setIsLeaveModal(!!p?.modal); setIsLeaveOpen(true); };
     const openReports = (payload?: any) => {
         if (payload) setInitialReportsPayload(payload);
+        setIsReportsModal(!!payload?.modal);
         setIsReportsOpen(true);
     };
-    const openLibrary = () => setIsLibraryOpen(true);
+    const openLibrary = (p?: any) => { setIsLibraryModal(!!p?.modal); setIsLibraryOpen(true); };
     const openDisplays = (payload?: any) => {
         if (payload) setInitialDisplaysPayload(payload);
+        setIsDisplaysModal(!!payload?.modal);
         setIsDisplaysOpen(true);
     };
     const openAssignTask = () => setIsAssignTaskOpen(true);
@@ -144,7 +175,7 @@ export function GlobalDialogs({ userProfile, permissions, onAnyDialogOpenChange 
     const openNewWorkbook = () => setIsNewWorkbookOpen(true);
     const openInviteUser = () => setIsInviteOpen(true);
     const openNewAnnouncement = () => setIsNewAnnouncementOpen(true);
-    const openSuperAdmin = () => setIsSuperAdminOpen(true);
+    const openSuperAdmin = (p?: any) => { setIsSuperAdminModal(!!p?.modal); setIsSuperAdminOpen(true); };
     const openNotifications = () => setIsNotificationsOpen(true);
     const openCreateChannel = () => setIsCreateChannelOpen(true);
     const openLiveMonitor = (payload: any) => {
@@ -210,7 +241,7 @@ export function GlobalDialogs({ userProfile, permissions, onAnyDialogOpenChange 
               if (!isOpen) setInitialWorkbookPayload(undefined);
           }}
           initialPayload={initialWorkbookPayload}
-          modal={false}
+          modal={isWorkbookModal}
       />
       <FinanceHubDialog
           open={isFinanceOpen}
@@ -219,7 +250,7 @@ export function GlobalDialogs({ userProfile, permissions, onAnyDialogOpenChange 
               if (!isOpen) setInitialFinancePayload(undefined);
           }}
           initialPayload={initialFinancePayload}
-          modal={false}
+          modal={isFinanceModal}
       />
       <TasksDialog
           open={isTasksOpen}
@@ -230,10 +261,10 @@ export function GlobalDialogs({ userProfile, permissions, onAnyDialogOpenChange 
           initialPayload={initialTaskPayload}
           userProfile={userProfile}
           permissions={permissions}
-          modal={false}
+          modal={isTasksModal}
       />
-      <AttendanceDialog open={isAttendanceOpen} onOpenChange={setIsAttendanceOpen} modal={false} />
-      <LeaveDialog open={isLeaveOpen} onOpenChange={setIsLeaveOpen} modal={false} />
+      <AttendanceDialog open={isAttendanceOpen} onOpenChange={setIsAttendanceOpen} modal={isAttendanceModal} />
+      <LeaveDialog open={isLeaveOpen} onOpenChange={setIsLeaveOpen} modal={isLeaveModal} />
       <ReportsDialog
           open={isReportsOpen}
           onOpenChange={(isOpen) => {
@@ -241,9 +272,9 @@ export function GlobalDialogs({ userProfile, permissions, onAnyDialogOpenChange 
               if (!isOpen) setInitialReportsPayload(undefined);
           }}
           initialPayload={initialReportsPayload}
-          modal={false}
+          modal={isReportsModal}
       />
-      <LibraryDialog open={isLibraryOpen} onOpenChange={setIsLibraryOpen} modal={false} />
+      <LibraryDialog open={isLibraryOpen} onOpenChange={setIsLibraryOpen} modal={isLibraryModal} />
       <DisplaysDialog 
         open={isDisplaysOpen} 
         onOpenChange={(isOpen) => {
@@ -251,16 +282,16 @@ export function GlobalDialogs({ userProfile, permissions, onAnyDialogOpenChange 
             if (!isOpen) setInitialDisplaysPayload(undefined);
         }} 
         initialPayload={initialDisplaysPayload}
-        modal={false}
+        modal={isDisplaysModal}
       />
-      <SuperAdminDialog open={isSuperAdminOpen} onOpenChange={setIsSuperAdminOpen} modal={false} />
+      <SuperAdminDialog open={isSuperAdminOpen} onOpenChange={setIsSuperAdminOpen} modal={isSuperAdminModal} />
       
       {isProfileOpen && userProfile && (
         <ProfileDialog 
           open={isProfileOpen} 
           onOpenChange={setIsProfileOpen} 
           userProfile={userProfile} 
-          modal={false}
+          modal={isProfileModal}
         />
       )}
       {isSettingsOpen && userProfile && (
@@ -268,7 +299,7 @@ export function GlobalDialogs({ userProfile, permissions, onAnyDialogOpenChange 
           open={isSettingsOpen} 
           onOpenChange={setIsSettingsOpen} 
           userProfile={userProfile} 
-          modal={false}
+          modal={isSettingsModal}
         />
       )}
       {isChatOpen && userProfile && (
@@ -281,7 +312,7 @@ export function GlobalDialogs({ userProfile, permissions, onAnyDialogOpenChange 
             currentUserProfile={userProfile}
             permissions={permissions}
             initialPayload={initialChatPayload}
-            modal={false}
+            modal={isChatModal}
           />
       )}
 

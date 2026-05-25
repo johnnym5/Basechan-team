@@ -370,10 +370,10 @@ function WorkbookDialogContent({ initialPayload }: { initialPayload?: { workbook
   );
 }
 
-export function WorkbookDialog({ open, onOpenChange, initialPayload }: { open: boolean, onOpenChange: (open: boolean) => void, initialPayload?: any }) {
+export function WorkbookDialog({ open, onOpenChange, initialPayload, modal = false }: { open: boolean, onOpenChange: (open: boolean) => void, initialPayload?: any, modal?: boolean }) {
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent position="left" className="flex flex-col p-0">
+    <Dialog open={open} onOpenChange={onOpenChange} modal={modal}>
+      <DialogContent position={modal ? "center" : "left"} className="flex flex-col p-0">
         <div className="sr-only">
           <DialogHeader>
             <DialogTitle>Data Grid Workstation</DialogTitle>

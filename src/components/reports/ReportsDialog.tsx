@@ -7,12 +7,13 @@ interface ReportsDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   initialPayload?: { tab?: string };
+  modal?: boolean;
 }
 
-export function ReportsDialog({ open, onOpenChange, initialPayload }: ReportsDialogProps) {
+export function ReportsDialog({ open, onOpenChange, initialPayload, modal = false }: ReportsDialogProps) {
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent position="left" className="flex flex-col p-0 overflow-hidden">
+    <Dialog open={open} onOpenChange={onOpenChange} modal={modal}>
+      <DialogContent position={modal ? "center" : "left"} className="flex flex-col p-0 overflow-hidden">
         <DialogHeader className="sr-only">
           <DialogTitle>Organizational Analytics</DialogTitle>
           <DialogDescription>Analyze performance and review team reports.</DialogDescription>

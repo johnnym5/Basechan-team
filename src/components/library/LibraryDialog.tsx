@@ -7,16 +7,17 @@ import { LibraryPageContent } from './LibraryPageContent';
 interface LibraryDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  modal?: boolean;
 }
 
 /**
  * Library workstation workstation panel.
  * Provides a high-velocity interface for organizational SOPs and documentation.
  */
-export function LibraryDialog({ open, onOpenChange }: LibraryDialogProps) {
+export function LibraryDialog({ open, onOpenChange, modal = false }: LibraryDialogProps) {
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent position="left" className="flex flex-col p-0">
+    <Dialog open={open} onOpenChange={onOpenChange} modal={modal}>
+      <DialogContent position={modal ? "center" : "left"} className="flex flex-col p-0">
         <DialogHeader className="sr-only">
           <DialogTitle>Knowledge Base & Library</DialogTitle>
           <DialogDescription>Centralized repository for onboarding documents and policies.</DialogDescription>
