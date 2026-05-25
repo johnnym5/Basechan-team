@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2, KeyRound, ShieldCheck, Ban, CheckCircle2, Save } from "lucide-react";
 import { useState, useEffect, useMemo, useRef } from "react";
-import { useFirestore, useUser } from "@/firebase";
+import { useFirestore } from "@/firebase";
 import { doc, updateDoc } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import type { UserProfile, UserPosition } from "@/lib/types";
@@ -60,7 +60,14 @@ export function EditUserDialog({ open, onOpenChange, userToEdit }: EditUserDialo
       phoneNumber: "",
       position: "",
       departmentName: "",
-      customPermissions: {},
+      customPermissions: {
+        canAccessRequisitions: false,
+        canAccessChat: false,
+        canManageAccounting: false,
+        canAccessLibrary: false,
+        canManageAnnouncements: false,
+        canViewAudit: false,
+      },
     }
   });
 
@@ -75,7 +82,14 @@ export function EditUserDialog({ open, onOpenChange, userToEdit }: EditUserDialo
         phoneNumber: userToEdit.phoneNumber || "",
         position: userToEdit.position || "",
         departmentName: userToEdit.departmentName || "",
-        customPermissions: userToEdit.customPermissions || {},
+        customPermissions: {
+            canAccessRequisitions: !!userToEdit.customPermissions?.canAccessRequisitions,
+            canAccessChat: !!userToEdit.customPermissions?.canAccessChat,
+            canManageAccounting: !!userToEdit.customPermissions?.canManageAccounting,
+            canAccessLibrary: !!userToEdit.customPermissions?.canAccessLibrary,
+            canManageAnnouncements: !!userToEdit.customPermissions?.canManageAnnouncements,
+            canViewAudit: !!userToEdit.customPermissions?.canViewAudit,
+        },
       });
       prevDeptRef.current = userToEdit.departmentName || null;
     }
@@ -107,7 +121,16 @@ export function EditUserDialog({ open, onOpenChange, userToEdit }: EditUserDialo
     try {
       const userRef = doc(firestore, 'users', userToEdit.id);
       
-      // We use direct updateDoc and await it for critical admin actions
+      // Explicitly sanitize permissions to ensure no 'undefined' values reach Firestore
+      const sanitizedPermissions = {
+        canAccessRequisitions: !!values.customPermissions?.canAccessRequisitions,
+        canAccessChat: !!values.customPermissions?.canAccessChat,
+        canManageAccounting: !!values.customPermissions?.canManageAccounting,
+        canAccessLibrary: !!values.customPermissions?.canAccessLibrary,
+        canManageAnnouncements: !!values.customPermissions?.canManageAnnouncements,
+        canViewAudit: !!values.customPermissions?.canViewAudit,
+      };
+
       await updateDoc(userRef, {
         fullName: sanitizeInput(values.fullName),
         email: sanitizeInput(values.email.toLowerCase()),
@@ -116,7 +139,7 @@ export function EditUserDialog({ open, onOpenChange, userToEdit }: EditUserDialo
         position: values.position,
         departmentName: values.departmentName,
         role: getRoleFromPosition(values.position as UserPosition),
-        customPermissions: values.customPermissions || {},
+        customPermissions: sanitizedPermissions,
       });
 
       toast({
@@ -137,7 +160,7 @@ export function EditUserDialog({ open, onOpenChange, userToEdit }: EditUserDialo
   }
 
   const onValidationError = (errors: any) => {
-    console.error("Authorization Profile Validation Failure Details:", errors);
+    console.error("Authorization Profile Validation Failure Details:", JSON.stringify(errors, null, 2));
     toast({
         variant: "destructive",
         title: "Deployment Blocked",
@@ -160,7 +183,7 @@ export function EditUserDialog({ open, onOpenChange, userToEdit }: EditUserDialo
                 </div>
                 <FormControl>
                     <Switch
-                        checked={field.value ?? false}
+                        checked={!!field.value}
                         onCheckedChange={field.onChange}
                     />
                 </FormControl>
