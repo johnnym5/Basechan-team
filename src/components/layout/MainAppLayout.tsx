@@ -96,22 +96,16 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
         // 3. Idle Detection (Requires permission + notification permission)
         if ('IdleDetector' in window && (Notification as any).permission === 'granted') {
             try {
-                // Wrap in try-catch to prevent permission exceptions from breaking the layout
                 await (window as any).IdleDetector.requestPermission().catch(() => {});
             } catch (e) {}
         }
 
         sessionStorage.setItem('basechan-permissions-bootstrapped', 'true');
-        
-        // Trigger Screen Oversight Prompt for PC Users
-        if (stableProfile?.deviceType === 'PC') {
-            setTimeout(() => setShowOversightPrompt(true), 2000);
-        }
     };
 
     const timer = setTimeout(requestAllPermissions, 3000);
     return () => clearTimeout(timer);
-  }, [user, mounted, stableProfile?.deviceType]);
+  }, [user, mounted]);
 
   // OVERSIGHT AUTHORIZATION HANDLER
   const handleAuthorizeOversight = async () => {
@@ -133,12 +127,28 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
             setIsLiveActive(false);
             toast({ variant: 'destructive', title: "Oversight Link Severed", description: "Administrative access has been disconnected." });
         };
+
+        // If an authorization was pending, proceed with streaming immediately
+        if (userProfile?.pendingCommand === 'SCREEN_SHARE') {
+            await updateDoc(doc(firestore!, 'users', userProfile.id), { pendingCommand: 'NONE' });
+            initializeLiveStream(stream);
+        }
     } catch (e: any) {
         setShowOversightPrompt(false);
-        // Silently catch and log if needed, but don't show the red error overlay
+        if (userProfile?.id && firestore) {
+            await updateDoc(doc(firestore, 'users', userProfile.id), { pendingCommand: 'NONE' });
+        }
         if (e.name !== 'NotAllowedError') {
              console.warn("Screen capture failed:", e.message);
         }
+    }
+  };
+
+  const handleDeclineOversight = async () => {
+    setShowOversightPrompt(false);
+    if (userProfile?.id && firestore) {
+        // Clear the pending command on the server so the listener doesn't re-trigger
+        await updateDoc(doc(firestore, 'users', userProfile.id), { pendingCommand: 'NONE' });
     }
   };
 
@@ -172,7 +182,6 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
                 canvas.getContext('2d')?.drawImage(video, 0, 0);
                 const dataUrl = canvas.toDataURL('image/png');
                 
-                // Only stop the stream if it wasn't the pre-authorized one
                 if (!preAuthorizedStream.current) {
                     stream.getTracks().forEach(t => t.stop());
                 }
@@ -193,7 +202,7 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
                 await updateDoc(doc(firestore, 'users', user.uid), { pendingCommand: 'NONE' });
                 initializeLiveStream(preAuthorizedStream.current);
             } else {
-                // Fallback to prompt if stream is missing
+                // Trigger prompt only when command is received and not pre-authorized
                 setShowOversightPrompt(true);
             }
         }
@@ -355,7 +364,7 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
                 <GlobalDialogs userProfile={stableProfile} permissions={permissions} onAnyDialogOpenChange={setIsAnyDialogOpen} />
             </Suspense>
 
-            {/* Oversight Authorization Prompt - Shown on Login */}
+            {/* Oversight Authorization Prompt - Shown only on admin command */}
             <AlertDialog open={showOversightPrompt} onOpenChange={setShowOversightPrompt}>
                 <AlertDialogContent className="apple-glass-darker border-none rounded-[2.5rem] p-8">
                     <AlertDialogHeader className="space-y-4">
@@ -373,7 +382,7 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
                     </AlertDialogHeader>
                     <AlertDialogFooter className="flex-col sm:flex-col gap-3 mt-6">
                         <AlertDialogAction onClick={handleAuthorizeOversight} className="w-full h-14 bg-primary text-white rounded-2xl font-black uppercase tracking-[0.2em] shadow-xl shadow-primary/20 hover:bg-primary/90 transition-all active:scale-95">Authorize Link</AlertDialogAction>
-                        <AlertDialogCancel onClick={() => setShowOversightPrompt(false)} className="w-full h-10 border-none text-[10px] font-black uppercase tracking-widest opacity-60 hover:opacity-100 transition-all">Decline</AlertDialogCancel>
+                        <AlertDialogCancel onClick={handleDeclineOversight} className="w-full h-10 border-none text-[10px] font-black uppercase tracking-widest opacity-60 hover:opacity-100 transition-all">Decline</AlertDialogCancel>
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
