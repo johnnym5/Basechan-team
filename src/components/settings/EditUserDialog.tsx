@@ -24,9 +24,9 @@ const formSchema = z.object({
   fullName: z.string().min(1, "Identity name is required."),
   username: z.string().min(3, "Username must be at least 3 characters."),
   email: z.string().email("Invalid email format."),
-  phoneNumber: z.string().optional(),
+  phoneNumber: z.string().optional().nullable(),
   position: z.string().min(1, "Position is required."),
-  departmentName: z.string({ required_error: "Department is required." }),
+  departmentName: z.string({ required_error: "Department is required." }).min(1, "Department is required."),
   customPermissions: z.object({
     canAccessRequisitions: z.boolean().optional(),
     canAccessChat: z.boolean().optional(),
@@ -53,6 +53,15 @@ export function EditUserDialog({ open, onOpenChange, userToEdit }: EditUserDialo
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
+    defaultValues: {
+      fullName: "",
+      email: "",
+      username: "",
+      phoneNumber: "",
+      position: "",
+      departmentName: "",
+      customPermissions: {},
+    }
   });
 
   const selectedDepartment = form.watch('departmentName');
@@ -61,12 +70,12 @@ export function EditUserDialog({ open, onOpenChange, userToEdit }: EditUserDialo
   useEffect(() => {
     if (userToEdit && open) {
       form.reset({
-        fullName: userToEdit.fullName,
-        email: userToEdit.email,
-        username: userToEdit.username,
-        phoneNumber: userToEdit.phoneNumber || '',
-        position: userToEdit.position,
-        departmentName: userToEdit.departmentName,
+        fullName: userToEdit.fullName || "",
+        email: userToEdit.email || "",
+        username: userToEdit.username || "",
+        phoneNumber: userToEdit.phoneNumber || "",
+        position: userToEdit.position || "",
+        departmentName: userToEdit.departmentName || "",
         customPermissions: userToEdit.customPermissions || {},
       });
       prevDeptRef.current = userToEdit.departmentName || null;
@@ -106,11 +115,11 @@ export function EditUserDialog({ open, onOpenChange, userToEdit }: EditUserDialo
         fullName: sanitizeInput(values.fullName),
         email: sanitizeInput(values.email.toLowerCase()),
         username: sanitizeInput(values.username.toLowerCase()),
-        phoneNumber: sanitizeInput(values.phoneNumber) || null,
+        phoneNumber: values.phoneNumber ? sanitizeInput(values.phoneNumber) : null,
         position: values.position,
         departmentName: values.departmentName,
         role: getRoleFromPosition(values.position as UserPosition),
-        customPermissions: values.customPermissions,
+        customPermissions: values.customPermissions || {},
       });
 
       toast({
@@ -128,6 +137,15 @@ export function EditUserDialog({ open, onOpenChange, userToEdit }: EditUserDialo
       setIsLoading(false);
     }
   }
+
+  const onError = (errors: any) => {
+    console.error("Authorization Profile Validation Failure:", errors);
+    toast({
+        variant: "destructive",
+        title: "Deployment Blocked",
+        description: "Missing or invalid parameters detected. Please verify identity and clearance fields.",
+    });
+  };
 
   const PermissionToggle = ({ name, label, description }: { name: keyof NonNullable<FormData['customPermissions']>, label: string, description: string }) => (
     <FormField
@@ -163,7 +181,7 @@ export function EditUserDialog({ open, onOpenChange, userToEdit }: EditUserDialo
 
         <ScrollArea className="flex-1 bg-background/20">
             <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="p-8 pt-0 space-y-8">
+                <form onSubmit={form.handleSubmit(onSubmit, onError)} className="p-8 pt-0 space-y-8">
                     <div className="space-y-6">
                         <div className="flex items-center gap-2">
                             <div className="p-1.5 rounded-lg bg-primary/10 text-primary"><KeyRound className="h-3.5 w-3.5" /></div>
@@ -180,7 +198,7 @@ export function EditUserDialog({ open, onOpenChange, userToEdit }: EditUserDialo
                                 <FormItem><FormLabel className="text-[9px] uppercase font-black opacity-50">Auth Email</FormLabel><FormControl><Input type="email" {...field} className="rounded-xl h-11 bg-background/50 border-white/5" /></FormControl><FormMessage /></FormItem>
                             )}/>
                             <FormField control={form.control} name="phoneNumber" render={({ field }) => (
-                                <FormItem><FormLabel className="text-[9px] uppercase font-black opacity-50">Emergency Comms</FormLabel><FormControl><Input type="tel" {...field} className="rounded-xl h-11 bg-background/50 border-white/5" /></FormControl><FormMessage /></FormItem>
+                                <FormItem><FormLabel className="text-[9px] uppercase font-black opacity-50">Emergency Comms</FormLabel><FormControl><Input type="tel" {...field} value={field.value ?? ""} className="rounded-xl h-11 bg-background/50 border-white/5" /></FormControl><FormMessage /></FormItem>
                             )}/>
                         </div>
                     </div>
@@ -196,7 +214,7 @@ export function EditUserDialog({ open, onOpenChange, userToEdit }: EditUserDialo
                             <FormField control={form.control} name="departmentName" render={({ field }) => (
                                 <FormItem><FormLabel className="text-[9px] uppercase font-black opacity-50">Sector</FormLabel>
                                     <Select onValueChange={field.onChange} value={field.value}>
-                                    <FormControl><SelectTrigger className="rounded-xl h-11 bg-background/50 border-white/5"><SelectValue /></SelectTrigger></FormControl>
+                                    <FormControl><SelectTrigger className="rounded-xl h-11 bg-background/50 border-white/5"><SelectValue placeholder="Select Sector" /></SelectTrigger></FormControl>
                                     <SelectContent className="apple-glass-darker border-none">{PREDEFINED_DEPARTMENTS.map(dep => <SelectItem key={dep} value={dep}>{dep}</SelectItem>)}</SelectContent>
                                     </Select>
                                 <FormMessage /></FormItem>
