@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -12,6 +13,7 @@ import { isBefore, addDays, parseISO } from 'date-fns';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '../ui/input';
 import { ScrollArea } from '../ui/scroll-area';
+import { Badge } from '../ui/badge';
 
 interface MaintenanceAlert {
     assetName: string;
@@ -48,10 +50,7 @@ export function MaintenancePane({ currentUserProfile }: { currentUserProfile: Us
             const threshold = addDays(now, 14); // 2 week window for settings view
 
             try {
-                // Relevant workbooks usually named like assets, maintenance, equipment
-                const relevantWorkbooks = workbooks; // Scan all in full view
-
-                for (const wb of relevantWorkbooks) {
+                for (const wb of workbooks) {
                     const sheetsSnap = await getDocs(collection(firestore, `workbooks/${wb.id}/sheets`));
                     
                     for (const docSnap of sheetsSnap.docs) {
@@ -184,7 +183,7 @@ export function MaintenancePane({ currentUserProfile }: { currentUserProfile: Us
                                         <Settings2 className="h-5 w-5" />
                                     </div>
                                     <Badge className={cn(
-                                        "text-[9px] font-black tracking-widest",
+                                        "text-[9px] font-black tracking-widest uppercase",
                                         alert.status === 'OVERDUE' ? "bg-rose-500 text-white" : "bg-amber-500 text-black"
                                     )}>
                                         {alert.status}

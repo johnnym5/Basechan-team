@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -6,7 +7,7 @@ import { query, collection, where, orderBy, limit } from 'firebase/firestore';
 import type { UserProfile, Chat, Task, Announcement } from '@/lib/types';
 import { ResponsiveDialog } from '@/components/shared/ResponsiveDialog';
 import { Button } from '@/components/ui/button';
-import { MessageSquare, ListTodo, AlertCircle, Sparkles, Clock, ArrowRight, Megaphone, ChevronRight } from 'lucide-react';
+import { MessageSquare, ListTodo, AlertCircle, Sparkles, Clock, ArrowRight, Megaphone, ChevronRight, LayoutDashboard } from 'lucide-react';
 import { format, isToday, isTomorrow, parseISO } from 'date-fns';
 import { uiEmitter } from '@/lib/ui-emitter';
 import { cn } from '@/lib/utils';
@@ -35,7 +36,6 @@ export function DebriefModal({ userProfile }: { userProfile: UserProfile }) {
         const shouldShowNow = lastDebrief !== today && (!remindLaterTime || isAfterOnePM());
 
         if (shouldShowNow) {
-            // Small delay to ensure layout is ready
             setTimeout(() => setIsOpen(true), 1500);
         }
 
@@ -94,11 +94,29 @@ export function DebriefModal({ userProfile }: { userProfile: UserProfile }) {
             description={format(new Date(), 'PPPP p')}
         >
             <div className="py-4 space-y-6">
+                {/* Tactical Status Sector */}
+                <div className="p-5 rounded-3xl bg-primary/10 border border-primary/20 relative overflow-hidden group">
+                    <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                        <LayoutDashboard className="h-20 w-20 text-primary" />
+                    </div>
+                    <div className="flex items-center gap-2 text-primary mb-3">
+                        <Sparkles className="h-4 w-4 animate-pulse" />
+                        <span className="text-[10px] font-black uppercase tracking-[0.2em]">Operational Outlook</span>
+                    </div>
+                    <div className="relative z-10">
+                         <p className="text-sm font-medium leading-relaxed italic text-foreground/90">
+                            {taskIntel.pending > 0 
+                                ? `You have ${taskIntel.pending} active objectives assigned for this cycle. ${taskIntel.urgent > 0 ? `Alert: ${taskIntel.urgent} critical deadlines detected.` : 'No immediate critical threats.'}`
+                                : 'All primary objectives are currently cleared. Monitor channels for incoming transmissions.'}
+                        </p>
+                    </div>
+                </div>
+
                 {/* Stats Summary */}
                 <div className="grid grid-cols-2 gap-4">
                     <div 
                         onClick={() => { setIsOpen(false); uiEmitter.emit('open-chat-dialog'); }}
-                        className="p-5 rounded-3xl bg-primary/5 border border-primary/10 cursor-pointer hover:bg-primary/10 transition-all active:scale-95 group"
+                        className="p-5 rounded-3xl bg-secondary/20 border border-white/5 cursor-pointer hover:bg-secondary/40 hover:border-primary/20 transition-all active:scale-95 group"
                     >
                         <div className="flex items-center justify-between text-primary mb-2">
                             <MessageSquare className="h-5 w-5" />
@@ -109,7 +127,7 @@ export function DebriefModal({ userProfile }: { userProfile: UserProfile }) {
                     </div>
                     <div 
                         onClick={() => { setIsOpen(false); uiEmitter.emit('open-tasks-dialog'); }}
-                        className="p-5 rounded-3xl bg-secondary/20 border border-white/5 cursor-pointer hover:bg-secondary/40 transition-all active:scale-95 group"
+                        className="p-5 rounded-3xl bg-secondary/20 border border-white/5 cursor-pointer hover:bg-secondary/40 hover:border-primary/20 transition-all active:scale-95 group"
                     >
                         <div className="flex items-center justify-between text-foreground mb-2">
                             <ListTodo className="h-5 w-5" />
@@ -119,18 +137,6 @@ export function DebriefModal({ userProfile }: { userProfile: UserProfile }) {
                         <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Open Tasks</p>
                     </div>
                 </div>
-
-                {/* Announcement Node */}
-                {latestAnnouncement && (
-                    <div className="p-4 rounded-2xl bg-amber-500/5 border border-amber-500/10 space-y-2">
-                        <div className="flex items-center gap-2 text-amber-600">
-                            <Megaphone className="h-4 w-4" />
-                            <span className="text-[10px] font-black uppercase tracking-widest">Recent Update</span>
-                        </div>
-                        <h4 className="font-bold text-sm">{latestAnnouncement.title}</h4>
-                        <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">{latestAnnouncement.content}</p>
-                    </div>
-                )}
 
                 {/* Deadline Alert */}
                 {taskIntel.urgent > 0 && (
@@ -145,9 +151,21 @@ export function DebriefModal({ userProfile }: { userProfile: UserProfile }) {
                     </div>
                 )}
 
-                <div className="flex flex-col gap-3 pt-4">
+                {latestAnnouncement && (
+                    <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center gap-4">
+                        <div className="h-10 w-10 rounded-xl bg-amber-500/20 flex items-center justify-center text-amber-500">
+                            <Megaphone className="h-6 w-6" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                            <p className="text-xs font-black text-amber-600 uppercase tracking-tighter">Latest Broadcast</p>
+                            <p className="text-[10px] font-medium leading-tight text-foreground/80 truncate">{latestAnnouncement.title}</p>
+                        </div>
+                    </div>
+                )}
+
+                <div className="flex flex-col gap-3 pt-2">
                     <Button onClick={handleAcknowledge} className="h-14 rounded-2xl font-black uppercase tracking-[0.2em] shadow-xl shadow-primary/20 group">
-                        Let's Get Started
+                        Acknowledge & Deploy
                         <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
                     </Button>
                     <Button variant="ghost" onClick={handleRemindLater} className="text-[10px] font-black uppercase tracking-widest opacity-60">

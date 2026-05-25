@@ -1,6 +1,7 @@
+
 'use client';
 
-import { Firestore, collection, query, where, orderBy, limit, getDocs, doc } from 'firebase/firestore';
+import { Firestore, collection, query, where, orderBy, limit, getDocs } from 'firebase/firestore';
 import { addDocumentNonBlocking } from '@/firebase';
 import type { UserProfile, PulseCheck, PulseMood, Notification } from '@/lib/types';
 import { format } from 'date-fns';
