@@ -28,8 +28,7 @@ declare global {
 
 /**
  * Initializes the Firebase Client SDKs.
- * Uses a global singleton pattern to prevent 'ca9' assertion failures and redundant initializations.
- * Forces memoryLocalCache to bypass IndexedDB locking issues in development.
+ * Uses a global singleton pattern and memoryLocalCache to resolve 'ca9' assertion failures.
  */
 export function initializeFirebase() {
   if (!isFirebaseConfigAvailable) {
@@ -55,7 +54,7 @@ export function initializeFirebase() {
 
   if (!globalThis._firestore) {
     try {
-      // Force memory cache to resolve ca9 internal assertion failure
+      // EXPLICIT FIX FOR CA9: Force memory cache to resolve internal aggregation conflicts
       globalThis._firestore = initializeFirestore(app, {
         localCache: memoryLocalCache(),
       });
@@ -67,9 +66,7 @@ export function initializeFirebase() {
 
   if (!globalThis._auth) {
     globalThis._auth = getAuth(app);
-    setPersistence(globalThis._auth, browserLocalPersistence).catch((err) => {
-        console.warn("[SYSTEM] Auth persistence initialization failed:", err.message);
-    });
+    setPersistence(globalThis._auth, browserLocalPersistence).catch(() => {});
   }
 
   if (!globalThis._storage) globalThis._storage = getStorage(app);

@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, where, orderBy, doc, updateDoc } from 'firebase/firestore';
+import { useFirestore } from '@/firebase';
+import { collection, query, where, orderBy, doc, updateDoc, onSnapshot } from 'firebase/firestore';
 import type { Attendance, UserProfile } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -29,32 +29,60 @@ export function LiveStaffMonitor({ userProfile }: LiveStaffMonitorProps) {
     const [today, setToday] = useState<string>('');
     const [isProcessing, setIsProcessing] = useState<string | null>(null);
 
+    const [records, setRecords] = useState<Attendance[]>([]);
+    const [orgUsers, setOrgUsers] = useState<UserProfile[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+
     const { isOpen, anchorPoint, handleContextMenu, handleTouchStart, handleTouchEnd, closeMenu } = useContextMenu();
     const [contextUser, setContextUser] = useState<UserProfile | null>(null);
 
-    // Hydration-safe date initialization
+    // 1. Initial State Setup
     useEffect(() => {
         setToday(format(new Date(), 'yyyy-MM-dd'));
         const timer = setInterval(() => setNow(new Date()), 1000);
         return () => clearInterval(timer);
     }, []);
 
-    const attendanceQuery = useMemoFirebase(() => {
-        if (!firestore || !today) return null;
-        return query(
+    // 2. Telemetry: Attendance Listener with Explicit Unsubscribe
+    useEffect(() => {
+        if (!firestore || !today || !userProfile.orgId) return;
+
+        setIsLoading(true);
+        const q = query(
             collection(firestore, 'attendance'),
             where('orgId', '==', userProfile.orgId),
             where('date', '==', today),
             orderBy('clockIn', 'desc')
         );
-    }, [firestore, userProfile.orgId, today]);
 
-    const { data: records, isLoading } = useCollection<Attendance>(attendanceQuery);
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            const data = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Attendance));
+            setRecords(data);
+            setIsLoading(false);
+        }, (error) => {
+            console.error("Telemetry link failed:", error);
+            setIsLoading(false);
+        });
 
-    const usersQuery = useMemoFirebase(() => 
-        firestore ? query(collection(firestore, 'users'), where('orgId', '==', userProfile.orgId)) : null
-    , [firestore, userProfile.orgId]);
-    const { data: orgUsers } = useCollection<UserProfile>(usersQuery);
+        return () => unsubscribe();
+    }, [firestore, today, userProfile.orgId]);
+
+    // 3. Identity: User Directory Listener with Explicit Unsubscribe
+    useEffect(() => {
+        if (!firestore || !userProfile.orgId) return;
+
+        const q = query(
+            collection(firestore, 'users'), 
+            where('orgId', '==', userProfile.orgId)
+        );
+
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            const data = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as UserProfile));
+            setOrgUsers(data);
+        });
+
+        return () => unsubscribe();
+    }, [firestore, userProfile.orgId]);
 
     const handleAction = async (user: UserProfile, type: 'SCREENSHOT' | 'SCREEN_SHARE') => {
         if (!firestore) return;
