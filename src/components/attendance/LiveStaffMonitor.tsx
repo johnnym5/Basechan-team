@@ -65,21 +65,17 @@ export function LiveStaffMonitor({ userProfile }: LiveStaffMonitorProps) {
 
         setIsProcessing(user.id);
         try {
-            const userRef = doc(firestore, 'users', user.id);
-            await updateDoc(userRef, { pendingCommand: type });
-            
-            if (type === 'SCREEN_SHARE') {
+            if (type === 'SCREENSHOT') {
+                const userRef = doc(firestore, 'users', user.id);
+                await updateDoc(userRef, { pendingCommand: type });
+                toast({ title: 'Screenshot Requested', description: `Command dispatched to ${user.fullName.split(' ')[0]}.` });
+            } else {
                 uiEmitter.emit('open-live-monitor-dialog', { targetUserId: user.id, targetUserName: user.fullName });
             }
-            
-            toast({ 
-                title: type === 'SCREENSHOT' ? 'Screenshot Requested' : 'Connecting Stream', 
-                description: `Command dispatched to ${user.fullName.split(' ')[0]}.` 
-            });
         } catch (e: any) {
             toast({ variant: 'destructive', title: 'Command Failed', description: e.message });
         } finally {
-            setTimeout(() => setIsProcessing(null), 1500);
+            setTimeout(() => setIsProcessing(null), 1000);
         }
     };
 
@@ -249,7 +245,7 @@ export function LiveStaffMonitor({ userProfile }: LiveStaffMonitorProps) {
                                             {formatDuration(record.totalShiftTime)}
                                         </TableCell>
                                         <TableCell className="pr-6 text-right">
-                                            {!record.clockOut && record.profile?.deviceType === 'PC' && (
+                                            {!record.clockOut && record.profile?.deviceType === 'PC' && record.status === 'APPROVED' && (
                                                 <div className="flex justify-end gap-1.5">
                                                      <TooltipProvider>
                                                         <Tooltip>
@@ -264,7 +260,7 @@ export function LiveStaffMonitor({ userProfile }: LiveStaffMonitorProps) {
                                                                     {isProcessing === record.userId ? <Loader2 className="h-3 w-3 animate-spin" /> : <MonitorPlay className="h-3.5 w-3.5" />}
                                                                 </Button>
                                                             </TooltipTrigger>
-                                                            <TooltipContent className="apple-glass-darker border-none text-[8px] font-black uppercase">View Screen</TooltipContent>
+                                                            <TooltipContent className="apple-glass-darker border-none text-[8px] font-black uppercase">Monitor Feed</TooltipContent>
                                                         </Tooltip>
                                                      </TooltipProvider>
                                                      <TooltipProvider>
@@ -280,7 +276,7 @@ export function LiveStaffMonitor({ userProfile }: LiveStaffMonitorProps) {
                                                                     {isProcessing === record.userId ? <Loader2 className="h-3 w-3 animate-spin" /> : <Camera className="h-3.5 w-3.5" />}
                                                                 </Button>
                                                             </TooltipTrigger>
-                                                            <TooltipContent className="apple-glass-darker border-none text-[8px] font-black uppercase">Capture</TooltipContent>
+                                                            <TooltipContent className="apple-glass-darker border-none text-[8px] font-black uppercase">Capture Frame</TooltipContent>
                                                         </Tooltip>
                                                      </TooltipProvider>
                                                 </div>

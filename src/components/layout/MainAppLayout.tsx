@@ -25,6 +25,7 @@ import { LogOut, MonitorPlay, ShieldAlert, Loader2, Signal, ShieldCheck } from '
 import { useToast } from '@/hooks/use-toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '../ui/alert-dialog';
 import { telemetryService } from '@/services/telemetry-service';
+import { uiEmitter } from '@/lib/ui-emitter';
 
 const GlobalDialogs = dynamic(() => import('@/components/layout/GlobalDialogs').then(m => m.GlobalDialogs), { 
   ssr: false,
@@ -42,10 +43,9 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
   const [isAnyDialogOpen, setIsAnyDialogOpen] = useState(false);
 
   // Live Telemetry States
-  const [showOversightPrompt, setShowOversightPrompt] = useState(false);
-  const [isLiveActive, setIsLiveActive] = useState(false);
   const activePeerConnection = useRef<RTCPeerConnection | null>(null);
-  const preAuthorizedStream = useRef<MediaStream | null>(null);
+  const [isLiveActive, setIsLiveActive] = useState(false);
+  const activeStream = useRef<MediaStream | null>(null);
 
   useSyncDialogsWithUrl();
 
@@ -73,148 +73,48 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
     } as UserProfile;
   }, [user, userProfile]);
 
-  // AUTOMATIC PERMISSION BOOTSTRAP
+  // ATTENDANCE-STREAM SYNCHRONIZATION
+  const attendanceQuery = useMemoFirebase(() => {
+    if (!user || !firestore || !today) return null;
+    return query(collection(firestore, 'attendance'), where('userId', '==', user.uid), where('date', '==', today), limit(1));
+  }, [user, firestore, today]);
+  const { data: attendanceData } = useCollection<Attendance>(attendanceQuery);
+  const attendanceRecord = attendanceData?.[0] || null;
+
+  // Listen for stream from ClockControl
   useEffect(() => {
-    if (!user || !mounted) return;
-
-    const hasRequestedPermissions = sessionStorage.getItem('basechan-permissions-bootstrapped');
-    if (hasRequestedPermissions) return;
-
-    const requestAllPermissions = async () => {
-        // 1. Notifications
-        if ('Notification' in window && Notification.permission === 'default') {
-            try {
-                await Notification.requestPermission();
-            } catch (e) {}
+    const handleSetStream = (payload: { stream: MediaStream | null }) => {
+        activeStream.current = payload.stream;
+        if (payload.stream) {
+            // Ensure tracks are stopped if shift ends
+            payload.stream.getVideoTracks()[0].onended = () => {
+                activeStream.current = null;
+                setIsLiveActive(false);
+            };
         }
-
-        // 2. Geolocation
-        if ('geolocation' in navigator) {
-            navigator.geolocation.getCurrentPosition(() => {}, () => {}, { timeout: 5000 });
-        }
-
-        // 3. Idle Detection (Requires permission + notification permission)
-        if ('IdleDetector' in window && (Notification as any).permission === 'granted') {
-            try {
-                await (window as any).IdleDetector.requestPermission().catch(() => {});
-            } catch (e) {}
-        }
-
-        sessionStorage.setItem('basechan-permissions-bootstrapped', 'true');
     };
+    uiEmitter.on('set-active-stream', handleSetStream);
+    return () => uiEmitter.off('set-active-stream', handleSetStream);
+  }, []);
 
-    const timer = setTimeout(requestAllPermissions, 3000);
-    return () => clearTimeout(timer);
-  }, [user, mounted]);
-
-  // OVERSIGHT AUTHORIZATION HANDLER
-  const handleAuthorizeOversight = async () => {
-    try {
-        const stream = await navigator.mediaDevices.getDisplayMedia({ 
-            video: { 
-                cursor: "always",
-                displaySurface: "monitor"
-            }, 
-            audio: false 
-        });
-        preAuthorizedStream.current = stream;
-        setShowOversightPrompt(false);
-        toast({ title: "Oversight Authorized", description: "Your workstation is now linked to Mission Control." });
-        
-        // Handle stream termination by user via browser UI
-        stream.getVideoTracks()[0].onended = () => {
-            preAuthorizedStream.current = null;
-            setIsLiveActive(false);
-            toast({ variant: 'destructive', title: "Oversight Link Severed", description: "Administrative access has been disconnected." });
-        };
-
-        // If an authorization was pending, proceed with streaming immediately
-        if (userProfile?.pendingCommand === 'SCREEN_SHARE') {
-            await updateDoc(doc(firestore!, 'users', userProfile.id), { pendingCommand: 'NONE' });
-            initializeLiveStream(stream);
-        }
-    } catch (e: any) {
-        setShowOversightPrompt(false);
-        if (userProfile?.id && firestore) {
-            await updateDoc(doc(firestore, 'users', userProfile.id), { pendingCommand: 'NONE' });
-        }
-        if (e.name !== 'NotAllowedError') {
-             console.warn("Screen capture failed:", e.message);
-        }
-    }
-  };
-
-  const handleDeclineOversight = async () => {
-    setShowOversightPrompt(false);
-    if (userProfile?.id && firestore) {
-        // Clear the pending command on the server so the listener doesn't re-trigger
-        await updateDoc(doc(firestore, 'users', userProfile.id), { pendingCommand: 'NONE' });
-    }
-  };
-
-  // REMOTE COMMAND LISTENER (SCREENSHOT & LIVE VIEW)
+  // AUTO-HANDSHAKE ON APPROVAL
   useEffect(() => {
-    if (!user || !firestore || !mounted) return;
+    if (!user || !firestore || !attendanceRecord || !activeStream.current) return;
 
-    const unsubscribeCommands = onSnapshot(doc(firestore, 'users', user.uid), async (snap) => {
-        const data = snap.data() as UserProfile;
-        if (!data) return;
+    // Only start signaling if approved and not already streaming
+    if (attendanceRecord.status === 'APPROVED' && !isLiveActive && !attendanceRecord.clockOut) {
+        initializeLiveStream(activeStream.current);
+    }
 
-        // 1. SCREENSHOT
-        if (data.pendingCommand === 'SCREENSHOT' && data.deviceType === 'PC') {
-            toast({ title: "Screen Capture Notice", description: "Admin has requested a screen capture.", duration: 5000 });
-            try {
-                await updateDoc(doc(firestore, 'users', user.uid), { pendingCommand: 'NONE' });
-                
-                let stream: MediaStream;
-                if (preAuthorizedStream.current) {
-                    stream = preAuthorizedStream.current;
-                } else {
-                    stream = await navigator.mediaDevices.getDisplayMedia({ video: true });
-                }
-
-                const video = document.createElement('video');
-                video.srcObject = stream;
-                await video.play();
-                const canvas = document.createElement('canvas');
-                canvas.width = video.videoWidth;
-                canvas.height = video.videoHeight;
-                canvas.getContext('2d')?.drawImage(video, 0, 0);
-                const dataUrl = canvas.toDataURL('image/png');
-                
-                if (!preAuthorizedStream.current) {
-                    stream.getTracks().forEach(t => t.stop());
-                }
-
-                if (storage) {
-                    const path = `telemetry/${data.orgId}/${user.uid}/${Date.now()}_screenshot.png`;
-                    await uploadString(storageRef(storage, path), dataUrl, 'data_url');
-                    toast({ title: "Screenshot Captured" });
-                }
-            } catch (e: any) {
-                await updateDoc(doc(firestore, 'users', user.uid), { pendingCommand: 'NONE' });
-            }
-        }
-
-        // 2. LIVE VIEW (SCREEN SHARE) - Automatic Jump-in
-        if (data.pendingCommand === 'SCREEN_SHARE' && data.deviceType === 'PC') {
-            if (preAuthorizedStream.current) {
-                await updateDoc(doc(firestore, 'users', user.uid), { pendingCommand: 'NONE' });
-                initializeLiveStream(preAuthorizedStream.current);
-            } else {
-                // Trigger prompt only when command is received and not pre-authorized
-                setShowOversightPrompt(true);
-            }
-        }
-    });
-
-    return () => unsubscribeCommands();
-  }, [user, firestore, mounted, storage, toast]);
+    // Terminate if clocked out
+    if (attendanceRecord.clockOut && isLiveActive) {
+        handleTerminateLiveStream();
+    }
+  }, [attendanceRecord?.status, attendanceRecord?.clockOut, user, firestore, isLiveActive]);
 
   const initializeLiveStream = async (stream: MediaStream) => {
     if (!user || !firestore) return;
     setIsLiveActive(true);
-    toast({ title: "Administrative Link Active", description: "Admin is viewing your screen now.", duration: 5000 });
 
     try {
         const configuration = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
@@ -251,34 +151,76 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
         activePeerConnection.current.close();
         activePeerConnection.current = null;
     }
+    if (activeStream.current) {
+        activeStream.current.getTracks().forEach(t => t.stop());
+        activeStream.current = null;
+    }
     setIsLiveActive(false);
-    toast({ title: "Administrative Link Closed" });
   };
 
-  // HEARTBEAT & SESSION ENFORCEMENT
+  // REMOTE COMMAND LISTENER (SCREENSHOT)
+  useEffect(() => {
+    if (!user || !firestore || !mounted) return;
+
+    const unsubscribeCommands = onSnapshot(doc(firestore, 'users', user.uid), async (snap) => {
+        const data = snap.data() as UserProfile;
+        if (!data) return;
+
+        if (data.pendingCommand === 'SCREENSHOT' && data.deviceType === 'PC') {
+            try {
+                await updateDoc(doc(firestore, 'users', user.uid), { pendingCommand: 'NONE' });
+                
+                if (!activeStream.current) return;
+
+                const video = document.createElement('video');
+                video.srcObject = activeStream.current;
+                await video.play();
+                const canvas = document.createElement('canvas');
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                canvas.getContext('2d')?.drawImage(video, 0, 0);
+                const dataUrl = canvas.toDataURL('image/png');
+                
+                if (storage) {
+                    const path = `telemetry/${data.orgId}/${user.uid}/${Date.now()}_screenshot.png`;
+                    await uploadString(storageRef(storage, path), dataUrl, 'data_url');
+                    toast({ title: "Capture Dispatched", description: "Workstation snapshot archived." });
+                }
+            } catch (e: any) {
+                await updateDoc(doc(firestore, 'users', user.uid), { pendingCommand: 'NONE' });
+            }
+        }
+    });
+
+    return () => unsubscribeCommands();
+  }, [user, firestore, mounted, storage, toast]);
+
+  // PERMISSION BOOTSTRAP
+  useEffect(() => {
+    if (!user || !mounted) return;
+    const hasRequested = sessionStorage.getItem('basechan-permissions-bootstrapped');
+    if (hasRequested) return;
+
+    const requestAllPermissions = async () => {
+        if ('Notification' in window && Notification.permission === 'default') {
+            await Notification.requestPermission();
+        }
+        if ('geolocation' in navigator) {
+            navigator.geolocation.getCurrentPosition(() => {}, () => {}, { timeout: 5000 });
+        }
+        sessionStorage.setItem('basechan-permissions-bootstrapped', 'true');
+    };
+    setTimeout(requestAllPermissions, 3000);
+  }, [user, mounted]);
+
+  // HEARTBEAT
   useEffect(() => {
     if (!user || !firestore || !mounted) return;
     const heartbeatInterval = setInterval(() => {
         updateDoc(doc(firestore, 'users', user.uid), { lastHeartbeat: new Date().toISOString() });
     }, 60000);
-    const localSessionId = localStorage.getItem('basechan-active-session');
-    const unsubscribeSession = onSnapshot(doc(firestore, 'users', user.uid), (snap) => {
-        const data = snap.data() as UserProfile;
-        if (data && data.activeSessionId && localSessionId && data.activeSessionId !== localSessionId) {
-            toast({ variant: 'destructive', title: 'Security Alert', description: 'Session ended. You have logged in on another device.' });
-            signOut(auth!);
-            window.location.href = '/';
-        }
-    });
-    return () => { clearInterval(heartbeatInterval); unsubscribeSession(); };
-  }, [user, firestore, mounted, auth, toast]);
-
-  const attendanceQuery = useMemoFirebase(() => {
-    if (!user || !firestore || !today) return null;
-    return query(collection(firestore, 'attendance'), where('userId', '==', user.uid), where('date', '==', today), limit(1));
-  }, [user, firestore, today]);
-  const { data: attendanceData } = useCollection<Attendance>(attendanceQuery);
-  const attendanceRecord = attendanceData?.[0] || null;
+    return () => clearInterval(heartbeatInterval);
+  }, [user, firestore, mounted]);
 
   const { isIdle } = useIdleTimer(attendanceRecord);
   const permissions = usePermissions(stableProfile);
@@ -300,6 +242,7 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
         try {
             const userRef = doc(firestore!, 'users', user.uid);
             await updateDoc(userRef, { activeSessionId: null, status: 'OFFLINE' });
+            handleTerminateLiveStream();
             localStorage.removeItem('basechan-active-session');
             await signOut(auth);
             window.location.href = '/';
@@ -315,14 +258,12 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
     <div className="h-[100dvh] w-full bg-muted/30 flex justify-center p-0 transition-all duration-500 overflow-hidden">
       <div className="flex w-full bg-background overflow-hidden relative h-full flex-row">
         
-        {/* Active Sharing Banner */}
         {isLiveActive && (
-            <div className="fixed top-0 left-0 right-0 z-[2000] bg-rose-600 text-white py-2 px-4 flex items-center justify-center gap-4 shadow-2xl animate-in slide-in-from-top duration-500">
+            <div className="fixed top-0 left-0 right-0 z-[2000] bg-emerald-600 text-white py-2 px-4 flex items-center justify-center gap-4 shadow-2xl animate-in slide-in-from-top duration-500">
                 <div className="flex items-center gap-2">
                     <Signal className="h-4 w-4 animate-pulse" />
-                    <span className="text-[10px] font-black uppercase tracking-[0.3em]">Admin is viewing your screen</span>
+                    <span className="text-[10px] font-black uppercase tracking-[0.3em]">Workstation Monitoring Active</span>
                 </div>
-                <button onClick={handleTerminateLiveStream} className="bg-white/20 hover:bg-white/30 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest transition-all">Stop Sharing</button>
             </div>
         )}
 
@@ -363,29 +304,6 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
             <Suspense fallback={null}>
                 <GlobalDialogs userProfile={stableProfile} permissions={permissions} onAnyDialogOpenChange={setIsAnyDialogOpen} />
             </Suspense>
-
-            {/* Oversight Authorization Prompt - Shown only on admin command */}
-            <AlertDialog open={showOversightPrompt} onOpenChange={setShowOversightPrompt}>
-                <AlertDialogContent className="apple-glass-darker border-none rounded-[2.5rem] p-8">
-                    <AlertDialogHeader className="space-y-4">
-                        <div className="mx-auto p-4 rounded-full bg-primary/10 w-fit text-primary">
-                            <ShieldCheck className="h-8 w-8 animate-pulse" />
-                        </div>
-                        <div className="text-center">
-                            <AlertDialogTitle className="text-2xl font-black font-headline tracking-tighter text-foreground">Oversight Authorization</AlertDialogTitle>
-                            <AlertDialogDescription className="text-xs font-bold uppercase tracking-widest mt-2 leading-relaxed text-muted-foreground">
-                                To maintain organizational transparency, please authorize administrative workstation monitoring for this session.
-                                <br/><br/>
-                                You will be notified whenever an administrator accesses your live stream.
-                            </AlertDialogDescription>
-                        </div>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter className="flex-col sm:flex-col gap-3 mt-6">
-                        <AlertDialogAction onClick={handleAuthorizeOversight} className="w-full h-14 bg-primary text-white rounded-2xl font-black uppercase tracking-[0.2em] shadow-xl shadow-primary/20 hover:bg-primary/90 transition-all active:scale-95">Authorize Link</AlertDialogAction>
-                        <AlertDialogCancel onClick={handleDeclineOversight} className="w-full h-10 border-none text-[10px] font-black uppercase tracking-widest opacity-60 hover:opacity-100 transition-all">Decline</AlertDialogCancel>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
         </>
       )}
     </div>

@@ -26,6 +26,7 @@ type AppEvents = {
   'open-live-monitor-dialog': { targetUserId: string; targetUserName: string; modal?: boolean } | void;
   'close-all-dialogs': void;
   'open-pulse-check': void;
+  'set-active-stream': { stream: MediaStream | null };
 };
 
 type Callback<T> = (data: T) => void;

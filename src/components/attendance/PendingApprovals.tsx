@@ -7,9 +7,10 @@ import { useFirestore, useCollection, useMemoFirebase, updateDocumentNonBlocking
 import { collection, query, where, doc } from "firebase/firestore";
 import { format } from 'date-fns';
 import { Button } from "../ui/button";
-import { Check, X } from "lucide-react";
+import { Check, X, MonitorPlay } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "../ui/badge";
+import { uiEmitter } from "@/lib/ui-emitter";
 
 interface PendingApprovalsProps {
   userProfile: UserProfile;
@@ -46,6 +47,21 @@ export function PendingApprovals({ userProfile }: PendingApprovalsProps) {
     if (decision === 'APPROVED') {
         const userRef = doc(firestore, 'users', record.userId);
         updateDocumentNonBlocking(userRef, { status: 'ONLINE', lastSeen: now });
+        
+        toast({
+            title: `Clock-in Approved`,
+            description: `Personnel ${record.userName} is now online. Oversight link activated.`,
+            action: (
+                <Button size="sm" variant="outline" className="h-7 rounded-lg text-[8px] font-black uppercase" onClick={() => uiEmitter.emit('open-live-monitor-dialog', { targetUserId: record.userId, targetUserName: record.userName })}>
+                    Launch Monitor
+                </Button>
+            )
+        });
+    } else {
+        toast({
+            title: `Clock-in rejected`,
+            description: `The request for ${record.userName} has been updated.`
+        });
     }
 
     // Workflow Notification
@@ -59,11 +75,6 @@ export function PendingApprovals({ userProfile }: PendingApprovalsProps) {
         createdAt: now,
     };
     addDocumentNonBlocking(collection(firestore, 'notifications'), notification);
-
-    toast({
-        title: `Clock-in ${decision.toLowerCase()}`,
-        description: `The request for ${record.userName} has been updated.`
-    });
   };
 
   return (

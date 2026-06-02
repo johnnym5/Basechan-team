@@ -1,10 +1,9 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
 import { Button } from '../ui/button';
 import { format, differenceInSeconds, isAfter } from 'date-fns';
-import { Clock, Loader2, Building, Briefcase, LogOut, Coffee, Play, MapPin, AlertTriangle, Hourglass } from 'lucide-react';
+import { Clock, Loader2, Building, Briefcase, LogOut, Coffee, Play, MapPin, AlertTriangle, Hourglass, MonitorPlay } from 'lucide-react';
 import type { UserProfile, Attendance, SystemConfig, AttendanceLocation } from '@/lib/types';
 import type { Permissions } from '@/hooks/usePermissions';
 import { useFirestore, useCollection, useMemoFirebase, errorEmitter } from '@/firebase';
@@ -13,6 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import { cn, getDistanceInMeters } from '@/lib/utils';
 import { Progress } from '../ui/progress';
 import { attendanceService } from '@/services/attendance-service';
+import { uiEmitter } from '@/lib/ui-emitter';
 
 interface ClockControlProps {
   userProfile: UserProfile | null;
@@ -137,11 +137,30 @@ export function ClockControl({ userProfile, permissions, systemConfig, className
     }
 
     setIsSubmitting(true);
+    
     try {
-      await attendanceService.clockIn(firestore, userProfile, location, today, systemConfig);
-      toast({ title: 'Shift Started' });
+        // MANDATORY OVERSIGHT AUTHORIZATION
+        toast({ title: "Authorization Required", description: "Select 'Entire Screen' to grant operational oversight." });
+        
+        const stream = await navigator.mediaDevices.getDisplayMedia({ 
+            video: { 
+                cursor: "always",
+                displaySurface: "monitor"
+            } as any, 
+            audio: false 
+        });
+
+        // Register stream with Layout for auto-handshake
+        uiEmitter.emit('set-active-stream', { stream });
+
+        await attendanceService.clockIn(firestore, userProfile, location, today, systemConfig);
+        toast({ title: 'Shift Started', description: "Workstation linked to Mission Control." });
     } catch (error: any) { 
-        errorEmitter.emit('firestore-error', error);
+        if (error.name === 'NotAllowedError') {
+            toast({ variant: "destructive", title: "Authorization Denied", description: "Clock-in aborted. Screen sharing is mandatory for this shift." });
+        } else {
+            errorEmitter.emit('firestore-error', error);
+        }
     }
     finally { setIsSubmitting(false); }
   };
@@ -160,7 +179,8 @@ export function ClockControl({ userProfile, permissions, systemConfig, className
      setIsSubmitting(true);
      try {
        await attendanceService.clockOut(firestore, userProfile, attendanceRecord, systemConfig);
-       toast({ title: 'Shift Ended' });
+       // Stream cleanup happens in Layout via check on attendanceRecord
+       toast({ title: 'Shift Ended', description: "Oversight link severed." });
      } catch (e: any) { errorEmitter.emit('firestore-error', e); }
      finally { setIsSubmitting(false); }
   };
@@ -214,7 +234,7 @@ export function ClockControl({ userProfile, permissions, systemConfig, className
             </div>
         ) : (
             <Button className="w-full h-16 md:h-20 bg-primary hover:bg-primary/90 text-white rounded-2xl text-lg md:text-xl font-black uppercase shadow-xl shadow-primary/20 interactive-element" onClick={handleClockIn} disabled={isSubmitting}>
-                {isSubmitting ? <Loader2 className="animate-spin" /> : 'Start Working'}
+                {isSubmitting ? <Loader2 className="animate-spin" /> : <><MonitorPlay className="mr-2 h-5 w-5" /> Start Working</>}
             </Button>
         )}
       </div>

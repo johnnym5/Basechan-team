@@ -5,7 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { useFirestore } from '@/firebase';
 import { telemetryService } from '@/services/telemetry-service';
 import { Button } from '@/components/ui/button';
-import { Loader2, MonitorPlay, X, Wifi, ShieldAlert, SignalHigh } from 'lucide-react';
+import { Loader2, MonitorPlay, X, Wifi, ShieldAlert, SignalHigh, Play, Pause, Square } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
@@ -24,10 +24,12 @@ export function LiveMonitorDialog({ open, onOpenChange, targetUserId, targetUser
     const peerConnection = useRef<RTCPeerConnection | null>(null);
     
     const [status, setStatus] = useState<'INITIALIZING' | 'SIGNALING' | 'CONNECTED' | 'DISCONNECTED' | 'FAILED'>('INITIALIZING');
+    const [isPaused, setIsPaused] = useState(false);
 
     const initializeConnection = async () => {
         if (!firestore) return;
         setStatus('INITIALIZING');
+        setIsPaused(false);
         
         try {
             const configuration = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
@@ -82,16 +84,35 @@ export function LiveMonitorDialog({ open, onOpenChange, targetUserId, targetUser
         if (open) {
             initializeConnection().then(c => cleanup = c);
         } else {
-            if (peerConnection.current) {
-                peerConnection.current.close();
-                peerConnection.current = null;
-            }
+            handleStop();
         }
         return () => {
             if (cleanup) cleanup();
-            if (peerConnection.current) peerConnection.current.close();
+            handleStop();
         };
     }, [open]);
+
+    const handleTogglePause = () => {
+        if (!videoRef.current) return;
+        if (isPaused) {
+            videoRef.current.play();
+        } else {
+            videoRef.current.pause();
+        }
+        setIsPaused(!isPaused);
+    };
+
+    const handleStop = () => {
+        if (peerConnection.current) {
+            peerConnection.current.close();
+            peerConnection.current = null;
+        }
+        if (videoRef.current) {
+            videoRef.current.srcObject = null;
+        }
+        setStatus('DISCONNECTED');
+        if (open) onOpenChange(false);
+    };
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
@@ -111,6 +132,7 @@ export function LiveMonitorDialog({ open, onOpenChange, targetUserId, targetUser
                                     "text-[8px] font-black uppercase tracking-widest px-2 py-0.5 border-none",
                                     status === 'CONNECTED' ? "bg-emerald-500 text-white" : 
                                     status === 'FAILED' ? "bg-rose-500 text-white" :
+                                    status === 'DISCONNECTED' ? "bg-muted text-muted-foreground" :
                                     "bg-amber-500 text-black animate-pulse"
                                 )}>
                                     {status}
@@ -123,24 +145,46 @@ export function LiveMonitorDialog({ open, onOpenChange, targetUserId, targetUser
                             </div>
                         </div>
                     </div>
+                    
+                    {status === 'CONNECTED' && (
+                        <div className="flex items-center gap-2 px-4 py-2 rounded-2xl bg-white/5 border border-white/5">
+                            <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                onClick={handleTogglePause} 
+                                className={cn("h-10 w-10 rounded-xl", isPaused ? "text-emerald-500 bg-emerald-500/10" : "text-amber-500 bg-amber-500/10")}
+                            >
+                                {isPaused ? <Play className="h-5 w-5" /> : <Pause className="h-5 w-5" />}
+                            </Button>
+                            <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                onClick={handleStop} 
+                                className="h-10 w-10 rounded-xl text-rose-500 bg-rose-500/10 hover:bg-rose-500 hover:text-white"
+                            >
+                                <Square className="h-5 w-5" />
+                            </Button>
+                        </div>
+                    )}
+
                     <Button variant="ghost" size="icon" onClick={() => onOpenChange(false)} className="rounded-xl hover:bg-white/5">
                         <X className="h-5 w-5" />
                     </Button>
                 </div>
 
                 <div className="flex-1 bg-black relative flex items-center justify-center min-h-0 shadow-inner">
-                    {status !== 'CONNECTED' && (
+                    {(status !== 'CONNECTED' || status === 'DISCONNECTED') && (
                         <div className="text-center space-y-6 z-10 p-12 max-w-md animate-in fade-in zoom-in-95 duration-700">
-                            {status === 'FAILED' ? (
+                            {status === 'FAILED' || status === 'DISCONNECTED' ? (
                                 <>
                                     <div className="p-5 rounded-full bg-rose-500/10 w-fit mx-auto border border-rose-500/20">
                                         <ShieldAlert className="h-12 w-12 text-rose-500" />
                                     </div>
                                     <div className="space-y-2">
-                                        <p className="text-sm font-bold uppercase tracking-widest text-rose-400">Handshake Interrupted</p>
-                                        <p className="text-[10px] text-muted-foreground uppercase leading-relaxed">The direct link could not be negotiated. Ensure both units have stable connectivity.</p>
+                                        <p className="text-sm font-bold uppercase tracking-widest text-rose-400">Signal Terminated</p>
+                                        <p className="text-[10px] text-muted-foreground uppercase leading-relaxed">The telemetry link has been severed or the node has concluded its cycle.</p>
                                     </div>
-                                    <Button variant="outline" onClick={() => initializeConnection()} className="rounded-xl h-12 px-8 font-black uppercase tracking-widest border-rose-500/20 hover:bg-rose-500/10">Retry Connection</Button>
+                                    <Button variant="outline" onClick={() => initializeConnection()} className="rounded-xl h-12 px-8 font-black uppercase tracking-widest border-emerald-500/20 hover:bg-emerald-500/10 text-emerald-500">Reconnect Signal</Button>
                                 </>
                             ) : (
                                 <>
@@ -149,8 +193,8 @@ export function LiveMonitorDialog({ open, onOpenChange, targetUserId, targetUser
                                         <MonitorPlay className="h-6 w-6 text-primary absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-pulse" />
                                     </div>
                                     <div className="space-y-2">
-                                        <p className="text-sm font-bold uppercase tracking-widest text-primary">Awaiting Callee Authorization...</p>
-                                        <p className="text-[10px] text-muted-foreground uppercase leading-relaxed font-medium">The target node has been signaled. Authorization is required on their terminal before the stream can initialize.</p>
+                                        <p className="text-sm font-bold uppercase tracking-widest text-primary">Negotiating Node Handshake...</p>
+                                        <p className="text-[10px] text-muted-foreground uppercase leading-relaxed font-medium">The target node must be approved and active for the stream to initialize. Authorization was granted at clock-in.</p>
                                     </div>
                                 </>
                             )}
@@ -165,10 +209,12 @@ export function LiveMonitorDialog({ open, onOpenChange, targetUserId, targetUser
                     />
 
                     {status === 'CONNECTED' && (
-                        <div className="absolute top-6 right-6 flex items-center gap-3">
+                        <div className="absolute top-6 right-6 flex flex-col items-end gap-3">
                             <div className="bg-black/60 backdrop-blur-xl px-4 py-2 rounded-2xl border border-white/10 flex items-center gap-3 shadow-2xl">
-                                <div className="h-2 w-2 rounded-full bg-emerald-500 animate-ping" />
-                                <span className="text-[9px] font-black uppercase tracking-[0.2em] text-white">Live Stream Active</span>
+                                <div className={cn("h-2 w-2 rounded-full", isPaused ? "bg-amber-500" : "bg-emerald-500 animate-ping")} />
+                                <span className="text-[9px] font-black uppercase tracking-[0.2em] text-white">
+                                    {isPaused ? 'Feed Paused' : 'Live Transmission Active'}
+                                </span>
                             </div>
                         </div>
                     )}
@@ -180,7 +226,7 @@ export function LiveMonitorDialog({ open, onOpenChange, targetUserId, targetUser
                         Node ID: {targetUserId}
                     </div>
                     <p className="text-[8px] font-bold uppercase tracking-widest text-muted-foreground">
-                        Encrypted Tactical Stream via WebRTC
+                        Encrypted Tactical Stream via WebRTC • Permission Locked to Attendance Record
                     </p>
                 </div>
             </DialogContent>
