@@ -28,13 +28,13 @@ const formSchema = z.object({
   position: z.string().min(1, "Position is required."),
   departmentName: z.string().min(1, "Department is required."),
   customPermissions: z.object({
-    canAccessRequisitions: z.boolean().optional(),
-    canAccessChat: z.boolean().optional(),
-    canManageAccounting: z.boolean().optional(),
-    canAccessLibrary: z.boolean().optional(),
-    canManageAnnouncements: z.boolean().optional(),
-    canViewAudit: z.boolean().optional(),
-  }).optional(),
+    canAccessRequisitions: z.boolean().default(false),
+    canAccessChat: z.boolean().default(false),
+    canManageAccounting: z.boolean().default(false),
+    canAccessLibrary: z.boolean().default(false),
+    canManageAnnouncements: z.boolean().default(false),
+    canViewAudit: z.boolean().default(false),
+  }).default({}),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -121,14 +121,14 @@ export function EditUserDialog({ open, onOpenChange, userToEdit }: EditUserDialo
     try {
       const userRef = doc(firestore, 'users', userToEdit.id);
       
-      // Explicitly sanitize permissions to ensure no 'undefined' values reach Firestore
+      // Strict Boolean Casting to prevent 'undefined' values from reaching Firestore
       const sanitizedPermissions = {
-        canAccessRequisitions: !!values.customPermissions?.canAccessRequisitions,
-        canAccessChat: !!values.customPermissions?.canAccessChat,
-        canManageAccounting: !!values.customPermissions?.canManageAccounting,
-        canAccessLibrary: !!values.customPermissions?.canAccessLibrary,
-        canManageAnnouncements: !!values.customPermissions?.canManageAnnouncements,
-        canViewAudit: !!values.customPermissions?.canViewAudit,
+        canAccessRequisitions: Boolean(values.customPermissions?.canAccessRequisitions),
+        canAccessChat: Boolean(values.customPermissions?.canAccessChat),
+        canManageAccounting: Boolean(values.customPermissions?.canManageAccounting),
+        canAccessLibrary: Boolean(values.customPermissions?.canAccessLibrary),
+        canManageAnnouncements: Boolean(values.customPermissions?.canManageAnnouncements),
+        canViewAudit: Boolean(values.customPermissions?.canViewAudit),
       };
 
       await updateDoc(userRef, {

@@ -8,7 +8,8 @@ import {
   getFirestore, 
   CACHE_SIZE_UNLIMITED, 
   Firestore,
-  persistentLocalCache
+  persistentLocalCache,
+  persistentSingleTabManager
 } from 'firebase/firestore';
 import { getStorage, FirebaseStorage } from 'firebase/storage';
 import { getDatabase, Database } from 'firebase/database';
@@ -51,17 +52,20 @@ export function initializeFirebase() {
 /**
  * Configures and retrieves individual Firebase service instances.
  * Uses persistent local cache to ensure offline utility.
+ * Uses Single Tab Manager to prevent 'ca9' assertion failures.
  */
 export function getSdks(firebaseApp: FirebaseApp) {
-  // 1. Initialize Firestore with Persistent Local Cache (Single Tab Manager to avoid CA9 errors)
+  // 1. Initialize Firestore with Persistent Local Cache 
   if (!firestoreInstance) {
     try {
       firestoreInstance = initializeFirestore(firebaseApp, {
         localCache: persistentLocalCache({
+          tabManager: persistentSingleTabManager(),
           cacheSizeBytes: CACHE_SIZE_UNLIMITED,
         }),
       });
     } catch (e) {
+      // Fallback if already initialized (common in hot-reload)
       firestoreInstance = getFirestore(firebaseApp);
     }
   }

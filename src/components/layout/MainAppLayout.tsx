@@ -195,24 +195,6 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
     return () => unsubscribeCommands();
   }, [user, firestore, mounted, storage, toast]);
 
-  // PERMISSION BOOTSTRAP
-  useEffect(() => {
-    if (!user || !mounted) return;
-    const hasRequested = sessionStorage.getItem('basechan-permissions-bootstrapped');
-    if (hasRequested) return;
-
-    const requestAllPermissions = async () => {
-        if ('Notification' in window && Notification.permission === 'default') {
-            await Notification.requestPermission();
-        }
-        if ('geolocation' in navigator) {
-            navigator.geolocation.getCurrentPosition(() => {}, () => {}, { timeout: 5000 });
-        }
-        sessionStorage.setItem('basechan-permissions-bootstrapped', 'true');
-    };
-    setTimeout(requestAllPermissions, 3000);
-  }, [user, mounted]);
-
   // HEARTBEAT
   useEffect(() => {
     if (!user || !firestore || !mounted) return;
