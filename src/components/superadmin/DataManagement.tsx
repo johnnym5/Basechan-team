@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -6,7 +7,7 @@ import { collection, getDocs, query, where, writeBatch, doc } from 'firebase/fir
 import { ref, get, set, onValue } from 'firebase/database';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, Download, CloudCog, Trash2, PlusCircle, Server, ChevronDown, DatabaseBackup, RefreshCcw } from 'lucide-react';
+import { Loader2, Download, CloudCog, Trash2, PlusCircle, Server, ChevronDown, DatabaseBackup, RefreshCcw, Skull } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -98,6 +99,19 @@ export function DataManagement() {
         }
     };
 
+    const handleNukeDatabase = async () => {
+        if (!firestore) return;
+        setLoading('nuke');
+        try {
+            await demoDataService.purgeAllData(firestore);
+            toast({ title: 'NUKE COMPLETE', description: 'All organizational telemetry has been purged.' });
+        } catch (e: any) {
+            toast({ variant: 'destructive', title: 'Nuke Failed', description: e.message });
+        } finally {
+            setLoading(null);
+        }
+    };
+
     const fetchDataset = async () => {
         if (!firestore) return null;
         const dataset: Record<string, any[]> = {};
@@ -178,48 +192,59 @@ export function DataManagement() {
         }
     };
 
-    const handlePurgeData = async () => {
-        if (!firestore) return;
-        setLoading('purge');
-        try {
-            const dataset = await fetchDataset();
-            if (!dataset) return;
-
-            for (const [collId, docs] of Object.entries(dataset)) {
-                const batch = writeBatch(firestore);
-                (docs as any[]).forEach(d => {
-                    batch.delete(doc(firestore, collId, d.id));
-                });
-                await batch.commit();
-            }
-            toast({ title: 'Data Purged', description: 'Selected organization telemetry has been wiped.' });
-        } catch (e: any) {
-            toast({ variant: 'destructive', title: 'Purge Failed', description: e.message });
-        } finally {
-            setLoading(null);
-        }
-    };
-
     const anyLoading = !!loading || areOrgsLoading;
 
     return (
         <div className="space-y-8 animate-in fade-in duration-500">
-            <Card className="border-primary/50 bg-primary/5 shadow-2xl">
-                <CardHeader>
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <CardTitle className="text-primary flex items-center gap-2">
-                                <PlusCircle className="h-5 w-5" /> Initialize Development
-                            </CardTitle>
-                            <CardDescription>Populate the database with sample organizational data for testing and demonstrations.</CardDescription>
-                        </div>
-                        <Button onClick={handleSeedDemoData} disabled={anyLoading} variant="default" className="rounded-xl shadow-lg">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <Card className="border-primary/50 bg-primary/5 shadow-2xl">
+                    <CardHeader>
+                        <CardTitle className="text-primary flex items-center gap-2">
+                            <PlusCircle className="h-5 w-5" /> Initialize Development
+                        </CardTitle>
+                        <CardDescription>Populate the database with sample organizational data for testing and demonstrations.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <Button onClick={handleSeedDemoData} disabled={anyLoading} className="w-full rounded-xl shadow-lg">
                             {loading === 'seed' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <DatabaseBackup className="mr-2 h-4 w-4" />}
                             Seed Sample Data
                         </Button>
-                    </div>
-                </CardHeader>
-            </Card>
+                    </CardContent>
+                </Card>
+
+                <Card className="border-rose-500/50 bg-rose-500/5 shadow-2xl">
+                    <CardHeader>
+                        <CardTitle className="text-rose-500 flex items-center gap-2">
+                            <Skull className="h-5 w-5" /> Infrastructure Reset
+                        </CardTitle>
+                        <CardDescription>Absolutely purge all organizational telemetry to clear internal state conflicts.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button variant="destructive" disabled={anyLoading} className="w-full rounded-xl shadow-lg shadow-rose-500/20">
+                                    {loading === 'nuke' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
+                                    NUKE DATABASE
+                                </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent className="apple-glass-darker border-none">
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle className="text-2xl font-black text-rose-500 uppercase">Warning: Absolute Zero</AlertDialogTitle>
+                                    <AlertDialogDescription className="font-bold text-xs uppercase tracking-widest leading-relaxed">
+                                        This protocol will permanently destroy all Tasks, Requisitions, Attendance, and Workbooks. 
+                                        This is the only guaranteed way to clear persistent aggregator conflicts (ca9). 
+                                        Proceed with extreme caution.
+                                    </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel>Abort Protocol</AlertDialogCancel>
+                                    <AlertDialogAction onClick={handleNukeDatabase} className="bg-rose-600 hover:bg-rose-700">Confirm Nuke</AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+                    </CardContent>
+                </Card>
+            </div>
 
             <BatchUserImport />
 

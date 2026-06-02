@@ -1,12 +1,45 @@
+
 'use client';
 
-import { Firestore, collection, getDocs, query, where, addDoc } from 'firebase/firestore';
+import { Firestore, collection, getDocs, query, where, addDoc, writeBatch, doc } from 'firebase/firestore';
 import { ORG_ID } from '@/lib/config';
 
 /**
- * Service to seed the database with demo organizational data.
+ * Service to seed and purge organizational data.
  */
 export const demoDataService = {
+  /**
+   * Wipes all data within the primary organizational collections.
+   */
+  async purgeAllData(db: Firestore) {
+    const collectionsToPurge = [
+        'tasks', 
+        'requisitions', 
+        'attendance', 
+        'rosters', 
+        'announcements', 
+        'workbooks', 
+        'feedback', 
+        'chats', 
+        'vendors',
+        'audit_logs',
+        'error_logs',
+        'pulse_checks',
+        'activity_points'
+    ];
+
+    for (const collName of collectionsToPurge) {
+        const snap = await getDocs(collection(db, collName));
+        if (!snap.empty) {
+            const batch = writeBatch(db);
+            snap.docs.forEach(d => batch.delete(d.ref));
+            await batch.commit();
+        }
+    }
+    
+    console.log("[SYSTEM] Database Nuke Complete. Infrastructure is clear.");
+  },
+
   async seed(db: Firestore) {
     const tasksRef = collection(db, 'tasks');
     const vendorsRef = collection(db, 'vendors');

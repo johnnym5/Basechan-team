@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useUser, useDoc, useMemoFirebase, useFirestore, useCollection, useAuth } from '@/firebase';
@@ -96,6 +97,24 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
     return () => uiEmitter.off('set-active-stream', handleSetStream);
   }, []);
 
+  // CRITICAL CLEANUP REGISTRY: Ensures ca9 assertion is never triggered by orphaned listeners
+  const handleTerminateLiveStream = () => {
+    if (activePeerConnection.current) {
+        activePeerConnection.current.close();
+        activePeerConnection.current = null;
+    }
+    if (activeStream.current) {
+        activeStream.current.getTracks().forEach(t => t.stop());
+        activeStream.current = null;
+    }
+    // Execution of all captured unsubscribe commands
+    telemetryUnsubscribers.current.forEach(unsub => {
+        try { unsub(); } catch (e) {}
+    });
+    telemetryUnsubscribers.current = [];
+    setIsLiveActive(false);
+  };
+
   // AUTO-HANDSHAKE ON APPROVAL
   useEffect(() => {
     if (!user || !firestore || !attendanceRecord || !activeStream.current) return;
@@ -150,22 +169,6 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
     } catch (e) {
         setIsLiveActive(false);
     }
-  };
-
-  const handleTerminateLiveStream = () => {
-    if (activePeerConnection.current) {
-        activePeerConnection.current.close();
-        activePeerConnection.current = null;
-    }
-    if (activeStream.current) {
-        activeStream.current.getTracks().forEach(t => t.stop());
-        activeStream.current = null;
-    }
-    telemetryUnsubscribers.current.forEach(unsub => {
-        try { unsub(); } catch (e) {}
-    });
-    telemetryUnsubscribers.current = [];
-    setIsLiveActive(false);
   };
 
   // REMOTE COMMAND LISTENER (SCREENSHOT)
