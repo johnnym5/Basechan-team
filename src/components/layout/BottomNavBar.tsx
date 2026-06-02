@@ -1,3 +1,4 @@
+
 'use client';
 
 import { uiEmitter } from "@/lib/ui-emitter";
@@ -26,8 +27,14 @@ export function BottomNavBar() {
   const permissions = usePermissions(userProfile);
   
   const notificationsQuery = useMemoFirebase(() => 
-    firestore && user ? query(collection(firestore, 'notifications'), where('userId', '==', user.uid), where('isRead', '==', false), limit(1)) : null
-  , [firestore, user]);
+    firestore && user && userProfile?.orgId ? query(
+        collection(firestore, 'notifications'), 
+        where('orgId', '==', userProfile.orgId),
+        where('userId', '==', user.uid), 
+        where('isRead', '==', false), 
+        limit(1)
+    ) : null
+  , [firestore, user, userProfile?.orgId]);
   const { data: unreadNotifications } = useCollection<Notification>(notificationsQuery);
   const hasUnread = (unreadNotifications?.length || 0) > 0;
 

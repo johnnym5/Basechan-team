@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useUser, useMemoFirebase, useCollection, updateDocumentNonBlocking, useFirestore } from '@/firebase';
@@ -15,8 +16,14 @@ export function NotificationsDialog({ open, onOpenChange, userProfile }: { open:
     const router = useRouter();
 
     const notificationsQuery = useMemoFirebase(() => 
-        firestore ? query(collection(firestore, 'notifications'), where('userId', '==', userProfile.id), orderBy('createdAt', 'desc'), limit(30)) : null
-    , [firestore, userProfile.id]);
+        firestore && userProfile?.orgId ? query(
+            collection(firestore, 'notifications'), 
+            where('orgId', '==', userProfile.orgId),
+            where('userId', '==', userProfile.id), 
+            orderBy('createdAt', 'desc'), 
+            limit(30)
+        ) : null
+    , [firestore, userProfile?.orgId, userProfile?.id]);
 
     const { data: notifications, isLoading } = useCollection<Notification>(notificationsQuery);
 

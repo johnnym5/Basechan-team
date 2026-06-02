@@ -1,7 +1,6 @@
 
 rules_version = '2';
 
-// Force redeploy - rules synchronized with deterministic configuration.
 service cloud.firestore {
   match /databases/{database}/documents {
 
@@ -101,6 +100,11 @@ service cloud.firestore {
       }
     }
     
+    match /notifications/{id} {
+      allow read: if request.auth != null && (request.auth.uid == resource.data.userId || isSuperAdmin() || isAdmin());
+      allow write: if isRequestingUserInOrg(request.resource.data.orgId) || isSuperAdmin();
+    }
+
     match /external_displays/{displayId} {
       allow read: if isRequestingUserInOrg(resource.data.orgId) || isSuperAdmin();
       allow create: if (getUserRole() in ['ORG_ADMIN', 'MANAGING_DIRECTOR'] || isSuperAdmin()) && isCreatingInOwnOrg();

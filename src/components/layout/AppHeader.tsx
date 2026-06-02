@@ -1,3 +1,4 @@
+
 'use client';
 import { UserNav } from "@/components/layout/UserNav";
 import { useState, useEffect, useRef } from 'react';
@@ -62,8 +63,14 @@ export default function AppHeader({
   }, [userProfile, user]);
 
   const notificationsQuery = useMemoFirebase(() => 
-    firestore && user ? query(collection(firestore, 'notifications'), where('userId', '==', user.uid), orderBy('createdAt', 'desc'), limit(15)) : null
-  , [firestore, user]);
+    firestore && user && userProfile?.orgId ? query(
+        collection(firestore, 'notifications'), 
+        where('orgId', '==', userProfile.orgId),
+        where('userId', '==', user.uid), 
+        orderBy('createdAt', 'desc'), 
+        limit(15)
+    ) : null
+  , [firestore, user, userProfile?.orgId]);
   
   const announcementsQuery = useMemoFirebase(() => 
     firestore && userProfile ? query(collection(firestore, 'announcements'), where('orgId', '==', userProfile.orgId), orderBy('createdAt', 'desc'), limit(5)) : null
