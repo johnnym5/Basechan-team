@@ -1,30 +1,36 @@
+
 'use client';
 import { useMemo, useEffect, useState } from 'react';
-import { useFirestore, useCollection, useMemoFirebase, addDocumentNonBlocking } from '@/firebase';
-import { collection, query, where, limit } from 'firebase/firestore';
+import { useFirestore, useDoc, useMemoFirebase, setDocumentNonBlocking } from '@/firebase';
+import { doc } from 'firebase/firestore';
 import type { SystemConfig } from '@/lib/types';
 
+/**
+ * Hook to retrieve and manage organizational system configuration.
+ * 
+ * To ensure reliability and prevent duplicate configurations or "Document already exists" errors,
+ * this hook uses a deterministic ID (the orgId itself) for the configuration document.
+ */
 export function useSystemConfig(orgId: string | null | undefined) {
   const firestore = useFirestore();
   const [isCreating, setIsCreating] = useState(false);
 
-  const configQuery = useMemoFirebase(() => {
+  // Define a stable document reference using orgId as the document ID.
+  const configRef = useMemoFirebase(() => {
     if (!firestore || !orgId) return null;
-    return query(
-      collection(firestore, 'system_configs'),
-      where('orgId', '==', orgId),
-      limit(1)
-    );
+    return doc(firestore, 'system_configs', orgId);
   }, [firestore, orgId]);
 
-  const { data: configData, isLoading: isCollectionLoading } = useCollection<SystemConfig>(configQuery);
+  // Use useDoc for a direct, high-performance subscription to the configuration node.
+  const { data: config, isLoading: isDocLoading } = useDoc<SystemConfig>(configRef);
 
   useEffect(() => {
-    // Check if we are done loading, no config was found, we have an orgId, and we're not already trying to create one.
-    if (!isCollectionLoading && (!configData || configData.length === 0) && orgId && !isCreating) {
+    // If a configuration node doesn't exist for this organization, initialize it with defaults.
+    // We use setDocumentNonBlocking with merge: true to ensure this operation is idempotent,
+    // safely handling cases where multiple components might trigger this logic simultaneously.
+    if (!isDocLoading && !config && orgId && firestore && !isCreating) {
       setIsCreating(true);
       
-      const configCollection = collection(firestore!, "system_configs");
       const defaultConfig: Omit<SystemConfig, 'id'> = {
           orgId: orgId,
           finance_access: true,
@@ -40,16 +46,17 @@ export function useSystemConfig(orgId: string | null | undefined) {
           accent_color: '#0d1e30', // Default to Org Navy
       };
       
-      // We don't need to wait for this, it can happen in the background.
-      addDocumentNonBlocking(configCollection, defaultConfig).finally(() => {
-          setIsCreating(false);
-      });
+      const targetRef = doc(firestore, 'system_configs', orgId);
+      
+      // Perform an idempotent write.
+      setDocumentNonBlocking(targetRef, defaultConfig, { merge: true });
+      
+      // Note: isCreating remains true until the document is synced and 'config' is populated,
+      // which prevents redundant write attempts in the same session.
     }
-  }, [isCollectionLoading, configData, orgId, firestore, isCreating]);
+  }, [isDocLoading, config, orgId, firestore, isCreating]);
 
-  const config = useMemo(() => (configData && configData.length > 0 ? configData[0] : null), [configData]);
-  
-  const isLoading = isCollectionLoading || isCreating;
+  const isLoading = isDocLoading || isCreating;
   
   return { config, isLoading };
 }

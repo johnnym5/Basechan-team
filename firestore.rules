@@ -1,5 +1,7 @@
+
 rules_version = '2';
 
+// Force redeploy - rules synchronized with deterministic configuration.
 service cloud.firestore {
   match /databases/{database}/documents {
 
