@@ -6,10 +6,8 @@ import { getAuth, Auth, setPersistence, browserLocalPersistence } from 'firebase
 import { 
   initializeFirestore, 
   getFirestore, 
-  CACHE_SIZE_UNLIMITED, 
   Firestore,
-  persistentLocalCache,
-  persistentSingleTabManager
+  memoryLocalCache
 } from 'firebase/firestore';
 import { getStorage, FirebaseStorage } from 'firebase/storage';
 import { getDatabase, Database } from 'firebase/database';
@@ -31,6 +29,7 @@ declare global {
 /**
  * Initializes the Firebase Client SDKs.
  * Uses a global singleton pattern to prevent 'ca9' assertion failures and redundant initializations.
+ * Forces memoryLocalCache to bypass IndexedDB locking issues in development.
  */
 export function initializeFirebase() {
   if (!isFirebaseConfigAvailable) {
@@ -56,11 +55,9 @@ export function initializeFirebase() {
 
   if (!globalThis._firestore) {
     try {
+      // Force memory cache to resolve ca9 internal assertion failure
       globalThis._firestore = initializeFirestore(app, {
-        localCache: persistentLocalCache({
-          tabManager: persistentSingleTabManager(),
-          cacheSizeBytes: CACHE_SIZE_UNLIMITED,
-        }),
+        localCache: memoryLocalCache(),
       });
     } catch (e) {
       // Fallback if already initialized (common in hot-reload)
