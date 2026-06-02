@@ -27,7 +27,7 @@ declare global {
 
 /**
  * Initializes the Firebase Client SDKs.
- * Uses a memory-only cache to resolve 'ca9' assertion failures.
+ * Uses forced long polling and memory cache to resolve 'ca9' assertion failures.
  */
 export function initializeFirebase() {
   if (!isFirebaseConfigAvailable) {
@@ -52,10 +52,11 @@ export function initializeFirebase() {
   const app = globalThis._firebaseApp!;
 
   if (!globalThis._firestore) {
-    // FORCE MEMORY CACHE TO PREVENT CA9:
-    // This bypasses IndexedDB entireley, which is the source of the assertion failure.
+    // FORCE MEMORY CACHE AND LONG POLLING TO PREVENT CA9:
+    // This is the tactical 'nuclear option' to bypass stream aggregation bugs in the SDK.
     globalThis._firestore = initializeFirestore(app, {
       localCache: memoryLocalCache(),
+      experimentalForceLongPolling: true,
     });
   }
 
