@@ -26,8 +26,7 @@ export function useSystemConfig(orgId: string | null | undefined) {
 
   useEffect(() => {
     // If a configuration node doesn't exist for this organization, initialize it with defaults.
-    // We use setDocumentNonBlocking with merge: true to ensure this operation is idempotent,
-    // safely handling cases where multiple components might trigger this logic simultaneously.
+    // We use setDocumentNonBlocking with merge: true to ensure this operation is idempotent.
     if (!isDocLoading && !config && orgId && firestore && !isCreating) {
       setIsCreating(true);
       
@@ -50,11 +49,16 @@ export function useSystemConfig(orgId: string | null | undefined) {
       
       // Perform an idempotent write.
       setDocumentNonBlocking(targetRef, defaultConfig, { merge: true });
-      
-      // Note: isCreating remains true until the document is synced and 'config' is populated,
-      // which prevents redundant write attempts in the same session.
     }
   }, [isDocLoading, config, orgId, firestore, isCreating]);
+
+  // Mandatory: Reset isCreating when the config is successfully hydrated
+  // This prevents the UI from getting stuck in a loading state after initialization.
+  useEffect(() => {
+    if (config && isCreating) {
+      setIsCreating(false);
+    }
+  }, [config, isCreating]);
 
   const isLoading = isDocLoading || isCreating;
   

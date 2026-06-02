@@ -1,3 +1,4 @@
+
 rules_version = '2';
 
 service cloud.firestore {
@@ -11,7 +12,7 @@ service cloud.firestore {
     }
 
     function getUserData() {
-      // Added exists() check to prevent rule evaluation errors during profile initialization
+      // Hardened check for profile existence to prevent rule evaluation crashes
       let userPath = /databases/$(database)/documents/users/$(request.auth.uid);
       return exists(userPath) ? get(userPath).data : {"role": "STAFF", "orgId": "none"};
     }
@@ -87,7 +88,8 @@ service cloud.firestore {
     }
 
     match /users/{userId} {
-      allow read: if isSuperAdmin() || isRequestingUserInOrg(resource.data.orgId);
+      // Fixed: Allow users to read their own profile document directly to prevent recursive rule loops
+      allow read: if request.auth != null && (request.auth.uid == userId || isSuperAdmin() || isRequestingUserInOrg(resource.data.orgId));
       allow create: if isSuperAdmin() || request.auth.uid == userId;
       allow update: if isSuperAdmin() || request.auth.uid == userId || isHRManager();
       allow delete: if isSuperAdmin();
