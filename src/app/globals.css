@@ -10,14 +10,14 @@
   }
   
   :root {
-    /* Official Organizational Colors - Light Mode (High Contrast) */
+    /* Official Organizational Colors - Light Mode */
     --background: 0 0% 100%;
-    --foreground: 211 57% 12%; /* Org Navy */
+    --foreground: 211 57% 12%; /* Org Navy foundation (#0d1e30) */
     --card: 0 0% 100%;
     --card-foreground: 211 57% 12%;
     --popover: 0 0% 100%;
     --popover-foreground: 211 57% 12%;
-    --primary: 49 56% 54%; /* Org Gold */
+    --primary: 49 56% 54%; /* Org Gold signature (#cab348) */
     --primary-foreground: 211 57% 12%;
     --secondary: 211 57% 95%;
     --secondary-foreground: 211 57% 12%;
@@ -35,15 +35,15 @@
 
   .dark {
     /* Official Organizational Colors - Premium Dark Mode */
-    --background: 211 57% 4%; /* Ultra-deep Navy Background */
-    --foreground: 0 0% 100%; /* Pure White */
+    --background: 211 57% 4%; /* Ultra-deep OLED Navy */
+    --foreground: 0 0% 100%; /* Pure White (#ffffff) */
     --card: 211 57% 8%; /* Deep Navy Surface */
     --card-foreground: 0 0% 100%;
     --popover: 211 57% 8%;
     --popover-foreground: 0 0% 100%;
-    --primary: 49 56% 54%; /* Org Gold Highlights */
+    --primary: 49 56% 54%; /* Org Gold Highlights (#cab348) */
     --primary-foreground: 211 57% 4%;
-    --secondary: 211 57% 12%; /* Base Navy */
+    --secondary: 211 57% 12%; /* Base Navy foundation (#0d1e30) */
     --secondary-foreground: 0 0% 100%;
     --muted: 211 57% 10%;
     --muted-foreground: 211 20% 65%;

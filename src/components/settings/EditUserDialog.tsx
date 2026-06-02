@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, KeyRound, ShieldCheck, Ban, CheckCircle2, Save, Info } from "lucide-react";
+import { Loader2, KeyRound, ShieldCheck, Ban, CheckCircle2, Save } from "lucide-react";
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useFirestore } from "@/firebase";
 import { doc, updateDoc } from "firebase/firestore";
@@ -127,7 +127,6 @@ export function EditUserDialog({ open, onOpenChange, userToEdit }: EditUserDialo
     try {
       const userRef = doc(firestore, 'users', userToEdit.id);
       
-      // Strict Boolean Sanitization to prevent 'undefined' values from reaching Firestore
       const sanitizedPermissions = {
         canAccessRequisitions: Boolean(values.customPermissions?.canAccessRequisitions),
         canAccessChat: Boolean(values.customPermissions?.canAccessChat),
@@ -139,7 +138,6 @@ export function EditUserDialog({ open, onOpenChange, userToEdit }: EditUserDialo
         canManageLibrary: Boolean(values.customPermissions?.canManageLibrary),
       };
 
-      // VERIFIED SYNC: Await the transaction before closing
       await updateDoc(userRef, {
         fullName: sanitizeInput(values.fullName),
         email: sanitizeInput(values.email.toLowerCase()),
@@ -157,7 +155,6 @@ export function EditUserDialog({ open, onOpenChange, userToEdit }: EditUserDialo
       });
       onOpenChange(false);
     } catch (error: any) {
-      console.error("Administrative Sync Failure:", error);
       toast({
         variant: "destructive",
         title: "Update Failed",
@@ -167,40 +164,6 @@ export function EditUserDialog({ open, onOpenChange, userToEdit }: EditUserDialo
       setIsLoading(false);
     }
   }
-
-  const onValidationError = (errors: any) => {
-    console.error("Authorization Profile Validation Failure Details:", JSON.stringify(errors, null, 2));
-    const errorFields = Object.keys(errors).join(', ');
-    toast({
-        variant: "destructive",
-        title: "Deployment Blocked",
-        description: `Validation errors in: ${errorFields}. Please check identity parameters.`,
-    });
-  };
-
-  const PermissionToggle = ({ name, label, description }: { name: keyof NonNullable<FormData['customPermissions']>, label: string, description: string }) => (
-    <FormField
-        control={form.control}
-        name={`customPermissions.${name}`}
-        render={({ field }) => (
-            <FormItem className="flex flex-row items-center justify-between rounded-2xl border border-white/5 p-4 bg-black/20 group hover:border-primary/20 transition-all">
-                <div className="space-y-0.5">
-                    <FormLabel className="text-xs font-black uppercase tracking-widest leading-none flex items-center gap-2">
-                        {field.value === false ? <Ban className="h-3 w-3 text-destructive" /> : field.value === true ? <CheckCircle2 className="h-3 w-3 text-emerald-500" /> : <ShieldCheck className="h-3 w-3 opacity-30" />}
-                        {label}
-                    </FormLabel>
-                    <FormDescription className="text-[9px] font-bold uppercase tracking-tight opacity-50">{description}</FormDescription>
-                </div>
-                <FormControl>
-                    <Switch
-                        checked={!!field.value}
-                        onCheckedChange={field.onChange}
-                    />
-                </FormControl>
-            </FormItem>
-        )}
-    />
-  );
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -212,7 +175,7 @@ export function EditUserDialog({ open, onOpenChange, userToEdit }: EditUserDialo
 
         <ScrollArea className="flex-1 bg-background/20">
             <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit, onValidationError)} className="p-8 pt-0 space-y-8">
+                <form onSubmit={form.handleSubmit(onSubmit)} className="p-8 pt-0 space-y-8">
                     <div className="space-y-6">
                         <div className="flex items-center gap-2">
                             <div className="p-1.5 rounded-lg bg-primary/10 text-primary"><KeyRound className="h-3.5 w-3.5" /></div>
@@ -263,14 +226,36 @@ export function EditUserDialog({ open, onOpenChange, userToEdit }: EditUserDialo
                         <div className="mt-8 space-y-4">
                             <h4 className="text-[9px] font-black uppercase tracking-[0.25em] text-primary">Override Matrix</h4>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                <PermissionToggle name="canManageAccounting" label="Accounting Terminal" description="Direct access to Chart of Accounts & GL." />
-                                <PermissionToggle name="canAccessRequisitions" label="Procurement Hub" description="Submit and review financial requisitions." />
-                                <PermissionToggle name="canAccessChat" label="Secure Messaging" description="Authorization to transmit in encrypted channels." />
-                                <PermissionToggle name="canAccessLibrary" label="Knowledge Base" description="View Standard Operating Procedures (SOPs)." />
-                                <PermissionToggle name="canManageAnnouncements" label="Broadcasting" description="Permission to post organization-wide updates." />
-                                <PermissionToggle name="canViewAudit" label="Infrastructure Audit" description="Review system interaction telemetry logs." />
-                                <PermissionToggle name="canManageDisplays" label="Live Displays" description="Configure external data stream nodes." />
-                                <PermissionToggle name="canManageLibrary" label="Library Admin" description="Upload and manage SOP documentation." />
+                                {[
+                                    { name: "canManageAccounting", label: "Accounting Terminal", desc: "Direct access to Chart of Accounts & GL." },
+                                    { name: "canAccessRequisitions", label: "Procurement Hub", desc: "Submit and review financial requisitions." },
+                                    { name: "canAccessChat", label: "Secure Messaging", desc: "Authorization to transmit in encrypted channels." },
+                                    { name: "canAccessLibrary", label: "Knowledge Base", desc: "View Standard Operating Procedures (SOPs)." },
+                                    { name: "canManageAnnouncements", label: "Broadcasting", desc: "Permission to post organization-wide updates." },
+                                    { name: "canViewAudit", label: "Infrastructure Audit", desc: "Review system interaction telemetry logs." },
+                                    { name: "canManageDisplays", label: "Live Displays", desc: "Configure external data stream nodes." },
+                                    { name: "canManageLibrary", label: "Library Admin", desc: "Upload and manage SOP documentation." }
+                                ].map((perm) => (
+                                    <FormField
+                                        key={perm.name}
+                                        control={form.control}
+                                        name={`customPermissions.${perm.name}` as any}
+                                        render={({ field }) => (
+                                            <FormItem className="flex flex-row items-center justify-between rounded-2xl border border-white/5 p-4 bg-black/20 group hover:border-primary/20 transition-all">
+                                                <div className="space-y-0.5">
+                                                    <FormLabel className="text-xs font-black uppercase tracking-widest leading-none flex items-center gap-2">
+                                                        {field.value ? <CheckCircle2 className="h-3 w-3 text-emerald-500" /> : <Ban className="h-3 w-3 text-destructive" />}
+                                                        {perm.label}
+                                                    </FormLabel>
+                                                    <FormDescription className="text-[9px] font-bold uppercase tracking-tight opacity-50">{perm.desc}</FormDescription>
+                                                </div>
+                                                <FormControl>
+                                                    <Switch checked={!!field.value} onCheckedChange={field.onChange} />
+                                                </FormControl>
+                                            </FormItem>
+                                        )}
+                                    />
+                                ))}
                             </div>
                         </div>
                     </div>

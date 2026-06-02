@@ -5,7 +5,6 @@ import { initializeApp, getApps, FirebaseApp } from 'firebase/app';
 import { getAuth, Auth, setPersistence, browserLocalPersistence } from 'firebase/auth';
 import { 
   initializeFirestore, 
-  getFirestore, 
   Firestore,
   memoryLocalCache
 } from 'firebase/firestore';
@@ -53,8 +52,8 @@ export function initializeFirebase() {
   const app = globalThis._firebaseApp!;
 
   if (!globalThis._firestore) {
-    // EXPLICIT FIX FOR CA9: Force memory-only cache.
-    // This bypasses the persistent state manager entirely, preventing aggregation conflicts in dev.
+    // FORCE MEMORY CACHE TO PREVENT CA9:
+    // This bypasses IndexedDB entireley, which is the source of the assertion failure.
     globalThis._firestore = initializeFirestore(app, {
       localCache: memoryLocalCache(),
     });

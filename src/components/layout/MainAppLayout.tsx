@@ -21,9 +21,8 @@ import { useShiftReminders } from '@/hooks/useShiftReminders';
 import { DebriefModal } from '@/components/dashboard/DebriefModal';
 import { PulseCheckDialog } from '@/components/shared/PulseCheckDialog';
 import { Button } from '@/components/ui/button';
-import { LogOut, MonitorPlay, ShieldAlert, Loader2, Signal, ShieldCheck } from 'lucide-react';
+import { LogOut, MonitorPlay, ShieldAlert, Loader2, Signal } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '../ui/alert-dialog';
 import { telemetryService } from '@/services/telemetry-service';
 import { uiEmitter } from '@/lib/ui-emitter';
 
@@ -46,6 +45,7 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
   const activePeerConnection = useRef<RTCPeerConnection | null>(null);
   const [isLiveActive, setIsLiveActive] = useState(false);
   const activeStream = useRef<MediaStream | null>(null);
+  const telemetryUnsubscribers = useRef<(() => void)[]>([]);
 
   useSyncDialogsWithUrl();
 
@@ -86,7 +86,6 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
     const handleSetStream = (payload: { stream: MediaStream | null }) => {
         activeStream.current = payload.stream;
         if (payload.stream) {
-            // Ensure tracks are stopped if shift ends
             payload.stream.getVideoTracks()[0].onended = () => {
                 activeStream.current = null;
                 setIsLiveActive(false);
@@ -101,12 +100,10 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!user || !firestore || !attendanceRecord || !activeStream.current) return;
 
-    // Only start signaling if approved and not already streaming
     if (attendanceRecord.status === 'APPROVED' && !isLiveActive && !attendanceRecord.clockOut) {
         initializeLiveStream(activeStream.current);
     }
 
-    // Terminate if clocked out
     if (attendanceRecord.clockOut && isLiveActive) {
         handleTerminateLiveStream();
     }
@@ -114,6 +111,10 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
 
   const initializeLiveStream = async (stream: MediaStream) => {
     if (!user || !firestore) return;
+    
+    // MANDATORY: Terminate existing sessions to prevent ca9 aggregation error
+    handleTerminateLiveStream();
+    
     setIsLiveActive(true);
 
     try {
@@ -134,27 +135,36 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
         await telemetryService.setupSignaling(firestore, user.uid);
         await telemetryService.sendSdp(firestore, user.uid, offer);
 
-        telemetryService.onSdp(firestore, user.uid, 'answer', async (answer) => {
+        const unsubSdp = telemetryService.onSdp(firestore, user.uid, 'answer', async (answer) => {
             await pc.setRemoteDescription(new RTCSessionDescription(answer));
         });
 
-        telemetryService.onIceCandidate(firestore, user.uid, 'caller', (candidate) => {
+        const unsubIce = telemetryService.onIceCandidate(firestore, user.uid, 'caller', (candidate) => {
             pc.addIceCandidate(new RTCIceCandidate(candidate));
         });
+
+        telemetryUnsubscribers.current = [unsubSdp, unsubIce];
+
     } catch (e) {
         setIsLiveActive(false);
     }
   };
 
   const handleTerminateLiveStream = () => {
+    // 1. Close P2P Connection
     if (activePeerConnection.current) {
         activePeerConnection.current.close();
         activePeerConnection.current = null;
     }
+    // 2. Kill Video Tracks
     if (activeStream.current) {
         activeStream.current.getTracks().forEach(t => t.stop());
         activeStream.current = null;
     }
+    // 3. EXECUTE CLEANUP: Permanent fix for ca9 assertion failure
+    telemetryUnsubscribers.current.forEach(unsub => unsub());
+    telemetryUnsubscribers.current = [];
+
     setIsLiveActive(false);
   };
 
@@ -195,7 +205,6 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
     return () => unsubscribeCommands();
   }, [user, firestore, mounted, storage, toast]);
 
-  // HEARTBEAT
   useEffect(() => {
     if (!user || !firestore || !mounted) return;
     const heartbeatInterval = setInterval(() => {
