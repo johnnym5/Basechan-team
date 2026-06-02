@@ -63,6 +63,7 @@ export function LiveStaffMonitor({ userProfile }: LiveStaffMonitorProps) {
             setIsAttLoading(false);
         });
 
+        // Explicitly return the unsubscribe function to prevent ca9 aggregation errors
         return () => unsubscribe();
     }, [firestore, today, userProfile.orgId]);
 
@@ -85,6 +86,7 @@ export function LiveStaffMonitor({ userProfile }: LiveStaffMonitorProps) {
             setIsUsersLoading(false);
         });
 
+        // Explicitly return the unsubscribe function to prevent ca9 aggregation errors
         return () => unsubscribe();
     }, [firestore, userProfile.orgId]);
 

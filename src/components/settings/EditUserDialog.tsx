@@ -165,6 +165,17 @@ export function EditUserDialog({ open, onOpenChange, userToEdit }: EditUserDialo
     }
   }
 
+  const permissionItems = [
+    { name: "canManageAccounting", label: "Accounting Terminal", desc: "Direct access to Chart of Accounts & GL." },
+    { name: "canAccessRequisitions", label: "Procurement Hub", desc: "Submit and review financial requisitions." },
+    { name: "canAccessChat", label: "Secure Messaging", desc: "Authorization to transmit in encrypted channels." },
+    { name: "canAccessLibrary", label: "Knowledge Base", desc: "View Standard Operating Procedures (SOPs)." },
+    { name: "canManageAnnouncements", label: "Broadcasting", desc: "Permission to post organization-wide updates." },
+    { name: "canViewAudit", label: "Infrastructure Audit", desc: "Review system interaction telemetry logs." },
+    { name: "canManageDisplays", label: "Live Displays", desc: "Configure external data stream nodes." },
+    { name: "canManageLibrary", label: "Library Admin", desc: "Upload and manage SOP documentation." }
+  ];
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-3xl h-[85vh] flex flex-col p-0 overflow-hidden bg-background">
@@ -226,16 +237,7 @@ export function EditUserDialog({ open, onOpenChange, userToEdit }: EditUserDialo
                         <div className="mt-8 space-y-4">
                             <h4 className="text-[9px] font-black uppercase tracking-[0.25em] text-primary">Override Matrix</h4>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                {[
-                                    { name: "canManageAccounting", label: "Accounting Terminal", desc: "Direct access to Chart of Accounts & GL." },
-                                    { name: "canAccessRequisitions", label: "Procurement Hub", desc: "Submit and review financial requisitions." },
-                                    { name: "canAccessChat", label: "Secure Messaging", desc: "Authorization to transmit in encrypted channels." },
-                                    { name: "canAccessLibrary", label: "Knowledge Base", desc: "View Standard Operating Procedures (SOPs)." },
-                                    { name: "canManageAnnouncements", label: "Broadcasting", desc: "Permission to post organization-wide updates." },
-                                    { name: "canViewAudit", label: "Infrastructure Audit", desc: "Review system interaction telemetry logs." },
-                                    { name: "canManageDisplays", label: "Live Displays", desc: "Configure external data stream nodes." },
-                                    { name: "canManageLibrary", label: "Library Admin", desc: "Upload and manage SOP documentation." }
-                                ].map((perm) => (
+                                {permissionItems.map((perm) => (
                                     <FormField
                                         key={perm.name}
                                         control={form.control}
