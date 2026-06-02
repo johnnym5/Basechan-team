@@ -55,6 +55,7 @@ export function LiveStaffMonitor({ userProfile }: LiveStaffMonitorProps) {
             orderBy('clockIn', 'desc')
         );
 
+        // STABILITY FIX: Ensure strict cleanup of Watch targets to prevent ca9 assertion
         const unsubscribe = onSnapshot(q, (snapshot) => {
             const data = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Attendance));
             setRecords(data);

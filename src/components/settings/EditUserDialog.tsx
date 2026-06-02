@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, KeyRound, ShieldCheck, Ban, CheckCircle2, Save } from "lucide-react";
+import { Loader2, KeyRound, ShieldCheck, Ban, CheckCircle2, Save, Info } from "lucide-react";
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useFirestore } from "@/firebase";
 import { doc, updateDoc } from "firebase/firestore";
@@ -139,6 +139,7 @@ export function EditUserDialog({ open, onOpenChange, userToEdit }: EditUserDialo
         canManageLibrary: Boolean(values.customPermissions?.canManageLibrary),
       };
 
+      // VERIFIED SYNC: Await the transaction before closing
       await updateDoc(userRef, {
         fullName: sanitizeInput(values.fullName),
         email: sanitizeInput(values.email.toLowerCase()),
@@ -203,7 +204,7 @@ export function EditUserDialog({ open, onOpenChange, userToEdit }: EditUserDialo
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-3xl h-[85vh] flex flex-col p-0 overflow-hidden">
+      <DialogContent className="sm:max-w-3xl h-[85vh] flex flex-col p-0 overflow-hidden bg-background">
         <DialogHeader className="p-8 pb-4 flex-shrink-0">
           <DialogTitle className="text-2xl font-black font-headline tracking-tighter uppercase">Authorization Override</DialogTitle>
           <DialogDescription className="text-[10px] font-black uppercase tracking-widest opacity-60">Identity Ref: {userToEdit.id}</DialogDescription>

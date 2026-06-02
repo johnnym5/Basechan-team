@@ -55,6 +55,7 @@ export function initializeFirebase() {
   if (!globalThis._firestore) {
     try {
       // EXPLICIT FIX FOR CA9: Force memory cache to resolve internal aggregation conflicts
+      // This bypasses IndexedDB persistence which causes the ID: ca9 assertion in dev.
       globalThis._firestore = initializeFirestore(app, {
         localCache: memoryLocalCache(),
       });

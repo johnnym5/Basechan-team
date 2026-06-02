@@ -10,9 +10,9 @@
   }
   
   :root {
-    /* Refined Light Mode using Org Navy as primary */
+    /* Official Organizational Colors - Light Mode (High Contrast) */
     --background: 0 0% 100%;
-    --foreground: 211 57% 12%;
+    --foreground: 211 57% 12%; /* Org Navy */
     --card: 0 0% 100%;
     --card-foreground: 211 57% 12%;
     --popover: 0 0% 100%;
@@ -30,22 +30,20 @@
     --border: 211 20% 90%;
     --input: 211 20% 90%;
     --ring: 49 56% 54%;
-    --radius: 0.75rem; 
-    --sidebar-background: 211 57% 98%; 
-    --sidebar-foreground: 211 57% 12%;
+    --radius: 1.25rem; 
   }
 
   .dark {
-    /* Deep OLED-friendly Dark Mode based on Org Navy (#0d1e30) */
-    --background: 211 57% 4%; 
-    --foreground: 0 0% 100%;
-    --card: 211 57% 8%;
+    /* Official Organizational Colors - Premium Dark Mode */
+    --background: 211 57% 4%; /* Ultra-deep Navy Background */
+    --foreground: 0 0% 100%; /* Pure White */
+    --card: 211 57% 8%; /* Deep Navy Surface */
     --card-foreground: 0 0% 100%;
     --popover: 211 57% 8%;
     --popover-foreground: 0 0% 100%;
-    --primary: 49 56% 54%; /* Org Gold */
+    --primary: 49 56% 54%; /* Org Gold Highlights */
     --primary-foreground: 211 57% 4%;
-    --secondary: 211 57% 12%;
+    --secondary: 211 57% 12%; /* Base Navy */
     --secondary-foreground: 0 0% 100%;
     --muted: 211 57% 10%;
     --muted-foreground: 211 20% 65%;
@@ -55,8 +53,6 @@
     --destructive-foreground: 210 40% 98%;
     --border: 211 57% 15%;
     --input: 211 57% 15%;
-    --sidebar-background: 211 57% 6%; 
-    --sidebar-foreground: 0 0% 100%;
   }
 }
 
@@ -69,44 +65,33 @@
     padding-bottom: env(safe-area-inset-bottom);
   }
 
-  /* High-Visibility Tactical Scrollbar System */
+  /* Tactical Scrollbar System */
   * {
     scrollbar-width: auto;
     scrollbar-color: hsl(var(--primary)) hsl(var(--secondary) / 0.1);
   }
 
-  ::-webkit-scrollbar { width: 10px; height: 10px; }
-  ::-webkit-scrollbar-track { background: hsl(var(--secondary) / 0.05); }
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb {
-    background-color: hsl(var(--primary));
-    border-radius: 5px;
-    border: 2.5px solid hsl(var(--background));
+    background-color: hsl(var(--primary) / 0.3);
+    border-radius: 4px;
+    border: 2px solid transparent;
     background-clip: padding-box;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background-color: hsl(var(--primary) / 0.8);
+    background-color: hsl(var(--primary) / 0.6);
   }
 }
 
 @layer utilities {
     .apple-glass { 
-      @apply bg-card/40 backdrop-blur-3xl border border-white/10 shadow-[0_4px_16px_0_rgba(0,0,0,0.1)]; 
+      @apply bg-background/60 backdrop-blur-2xl border border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.05)]; 
     }
     .apple-glass-darker { 
-      @apply bg-background/80 backdrop-blur-[40px] border border-white/5 shadow-[0_8px_32px_0_rgba(0,0,0,0.3)]; 
+      @apply bg-background/80 backdrop-blur-3xl border border-white/5 shadow-2xl; 
     }
-    .min-h-screen-safe { min-height: 100dvh; }
-    .gauge-container { position: relative; width: 7.5rem; height: 3.75rem; overflow: hidden; }
-    .gauge-track { width: 7.5rem; height: 7.5rem; border: 0.9rem solid hsl(var(--muted) / 0.3); border-radius: 50%; }
-    .gauge-fill {
-      position: absolute; top: 0; left: 0; width: 7.5rem; height: 7.5rem;
-      border: 0.9rem solid hsl(var(--primary)); border-radius: 50%;
-      border-bottom-color: transparent; border-left-color: transparent;
-      transform: rotate(45deg); transition: transform 1s cubic-bezier(0.16, 1, 0.3, 1);
-    }
-    .custom-scrollbar { scrollbar-gutter: stable; }
-    .interactive-element { @apply transition-all duration-300 ease-apple-ease hover:-translate-y-0.5 hover:shadow-lg active:scale-95; }
-    
-    /* Fluid button sizing */
-    .btn-fluid { @apply w-full md:w-auto min-h-[44px] md:min-h-0; }
+    .interactive-element { @apply transition-all duration-300 ease-apple-ease hover:-translate-y-0.5 hover:shadow-lg active:scale-[0.98] active:shadow-sm; }
+    .animate-pop-in { @apply animate-[pop-in_0.3s_cubic-bezier(0.175,0.885,0.32,1.1)_forwards]; }
+    .animate-slide-up-fade { @apply animate-[slide-up-fade_0.5s_cubic-bezier(0.16,1,0.3,1)_forwards]; }
 }
