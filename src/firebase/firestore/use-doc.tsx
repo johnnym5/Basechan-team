@@ -57,7 +57,6 @@ export function useDoc<T = any>(
 
     setIsLoading(true);
     setError(null);
-    // Optional: setData(null); // Clear previous data instantly
 
     const unsubscribe = onSnapshot(
       memoizedDocRef,
@@ -65,10 +64,9 @@ export function useDoc<T = any>(
         if (snapshot.exists()) {
           setData({ ...(snapshot.data() as T), id: snapshot.id });
         } else {
-          // Document does not exist
           setData(null);
         }
-        setError(null); // Clear any previous error on successful snapshot (even if doc doesn't exist)
+        setError(null);
         setIsLoading(false);
       },
       (error: FirestoreError) => {
@@ -89,8 +87,15 @@ export function useDoc<T = any>(
       }
     );
 
-    return () => unsubscribe();
-  }, [memoizedDocRef]); // Re-run if the memoizedDocRef changes.
+    return () => {
+        try {
+            unsubscribe();
+        } catch (e) {
+            // SDK might be in a failed state (ca9), ignoring b815 error on unmount to prevent crash
+            console.warn("[SYSTEM] Firestore document listener cleanup suppressed.");
+        }
+    };
+  }, [memoizedDocRef]);
 
   return { data, isLoading, error };
 }

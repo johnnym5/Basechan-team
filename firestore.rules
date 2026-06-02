@@ -1,4 +1,3 @@
-
 rules_version = '2';
 
 service cloud.firestore {
@@ -12,7 +11,9 @@ service cloud.firestore {
     }
 
     function getUserData() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+      // Added exists() check to prevent rule evaluation errors during profile initialization
+      let userPath = /databases/$(database)/documents/users/$(request.auth.uid);
+      return exists(userPath) ? get(userPath).data : {"role": "STAFF", "orgId": "none"};
     }
 
     function getUserOrgId() {
@@ -56,7 +57,7 @@ service cloud.firestore {
 
     match /accounts/{accountId} {
       allow read: if isRequestingUserInOrg(resource.data.orgId);
-      allow write: if (isFinanceManager() || isSuperAdmin()) && isRequestingUserInOrg(resource.data.orgId);
+      allow write: if (isFinanceManager() || isSuperAdmin()) && isRequestingUserInOrg(request.resource.data.orgId);
     }
 
     match /vendors/{vendorId} {
@@ -92,10 +93,10 @@ service cloud.firestore {
       allow delete: if isSuperAdmin();
       
       match /telemetry/{docId} {
-          allow read, write: if request.auth.uid == userId || isSuperAdmin() || (isAdmin() && isRequestingUserInOrg(get(/databases/$(database)/documents/users/$(userId)).data.orgId));
+          allow read, write: if request.auth.uid == userId || isSuperAdmin() || (isAdmin() && isRequestingUserInOrg(getUserOrgId()));
           
           match /{allSubcollections=**} {
-              allow read, write: if request.auth.uid == userId || isSuperAdmin() || (isAdmin() && isRequestingUserInOrg(get(/databases/$(database)/documents/users/$(userId)).data.orgId));
+              allow read, write: if request.auth.uid == userId || isSuperAdmin() || (isAdmin() && isRequestingUserInOrg(getUserOrgId()));
           }
       }
     }

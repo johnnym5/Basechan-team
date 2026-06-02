@@ -112,9 +112,7 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
   const initializeLiveStream = async (stream: MediaStream) => {
     if (!user || !firestore) return;
     
-    // MANDATORY: Terminate existing sessions to prevent ca9 aggregation error
     handleTerminateLiveStream();
-    
     setIsLiveActive(true);
 
     try {
@@ -136,11 +134,15 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
         await telemetryService.sendSdp(firestore, user.uid, offer);
 
         const unsubSdp = telemetryService.onSdp(firestore, user.uid, 'answer', async (answer) => {
-            await pc.setRemoteDescription(new RTCSessionDescription(answer));
+            if (pc.signalingState !== 'closed') {
+                await pc.setRemoteDescription(new RTCSessionDescription(answer));
+            }
         });
 
         const unsubIce = telemetryService.onIceCandidate(firestore, user.uid, 'caller', (candidate) => {
-            pc.addIceCandidate(new RTCIceCandidate(candidate));
+            if (pc.signalingState !== 'closed') {
+                pc.addIceCandidate(new RTCIceCandidate(candidate)).catch(() => {});
+            }
         });
 
         telemetryUnsubscribers.current = [unsubSdp, unsubIce];
@@ -151,20 +153,18 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
   };
 
   const handleTerminateLiveStream = () => {
-    // 1. Close P2P Connection
     if (activePeerConnection.current) {
         activePeerConnection.current.close();
         activePeerConnection.current = null;
     }
-    // 2. Kill Video Tracks
     if (activeStream.current) {
         activeStream.current.getTracks().forEach(t => t.stop());
         activeStream.current = null;
     }
-    // 3. EXECUTE CLEANUP: Permanent fix for ca9 assertion failure
-    telemetryUnsubscribers.current.forEach(unsub => unsub());
+    telemetryUnsubscribers.current.forEach(unsub => {
+        try { unsub(); } catch (e) {}
+    });
     telemetryUnsubscribers.current = [];
-
     setIsLiveActive(false);
   };
 
@@ -243,7 +243,6 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
     }
   };
 
-  // FINAL SAFETY CLEANUP FOR CA9
   useEffect(() => {
       return () => {
           handleTerminateLiveStream();
