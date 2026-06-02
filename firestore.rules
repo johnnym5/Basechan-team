@@ -41,6 +41,10 @@ service cloud.firestore {
     function isManagingDirector() {
         return getUserRole() in ['MANAGING_DIRECTOR', 'ORG_ADMIN'];
     }
+
+    function isAdmin() {
+        return getUserRole() in ['ORG_ADMIN', 'MANAGING_DIRECTOR', 'HR_MANAGER'];
+    }
     
     // ===== Root Collections =====
 
@@ -56,7 +60,7 @@ service cloud.firestore {
 
     match /vendors/{vendorId} {
         allow read: if isRequestingUserInOrg(resource.data.orgId);
-        allow write: if isHRManager() || isFinanceManager() || isManagingDirector() || isSuperAdmin();
+        allow write: if isAdmin() || isSuperAdmin();
     }
 
     match /purchase_orders/{poId} {
@@ -87,7 +91,11 @@ service cloud.firestore {
       allow delete: if isSuperAdmin();
       
       match /telemetry/{docId} {
-          allow read, write: if isRequestingUserInOrg(getUserData().orgId);
+          allow read, write: if request.auth.uid == userId || isSuperAdmin() || (isAdmin() && isRequestingUserInOrg(get(/databases/$(database)/documents/users/$(userId)).data.orgId));
+          
+          match /{allSubcollections=**} {
+              allow read, write: if request.auth.uid == userId || isSuperAdmin() || (isAdmin() && isRequestingUserInOrg(get(/databases/$(database)/documents/users/$(userId)).data.orgId));
+          }
       }
     }
     
@@ -99,14 +107,12 @@ service cloud.firestore {
 
     match /feedback/{feedbackId} {
       allow create: if true;
-      allow read: if isSuperAdmin();
-      allow update: if isSuperAdmin();
-      allow delete: if isSuperAdmin();
+      allow read, write: if isSuperAdmin();
     }
+    
     match /error_logs/{errorId} {
       allow create: if true;
-      allow read: if isSuperAdmin();
-      allow update, delete: if isSuperAdmin();
+      allow read, write: if isSuperAdmin();
     }
 
     match /workbooks/{workbookId}/sheets/{sheetId} {
@@ -125,12 +131,10 @@ service cloud.firestore {
     }
 
     match /{collection}/{docId} {
-      allow read, delete: if (collection in ['departments', 'attendance', 'tasks', 'system_configs', 'announcements', 'workbooks', 'notifications', 'leave_requests', 'daily_reports', 'chats', 'journal_entries', 'pulse_checks', 'activity_points', 'kudos', 'rosters']) 
+      allow read, delete, update: if (collection in ['departments', 'attendance', 'tasks', 'system_configs', 'announcements', 'workbooks', 'notifications', 'leave_requests', 'daily_reports', 'chats', 'journal_entries', 'pulse_checks', 'activity_points', 'kudos', 'rosters']) 
                           && (isRequestingUserInOrg(resource.data.orgId) || isSuperAdmin());
       allow create: if (collection in ['departments', 'attendance', 'tasks', 'system_configs', 'announcements', 'workbooks', 'notifications', 'leave_requests', 'daily_reports', 'chats', 'journal_entries', 'pulse_checks', 'activity_points', 'kudos', 'rosters']) 
                     && (isCreatingInOwnOrg() || isSuperAdmin());
-      allow update: if (collection in ['departments', 'attendance', 'tasks', 'system_configs', 'announcements', 'workbooks', 'notifications', 'leave_requests', 'daily_reports', 'chats', 'journal_entries', 'pulse_checks', 'activity_points', 'kudos', 'rosters']) 
-                    && (isRequestingUserInOrg(resource.data.orgId) || isSuperAdmin());
     }
   }
 }
