@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, where, orderBy, doc, updateDoc } from 'firebase/firestore';
+import { useFirestore } from '@/firebase';
+import { collection, query, where, orderBy, doc, updateDoc, onSnapshot } from 'firebase/firestore';
 import type { Attendance, UserProfile } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -29,6 +29,11 @@ export function LiveStaffMonitor({ userProfile }: LiveStaffMonitorProps) {
     const [today, setToday] = useState<string>(format(new Date(), 'yyyy-MM-dd'));
     const [isProcessing, setIsProcessing] = useState<string | null>(null);
 
+    const [records, setRecords] = useState<Attendance[]>([]);
+    const [orgUsers, setOrgUsers] = useState<UserProfile[]>([]);
+    const [isAttLoading, setIsAttLoading] = useState(true);
+    const [isUsersLoading, setIsUsersLoading] = useState(true);
+
     const { isOpen, anchorPoint, handleContextMenu, handleTouchStart, handleTouchEnd, closeMenu } = useContextMenu();
     const [contextUser, setContextUser] = useState<UserProfile | null>(null);
 
@@ -37,29 +42,51 @@ export function LiveStaffMonitor({ userProfile }: LiveStaffMonitorProps) {
         return () => clearInterval(timer);
     }, []);
 
-    // 1. Consolidated Attendance Query
-    const attendanceQuery = useMemoFirebase(() => {
-        if (!firestore || !today || !userProfile.orgId) return null;
-        return query(
+    // 1. Attendance Real-time Node with Explicit Cleanup
+    useEffect(() => {
+        if (!firestore || !today || !userProfile.orgId) return;
+
+        const q = query(
             collection(firestore, 'attendance'),
             where('orgId', '==', userProfile.orgId),
             where('date', '==', today),
             orderBy('clockIn', 'desc')
         );
+
+        setIsAttLoading(true);
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            const data = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Attendance));
+            setRecords(data);
+            setIsAttLoading(false);
+        }, (error) => {
+            console.error("Attendance feed error:", error);
+            setIsAttLoading(false);
+        });
+
+        return () => unsubscribe();
     }, [firestore, today, userProfile.orgId]);
 
-    const { data: records, isLoading: isAttLoading } = useCollection<Attendance>(attendanceQuery);
+    // 2. User Directory Real-time Node with Explicit Cleanup
+    useEffect(() => {
+        if (!firestore || !userProfile.orgId) return;
 
-    // 2. Consolidated User Directory Query
-    const usersQuery = useMemoFirebase(() => {
-        if (!firestore || !userProfile.orgId) return null;
-        return query(
+        const q = query(
             collection(firestore, 'users'), 
             where('orgId', '==', userProfile.orgId)
         );
-    }, [firestore, userProfile.orgId]);
 
-    const { data: orgUsers, isLoading: isUsersLoading } = useCollection<UserProfile>(usersQuery);
+        setIsUsersLoading(true);
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            const data = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as UserProfile));
+            setOrgUsers(data);
+            setIsUsersLoading(false);
+        }, (error) => {
+            console.error("Users feed error:", error);
+            setIsUsersLoading(false);
+        });
+
+        return () => unsubscribe();
+    }, [firestore, userProfile.orgId]);
 
     const handleAction = async (user: UserProfile, type: 'SCREENSHOT' | 'SCREEN_SHARE') => {
         if (!firestore) return;

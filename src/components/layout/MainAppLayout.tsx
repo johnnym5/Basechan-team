@@ -243,6 +243,13 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
     }
   };
 
+  // FINAL SAFETY CLEANUP FOR CA9
+  useEffect(() => {
+      return () => {
+          handleTerminateLiveStream();
+      };
+  }, []);
+
   if (!mounted) return <div className="min-h-screen bg-background flex items-center justify-center"><div className="animate-pulse w-12 h-12 rounded-full bg-primary/20" /></div>;
 
   return (
