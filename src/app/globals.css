@@ -10,51 +10,53 @@
   }
   
   :root {
-    --background: 240 10% 98%;
-    --foreground: 240 10% 10%;
+    /* Refined Light Mode using Org Navy as primary */
+    --background: 0 0% 100%;
+    --foreground: 211 57% 12%;
     --card: 0 0% 100%;
-    --card-foreground: 240 10% 10%;
+    --card-foreground: 211 57% 12%;
     --popover: 0 0% 100%;
-    --popover-foreground: 240 10% 10%;
-    --primary: 217 91% 60%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 240 5% 92%;
-    --secondary-foreground: 240 5% 25%;
-    --muted: 240 5% 95%;
-    --muted-foreground: 240 5% 45%;
-    --accent: 217 91% 60%;
-    --accent-foreground: 210 40% 98%;
+    --popover-foreground: 211 57% 12%;
+    --primary: 49 56% 54%; /* Org Gold */
+    --primary-foreground: 211 57% 12%;
+    --secondary: 211 57% 95%;
+    --secondary-foreground: 211 57% 12%;
+    --muted: 211 20% 95%;
+    --muted-foreground: 211 20% 45%;
+    --accent: 49 56% 54%;
+    --accent-foreground: 0 0% 100%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
-    --border: 240 6% 90%;
-    --input: 240 6% 90%;
-    --ring: 217 91% 60%;
+    --border: 211 20% 90%;
+    --input: 211 20% 90%;
+    --ring: 49 56% 54%;
     --radius: 0.75rem; 
-    --sidebar-background: 240 5% 96%; 
-    --sidebar-foreground: 240 10% 10%;
+    --sidebar-background: 211 57% 98%; 
+    --sidebar-foreground: 211 57% 12%;
   }
 
   .dark {
-    --background: 240 10% 2%; 
-    --foreground: 0 0% 98%;
-    --card: 240 10% 4%;
-    --card-foreground: 210 40% 98%;
-    --popover: 240 10% 4%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 217 91% 60%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 240 10% 8%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 240 10% 6%;
-    --muted-foreground: 240 5% 65%;
-    --accent: 217 91% 60%;
-    --accent-foreground: 210 40% 98%;
+    /* Deep OLED-friendly Dark Mode based on Org Navy (#0d1e30) */
+    --background: 211 57% 4%; 
+    --foreground: 0 0% 100%;
+    --card: 211 57% 8%;
+    --card-foreground: 0 0% 100%;
+    --popover: 211 57% 8%;
+    --popover-foreground: 0 0% 100%;
+    --primary: 49 56% 54%; /* Org Gold */
+    --primary-foreground: 211 57% 4%;
+    --secondary: 211 57% 12%;
+    --secondary-foreground: 0 0% 100%;
+    --muted: 211 57% 10%;
+    --muted-foreground: 211 20% 65%;
+    --accent: 49 56% 54%;
+    --accent-foreground: 211 57% 4%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
-    --border: 240 10% 12%;
-    --input: 240 10% 12%;
-    --sidebar-background: 230 15% 4%; 
-    --sidebar-foreground: 210 40% 98%;
+    --border: 211 57% 15%;
+    --input: 211 57% 15%;
+    --sidebar-background: 211 57% 6%; 
+    --sidebar-foreground: 0 0% 100%;
   }
 }
 

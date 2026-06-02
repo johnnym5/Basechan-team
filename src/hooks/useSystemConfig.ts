@@ -36,7 +36,8 @@ export function useSystemConfig(orgId: string | null | undefined) {
           work_hours: { start: '09:00', end: '17:00' },
           reporting_schedule: { required: true, deadline: '17:30' },
           currency_symbol: '$',
-          branding_color: null,
+          branding_color: '#cab348', // Default to Org Gold
+          accent_color: '#0d1e30', // Default to Org Navy
       };
       
       // We don't need to wait for this, it can happen in the background.

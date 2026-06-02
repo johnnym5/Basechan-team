@@ -66,8 +66,8 @@ export function SystemPane({ currentUserProfile }: SystemPaneProps) {
   useEffect(() => {
     if (config) {
         form.reset({
-            branding_color: config.branding_color || '#3b82f6',
-            accent_color: config.accent_color || '#1e293b',
+            branding_color: config.branding_color || '#cab348',
+            accent_color: config.accent_color || '#0d1e30',
             currency_symbol: config.currency_symbol || '$',
             finance_access: config.finance_access ?? true,
             chat_enabled: config.chat_enabled ?? true,
@@ -181,8 +181,8 @@ export function SystemPane({ currentUserProfile }: SystemPaneProps) {
                             <FormControl>
                                 <div className="flex items-center gap-3">
                                     <div className="h-10 w-10 rounded-full border border-white/10 shadow-inner shrink-0" style={{ backgroundColor: field.value }} />
-                                    <Input {...field} placeholder="#3b82f6" className="rounded-xl font-mono bg-background/50 border-white/5" />
-                                    <Input type="color" value={field.value || '#000000'} onChange={field.onChange} className="w-12 h-10 p-0 border-none bg-transparent cursor-pointer shrink-0"/>
+                                    <Input {...field} placeholder="#cab348" className="rounded-xl font-mono bg-background/50 border-white/5" />
+                                    <Input type="color" value={field.value || '#cab348'} onChange={field.onChange} className="w-12 h-10 p-0 border-none bg-transparent cursor-pointer shrink-0"/>
                                 </div>
                             </FormControl>
                             <FormDescription className="text-[9px] uppercase tracking-tighter opacity-50">Controls buttons, gauges, and active states.</FormDescription>
@@ -194,8 +194,8 @@ export function SystemPane({ currentUserProfile }: SystemPaneProps) {
                              <FormControl>
                                 <div className="flex items-center gap-3">
                                     <div className="h-10 w-10 rounded-full border border-white/10 shadow-inner shrink-0" style={{ backgroundColor: field.value }} />
-                                    <Input {...field} placeholder="#1e293b" className="rounded-xl font-mono bg-background/50 border-white/5" />
-                                    <Input type="color" value={field.value || '#000000'} onChange={field.onChange} className="w-12 h-10 p-0 border-none bg-transparent cursor-pointer shrink-0"/>
+                                    <Input {...field} placeholder="#0d1e30" className="rounded-xl font-mono bg-background/50 border-white/5" />
+                                    <Input type="color" value={field.value || '#0d1e30'} onChange={field.onChange} className="w-12 h-10 p-0 border-none bg-transparent cursor-pointer shrink-0"/>
                                 </div>
                             </FormControl>
                             <FormDescription className="text-[9px] uppercase tracking-tighter opacity-50">Controls secondary visual accents.</FormDescription>
