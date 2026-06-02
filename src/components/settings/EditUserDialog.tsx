@@ -34,6 +34,8 @@ const formSchema = z.object({
     canAccessLibrary: z.boolean().default(false),
     canManageAnnouncements: z.boolean().default(false),
     canViewAudit: z.boolean().default(false),
+    canManageDisplays: z.boolean().default(false),
+    canManageLibrary: z.boolean().default(false),
   }).default({}),
 });
 
@@ -67,6 +69,8 @@ export function EditUserDialog({ open, onOpenChange, userToEdit }: EditUserDialo
         canAccessLibrary: false,
         canManageAnnouncements: false,
         canViewAudit: false,
+        canManageDisplays: false,
+        canManageLibrary: false,
       },
     }
   });
@@ -89,6 +93,8 @@ export function EditUserDialog({ open, onOpenChange, userToEdit }: EditUserDialo
             canAccessLibrary: !!userToEdit.customPermissions?.canAccessLibrary,
             canManageAnnouncements: !!userToEdit.customPermissions?.canManageAnnouncements,
             canViewAudit: !!userToEdit.customPermissions?.canViewAudit,
+            canManageDisplays: !!userToEdit.customPermissions?.canManageDisplays,
+            canManageLibrary: !!userToEdit.customPermissions?.canManageLibrary,
         },
       });
       prevDeptRef.current = userToEdit.departmentName || null;
@@ -121,7 +127,7 @@ export function EditUserDialog({ open, onOpenChange, userToEdit }: EditUserDialo
     try {
       const userRef = doc(firestore, 'users', userToEdit.id);
       
-      // Strict Boolean Casting to prevent 'undefined' values from reaching Firestore
+      // Strict Boolean Sanitization to prevent 'undefined' values from reaching Firestore
       const sanitizedPermissions = {
         canAccessRequisitions: Boolean(values.customPermissions?.canAccessRequisitions),
         canAccessChat: Boolean(values.customPermissions?.canAccessChat),
@@ -129,6 +135,8 @@ export function EditUserDialog({ open, onOpenChange, userToEdit }: EditUserDialo
         canAccessLibrary: Boolean(values.customPermissions?.canAccessLibrary),
         canManageAnnouncements: Boolean(values.customPermissions?.canManageAnnouncements),
         canViewAudit: Boolean(values.customPermissions?.canViewAudit),
+        canManageDisplays: Boolean(values.customPermissions?.canManageDisplays),
+        canManageLibrary: Boolean(values.customPermissions?.canManageLibrary),
       };
 
       await updateDoc(userRef, {
@@ -161,10 +169,11 @@ export function EditUserDialog({ open, onOpenChange, userToEdit }: EditUserDialo
 
   const onValidationError = (errors: any) => {
     console.error("Authorization Profile Validation Failure Details:", JSON.stringify(errors, null, 2));
+    const errorFields = Object.keys(errors).join(', ');
     toast({
         variant: "destructive",
         title: "Deployment Blocked",
-        description: "Please ensure all required identity fields are correctly populated.",
+        description: `Validation errors in: ${errorFields}. Please check identity parameters.`,
     });
   };
 
@@ -259,6 +268,8 @@ export function EditUserDialog({ open, onOpenChange, userToEdit }: EditUserDialo
                                 <PermissionToggle name="canAccessLibrary" label="Knowledge Base" description="View Standard Operating Procedures (SOPs)." />
                                 <PermissionToggle name="canManageAnnouncements" label="Broadcasting" description="Permission to post organization-wide updates." />
                                 <PermissionToggle name="canViewAudit" label="Infrastructure Audit" description="Review system interaction telemetry logs." />
+                                <PermissionToggle name="canManageDisplays" label="Live Displays" description="Configure external data stream nodes." />
+                                <PermissionToggle name="canManageLibrary" label="Library Admin" description="Upload and manage SOP documentation." />
                             </div>
                         </div>
                     </div>

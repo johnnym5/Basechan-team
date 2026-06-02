@@ -16,15 +16,21 @@ import { getDatabase, Database } from 'firebase/database';
 
 const isFirebaseConfigAvailable = !!(firebaseConfig.apiKey && firebaseConfig.projectId);
 
-// Singleton instances to ensure stable references across hot reloads in Next.js dev mode
-let firestoreInstance: Firestore | null = null;
-let authInstance: Auth | null = null;
-let storageInstance: FirebaseStorage | null = null;
-let databaseInstance: Database | null = null;
+/**
+ * Singleton instances attached to globalThis to ensure stable references 
+ * across hot reloads in Next.js development mode.
+ */
+declare global {
+  var _firebaseApp: FirebaseApp | undefined;
+  var _firestore: Firestore | undefined;
+  var _auth: Auth | undefined;
+  var _storage: FirebaseStorage | undefined;
+  var _database: Database | undefined;
+}
 
 /**
  * Initializes the Firebase Client SDKs.
- * Uses a singleton pattern to prevent errors caused by multiple initializations.
+ * Uses a global singleton pattern to prevent 'ca9' assertion failures and redundant initializations.
  */
 export function initializeFirebase() {
   if (!isFirebaseConfigAvailable) {
@@ -37,28 +43,20 @@ export function initializeFirebase() {
     };
   }
   
-  let app: FirebaseApp;
-  const existingApps = getApps();
-  
-  if (!existingApps.length) {
-    app = initializeApp(firebaseConfig);
-  } else {
-    app = existingApps[0];
+  if (!globalThis._firebaseApp) {
+    const existingApps = getApps();
+    if (existingApps.length > 0) {
+        globalThis._firebaseApp = existingApps[0];
+    } else {
+        globalThis._firebaseApp = initializeApp(firebaseConfig);
+    }
   }
 
-  return getSdks(app);
-}
+  const app = globalThis._firebaseApp!;
 
-/**
- * Configures and retrieves individual Firebase service instances.
- * Uses persistent local cache to ensure offline utility.
- * Uses Single Tab Manager to prevent 'ca9' assertion failures.
- */
-export function getSdks(firebaseApp: FirebaseApp) {
-  // 1. Initialize Firestore with Persistent Local Cache 
-  if (!firestoreInstance) {
+  if (!globalThis._firestore) {
     try {
-      firestoreInstance = initializeFirestore(firebaseApp, {
+      globalThis._firestore = initializeFirestore(app, {
         localCache: persistentLocalCache({
           tabManager: persistentSingleTabManager(),
           cacheSizeBytes: CACHE_SIZE_UNLIMITED,
@@ -66,29 +64,34 @@ export function getSdks(firebaseApp: FirebaseApp) {
       });
     } catch (e) {
       // Fallback if already initialized (common in hot-reload)
-      firestoreInstance = getFirestore(firebaseApp);
+      globalThis._firestore = getFirestore(app);
     }
   }
 
-  // 2. Initialize Auth with explicit Browser Local Persistence
-  if (!authInstance) {
-    authInstance = getAuth(firebaseApp);
-    setPersistence(authInstance, browserLocalPersistence).catch((err) => {
+  if (!globalThis._auth) {
+    globalThis._auth = getAuth(app);
+    setPersistence(globalThis._auth, browserLocalPersistence).catch((err) => {
         console.warn("[SYSTEM] Auth persistence initialization failed:", err.message);
     });
   }
 
-  // 3. Initialize other services as singletons
-  if (!storageInstance) storageInstance = getStorage(firebaseApp);
-  if (!databaseInstance) databaseInstance = getDatabase(firebaseApp);
+  if (!globalThis._storage) globalThis._storage = getStorage(app);
+  if (!globalThis._database) globalThis._database = getDatabase(app);
 
   return {
-    firebaseApp,
-    auth: authInstance,
-    firestore: firestoreInstance,
-    storage: storageInstance,
-    database: databaseInstance,
+    firebaseApp: app,
+    auth: globalThis._auth,
+    firestore: globalThis._firestore,
+    storage: globalThis._storage,
+    database: globalThis._database,
   };
+}
+
+/**
+ * Retrieves the initialized SDK instances.
+ */
+export function getSdks(app: FirebaseApp) {
+  return initializeFirebase();
 }
 
 export * from './provider';
