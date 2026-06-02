@@ -1,15 +1,15 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { useFirestore } from '@/firebase';
-import { collection, query, where, orderBy, doc, updateDoc, onSnapshot } from 'firebase/firestore';
+import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { collection, query, where, orderBy, doc, updateDoc } from 'firebase/firestore';
 import type { Attendance, UserProfile } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { format, differenceInSeconds } from 'date-fns';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
-import { Timer, Clock, Activity, Coffee, LogOut, Loader2, Monitor, Smartphone, MonitorPlay, Camera } from 'lucide-react';
+import { Timer, Activity, Coffee, LogOut, Loader2, Monitor, Smartphone, MonitorPlay, Camera } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useContextMenu } from '@/hooks/useContextMenu';
@@ -26,64 +26,40 @@ export function LiveStaffMonitor({ userProfile }: LiveStaffMonitorProps) {
     const firestore = useFirestore();
     const { toast } = useToast();
     const [now, setNow] = useState(new Date());
-    const [today, setToday] = useState<string>('');
+    const [today, setToday] = useState<string>(format(new Date(), 'yyyy-MM-dd'));
     const [isProcessing, setIsProcessing] = useState<string | null>(null);
-
-    const [records, setRecords] = useState<Attendance[]>([]);
-    const [orgUsers, setOrgUsers] = useState<UserProfile[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
 
     const { isOpen, anchorPoint, handleContextMenu, handleTouchStart, handleTouchEnd, closeMenu } = useContextMenu();
     const [contextUser, setContextUser] = useState<UserProfile | null>(null);
 
-    // 1. Initial State Setup
     useEffect(() => {
-        setToday(format(new Date(), 'yyyy-MM-dd'));
         const timer = setInterval(() => setNow(new Date()), 1000);
         return () => clearInterval(timer);
     }, []);
 
-    // 2. Telemetry: Attendance Listener with Explicit Unsubscribe
-    useEffect(() => {
-        if (!firestore || !today || !userProfile.orgId) return;
-
-        setIsLoading(true);
-        const q = query(
+    // 1. Consolidated Attendance Query
+    const attendanceQuery = useMemoFirebase(() => {
+        if (!firestore || !today || !userProfile.orgId) return null;
+        return query(
             collection(firestore, 'attendance'),
             where('orgId', '==', userProfile.orgId),
             where('date', '==', today),
             orderBy('clockIn', 'desc')
         );
-
-        // STABILITY FIX: Ensure strict cleanup of Watch targets to prevent ca9 assertion
-        const unsubscribe = onSnapshot(q, (snapshot) => {
-            const data = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Attendance));
-            setRecords(data);
-            setIsLoading(false);
-        }, (error) => {
-            console.error("Telemetry link failed:", error);
-            setIsLoading(false);
-        });
-
-        return () => unsubscribe();
     }, [firestore, today, userProfile.orgId]);
 
-    // 3. Identity: User Directory Listener with Explicit Unsubscribe
-    useEffect(() => {
-        if (!firestore || !userProfile.orgId) return;
+    const { data: records, isLoading: isAttLoading } = useCollection<Attendance>(attendanceQuery);
 
-        const q = query(
+    // 2. Consolidated User Directory Query
+    const usersQuery = useMemoFirebase(() => {
+        if (!firestore || !userProfile.orgId) return null;
+        return query(
             collection(firestore, 'users'), 
             where('orgId', '==', userProfile.orgId)
         );
-
-        const unsubscribe = onSnapshot(q, (snapshot) => {
-            const data = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as UserProfile));
-            setOrgUsers(data);
-        });
-
-        return () => unsubscribe();
     }, [firestore, userProfile.orgId]);
+
+    const { data: orgUsers, isLoading: isUsersLoading } = useCollection<UserProfile>(usersQuery);
 
     const handleAction = async (user: UserProfile, type: 'SCREENSHOT' | 'SCREEN_SHARE') => {
         if (!firestore) return;
@@ -177,7 +153,7 @@ export function LiveStaffMonitor({ userProfile }: LiveStaffMonitorProps) {
         }).sort((a, b) => (b.clockOut ? 0 : 1) - (a.clockOut ? 0 : 1));
     }, [records, now, orgUsers]);
 
-    if (isLoading || !today) return <Skeleton className="h-96 w-full rounded-[2rem]" />;
+    if (isAttLoading || isUsersLoading) return <Skeleton className="h-96 w-full rounded-[2rem]" />;
 
     return (
         <>

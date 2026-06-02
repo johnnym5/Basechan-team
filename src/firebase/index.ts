@@ -28,7 +28,7 @@ declare global {
 
 /**
  * Initializes the Firebase Client SDKs.
- * Uses a global singleton pattern and memoryLocalCache to resolve 'ca9' assertion failures.
+ * Uses a memory-only cache to resolve 'ca9' assertion failures.
  */
 export function initializeFirebase() {
   if (!isFirebaseConfigAvailable) {
@@ -53,16 +53,11 @@ export function initializeFirebase() {
   const app = globalThis._firebaseApp!;
 
   if (!globalThis._firestore) {
-    try {
-      // EXPLICIT FIX FOR CA9: Force memory cache to resolve internal aggregation conflicts
-      // This bypasses IndexedDB persistence which causes the ID: ca9 assertion in dev.
-      globalThis._firestore = initializeFirestore(app, {
-        localCache: memoryLocalCache(),
-      });
-    } catch (e) {
-      // Fallback if already initialized (common in hot-reload)
-      globalThis._firestore = getFirestore(app);
-    }
+    // EXPLICIT FIX FOR CA9: Force memory-only cache.
+    // This bypasses the persistent state manager entirely, preventing aggregation conflicts in dev.
+    globalThis._firestore = initializeFirestore(app, {
+      localCache: memoryLocalCache(),
+    });
   }
 
   if (!globalThis._auth) {
@@ -82,9 +77,6 @@ export function initializeFirebase() {
   };
 }
 
-/**
- * Retrieves the initialized SDK instances.
- */
 export function getSdks(app: FirebaseApp) {
   return initializeFirebase();
 }
