@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { useFirestore } from '@/firebase';
-import { collection, query, where, orderBy, doc, updateDoc, onSnapshot } from 'firebase/firestore';
+import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { collection, query, where, orderBy, doc, updateDoc } from 'firebase/firestore';
 import type { Attendance, UserProfile } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -26,13 +26,7 @@ export function LiveStaffMonitor({ userProfile }: LiveStaffMonitorProps) {
     const firestore = useFirestore();
     const { toast } = useToast();
     const [now, setNow] = useState(new Date());
-    const [today, setToday] = useState<string>(format(new Date(), 'yyyy-MM-dd'));
     const [isProcessing, setIsProcessing] = useState<string | null>(null);
-
-    const [records, setRecords] = useState<Attendance[]>([]);
-    const [orgUsers, setOrgUsers] = useState<UserProfile[]>([]);
-    const [isAttLoading, setIsAttLoading] = useState(true);
-    const [isUsersLoading, setIsUsersLoading] = useState(true);
 
     const { isOpen, anchorPoint, handleContextMenu, handleTouchStart, handleTouchEnd, closeMenu } = useContextMenu();
     const [contextUser, setContextUser] = useState<UserProfile | null>(null);
@@ -42,53 +36,30 @@ export function LiveStaffMonitor({ userProfile }: LiveStaffMonitorProps) {
         return () => clearInterval(timer);
     }, []);
 
-    // 1. Attendance Real-time Node with Explicit Cleanup
-    useEffect(() => {
-        if (!firestore || !today || !userProfile.orgId) return;
+    const today = useMemo(() => format(new Date(), 'yyyy-MM-dd'), []);
 
-        const q = query(
+    // Stabilized Attendance Query
+    const attendanceQuery = useMemoFirebase(() => {
+        if (!firestore || !userProfile.orgId) return null;
+        return query(
             collection(firestore, 'attendance'),
             where('orgId', '==', userProfile.orgId),
             where('date', '==', today),
             orderBy('clockIn', 'desc')
         );
+    }, [firestore, userProfile.orgId, today]);
 
-        setIsAttLoading(true);
-        const unsubscribe = onSnapshot(q, (snapshot) => {
-            const data = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Attendance));
-            setRecords(data);
-            setIsAttLoading(false);
-        }, (error) => {
-            console.error("Attendance feed error:", error);
-            setIsAttLoading(false);
-        });
-
-        // Explicitly return the unsubscribe function to prevent ca9 aggregation errors
-        return () => unsubscribe();
-    }, [firestore, today, userProfile.orgId]);
-
-    // 2. User Directory Real-time Node with Explicit Cleanup
-    useEffect(() => {
-        if (!firestore || !userProfile.orgId) return;
-
-        const q = query(
+    // Stabilized Users Query
+    const usersQuery = useMemoFirebase(() => {
+        if (!firestore || !userProfile.orgId) return null;
+        return query(
             collection(firestore, 'users'), 
             where('orgId', '==', userProfile.orgId)
         );
-
-        setIsUsersLoading(true);
-        const unsubscribe = onSnapshot(q, (snapshot) => {
-            const data = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as UserProfile));
-            setOrgUsers(data);
-            setIsUsersLoading(false);
-        }, (error) => {
-            console.error("Users feed error:", error);
-            setIsUsersLoading(false);
-        });
-
-        // Explicitly return the unsubscribe function to prevent ca9 aggregation errors
-        return () => unsubscribe();
     }, [firestore, userProfile.orgId]);
+
+    const { data: records, isLoading: isAttLoading } = useCollection<Attendance>(attendanceQuery);
+    const { data: orgUsers, isLoading: isUsersLoading } = useCollection<UserProfile>(usersQuery);
 
     const handleAction = async (user: UserProfile, type: 'SCREENSHOT' | 'SCREEN_SHARE') => {
         if (!firestore) return;
@@ -307,7 +278,7 @@ export function LiveStaffMonitor({ userProfile }: LiveStaffMonitorProps) {
                                                                     onClick={() => handleAction(record.profile!, 'SCREENSHOT')}
                                                                     disabled={isProcessing === record.userId}
                                                                 >
-                                                                    {isProcessing === record.userId ? <Loader2 className="h-3 w-3 animate-spin" /> : <Camera className="h-3.5 w-3.5" />}
+                                                                    {isProcessing === record.userId ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Camera className="h-3.5 w-3.5" />}
                                                                 </Button>
                                                             </TooltipTrigger>
                                                             <TooltipContent className="apple-glass-darker border-none text-[8px] font-black uppercase">Capture Frame</TooltipContent>

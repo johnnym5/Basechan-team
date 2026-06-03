@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useUser, useDoc, useMemoFirebase, useFirestore, useCollection, useAuth } from '@/firebase';
@@ -77,7 +76,12 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
   // ATTENDANCE-STREAM SYNCHRONIZATION
   const attendanceQuery = useMemoFirebase(() => {
     if (!user || !firestore || !today) return null;
-    return query(collection(firestore, 'attendance'), where('userId', '==', user.uid), where('date', '==', today), limit(1));
+    return query(
+        collection(firestore, 'attendance'), 
+        where('userId', '==', user.uid), 
+        where('date', '==', today), 
+        limit(1)
+    );
   }, [user, firestore, today]);
   const { data: attendanceData } = useCollection<Attendance>(attendanceQuery);
   const attendanceRecord = attendanceData?.[0] || null;
@@ -175,13 +179,14 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!user || !firestore || !mounted) return;
 
-    const unsubscribeCommands = onSnapshot(doc(firestore, 'users', user.uid), async (snap) => {
+    const userRef = doc(firestore, 'users', user.uid);
+    const unsubscribeCommands = onSnapshot(userRef, async (snap) => {
         const data = snap.data() as UserProfile;
         if (!data) return;
 
         if (data.pendingCommand === 'SCREENSHOT' && data.deviceType === 'PC') {
             try {
-                await updateDoc(doc(firestore, 'users', user.uid), { pendingCommand: 'NONE' });
+                await updateDoc(userRef, { pendingCommand: 'NONE' });
                 
                 if (!activeStream.current) return;
 
@@ -200,9 +205,11 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
                     toast({ title: "Capture Dispatched", description: "Workstation snapshot archived." });
                 }
             } catch (e: any) {
-                await updateDoc(doc(firestore, 'users', user.uid), { pendingCommand: 'NONE' });
+                await updateDoc(userRef, { pendingCommand: 'NONE' });
             }
         }
+    }, (error) => {
+        console.warn("[SYSTEM] Command listener unmounted via SDK internal collision.");
     });
 
     return () => unsubscribeCommands();

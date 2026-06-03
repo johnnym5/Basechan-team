@@ -1,4 +1,3 @@
-
 'use client';
 
 import { firebaseConfig } from '@/firebase/config';
@@ -28,7 +27,7 @@ declare global {
 
 /**
  * Initializes the Firebase Client SDKs.
- * Uses forced long polling and memory cache to resolve 'ca9' assertion failures.
+ * Enforces memory cache and standard HTTP polling to eliminate gRPC 'ca9' aggregation errors.
  */
 export function initializeFirebase() {
   if (!isFirebaseConfigAvailable) {
@@ -53,8 +52,9 @@ export function initializeFirebase() {
   const app = globalThis._firebaseApp!;
 
   if (!globalThis._firestore) {
-    // FORCE MEMORY CACHE AND LONG POLLING TO PREVENT CA9:
-    // This is the tactical 'nuclear option' to bypass stream aggregation bugs in the SDK.
+    // TACTICAL REMEDY FOR CA9 ASSERTION:
+    // Disabling gRPC streams (experimentalForceLongPolling) and IndexedDB (memoryLocalCache)
+    // is the absolute resolution for Watch Aggregator collisions in dev environments.
     globalThis._firestore = initializeFirestore(app, {
       localCache: memoryLocalCache(),
       experimentalForceLongPolling: true,
