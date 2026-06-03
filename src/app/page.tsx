@@ -1,7 +1,7 @@
 
 'use client';
 
-import { BookCopy, Shield, Zap, Sparkles } from 'lucide-react';
+import { BookCopy, Shield, Zap, Sparkles, Skull, RefreshCcw, Loader2 } from 'lucide-react';
 import { useUser, useFirestore, useDoc, useMemoFirebase } from '@/firebase';
 import { DashboardTaskList } from "@/components/dashboard/DashboardTaskList";
 import { doc } from "firebase/firestore";
@@ -23,13 +23,28 @@ import { LoginForm } from '@/components/auth/LoginForm';
 import { DashboardQuickActions } from '@/components/dashboard/DashboardQuickActions';
 import { DashboardRecentReports } from '@/components/dashboard/DashboardRecentReports';
 import { useEffect, useState } from 'react';
+import { demoDataService } from '@/services/demo-data';
+import { useToast } from '@/hooks/use-toast';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 export default function DashboardPage() {
     const { user: authUser, isUserLoading: isAuthLoading } = useUser();
     const firestore = useFirestore();
+    const { toast } = useToast();
     const { isSuperAdmin } = useSuperAdmin();
     const { isImpersonating } = useImpersonation();
     const [greeting, setGreeting] = useState('');
+    const [isResetting, setIsResetting] = useState(false);
 
     const userProfileRef = useMemoFirebase(() => 
         firestore && authUser ? doc(firestore, 'users', authUser.uid) : null, 
@@ -44,6 +59,23 @@ export default function DashboardPage() {
         else if (hour < 17) setGreeting('Afternoon');
         else setGreeting('Evening');
     }, []);
+
+    const handleEmergencyReset = async () => {
+        if (!firestore) return;
+        setIsResetting(true);
+        try {
+            await demoDataService.purgeAllData(firestore);
+            toast({ title: "Infrastructure Purged", description: "Terminating all listeners and re-initializing..." });
+            
+            // Allow toast to show before hard reload
+            setTimeout(() => {
+                window.location.reload();
+            }, 1500);
+        } catch (e: any) {
+            toast({ variant: 'destructive', title: "Reset Failed", description: e.message });
+            setIsResetting(false);
+        }
+    };
 
     if (!authUser && !isAuthLoading) {
       return (
@@ -88,14 +120,53 @@ export default function DashboardPage() {
              </div>
 
              {isSuperAdmin && !isImpersonating && (
-                <Card className="apple-glass border-primary/20 bg-primary/5 rounded-[1.5rem] overflow-hidden">
-                    <CardHeader className="flex-row items-center justify-between py-2 px-6">
-                        <CardTitle className="text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
-                            <Shield className="h-3 w-3 text-primary" /> Admin Panel
-                        </CardTitle>
-                        <Button size="sm" onClick={() => uiEmitter.emit('open-superadmin-dialog')} className="rounded-full h-6 px-3 text-[8px] font-black uppercase">Launch</Button>
-                    </CardHeader>
-                </Card>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <Card className="apple-glass border-primary/20 bg-primary/5 rounded-[1.5rem] overflow-hidden">
+                        <CardHeader className="flex-row items-center justify-between py-2 px-6">
+                            <CardTitle className="text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
+                                <Shield className="h-3 w-3 text-primary" /> Admin Panel
+                            </CardTitle>
+                            <Button size="sm" onClick={() => uiEmitter.emit('open-superadmin-dialog')} className="rounded-full h-6 px-3 text-[8px] font-black uppercase">Launch</Button>
+                        </CardHeader>
+                    </Card>
+
+                    <Card className="apple-glass border-rose-500/20 bg-rose-500/5 rounded-[1.5rem] overflow-hidden">
+                        <CardHeader className="flex-row items-center justify-between py-2 px-6">
+                            <CardTitle className="text-[10px] font-black uppercase tracking-widest flex items-center gap-2 text-rose-500">
+                                <Skull className="h-3 w-3 text-rose-500" /> Infrastructure Reset
+                            </CardTitle>
+                            
+                            <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                    <Button variant="destructive" size="sm" className="rounded-full h-6 px-3 text-[8px] font-black uppercase bg-rose-600 hover:bg-rose-700">
+                                        {isResetting ? <Loader2 className="h-2 w-2 animate-spin" /> : "Nuke"}
+                                    </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent className="apple-glass-darker border-none rounded-[2rem] p-8">
+                                    <AlertDialogHeader className="space-y-4">
+                                        <div className="mx-auto p-4 rounded-full bg-rose-500/10 w-fit">
+                                            <Skull className="h-10 w-10 text-rose-500" />
+                                        </div>
+                                        <div className="text-center">
+                                            <AlertDialogTitle className="text-2xl font-black font-headline tracking-tighter uppercase text-rose-500">Absolute Reset</AlertDialogTitle>
+                                            <AlertDialogDescription className="text-xs font-bold uppercase tracking-widest mt-2 leading-relaxed">
+                                                This protocol will purge all database telemetry and force-terminate every active listener. 
+                                                <br /><br />
+                                                Use this ONLY to resolve persistent <span className="text-rose-500">ca9 state conflicts</span>.
+                                            </AlertDialogDescription>
+                                        </div>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter className="flex-col sm:flex-col gap-3 mt-6">
+                                        <AlertDialogAction onClick={handleEmergencyReset} className="w-full h-14 bg-rose-600 text-white rounded-2xl font-black uppercase tracking-[0.2em] shadow-xl shadow-rose-500/20 hover:bg-rose-700 transition-all active:scale-95">
+                                            Execute Nuke Protocol
+                                        </AlertDialogAction>
+                                        <AlertDialogCancel className="w-full h-10 border-none text-[10px] font-black uppercase tracking-widest opacity-60 hover:opacity-100 hover:bg-transparent transition-all">Cancel</AlertDialogCancel>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
+                        </CardHeader>
+                    </Card>
+                </div>
             )}
 
             <div className="grid grid-cols-12 gap-4 md:gap-6">
