@@ -24,21 +24,33 @@ export function PerformanceCard({ userProfile }: PerformanceCardProps) {
         setMounted(true);
     }, []);
     
-    // 1. DATA ACQUISITION: Filter for current user only
+    // 1. DATA ACQUISITION: Filter for current user and organization
     const tasksQuery = useMemoFirebase(() => {
-        if (!firestore || !userProfile?.id) return null;
-        return query(collection(firestore, 'tasks'), where('assignedTo', '==', userProfile.id));
-    }, [firestore, userProfile?.id]);
+        if (!firestore || !userProfile?.id || !userProfile?.orgId) return null;
+        return query(
+            collection(firestore, 'tasks'), 
+            where('orgId', '==', userProfile.orgId),
+            where('assignedTo', '==', userProfile.id)
+        );
+    }, [firestore, userProfile?.id, userProfile?.orgId]);
     
     const reportsQuery = useMemoFirebase(() => {
-        if (!firestore || !userProfile?.id) return null;
-        return query(collection(firestore, 'daily_reports'), where('userId', '==', userProfile.id));
-    }, [firestore, userProfile?.id]);
+        if (!firestore || !userProfile?.id || !userProfile?.orgId) return null;
+        return query(
+            collection(firestore, 'daily_reports'), 
+            where('orgId', '==', userProfile.orgId),
+            where('userId', '==', userProfile.id)
+        );
+    }, [firestore, userProfile?.id, userProfile?.orgId]);
 
     const attendanceQuery = useMemoFirebase(() => {
-        if (!firestore || !userProfile?.id) return null;
-        return query(collection(firestore, 'attendance'), where('userId', '==', userProfile.id));
-    }, [firestore, userProfile?.id]);
+        if (!firestore || !userProfile?.id || !userProfile?.orgId) return null;
+        return query(
+            collection(firestore, 'attendance'), 
+            where('orgId', '==', userProfile.orgId),
+            where('userId', '==', userProfile.id)
+        );
+    }, [firestore, userProfile?.id, userProfile?.orgId]);
 
     const { data: userTasks, isLoading: isTasksLoading } = useCollection<Task>(tasksQuery);
     const { data: userReports, isLoading: isReportsLoading } = useCollection<DailyReport>(reportsQuery);
@@ -84,7 +96,7 @@ export function PerformanceCard({ userProfile }: PerformanceCardProps) {
     }, [userTasks, userReports, userAttendance, mounted]);
 
     const stats = useMemo(() => {
-        if (!chartData.length) return { success: 0, attendance: 0, reporting: 0 };
+        if (!chartData.length) return { success: 0, tasks: 0, attendance: 0, reporting: 0 };
         const latest = chartData[chartData.length - 1];
         return {
             success: latest.summary,

@@ -29,10 +29,14 @@ export function FirebaseErrorListener() {
         logErrorToFirestore(firestore, error, null, userProfile);
       }
 
+      // Extract the collection name for clearer user feedback
+      const pathParts = error.request.path.split('/');
+      const nodeName = pathParts[pathParts.length - 1] || 'Mainframe';
+
       toast({
         variant: 'destructive',
         title: 'Action Denied',
-        description: 'You do not have permission to perform this action.',
+        description: `Authorization failed for node: ${nodeName.toUpperCase()}. Please check organizational permissions.`,
       });
     };
 

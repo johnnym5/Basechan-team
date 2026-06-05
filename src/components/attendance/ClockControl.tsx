@@ -49,16 +49,17 @@ export function ClockControl({ userProfile, permissions, systemConfig, className
   }, [location, systemConfig, permissions.canBypassGeofence]);
 
   const attendanceQuery = useMemoFirebase(() => {
-    if (!userProfile?.id || !today || !firestore) return null;
+    if (!userProfile?.id || !userProfile?.orgId || !today || !firestore) return null;
     return query(
         collection(firestore, 'attendance'), 
+        where('orgId', '==', userProfile.orgId),
         where('userId', '==', userProfile.id), 
         where('date', '==', today), 
         where('status', 'in', ['PENDING', 'APPROVED']), 
         orderBy('clockIn', 'desc'),
         limit(1)
     );
-  }, [firestore, userProfile?.id, today]);
+  }, [firestore, userProfile?.id, userProfile?.orgId, today]);
 
   const { data: attendanceData, isLoading } = useCollection<Attendance>(attendanceQuery);
   const attendanceRecord = attendanceData?.[0] || null;
