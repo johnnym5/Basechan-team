@@ -63,21 +63,26 @@ export default function DashboardPage() {
         setIsResetting(true);
         
         try {
-            // Silent Emit to kill all listeners in the layout
+            // 1. Terminate all UI listeners
             uiEmitter.emit('close-all-dialogs');
             
-            // Execute Best-Effort Purge
+            // 2. Perform DB Purge (Identity-Safe)
             await demoDataService.purgeAllData(firestore);
             
-            toast({ title: "Infrastructure Resetting", description: "Purging workstation state and re-initializing mainboard..." });
+            // 3. Purge Local Storage State
+            if (typeof window !== 'undefined') {
+                localStorage.clear();
+                sessionStorage.clear();
+            }
             
-            // FORCE RELOAD is the only absolute fix for ca9 state corruption
+            toast({ title: "Infrastructure Resetting", description: "Wiping memory cache and re-initializing workstation..." });
+            
+            // 4. HARD RELOAD - Force browser to drop all JS targets
             setTimeout(() => {
                 window.location.href = window.location.origin;
             }, 1000);
 
         } catch (e: any) {
-            // Even if it fails, we force the reload
             console.error("[CRITICAL] Reset Sequence Interrupted:", e);
             window.location.reload();
         }
@@ -160,7 +165,9 @@ export default function DashboardPage() {
                                         <AlertDialogDescription className="text-xs font-bold uppercase tracking-widest mt-2 leading-relaxed">
                                             This protocol will purge workstation telemetry and kill all active data streams. 
                                             <br /><br />
-                                            Use this to resolve <span className="text-rose-500">sync conflicts (ca9)</span>.
+                                            <span className="text-emerald-500">✔ Staff accounts are preserved.</span>
+                                            <br />
+                                            <span className="text-rose-500">✘ All tasks, chats, and records are deleted.</span>
                                         </AlertDialogDescription>
                                     </div>
                                 </AlertDialogHeader>

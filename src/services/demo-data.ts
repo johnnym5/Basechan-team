@@ -9,7 +9,7 @@ import { ORG_ID } from '@/lib/config';
 export const demoDataService = {
   /**
    * Wipes all data within the primary organizational collections.
-   * Hardened to operate even during client-side assertion failures.
+   * EXPLICITLY PRESERVES: users, organizations, and system_configs to maintain identity integrity.
    */
   async purgeAllData(db: Firestore) {
     const collectionsToPurge = [
@@ -25,14 +25,18 @@ export const demoDataService = {
         'audit_logs',
         'error_logs',
         'pulse_checks',
-        'activity_points'
+        'activity_points',
+        'purchase_orders',
+        'leave_requests',
+        'daily_reports',
+        'journal_entries',
+        'accounts'
     ];
 
-    console.warn("[SYSTEM] Initializing Infrastructure Purge Protocol...");
+    console.warn("[SYSTEM] Initializing Operational Data Purge Protocol (Preserving Identities)...");
 
     for (const collName of collectionsToPurge) {
         try {
-            // Use query to ensure we don't trigger unnecessary rules
             const snap = await getDocs(collection(db, collName));
             if (!snap.empty) {
                 const batch = writeBatch(db);
@@ -42,14 +46,14 @@ export const demoDataService = {
                     } catch (e) {}
                 });
                 await batch.commit();
+                console.log(`[SYSTEM] Cleared node: ${collName}`);
             }
         } catch (e: any) {
-            // Silently continue to next collection if one fails due to ca9/b815
-            console.error(`[SYSTEM] Target node ${collName} purge failed. Reason: ${e.message}`);
+            console.error(`[SYSTEM] Target node ${collName} purge failed or restricted. Skipping...`);
         }
     }
     
-    console.log("[SYSTEM] Purge sequence complete. Requesting hard browser reset.");
+    console.log("[SYSTEM] Operational purge complete.");
   },
 
   async seed(db: Firestore) {
