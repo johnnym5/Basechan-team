@@ -47,7 +47,7 @@ export function useDoc<T = any>(
     setIsLoading(true);
     setError(null);
 
-    let unsubscribe: () => void;
+    let unsubscribe: (() => void) | null = null;
 
     try {
         unsubscribe = onSnapshot(
@@ -90,7 +90,7 @@ export function useDoc<T = any>(
         try {
             // AGGRESSIVE DEFENSIVE UNMOUNT: 
             // Catch b815 assertion failures during unmount.
-            if (typeof unsubscribe === 'function') {
+            if (unsubscribe) {
                 unsubscribe();
             }
         } catch (e) {

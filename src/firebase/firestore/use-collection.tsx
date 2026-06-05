@@ -62,7 +62,7 @@ export function useCollection<T = any>(
     setIsLoading(true);
     setError(null);
 
-    let unsubscribe: () => void;
+    let unsubscribe: (() => void) | null = null;
 
     try {
         unsubscribe = onSnapshot(
@@ -113,7 +113,7 @@ export function useCollection<T = any>(
             // AGGRESSIVE DEFENSIVE UNMOUNT: 
             // In high-velocity dev environments, the SDK aggregator (ca9/b815) 
             // can throw during unsubscribe. We must suppress this to prevent React crashes.
-            if (typeof unsubscribe === 'function') {
+            if (unsubscribe) {
                 unsubscribe();
             }
         } catch (e) {

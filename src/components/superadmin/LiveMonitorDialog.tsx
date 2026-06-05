@@ -22,6 +22,7 @@ export function LiveMonitorDialog({ open, onOpenChange, targetUserId, targetUser
     const { toast } = useToast();
     const videoRef = useRef<HTMLVideoElement>(null);
     const peerConnection = useRef<RTCPeerConnection | null>(null);
+    const unsubscribersRef = useRef<(() => void)[]>([]);
     
     const [status, setStatus] = useState<'INITIALIZING' | 'SIGNALING' | 'CONNECTED' | 'DISCONNECTED' | 'FAILED'>('INITIALIZING');
     const [isPaused, setIsPaused] = useState(false);
@@ -33,15 +34,16 @@ export function LiveMonitorDialog({ open, onOpenChange, targetUserId, targetUser
         
         try {
             const configuration = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
-            peerConnection.current = new RTCPeerConnection(configuration);
+            const pc = new RTCPeerConnection(configuration);
+            peerConnection.current = pc;
 
-            peerConnection.current.onicecandidate = (event) => {
+            pc.onicecandidate = (event) => {
                 if (event.candidate) {
                     telemetryService.sendIceCandidate(firestore, targetUserId, 'caller', event.candidate);
                 }
             };
 
-            peerConnection.current.ontrack = (event) => {
+            pc.ontrack = (event) => {
                 if (videoRef.current) {
                     videoRef.current.srcObject = event.streams[0];
                     setStatus('CONNECTED');
@@ -49,57 +51,31 @@ export function LiveMonitorDialog({ open, onOpenChange, targetUserId, targetUser
                 }
             };
 
-            peerConnection.current.oniceconnectionstatechange = () => {
-                if (peerConnection.current?.iceConnectionState === 'disconnected') {
+            pc.oniceconnectionstatechange = () => {
+                if (pc.iceConnectionState === 'disconnected') {
                     setStatus('DISCONNECTED');
                 }
             };
 
-            // Listen for ICE Candidates from Callee
+            // SYNC Registration of Unsubscribers to preventLeaks
             const unsubscribeIce = telemetryService.onIceCandidate(firestore, targetUserId, 'callee', (candidate) => {
-                peerConnection.current?.addIceCandidate(new RTCIceCandidate(candidate));
+                pc.addIceCandidate(new RTCIceCandidate(candidate)).catch(() => {});
             });
 
-            // Listen for Offer (Callee initiates offer in our flow for displayMedia permissions)
             const unsubscribeOffer = telemetryService.onSdp(firestore, targetUserId, 'offer', async (offer) => {
                 if (status === 'INITIALIZING') setStatus('SIGNALING');
-                await peerConnection.current?.setRemoteDescription(new RTCSessionDescription(offer));
-                const answer = await peerConnection.current?.createAnswer();
-                await peerConnection.current?.setLocalDescription(answer!);
+                await pc.setRemoteDescription(new RTCSessionDescription(offer));
+                const answer = await pc.createAnswer();
+                await pc.setLocalDescription(answer!);
                 await telemetryService.sendSdp(firestore, targetUserId, answer!);
             });
 
-            return () => {
-                unsubscribeIce();
-                unsubscribeOffer();
-            };
+            unsubscribersRef.current = [unsubscribeIce, unsubscribeOffer];
+
         } catch (e: any) {
             setStatus('FAILED');
             toast({ variant: 'destructive', title: "Signal Failure", description: e.message });
         }
-    };
-
-    useEffect(() => {
-        let cleanup: any;
-        if (open) {
-            initializeConnection().then(c => cleanup = c);
-        } else {
-            handleStop();
-        }
-        return () => {
-            if (cleanup) cleanup();
-            handleStop();
-        };
-    }, [open]);
-
-    const handleTogglePause = () => {
-        if (!videoRef.current) return;
-        if (isPaused) {
-            videoRef.current.play();
-        } else {
-            videoRef.current.pause();
-        }
-        setIsPaused(!isPaused);
     };
 
     const handleStop = () => {
@@ -110,8 +86,32 @@ export function LiveMonitorDialog({ open, onOpenChange, targetUserId, targetUser
         if (videoRef.current) {
             videoRef.current.srcObject = null;
         }
+        // Force cleanup of all listeners
+        unsubscribersRef.current.forEach(unsub => {
+            try { unsub(); } catch (e) {}
+        });
+        unsubscribersRef.current = [];
+        
         setStatus('DISCONNECTED');
-        if (open) onOpenChange(false);
+    };
+
+    useEffect(() => {
+        if (open) {
+            initializeConnection();
+        } else {
+            handleStop();
+        }
+        return () => handleStop();
+    }, [open, targetUserId]);
+
+    const handleTogglePause = () => {
+        if (!videoRef.current) return;
+        if (isPaused) {
+            videoRef.current.play();
+        } else {
+            videoRef.current.pause();
+        }
+        setIsPaused(!isPaused);
     };
 
     return (

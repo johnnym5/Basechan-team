@@ -2,7 +2,7 @@
 
 import { useUser, useDoc, useMemoFirebase, useFirestore, useCollection, useAuth } from '@/firebase';
 import { useState, useEffect, Suspense, useMemo, useRef } from 'react';
-import { doc, collection, query, where, limit, updateDoc } from 'firebase/firestore';
+import { doc, collection, query, where, limit, updateDoc, onSnapshot } from 'firebase/firestore';
 import { signOut } from 'firebase/auth';
 import { useStorage } from '@/firebase';
 import { ref as storageRef, uploadString } from 'firebase/storage';
@@ -45,7 +45,7 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
   const activePeerConnection = useRef<RTCPeerConnection | null>(null);
   const [isLiveActive, setIsLiveActive] = useState(false);
   const activeStream = useRef<MediaStream | null>(null);
-  const telemetryUnsubscribers = useRef<(() => void)[]>([]);
+  const signalingCleanup = useRef<(() => void) | null>(null);
 
   useSyncDialogsWithUrl();
 
@@ -55,8 +55,8 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
   }, []);
 
   const userProfileRef = useMemoFirebase(() => 
-    firestore && user ? doc(firestore, 'users', user.uid) : null
-  , [firestore, user]);
+    firestore && user?.uid ? doc(firestore, 'users', user.uid) : null
+  , [firestore, user?.uid]);
   const { data: userProfile } = useDoc<UserProfile>(userProfileRef);
   
   const stableProfile = useMemo(() => {
@@ -75,14 +75,14 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
 
   // ATTENDANCE-STREAM SYNCHRONIZATION
   const attendanceQuery = useMemoFirebase(() => {
-    if (!user || !firestore || !today) return null;
+    if (!user?.uid || !firestore || !today) return null;
     return query(
         collection(firestore, 'attendance'), 
         where('userId', '==', user.uid), 
         where('date', '==', today), 
         limit(1)
     );
-  }, [user, firestore, today]);
+  }, [user?.uid, firestore, today]);
   const { data: attendanceData } = useCollection<Attendance>(attendanceQuery);
   const attendanceRecord = attendanceData?.[0] || null;
 
@@ -111,21 +111,21 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
         activeStream.current.getTracks().forEach(t => t.stop());
         activeStream.current = null;
     }
-    // Execution of all captured unsubscribe commands
-    telemetryUnsubscribers.current.forEach(unsub => {
+    // Execution of captured unsubscribe command
+    if (signalingCleanup.current) {
         try { 
-            if (typeof unsub === 'function') unsub(); 
+            signalingCleanup.current(); 
         } catch (e) {
-            console.warn("[SYSTEM] Suppressed telemetry listener cleanup failure.");
+            console.warn("[SYSTEM] Suppressed signaling cleanup failure.");
         }
-    });
-    telemetryUnsubscribers.current = [];
+        signalingCleanup.current = null;
+    }
     setIsLiveActive(false);
   };
 
   // AUTO-HANDSHAKE ON APPROVAL
   useEffect(() => {
-    if (!user || !firestore || !attendanceRecord || !activeStream.current) return;
+    if (!user?.uid || !firestore || !attendanceRecord || !activeStream.current) return;
 
     if (attendanceRecord.status === 'APPROVED' && !isLiveActive && !attendanceRecord.clockOut) {
         initializeLiveStream(activeStream.current);
@@ -134,10 +134,10 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
     if (attendanceRecord.clockOut && isLiveActive) {
         handleTerminateLiveStream();
     }
-  }, [attendanceRecord?.status, attendanceRecord?.clockOut, user, firestore, isLiveActive]);
+  }, [attendanceRecord?.status, attendanceRecord?.clockOut, user?.uid, firestore, isLiveActive]);
 
   const initializeLiveStream = async (stream: MediaStream) => {
-    if (!user || !firestore) return;
+    if (!user?.uid || !firestore) return;
     
     handleTerminateLiveStream();
     setIsLiveActive(true);
@@ -160,6 +160,7 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
         await telemetryService.setupSignaling(firestore, user.uid);
         await telemetryService.sendSdp(firestore, user.uid, offer);
 
+        // SYNC Cleanup: Ensure listeners are registered for disposal
         const unsubSdp = telemetryService.onSdp(firestore, user.uid, 'answer', async (answer) => {
             if (pc.signalingState !== 'closed') {
                 await pc.setRemoteDescription(new RTCSessionDescription(answer));
@@ -172,7 +173,10 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
             }
         });
 
-        telemetryUnsubscribers.current = [unsubSdp, unsubIce];
+        signalingCleanup.current = () => {
+            unsubSdp();
+            unsubIce();
+        };
 
     } catch (e) {
         setIsLiveActive(false);
@@ -181,10 +185,10 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
 
   // REMOTE COMMAND LISTENER (SCREENSHOT)
   useEffect(() => {
-    if (!userProfile || !user || !firestore || !mounted) return;
+    if (!userProfile || !user?.uid || !firestore || !mounted) return;
 
-    const executeCommand = async () => {
-        if (userProfile.pendingCommand === 'SCREENSHOT' && userProfile.deviceType === 'PC') {
+    if (userProfile.pendingCommand === 'SCREENSHOT' && userProfile.deviceType === 'PC') {
+        const triggerCapture = async () => {
             try {
                 const userRef = doc(firestore, 'users', user.uid);
                 await updateDoc(userRef, { pendingCommand: 'NONE' });
@@ -208,19 +212,18 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
             } catch (e: any) {
                 console.warn("[SYSTEM] Command execution interrupted.");
             }
-        }
-    };
-
-    executeCommand();
-  }, [userProfile?.pendingCommand, userProfile?.deviceType, userProfile?.orgId, user, firestore, mounted, storage, toast]);
+        };
+        triggerCapture();
+    }
+  }, [userProfile?.pendingCommand, userProfile?.deviceType, user?.uid, firestore, mounted, storage, toast]);
 
   useEffect(() => {
-    if (!user || !firestore || !mounted) return;
+    if (!user?.uid || !firestore || !mounted) return;
     const heartbeatInterval = setInterval(() => {
         updateDoc(doc(firestore, 'users', user.uid), { lastHeartbeat: new Date().toISOString() });
     }, 60000);
     return () => clearInterval(heartbeatInterval);
-  }, [user, firestore, mounted]);
+  }, [user?.uid, firestore, mounted]);
 
   const { isIdle } = useIdleTimer(attendanceRecord);
   const permissions = usePermissions(stableProfile);
@@ -238,7 +241,7 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
   }, [config, mounted]);
 
   const handleLogout = async () => {
-    if (auth && user) {
+    if (auth && user?.uid) {
         try {
             const userRef = doc(firestore!, 'users', user.uid);
             await updateDoc(userRef, { activeSessionId: null, status: 'OFFLINE' });

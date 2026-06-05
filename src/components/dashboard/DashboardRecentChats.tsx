@@ -14,14 +14,14 @@ export function DashboardRecentChats() {
     const firestore = useFirestore();
 
     const userProfileRef = useMemoFirebase(() =>
-        authUser ? doc(firestore!, "users", authUser.uid) : null,
-        [firestore, authUser]
+        authUser?.uid ? doc(firestore!, "users", authUser.uid) : null,
+        [firestore, authUser?.uid]
     );
     const { data: userProfile } = useDoc<UserProfile>(userProfileRef);
     const orgId = userProfile?.orgId || ORG_ID;
 
     const chatsQuery = useMemoFirebase(() => {
-        if (!firestore || !authUser || !orgId) return null;
+        if (!firestore || !authUser?.uid || !orgId) return null;
         return query(
             collection(firestore, 'chats'),
             where('orgId', '==', orgId),
@@ -29,7 +29,7 @@ export function DashboardRecentChats() {
             orderBy('updatedAt', 'desc'),
             limit(4)
         );
-    }, [firestore, authUser, orgId]);
+    }, [firestore, authUser?.uid, orgId]);
 
     const { data: chats, isLoading } = useCollection<Chat>(chatsQuery);
 
