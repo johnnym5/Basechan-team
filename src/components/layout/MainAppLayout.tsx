@@ -18,7 +18,7 @@ import { hexToHslString, cn } from '@/lib/utils';
 import dynamic from 'next/dynamic';
 import { BottomNavBar } from './BottomNavBar';
 import { useShiftReminders } from '@/hooks/useShiftReminders';
-import { DebriefModal } from '@/components/dashboard/De-briefModal';
+import { DebriefModal } from '@/components/dashboard/DebriefModal';
 import { PulseCheckDialog } from '@/components/shared/PulseCheckDialog';
 import { Button } from '@/components/ui/button';
 import { LogOut, MonitorPlay, ShieldAlert, Loader2, Signal } from 'lucide-react';
@@ -305,7 +305,7 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
       {user && stableProfile && (
         <>
             <BottomNavBar />
-            <De-briefModal userProfile={stableProfile} />
+            <DebriefModal userProfile={stableProfile} />
             <PulseCheckDialog userProfile={stableProfile} />
             <Suspense fallback={null}>
                 <GlobalDialogs userProfile={stableProfile} permissions={permissions} onAnyDialogOpenChange={setIsAnyDialogOpen} />
