@@ -62,40 +62,51 @@ export function useCollection<T = any>(
     setIsLoading(true);
     setError(null);
 
-    const unsubscribe = onSnapshot(
-      memoizedTargetRefOrQuery,
-      (snapshot: QuerySnapshot<DocumentData>) => {
-        const results: ResultItemType[] = [];
-        for (const doc of snapshot.docs) {
-          results.push({ ...(doc.data() as T), id: doc.id });
-        }
-        setData(results);
-        setError(null);
-        setIsLoading(false);
-      },
-      (error: FirestoreError) => {
-        if (error.code === 'permission-denied') {
-            const path: string =
-            memoizedTargetRefOrQuery.type === 'collection'
-                ? (memoizedTargetRefOrQuery as CollectionReference).path
-                : (memoizedTargetRefOrQuery as unknown as InternalQuery)._query.path.canonicalString()
+    let unsubscribe: () => void;
 
-            const contextualError = new FirestorePermissionError({
-                operation: 'list',
-                path,
-            })
+    try {
+        unsubscribe = onSnapshot(
+          memoizedTargetRefOrQuery,
+          (snapshot: QuerySnapshot<DocumentData>) => {
+            const results: ResultItemType[] = [];
+            for (const doc of snapshot.docs) {
+              results.push({ ...(doc.data() as T), id: doc.id });
+            }
+            setData(results);
+            setError(null);
+            setIsLoading(false);
+          },
+          (error: FirestoreError) => {
+            if (error.code === 'permission-denied') {
+                const path: string =
+                memoizedTargetRefOrQuery.type === 'collection'
+                    ? (memoizedTargetRefOrQuery as CollectionReference).path
+                    : (memoizedTargetRefOrQuery as unknown as InternalQuery)._query.path.canonicalString()
 
-            setError(contextualError);
-            errorEmitter.emit('permission-error', contextualError);
-        } else {
-            setError(error);
-            errorEmitter.emit('firestore-error', error);
-        }
-        
-        setData(null);
+                const contextualError = new FirestorePermissionError({
+                    operation: 'list',
+                    path,
+                })
+
+                setError(contextualError);
+                errorEmitter.emit('permission-error', contextualError);
+            } else if (error.message?.includes('ca9') || error.message?.includes('b815')) {
+                // Silently handle internal assertion failures to prevent UI crash
+                console.warn("[SYSTEM] Suppressed SDK assertion during update:", error.message);
+            } else {
+                setError(error);
+                errorEmitter.emit('firestore-error', error);
+            }
+            
+            setData(null);
+            setIsLoading(false);
+          }
+        );
+    } catch (e: any) {
+        console.warn("[SYSTEM] Failed to establish listener:", e.message);
         setIsLoading(false);
-      }
-    );
+        return;
+    }
 
     return () => {
         try {

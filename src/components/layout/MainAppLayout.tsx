@@ -2,7 +2,7 @@
 
 import { useUser, useDoc, useMemoFirebase, useFirestore, useCollection, useAuth } from '@/firebase';
 import { useState, useEffect, Suspense, useMemo, useRef } from 'react';
-import { doc, collection, query, where, limit, updateDoc, onSnapshot } from 'firebase/firestore';
+import { doc, collection, query, where, limit, updateDoc } from 'firebase/firestore';
 import { signOut } from 'firebase/auth';
 import { useStorage } from '@/firebase';
 import { ref as storageRef, uploadString } from 'firebase/storage';
@@ -18,7 +18,7 @@ import { hexToHslString, cn } from '@/lib/utils';
 import dynamic from 'next/dynamic';
 import { BottomNavBar } from './BottomNavBar';
 import { useShiftReminders } from '@/hooks/useShiftReminders';
-import { DebriefModal } from '@/components/dashboard/DebriefModal';
+import { DebriefModal } from '@/components/dashboard/De-briefModal';
 import { PulseCheckDialog } from '@/components/shared/PulseCheckDialog';
 import { Button } from '@/components/ui/button';
 import { LogOut, MonitorPlay, ShieldAlert, Loader2, Signal } from 'lucide-react';
@@ -181,15 +181,12 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
 
   // REMOTE COMMAND LISTENER (SCREENSHOT)
   useEffect(() => {
-    if (!user || !firestore || !mounted) return;
+    if (!userProfile || !user || !firestore || !mounted) return;
 
-    const userRef = doc(firestore, 'users', user.uid);
-    const unsubscribeCommands = onSnapshot(userRef, async (snap) => {
-        const data = snap.data() as UserProfile;
-        if (!data) return;
-
-        if (data.pendingCommand === 'SCREENSHOT' && data.deviceType === 'PC') {
+    const executeCommand = async () => {
+        if (userProfile.pendingCommand === 'SCREENSHOT' && userProfile.deviceType === 'PC') {
             try {
+                const userRef = doc(firestore, 'users', user.uid);
                 await updateDoc(userRef, { pendingCommand: 'NONE' });
                 
                 if (!activeStream.current) return;
@@ -204,28 +201,18 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
                 const dataUrl = canvas.toDataURL('image/png');
                 
                 if (storage) {
-                    const path = `telemetry/${data.orgId}/${user.uid}/${Date.now()}_screenshot.png`;
+                    const path = `telemetry/${userProfile.orgId}/${user.uid}/${Date.now()}_screenshot.png`;
                     await uploadString(storageRef(storage, path), dataUrl, 'data_url');
                     toast({ title: "Capture Dispatched", description: "Workstation snapshot archived." });
                 }
             } catch (e: any) {
-                await updateDoc(userRef, { pendingCommand: 'NONE' });
+                console.warn("[SYSTEM] Command execution interrupted.");
             }
-        }
-    }, (error) => {
-        console.warn("[SYSTEM] Command listener disconnected safely.");
-    });
-
-    return () => {
-        try {
-            if (typeof unsubscribeCommands === 'function') {
-                unsubscribeCommands();
-            }
-        } catch (e) {
-            console.warn("[SYSTEM] Suppressed command listener cleanup failure.");
         }
     };
-  }, [user, firestore, mounted, storage, toast]);
+
+    executeCommand();
+  }, [userProfile?.pendingCommand, userProfile?.deviceType, userProfile?.orgId, user, firestore, mounted, storage, toast]);
 
   useEffect(() => {
     if (!user || !firestore || !mounted) return;
@@ -318,7 +305,7 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
       {user && stableProfile && (
         <>
             <BottomNavBar />
-            <DebriefModal userProfile={stableProfile} />
+            <De-briefModal userProfile={stableProfile} />
             <PulseCheckDialog userProfile={stableProfile} />
             <Suspense fallback={null}>
                 <GlobalDialogs userProfile={stableProfile} permissions={permissions} onAnyDialogOpenChange={setIsAnyDialogOpen} />

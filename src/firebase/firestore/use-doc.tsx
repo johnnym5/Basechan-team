@@ -47,34 +47,44 @@ export function useDoc<T = any>(
     setIsLoading(true);
     setError(null);
 
-    const unsubscribe = onSnapshot(
-      memoizedDocRef,
-      (snapshot: DocumentSnapshot<DocumentData>) => {
-        if (snapshot.exists()) {
-          setData({ ...(snapshot.data() as T), id: snapshot.id });
-        } else {
-          setData(null);
-        }
-        setError(null);
+    let unsubscribe: () => void;
+
+    try {
+        unsubscribe = onSnapshot(
+          memoizedDocRef,
+          (snapshot: DocumentSnapshot<DocumentData>) => {
+            if (snapshot.exists()) {
+              setData({ ...(snapshot.data() as T), id: snapshot.id });
+            } else {
+              setData(null);
+            }
+            setError(null);
+            setIsLoading(false);
+          },
+          (error: FirestoreError) => {
+            if (error.code === 'permission-denied') {
+                const contextualError = new FirestorePermissionError({
+                  operation: 'get',
+                  path: memoizedDocRef.path,
+                })
+                setError(contextualError);
+                errorEmitter.emit('permission-error', contextualError);
+            } else if (error.message?.includes('ca9') || error.message?.includes('b815')) {
+                console.warn("[SYSTEM] Suppressed SDK assertion during update:", error.message);
+            } else {
+                setError(error);
+                errorEmitter.emit('firestore-error', error);
+            }
+            
+            setData(null);
+            setIsLoading(false);
+          }
+        );
+    } catch (e: any) {
+        console.warn("[SYSTEM] Failed to establish doc listener:", e.message);
         setIsLoading(false);
-      },
-      (error: FirestoreError) => {
-        if (error.code === 'permission-denied') {
-            const contextualError = new FirestorePermissionError({
-              operation: 'get',
-              path: memoizedDocRef.path,
-            })
-            setError(contextualError);
-            errorEmitter.emit('permission-error', contextualError);
-        } else {
-            setError(error);
-            errorEmitter.emit('firestore-error', error);
-        }
-        
-        setData(null);
-        setIsLoading(false);
-      }
-    );
+        return;
+    }
 
     return () => {
         try {

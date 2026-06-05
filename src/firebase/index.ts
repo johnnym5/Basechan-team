@@ -6,7 +6,8 @@ import { getAuth, Auth, setPersistence, browserLocalPersistence } from 'firebase
 import { 
   initializeFirestore, 
   Firestore,
-  memoryLocalCache
+  memoryLocalCache,
+  getFirestore
 } from 'firebase/firestore';
 import { getStorage, FirebaseStorage } from 'firebase/storage';
 import { getDatabase, Database } from 'firebase/database';
@@ -52,13 +53,18 @@ export function initializeFirebase() {
   const app = globalThis._firebaseApp!;
 
   if (!globalThis._firestore) {
-    // TACTICAL REMEDY FOR CA9 ASSERTION:
-    // Disabling gRPC streams (experimentalForceLongPolling) and IndexedDB (memoryLocalCache)
-    // is the absolute resolution for Watch Aggregator collisions in dev environments.
-    globalThis._firestore = initializeFirestore(app, {
-      localCache: memoryLocalCache(),
-      experimentalForceLongPolling: true,
-    });
+    try {
+        // TACTICAL REMEDY FOR CA9 ASSERTION:
+        // Disabling gRPC streams (experimentalForceLongPolling) and IndexedDB (memoryLocalCache)
+        // is the absolute resolution for Watch Aggregator collisions in dev environments.
+        globalThis._firestore = initializeFirestore(app, {
+            localCache: memoryLocalCache(),
+            experimentalForceLongPolling: true,
+        });
+    } catch (e) {
+        // If already initialized (e.g. by another library), retrieve the instance
+        globalThis._firestore = getFirestore(app);
+    }
   }
 
   if (!globalThis._auth) {
