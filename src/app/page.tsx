@@ -25,6 +25,7 @@ import { DashboardRecentReports } from '@/components/dashboard/DashboardRecentRe
 import { useEffect, useState } from 'react';
 import { demoDataService } from '@/services/demo-data';
 import { useToast } from '@/hooks/use-toast';
+import { cn } from '@/lib/utils';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -119,8 +120,8 @@ export default function DashboardPage() {
                  <p className="text-lg font-bold text-muted-foreground">{userProfile?.fullName.split(' ')[0]}</p>
              </div>
 
-             {isSuperAdmin && !isImpersonating && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {isSuperAdmin && !isImpersonating && (
                     <Card className="apple-glass border-primary/20 bg-primary/5 rounded-[1.5rem] overflow-hidden">
                         <CardHeader className="flex-row items-center justify-between py-2 px-6">
                             <CardTitle className="text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
@@ -129,45 +130,48 @@ export default function DashboardPage() {
                             <Button size="sm" onClick={() => uiEmitter.emit('open-superadmin-dialog')} className="rounded-full h-6 px-3 text-[8px] font-black uppercase">Launch</Button>
                         </CardHeader>
                     </Card>
+                )}
 
-                    <Card className="apple-glass border-rose-500/20 bg-rose-500/5 rounded-[1.5rem] overflow-hidden">
-                        <CardHeader className="flex-row items-center justify-between py-2 px-6">
-                            <CardTitle className="text-[10px] font-black uppercase tracking-widest flex items-center gap-2 text-rose-500">
-                                <Skull className="h-3 w-3 text-rose-500" /> Infrastructure Reset
-                            </CardTitle>
-                            
-                            <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                    <Button variant="destructive" size="sm" className="rounded-full h-6 px-3 text-[8px] font-black uppercase bg-rose-600 hover:bg-rose-700">
-                                        {isResetting ? <Loader2 className="h-2 w-2 animate-spin" /> : "Nuke"}
-                                    </Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent className="apple-glass-darker border-none rounded-[2rem] p-8">
-                                    <AlertDialogHeader className="space-y-4">
-                                        <div className="mx-auto p-4 rounded-full bg-rose-500/10 w-fit">
-                                            <Skull className="h-10 w-10 text-rose-500" />
-                                        </div>
-                                        <div className="text-center">
-                                            <AlertDialogTitle className="text-2xl font-black font-headline tracking-tighter uppercase text-rose-500">Absolute Reset</AlertDialogTitle>
-                                            <AlertDialogDescription className="text-xs font-bold uppercase tracking-widest mt-2 leading-relaxed">
-                                                This protocol will purge all database telemetry and force-terminate every active listener. 
-                                                <br /><br />
-                                                Use this ONLY to resolve persistent <span className="text-rose-500">ca9 state conflicts</span>.
-                                            </AlertDialogDescription>
-                                        </div>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooter className="flex-col sm:flex-col gap-3 mt-6">
-                                        <AlertDialogAction onClick={handleEmergencyReset} className="w-full h-14 bg-rose-600 text-white rounded-2xl font-black uppercase tracking-[0.2em] shadow-xl shadow-rose-500/20 hover:bg-rose-700 transition-all active:scale-95">
-                                            Execute Nuke Protocol
-                                        </AlertDialogAction>
-                                        <AlertDialogCancel className="w-full h-10 border-none text-[10px] font-black uppercase tracking-widest opacity-60 hover:opacity-100 hover:bg-transparent transition-all">Cancel</AlertDialogCancel>
-                                    </AlertDialogFooter>
-                                </AlertDialogContent>
-                            </AlertDialog>
-                        </CardHeader>
-                    </Card>
-                </div>
-            )}
+                <Card className={cn(
+                    "apple-glass border-rose-500/20 bg-rose-500/5 rounded-[1.5rem] overflow-hidden",
+                    !(isSuperAdmin && !isImpersonating) && "sm:col-span-2"
+                )}>
+                    <CardHeader className="flex-row items-center justify-between py-2 px-6">
+                        <CardTitle className="text-[10px] font-black uppercase tracking-widest flex items-center gap-2 text-rose-500">
+                            <Skull className="h-3 w-3 text-rose-500" /> Infrastructure Reset
+                        </CardTitle>
+                        
+                        <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button variant="destructive" size="sm" className="rounded-full h-6 px-3 text-[8px] font-black uppercase bg-rose-600 hover:bg-rose-700">
+                                    {isResetting ? <Loader2 className="h-2 w-2 animate-spin" /> : "Nuke"}
+                                </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent className="apple-glass-darker border-none rounded-[2rem] p-8">
+                                <AlertDialogHeader className="space-y-4">
+                                    <div className="mx-auto p-4 rounded-full bg-rose-500/10 w-fit">
+                                        <Skull className="h-10 w-10 text-rose-500" />
+                                    </div>
+                                    <div className="text-center">
+                                        <AlertDialogTitle className="text-2xl font-black font-headline tracking-tighter uppercase text-rose-500">Absolute Reset</AlertDialogTitle>
+                                        <AlertDialogDescription className="text-xs font-bold uppercase tracking-widest mt-2 leading-relaxed">
+                                            This protocol will purge all database telemetry and force-terminate every active listener. 
+                                            <br /><br />
+                                            Use this ONLY to resolve persistent <span className="text-rose-500">ca9 state conflicts</span>.
+                                        </AlertDialogDescription>
+                                    </div>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter className="flex-col sm:flex-col gap-3 mt-6">
+                                    <AlertDialogAction onClick={handleEmergencyReset} className="w-full h-14 bg-rose-600 text-white rounded-2xl font-black uppercase tracking-[0.2em] shadow-xl shadow-rose-500/20 hover:bg-rose-700 transition-all active:scale-95">
+                                        Execute Nuke Protocol
+                                    </AlertDialogAction>
+                                    <AlertDialogCancel className="w-full h-10 border-none text-[10px] font-black uppercase tracking-widest opacity-60 hover:opacity-100 hover:bg-transparent transition-all">Cancel</AlertDialogCancel>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+                    </CardHeader>
+                </Card>
+            </div>
 
             <div className="grid grid-cols-12 gap-4 md:gap-6">
                 <section className="col-span-12 lg:col-span-5 xl:col-span-4 interactive-element h-fit">
