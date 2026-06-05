@@ -69,15 +69,27 @@ export default function DashboardPage() {
             // 2. Perform DB Purge (Identity-Safe)
             await demoDataService.purgeAllData(firestore);
             
-            // 3. Purge Local Storage State
+            // 3. Purge Local Storage State & Cache
             if (typeof window !== 'undefined') {
                 localStorage.clear();
                 sessionStorage.clear();
+                
+                // Programmatic attempt to clear IndexedDB (Firestore cache)
+                try {
+                    if (window.indexedDB && window.indexedDB.databases) {
+                        const databases = await window.indexedDB.databases();
+                        databases.forEach(db => {
+                            if (db.name) window.indexedDB.deleteDatabase(db.name);
+                        });
+                    }
+                } catch (e) {
+                    console.warn("Manual IndexedDB purge restricted by browser security.");
+                }
             }
             
             toast({ title: "Infrastructure Resetting", description: "Wiping memory cache and re-initializing workstation..." });
             
-            // 4. HARD RELOAD - Force browser to drop all JS targets
+            // 4. HARD RELOAD - Force browser to drop all JS targets and re-init SDK
             setTimeout(() => {
                 window.location.href = window.location.origin;
             }, 1000);
@@ -165,9 +177,11 @@ export default function DashboardPage() {
                                         <AlertDialogDescription className="text-xs font-bold uppercase tracking-widest mt-2 leading-relaxed">
                                             This protocol will purge workstation telemetry and kill all active data streams. 
                                             <br /><br />
-                                            <span className="text-emerald-500">✔ Staff accounts are preserved.</span>
+                                            <span className="text-emerald-500 font-black">✔ Staff accounts are preserved.</span>
                                             <br />
                                             <span className="text-rose-500">✘ All tasks, chats, and records are deleted.</span>
+                                            <br /><br />
+                                            <span className="text-primary italic">Note: Browser Cache and IndexedDB will be cleared.</span>
                                         </AlertDialogDescription>
                                     </div>
                                 </AlertDialogHeader>
