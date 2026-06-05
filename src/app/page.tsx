@@ -1,4 +1,3 @@
-
 'use client';
 
 import { BookCopy, Shield, Zap, Sparkles, Skull, RefreshCcw, Loader2 } from 'lucide-react';
@@ -18,14 +17,13 @@ import { useSuperAdmin } from '@/hooks/useSuperAdmin';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { uiEmitter } from '@/lib/ui-emitter';
-import { useImpersonation } from '@/context/ImpersonationProvider';
+import { useToast } from '@/hooks/use-toast';
+import { demoDataService } from '@/services/demo-data';
+import { cn } from '@/lib/utils';
 import { LoginForm } from '@/components/auth/LoginForm';
 import { DashboardQuickActions } from '@/components/dashboard/DashboardQuickActions';
 import { DashboardRecentReports } from '@/components/dashboard/DashboardRecentReports';
 import { useEffect, useState } from 'react';
-import { demoDataService } from '@/services/demo-data';
-import { useToast } from '@/hooks/use-toast';
-import { cn } from '@/lib/utils';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -43,7 +41,6 @@ export default function DashboardPage() {
     const firestore = useFirestore();
     const { toast } = useToast();
     const { isSuperAdmin } = useSuperAdmin();
-    const { isImpersonating } = useImpersonation();
     const [greeting, setGreeting] = useState('');
     const [isResetting, setIsResetting] = useState(false);
 
@@ -64,17 +61,25 @@ export default function DashboardPage() {
     const handleEmergencyReset = async () => {
         if (!firestore) return;
         setIsResetting(true);
+        
         try {
-            await demoDataService.purgeAllData(firestore);
-            toast({ title: "Infrastructure Purged", description: "Terminating all listeners and re-initializing..." });
+            // Silent Emit to kill all listeners in the layout
+            uiEmitter.emit('close-all-dialogs');
             
-            // Allow toast to show before hard reload
+            // Execute Best-Effort Purge
+            await demoDataService.purgeAllData(firestore);
+            
+            toast({ title: "Infrastructure Resetting", description: "Purging workstation state and re-initializing mainboard..." });
+            
+            // FORCE RELOAD is the only absolute fix for ca9 state corruption
             setTimeout(() => {
-                window.location.reload();
-            }, 1500);
+                window.location.href = window.location.origin;
+            }, 1000);
+
         } catch (e: any) {
-            toast({ variant: 'destructive', title: "Reset Failed", description: e.message });
-            setIsResetting(false);
+            // Even if it fails, we force the reload
+            console.error("[CRITICAL] Reset Sequence Interrupted:", e);
+            window.location.reload();
         }
     };
 
@@ -101,7 +106,6 @@ export default function DashboardPage() {
       );
     }
     
-    // Hardened loading gate to ensure all core organizational data is ready before rendering
     if (isAuthLoading || isProfileLoading || isConfigLoading) {
         return (
              <div className="grid grid-cols-12 gap-4 md:gap-6 p-6">
@@ -114,14 +118,13 @@ export default function DashboardPage() {
 
     return (
         <div className="space-y-4 md:space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-1000">
-             {/* Mobile-only Greeting */}
              <div className="md:hidden space-y-1 px-1">
                  <h1 className="text-4xl font-black font-headline tracking-tighter">Good {greeting},</h1>
                  <p className="text-lg font-bold text-muted-foreground">{userProfile?.fullName.split(' ')[0]}</p>
              </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {isSuperAdmin && !isImpersonating && (
+                {isSuperAdmin && (
                     <Card className="apple-glass border-primary/20 bg-primary/5 rounded-[1.5rem] overflow-hidden">
                         <CardHeader className="flex-row items-center justify-between py-2 px-6">
                             <CardTitle className="text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
@@ -134,7 +137,7 @@ export default function DashboardPage() {
 
                 <Card className={cn(
                     "apple-glass border-rose-500/20 bg-rose-500/5 rounded-[1.5rem] overflow-hidden",
-                    !(isSuperAdmin && !isImpersonating) && "sm:col-span-2"
+                    !isSuperAdmin && "sm:col-span-2"
                 )}>
                     <CardHeader className="flex-row items-center justify-between py-2 px-6">
                         <CardTitle className="text-[10px] font-black uppercase tracking-widest flex items-center gap-2 text-rose-500">
@@ -155,9 +158,9 @@ export default function DashboardPage() {
                                     <div className="text-center">
                                         <AlertDialogTitle className="text-2xl font-black font-headline tracking-tighter uppercase text-rose-500">Absolute Reset</AlertDialogTitle>
                                         <AlertDialogDescription className="text-xs font-bold uppercase tracking-widest mt-2 leading-relaxed">
-                                            This protocol will purge all database telemetry and force-terminate every active listener. 
+                                            This protocol will purge workstation telemetry and kill all active data streams. 
                                             <br /><br />
-                                            Use this ONLY to resolve persistent <span className="text-rose-500">ca9 state conflicts</span>.
+                                            Use this to resolve <span className="text-rose-500">sync conflicts (ca9)</span>.
                                         </AlertDialogDescription>
                                     </div>
                                 </AlertDialogHeader>

@@ -113,7 +113,11 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
     }
     // Execution of all captured unsubscribe commands
     telemetryUnsubscribers.current.forEach(unsub => {
-        try { unsub(); } catch (e) {}
+        try { 
+            if (typeof unsub === 'function') unsub(); 
+        } catch (e) {
+            console.warn("[SYSTEM] Suppressed telemetry listener cleanup failure.");
+        }
     });
     telemetryUnsubscribers.current = [];
     setIsLiveActive(false);
@@ -209,10 +213,18 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
             }
         }
     }, (error) => {
-        console.warn("[SYSTEM] Command listener unmounted via SDK internal collision.");
+        console.warn("[SYSTEM] Command listener disconnected safely.");
     });
 
-    return () => unsubscribeCommands();
+    return () => {
+        try {
+            if (typeof unsubscribeCommands === 'function') {
+                unsubscribeCommands();
+            }
+        } catch (e) {
+            console.warn("[SYSTEM] Suppressed command listener cleanup failure.");
+        }
+    };
   }, [user, firestore, mounted, storage, toast]);
 
   useEffect(() => {

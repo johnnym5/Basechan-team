@@ -26,15 +26,6 @@ export interface UseDocResult<T> {
 
 /**
  * React hook to subscribe to a single Firestore document in real-time.
- * Handles nullable references.
- * 
- * IMPORTANT! YOU MUST MEMOIZE the inputted reference or the listener will leak.
- * Use useMemoFirebase to stabilize the reference.
- *
- * @template T Optional type for document data. Defaults to any.
- * @param {DocumentReference<DocumentData> | null | undefined} docRef -
- * The Firestore DocumentReference. Waits if null/undefined.
- * @returns {UseDocResult<T>} Object with data, isLoading, error.
  */
 export function useDoc<T = any>(
   memoizedDocRef: DocumentReference<DocumentData> | null | undefined,
@@ -87,10 +78,13 @@ export function useDoc<T = any>(
 
     return () => {
         try {
-            // DEFENSIVE UNMOUNT: Catch internal state mismatches during unmount.
-            unsubscribe();
+            // AGGRESSIVE DEFENSIVE UNMOUNT: 
+            // Catch b815 assertion failures during unmount.
+            if (typeof unsubscribe === 'function') {
+                unsubscribe();
+            }
         } catch (e) {
-            console.warn("[SYSTEM] Suppressed Firestore watch cleanup failure (ca9 collision).");
+            console.warn("[SYSTEM] Suppressed SDK assertion during listener cleanup.");
         }
     };
   }, [memoizedDocRef]);

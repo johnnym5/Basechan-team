@@ -40,14 +40,6 @@ export interface InternalQuery extends Query<DocumentData> {
 /**
  * React hook to subscribe to a Firestore collection or query in real-time.
  * Handles nullable references/queries.
- * 
- * IMPORTANT! YOU MUST MEMOIZE the inputted memoizedTargetRefOrQuery or BAD THINGS WILL HAPPEN
- * use useMemoFirebase to stabilize the reference.
- *  
- * @template T Optional type for document data. Defaults to any.
- * @param {CollectionReference<DocumentData> | Query<DocumentData> | null | undefined} targetRefOrQuery -
- * The Firestore CollectionReference or Query. Waits if null/undefined.
- * @returns {UseCollectionResult<T>} Object with data, isLoading, error.
  */
 export function useCollection<T = any>(
     memoizedTargetRefOrQuery: ((CollectionReference<DocumentData> | Query<DocumentData>) & {__memo?: boolean})  | null | undefined,
@@ -107,12 +99,14 @@ export function useCollection<T = any>(
 
     return () => {
         try {
-            // CRITICAL DEFENSIVE PATTERN:
-            // Suppressing internal SDK exceptions (ca9/b815) during unmount prevents
-            // application-wide crashes when the aggregator state is inconsistent.
-            unsubscribe();
+            // AGGRESSIVE DEFENSIVE UNMOUNT: 
+            // In high-velocity dev environments, the SDK aggregator (ca9/b815) 
+            // can throw during unsubscribe. We must suppress this to prevent React crashes.
+            if (typeof unsubscribe === 'function') {
+                unsubscribe();
+            }
         } catch (e) {
-            console.warn("[SYSTEM] Suppressed Firestore watch cleanup failure (ca9 collision).");
+            console.warn("[SYSTEM] Suppressed SDK assertion during listener cleanup.");
         }
     };
   }, [memoizedTargetRefOrQuery]);
