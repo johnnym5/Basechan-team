@@ -1,0 +1,214 @@
+
+{
+  "entities": {
+    "Attendance": {
+      "title": "Attendance",
+      "type": "object",
+      "description": "Daily work record including clock-in/out, breaks, and idle time tracking.",
+      "properties": {
+        "orgId": { "type": "string" },
+        "userId": { "type": "string" },
+        "userName": { "type": "string" },
+        "date": { "type": "string", "format": "date" },
+        "clockIn": { "type": "string", "format": "date-time" },
+        "clockOut": { "type": "string", "format": "date-time" },
+        "status": { "type": "string", "enum": ["PENDING", "APPROVED", "REJECTED"] },
+        "location": { "type": "string", "enum": ["OFFICE", "REMOTE"] },
+        "idleTime": { "type": "number", "description": "Total idle seconds detected." },
+        "totalBreak": { "type": "number", "description": "Total break seconds." },
+        "onBreak": { "type": "boolean" },
+        "breaks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "start": { "type": "string", "format": "date-time" },
+              "end": { "type": "string", "format": "date-time" }
+            }
+          }
+        },
+        "remarks": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "PulseCheck": {
+        "title": "Pulse Check",
+        "type": "object",
+        "description": "A daily snapshot of personnel workload and well-being.",
+        "properties": {
+            "orgId": { "type": "string" },
+            "userId": { "type": "string" },
+            "userName": { "type": "string" },
+            "date": { "type": "string", "format": "date" },
+            "mood": { "type": "string", "enum": ["SMOOTH", "HEAVY", "OVERWHELMED"] },
+            "timestamp": { "type": "string", "format": "date-time" }
+        },
+        "required": ["orgId", "userId", "date", "mood", "timestamp"]
+    },
+    "ActivityPoint": {
+        "title": "Activity Point",
+        "type": "object",
+        "description": "Aggregated daily activity points for the contribution heatmap.",
+        "properties": {
+            "orgId": { "type": "string" },
+            "userId": { "type": "string" },
+            "date": { "type": "string", "format": "date" },
+            "points": { "type": "number" }
+        },
+        "required": ["orgId", "userId", "date", "points"]
+    },
+    "Roster": {
+      "title": "Workforce Roster",
+      "type": "object",
+      "description": "Scheduled shift assignments for personnel.",
+      "properties": {
+        "orgId": { "type": "string" },
+        "userId": { "type": "string" },
+        "userName": { "type": "string" },
+        "date": { "type": "string", "format": "date" },
+        "shiftType": { "type": "string", "enum": ["MORNING", "AFTERNOON", "NIGHT", "ON_CALL"] },
+        "notes": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "Task": {
+      "title": "Task",
+      "type": "object",
+      "description": "A delegated mission or project unit.",
+      "properties": {
+        "orgId": { "type": "string" },
+        "serialNo": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "assignedTo": { "type": "string" },
+        "assignedToName": { "type": "string" },
+        "priority": { "type": "string", "enum": ["LEVEL_1", "LEVEL_2", "LEVEL_3"] },
+        "status": { "type": "string", "enum": ["QUEUED", "ACTIVE", "AWAITING_REVIEW", "ARCHIVED"] },
+        "dueDate": { "type": "string", "format": "date-time" },
+        "workbookId": { "type": "string" },
+        "sheetId": { "type": "string" },
+        "estimatedHours": { "type": "number" },
+        "actualHours": { "type": "number" },
+        "subTasks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string" },
+              "text": { "type": "string" },
+              "completed": { "type": "boolean" }
+            }
+          }
+        }
+      }
+    },
+    "LibraryItem": {
+      "title": "Library Item",
+      "type": "object",
+      "description": "A file or folder in the organizational knowledge base.",
+      "properties": {
+        "orgId": { "type": "string" },
+        "name": { "type": "string" },
+        "type": { "type": "string", "enum": ["FILE", "FOLDER"] },
+        "parentFolderId": { "type": "string", "nullable": true },
+        "url": { "type": "string", "nullable": true },
+        "mimeType": { "type": "string", "nullable": true },
+        "size": { "type": "number", "nullable": true },
+        "createdBy": { "type": "string" },
+        "creatorName": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "UserProfile": {
+      "title": "UserProfile",
+      "type": "object",
+      "description": "The primary user identity within the organization.",
+      "properties": {
+        "orgId": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "username": { "type": "string" },
+        "fullName": { "type": "string" },
+        "role": { "type": "string", "enum": ["ORG_ADMIN", "MANAGING_DIRECTOR", "HR_MANAGER", "FINANCE_MANAGER", "STAFF"] },
+        "position": { "type": "string" },
+        "departmentName": { "type": "string" },
+        "joinedDate": { "type": "string", "format": "date-time" },
+        "status": { "type": "string", "enum": ["ONLINE", "OFFLINE", "ON_LEAVE"] },
+        "activeSessionId": { "type": "string", "description": "Unique ID for enforcement of single device login." },
+        "deviceType": { "type": "string", "enum": ["MOBILE", "PC"] },
+        "lastHeartbeat": { "type": "string", "format": "date-time" },
+        "pendingCommand": { "type": "string", "enum": ["SCREENSHOT", "SCREEN_SHARE", "NONE"] },
+        "customPermissions": {
+          "type": "object",
+          "properties": {
+            "canAccessRequisitions": { "type": "boolean" },
+            "canAccessChat": { "type": "boolean" },
+            "canManageAccounting": { "type": "boolean" },
+            "canAccessLibrary": { "type": "boolean" },
+            "canManageAnnouncements": { "type": "boolean" },
+            "canViewAudit": { "type": "boolean" }
+          }
+        }
+      },
+      "required": ["orgId", "email", "fullName", "role", "username", "joinedDate"]
+    },
+    "Kudos": {
+        "title": "Peer Kudos",
+        "type": "object",
+        "description": "Peer-to-peer recognition badge.",
+        "properties": {
+          "orgId": { "type": "string" },
+          "fromUserId": { "type": "string" },
+          "fromUserName": { "type": "string" },
+          "toUserId": { "type": "string" },
+          "badgeType": { "type": "string", "enum": ["TEAM_PLAYER", "PROBLEM_SOLVER", "INNOVATOR", "RELENTLESS"] },
+          "message": { "type": "string" },
+          "timestamp": { "type": "string", "format": "date-time" }
+        },
+        "required": ["orgId", "fromUserId", "toUserId", "badgeType", "timestamp"]
+    },
+    "AuditLog": {
+      "title": "Audit Log",
+      "type": "object",
+      "description": "A record of a security-relevant or operational event.",
+      "properties": {
+        "orgId": { "type": "string" },
+        "userId": { "type": "string" },
+        "userName": { "type": "string" },
+        "action": { "type": "string" },
+        "details": { "type": "string" },
+        "resourceId": { "type": "string" },
+        "resourceType": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      }
+    },
+    "ErrorLog": {
+      "title": "Error Log",
+      "type": "object",
+      "description": "A record of an application error or exception.",
+      "properties": {
+        "orgId": { "type": "string" },
+        "userId": { "type": "string" },
+        "userName": { "type": "string" },
+        "errorMessage": { "type": "string" },
+        "stackTrace": { "type": "string" },
+        "componentStack": { "type": "string" },
+        "path": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      }
+    }
+  },
+  "auth": { "providers": ["password"] },
+  "firestore": {
+    "structure": [
+      { "path": "/attendance/{id}", "definition": { "entityName": "Attendance", "schema": { "$ref": "#/entities/Attendance" } } },
+      { "path": "/pulse_checks/{id}", "definition": { "entityName": "PulseCheck", "schema": { "$ref": "#/entities/PulseCheck" } } },
+      { "path": "/activity_points/{id}", "definition": { "entityName": "ActivityPoint", "schema": { "$ref": "#/entities/ActivityPoint" } } },
+      { "path": "/rosters/{id}", "definition": { "entityName": "Roster", "schema": { "$ref": "#/entities/Roster" } } },
+      { "path": "/tasks/{id}", "definition": { "entityName": "Task", "schema": { "$ref": "#/entities/Task" } } },
+      { "path": "/library_items/{id}", "definition": { "entityName": "LibraryItem", "schema": { "$ref": "#/entities/LibraryItem" } } },
+      { "path": "/users/{id}", "definition": { "entityName": "UserProfile", "schema": { "$ref": "#/entities/UserProfile" } } },
+      { "path": "/kudos/{id}", "definition": { "entityName": "Kudos", "schema": { "$ref": "#/entities/Kudos" } } },
+      { "path": "/audit_logs/{id}", "definition": { "entityName": "AuditLog", "schema": { "$ref": "#/entities/AuditLog" } } },
+      { "path": "/error_logs/{id}", "definition": { "entityName": "ErrorLog", "schema": { "$ref": "#/entities/ErrorLog" } } }
+    ]
+  }
+}

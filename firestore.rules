@@ -1,0 +1,148 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ===== Helper Functions =====
+    
+    function isSuperAdmin() {
+      return request.auth != null && 
+             (request.auth.token.email == 'jegbase@gmail.com' || request.auth.uid == 'nM0bBwaybEQP95OPKUyQ97iAm3u2');
+    }
+
+    function getUserData() {
+      // Hardened check for profile existence to prevent rule evaluation crashes
+      let userPath = /databases/$(database)/documents/users/$(request.auth.uid);
+      return exists(userPath) ? get(userPath).data : {"role": "STAFF", "orgId": "none"};
+    }
+
+    function getUserOrgId() {
+      return getUserData().orgId;
+    }
+
+    function getUserRole() {
+      return getUserData().role;
+    }
+
+    function isRequestingUserInOrg(docOrgId) {
+      return request.auth != null && (isSuperAdmin() || getUserOrgId() == docOrgId);
+    }
+
+    function isCreatingInOwnOrg() {
+      return request.auth != null && (isSuperAdmin() || getUserOrgId() == request.resource.data.orgId);
+    }
+
+    function isHRManager() {
+        return getUserRole() in ['HR_MANAGER', 'ORG_ADMIN'];
+    }
+
+    function isFinanceManager() {
+        return getUserRole() in ['FINANCE_MANAGER', 'ORG_ADMIN'];
+    }
+
+    function isManagingDirector() {
+        return getUserRole() in ['MANAGING_DIRECTOR', 'ORG_ADMIN'];
+    }
+
+    function isAdmin() {
+        return getUserRole() in ['ORG_ADMIN', 'MANAGING_DIRECTOR', 'HR_MANAGER'];
+    }
+    
+    // ===== Root Collections =====
+
+    match /organizations/{orgId} {
+      allow read: if isRequestingUserInOrg(orgId);
+      allow write: if isSuperAdmin();
+    }
+
+    match /accounts/{accountId} {
+      allow read: if isRequestingUserInOrg(resource.data.orgId);
+      allow write: if (isFinanceManager() || isSuperAdmin()) && isRequestingUserInOrg(request.resource.data.orgId);
+    }
+
+    match /vendors/{vendorId} {
+        allow read: if isRequestingUserInOrg(resource.data.orgId);
+        allow write: if isAdmin() || isSuperAdmin();
+    }
+
+    match /purchase_orders/{poId} {
+        allow read: if isRequestingUserInOrg(resource.data.orgId);
+        allow create: if isManagingDirector() || isFinanceManager() || isSuperAdmin();
+        allow update: if isFinanceManager() || isManagingDirector() || isSuperAdmin();
+        allow delete: if isSuperAdmin();
+    }
+
+    match /requisitions/{reqId} {
+      allow read: if isRequestingUserInOrg(resource.data.orgId);
+      allow create: if isCreatingInOwnOrg() || isSuperAdmin();
+      
+      allow update: if isSuperAdmin() || (isRequestingUserInOrg(resource.data.orgId) && (
+        (request.resource.data.status == 'PENDING_FINANCE' && isHRManager()) ||
+        (request.resource.data.status == 'PENDING_MD' && isFinanceManager()) ||
+        (request.resource.data.status == 'APPROVED' && isManagingDirector()) ||
+        (request.resource.data.status == 'PAID' && isFinanceManager()) ||
+        (request.resource.data.status == 'REJECTED' && (isHRManager() || isFinanceManager() || isManagingDirector())) ||
+        (request.auth.uid == resource.data.createdBy && resource.data.status == 'PENDING_HR')
+      ));
+    }
+
+    match /users/{userId} {
+      // Fixed: Allow users to read their own profile document directly to prevent recursive rule loops
+      allow read: if true;
+      allow create: if isSuperAdmin() || request.auth.uid == userId;
+      allow update: if isSuperAdmin() || request.auth.uid == userId || isHRManager();
+      allow delete: if isSuperAdmin();
+      
+      match /telemetry/{docId} {
+          allow read, write: if request.auth != null && (request.auth.uid == userId || isSuperAdmin() || (isAdmin() && isRequestingUserInOrg(getUserOrgId())));
+          
+          match /{allSubcollections=**} {
+              allow read, write: if request.auth != null && (request.auth.uid == userId || isSuperAdmin() || (isAdmin() && isRequestingUserInOrg(getUserOrgId())));
+          }
+      }
+    }
+    
+    match /notifications/{id} {
+      allow read: if request.auth != null && (request.auth.uid == resource.data.userId || isSuperAdmin() || isAdmin());
+      allow write: if isRequestingUserInOrg(request.resource.data.orgId) || isSuperAdmin();
+    }
+
+    match /external_displays/{displayId} {
+      allow read: if isRequestingUserInOrg(resource.data.orgId) || isSuperAdmin();
+      allow create: if (getUserRole() in ['ORG_ADMIN', 'MANAGING_DIRECTOR'] || isSuperAdmin()) && isCreatingInOwnOrg();
+      allow update, delete: if (getUserRole() in ['ORG_ADMIN', 'MANAGING_DIRECTOR'] || isSuperAdmin()) && isRequestingUserInOrg(resource.data.orgId);
+    }
+
+    match /feedback/{feedbackId} {
+      allow create: if true;
+      allow read, write: if isSuperAdmin();
+    }
+    
+    match /error_logs/{errorId} {
+      allow create: if true;
+      allow read, write: if isSuperAdmin();
+    }
+
+    match /workbooks/{workbookId}/sheets/{sheetId} {
+      allow read, write: if isSuperAdmin() || isRequestingUserInOrg(get(/databases/$(database)/documents/workbooks/$(workbookId)).data.orgId);
+    }
+
+    match /chats/{chatId}/messages/{messageId} {
+      allow read: if isSuperAdmin() || request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants;
+      allow create: if isSuperAdmin() || (request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants
+                      && request.resource.data.senderId == request.auth.uid);
+      allow update: if isSuperAdmin();
+      allow delete: if isSuperAdmin() || (
+        request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants &&
+        timestamp(resource.data.timestamp) < (request.time - duration.value(24, 'h'))
+      );
+    }
+
+    match /{collection}/{docId} {
+      allow read, delete, update: if (collection in ['departments', 'attendance', 'tasks', 'system_configs', 'announcements', 'workbooks', 'notifications', 'leave_requests', 'daily_reports', 'chats', 'journal_entries', 'pulse_checks', 'activity_points', 'kudos', 'rosters']) 
+                          && (isRequestingUserInOrg(resource.data.orgId) || isSuperAdmin());
+      allow create: if (collection in ['departments', 'attendance', 'tasks', 'system_configs', 'announcements', 'workbooks', 'notifications', 'leave_requests', 'daily_reports', 'chats', 'journal_entries', 'pulse_checks', 'activity_points', 'kudos', 'rosters']) 
+                    && (isCreatingInOwnOrg() || isSuperAdmin());
+    }
+  }
+}

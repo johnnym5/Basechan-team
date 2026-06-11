@@ -1,0 +1,21 @@
+
+kind: "AppHostingYaml"
+apiVersion: "v1"
+
+# Configuration for the build environment.
+buildConfig:
+  # The Node.js version to use for the build.
+  nodeVersion: "20"
+
+# Configuration for the runtime environment.
+runConfig:
+  # The number of concurrent requests each instance can handle.
+  concurrency: 80
+  # The amount of CPU to allocate to each instance.
+  cpu: 1
+  # The amount of memory to allocate to each instance.
+  memoryMiB: 512
+  # The minimum number of instances to keep running.
+  minInstances: 0
+  # The maximum number of instances to scale up to.
+  maxInstances: 10
