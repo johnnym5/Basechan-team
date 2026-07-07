@@ -32,8 +32,8 @@ export function SuperAdminDialog({ open, onOpenChange, modal = false }: SuperAdm
     return (
         <>
             <Dialog open={open} onOpenChange={onOpenChange} modal={modal}>
-                <DialogContent position={modal ? "center" : "left"} className="flex flex-col p-0">
-                    <DialogHeader className="p-6 pb-4 border-b flex-shrink-0">
+                <DialogContent position={modal ? "center" : "left"} className="flex flex-col p-0 overflow-hidden h-[100dvh] sm:h-auto sm:max-h-[90dvh]">
+                    <DialogHeader className="p-6 pb-4 border-b flex-shrink-0 bg-background z-10">
                         <DialogTitle className="flex items-center gap-2 text-2xl font-bold font-headline">
                             <Shield className="h-6 w-6 text-primary" />
                             Super Admin Console
@@ -43,7 +43,7 @@ export function SuperAdminDialog({ open, onOpenChange, modal = false }: SuperAdm
                         </DialogDescription>
                     </DialogHeader>
                     
-                    <div className="px-6 py-4 flex items-center gap-2 border-b bg-secondary/10 flex-shrink-0">
+                    <div className="px-6 py-4 flex items-center gap-2 border-b bg-secondary/10 flex-shrink-0 z-10">
                         <Button variant="outline" onClick={() => setIsInviteOpen(true)} className="rounded-xl">
                             <UserPlus className="mr-2 h-4 w-4"/>
                             Create User
@@ -59,7 +59,7 @@ export function SuperAdminDialog({ open, onOpenChange, modal = false }: SuperAdm
                         </Button>
                     </div>
 
-                    <div className="flex-1 overflow-y-auto custom-scrollbar bg-background/50">
+                    <div className="flex-1 flex flex-col h-full min-h-0 overflow-y-auto [scrollbar-gutter:stable] custom-scrollbar bg-background/50 relative">
                         <main className="p-6 space-y-12 pb-32">
                             <DataManagement />
                             <ErrorLogViewer />

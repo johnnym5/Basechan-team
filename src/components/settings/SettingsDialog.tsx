@@ -34,7 +34,7 @@ export function SettingsDialog({ open, onOpenChange, userProfile }: SettingsDial
   if (!hasAccess) {
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent position="left" className="items-center justify-center text-center">
+            <DialogContent position="left" className="items-center justify-center text-center h-[100dvh] sm:h-auto sm:max-h-[90dvh]">
                  <DialogHeader className="items-center">
                     <div className="p-3 rounded-full bg-destructive/10 mb-4">
                         <ShieldAlert className="w-10 h-10 text-destructive" />
@@ -59,8 +59,8 @@ export function SettingsDialog({ open, onOpenChange, userProfile }: SettingsDial
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent position="left" className="flex flex-col p-0 overflow-hidden bg-background">
-        <DialogHeader className="p-4 md:p-8 md:pb-4 flex-shrink-0">
+      <DialogContent position="left" className="flex flex-col p-0 overflow-hidden bg-background h-[100dvh]">
+        <DialogHeader className="p-4 md:p-8 md:pb-4 flex-shrink-0 z-10">
           <div className="flex items-center gap-4">
               <div className="p-3 rounded-2xl bg-primary/10 text-primary">
                   <Cog className="h-6 w-6" />
@@ -72,8 +72,8 @@ export function SettingsDialog({ open, onOpenChange, userProfile }: SettingsDial
           </div>
         </DialogHeader>
 
-        <Tabs defaultValue="team" className="flex-1 flex flex-col min-h-0">
-          <div className="px-4 md:px-8 flex-shrink-0 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+        <Tabs defaultValue="team" className="flex-1 flex flex-col min-h-0 w-full overflow-hidden">
+          <div className="px-4 md:px-8 flex-shrink-0 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden z-10">
             <TabsList className="bg-secondary/20 rounded-2xl p-1 flex w-max min-w-full md:w-fit">
                 <TabsTrigger value="team" className="rounded-xl px-6 font-black uppercase text-[10px] tracking-widest data-[state=active]:bg-background">
                     <Users className="h-3 w-3 mr-2" /> Team
@@ -99,8 +99,8 @@ export function SettingsDialog({ open, onOpenChange, userProfile }: SettingsDial
             </TabsList>
           </div>
 
-          <div className="flex-1 mt-6 overflow-hidden">
-            <ScrollArea className="h-full [scrollbar-gutter:stable] custom-scrollbar">
+          <div className="flex-1 mt-6 min-h-0 relative">
+            <ScrollArea className="h-full w-full [scrollbar-gutter:stable] custom-scrollbar">
                 <div className="px-4 md:px-8 pb-32 max-w-[1600px] mx-auto">
                     <TabsContent value="team" className="m-0 focus-visible:ring-0 outline-none animate-in fade-in duration-500">
                         <TeamPane currentUserProfile={userProfile} permissions={permissions} />

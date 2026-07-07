@@ -17,7 +17,7 @@ import { Input } from "@/components/ui/input";
 import { Loader2, Monitor, Smartphone } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth, useFirestore } from "@/firebase";
+import { useAuth, useFirestore, errorEmitter } from "@/firebase";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { query, collection, where, getDocs, doc, updateDoc, getDoc } from "firebase/firestore";
 import type { UserProfile } from "@/lib/types";
@@ -92,7 +92,7 @@ export function LoginForm() {
         }
         setIsIdVerified(verified);
       } catch (err) {
-        console.error("Error verifying ID:", err);
+        errorEmitter.emit('firestore-error', err);
         setIsIdVerified(null);
       } finally {
         setIsCheckingId(false);
@@ -126,34 +126,31 @@ export function LoginForm() {
 
       // 1. Resolve User Identity
       if (!identity.includes('@')) {
-          // Try looking up direct Document ID / User ID first
-          const userDocRef = doc(firestore, "users", identity);
-          const userDoc = await getDoc(userDocRef);
+          // If it is a username (no @), first query the Firestore users collection to find the document matching that username
+          const usersRef = collection(firestore, "users");
+          const userQuery = query(
+            usersRef, 
+            where("orgId", "==", ORG_ID),
+            where("username", "==", sanitizeInput(identity))
+          );
+          const userSnapshot = await getDocs(userQuery);
           
-          if (userDoc.exists() && userDoc.data()?.orgId === ORG_ID) {
-              userData = { id: userDoc.id, ...userDoc.data() } as UserProfile;
-              userEmail = userData.email;
-          } else {
-              // Otherwise query username
-              const usersRef = collection(firestore, "users");
-              const userQuery = query(
-                usersRef, 
-                where("orgId", "==", ORG_ID),
-                where("username", "==", sanitizeInput(identity))
-              );
-              const userSnapshot = await getDocs(userQuery);
-              
-              if (userSnapshot.empty) {
-                  throw new Error("User not found in organization records.");
-              }
-
-              userData = { id: userSnapshot.docs[0].id, ...userSnapshot.docs[0].data() } as UserProfile;
-              userEmail = userData.email;
+          if (userSnapshot.empty) {
+              toast({ variant: 'destructive', title: 'Login Failed', description: "Username not found in system." });
+              setIsSubmitting(false);
+              return;
           }
+
+          userData = { id: userSnapshot.docs[0].id, ...userSnapshot.docs[0].data() } as UserProfile;
+          userEmail = userData.email;
       } else {
           // If login by email, we still need to fetch the profile to check session
           const usersRef = collection(firestore, "users");
-          const userQuery = query(usersRef, where("email", "==", identity));
+          const userQuery = query(
+            usersRef, 
+            where("orgId", "==", ORG_ID),
+            where("email", "==", identity)
+          );
           const userSnapshot = await getDocs(userQuery);
           if (!userSnapshot.empty) {
               userData = { id: userSnapshot.docs[0].id, ...userSnapshot.docs[0].data() } as UserProfile;
@@ -225,7 +222,7 @@ export function LoginForm() {
                     {isIdVerified === false && <span className="text-[10px] font-bold text-rose-500">✗ ID Not Found</span>}
                 </div>
                 <FormControl>
-                    <Input placeholder="Username, Email, or User ID" {...field} />
+                    <Input className="apple-glass" placeholder="Username, Email, or User ID" {...field} />
                 </FormControl>
                 <FormDescription className="text-[0.625rem] uppercase tracking-widest opacity-50">Enter your company ID, email, or username</FormDescription>
                 <FormMessage />
@@ -239,7 +236,7 @@ export function LoginForm() {
                 <FormItem>
                 <FormLabel>Password</FormLabel>
                 <FormControl>
-                    <Input type="password" placeholder="••••••••" {...field} />
+                    <Input className="apple-glass" type="password" placeholder="••••••••" {...field} />
                 </FormControl>
                 <FormMessage />
                 </FormItem>

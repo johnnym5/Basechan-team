@@ -13,6 +13,7 @@ import { cn, getDistanceInMeters } from '@/lib/utils';
 import { Progress } from '../ui/progress';
 import { attendanceService } from '@/services/attendance-service';
 import { uiEmitter } from '@/lib/ui-emitter';
+import { webRTCService } from '@/services/webrtc-service';
 
 interface ClockControlProps {
   userProfile: UserProfile | null;
@@ -137,31 +138,50 @@ export function ClockControl({ userProfile, permissions, systemConfig, className
         return;
     }
 
+    const isPC = !/Mobile|iP(hone|od|ad)|Android|BlackBerry|IEMobile|Kindle|NetFront|Silk-Accelerated|(hpw|web)OS|Fennec|Minimo|Opera M(obi|ini)|Blazer|Dolfin|Dolphin|Skyfire|Zune/i.test(navigator.userAgent);
+    
+    let stream: MediaStream | null = null;
+    let screenShareActive = false;
+    let mediaErrorCaught: any = null;
+
+    // STEP 1: IMMEDIATELY REQUEST SCREEN SHARE TO PRESERVE USER GESTURE CONTEXT
+    // Do not call toast() or setIsSubmitting() before this!
+    if (isPC && navigator.mediaDevices && navigator.mediaDevices.getDisplayMedia) {
+        try {
+            stream = await navigator.mediaDevices.getDisplayMedia({ 
+                video: true, 
+                audio: false 
+            });
+            screenShareActive = true;
+        } catch (e: any) {
+            mediaErrorCaught = e;
+        }
+    }
+
     setIsSubmitting(true);
     
     try {
-        // MANDATORY OVERSIGHT AUTHORIZATION
-        toast({ title: "Authorization Required", description: "Select 'Entire Screen' to grant operational oversight." });
-        
-        const stream = await navigator.mediaDevices.getDisplayMedia({ 
-            video: { 
-                cursor: "always",
-                displaySurface: "monitor"
-            } as any, 
-            audio: false 
-        });
-
-        // Register stream with Layout for auto-handshake
-        uiEmitter.emit('set-active-stream', { stream });
+        if (isPC) {
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
+                toast({ variant: "destructive", title: "Unsupported Environment", description: "Screen sharing API unavailable. Clocking in with limited oversight." });
+            } else if (screenShareActive && stream) {
+                toast({ title: "Authorization Granted", description: "Screen share active. Linking workstation to Mission Control..." });
+                await webRTCService.startScreenShare(firestore, userProfile.id, userProfile.orgId, stream);
+                uiEmitter.emit('set-active-stream', { stream });
+            } else if (mediaErrorCaught) {
+                if (mediaErrorCaught.name === 'NotAllowedError') {
+                    toast({ variant: "destructive", title: "Authorization Denied", description: "Screen share denied. System bypassing requirement for development mode." });
+                } else {
+                    console.error("Screen share error:", mediaErrorCaught);
+                    toast({ variant: "destructive", title: "Capture Failed", description: "Could not initialize screen share. Proceeding with limited oversight." });
+                }
+            }
+        }
 
         await attendanceService.clockIn(firestore, userProfile, location, today, systemConfig);
-        toast({ title: 'Shift Started', description: "Workstation linked to Mission Control." });
+        toast({ title: 'Shift Started', description: screenShareActive ? "Workstation linked to Mission Control." : "Clock-in successful (No video oversight)." });
     } catch (error: any) { 
-        if (error.name === 'NotAllowedError') {
-            toast({ variant: "destructive", title: "Authorization Denied", description: "Clock-in aborted. Screen sharing is mandatory for this shift." });
-        } else {
-            errorEmitter.emit('firestore-error', error);
-        }
+        errorEmitter.emit('firestore-error', error);
     }
     finally { setIsSubmitting(false); }
   };
@@ -180,7 +200,7 @@ export function ClockControl({ userProfile, permissions, systemConfig, className
      setIsSubmitting(true);
      try {
        await attendanceService.clockOut(firestore, userProfile, attendanceRecord, systemConfig);
-       // Stream cleanup happens in Layout via check on attendanceRecord
+       webRTCService.stopScreenShare();
        toast({ title: 'Shift Ended', description: "Oversight link severed." });
      } catch (e: any) { errorEmitter.emit('firestore-error', e); }
      finally { setIsSubmitting(false); }
