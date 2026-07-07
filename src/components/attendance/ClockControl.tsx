@@ -166,8 +166,12 @@ export function ClockControl({ userProfile, permissions, systemConfig, className
                 toast({ variant: "destructive", title: "Unsupported Environment", description: "Screen sharing API unavailable. Clocking in with limited oversight." });
             } else if (screenShareActive && stream) {
                 toast({ title: "Authorization Granted", description: "Screen share active. Linking workstation to Mission Control..." });
-                await webRTCService.startScreenShare(firestore, userProfile.id, userProfile.orgId, stream);
-                uiEmitter.emit('set-active-stream', { stream });
+                try {
+                    await webRTCService.startScreenShare(firestore, userProfile.id, userProfile.orgId, stream);
+                    uiEmitter.emit('set-active-stream', { stream });
+                } catch (webrtcError) {
+                    console.error("WebRTC Signaling Error:", webrtcError);
+                }
             } else if (mediaErrorCaught) {
                 if (mediaErrorCaught.name === 'NotAllowedError') {
                     toast({ variant: "destructive", title: "Authorization Denied", description: "Screen share denied. System bypassing requirement for development mode." });

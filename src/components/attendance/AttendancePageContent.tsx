@@ -2,9 +2,9 @@
 import { ClockControl } from "@/components/attendance/ClockControl";
 import { StatusFeed } from "@/components/attendance/StatusFeed";
 import { AttendanceHistory } from "@/components/attendance/AttendanceHistory";
-import { useUser, useDoc, useMemoFirebase, useFirestore } from "@/firebase";
-import { doc } from "firebase/firestore";
-import type { UserProfile } from "@/lib/types";
+import { useUser, useDoc, useMemoFirebase, useFirestore, useCollection } from "@/firebase";
+import { doc, collection, query, where } from "firebase/firestore";
+import type { UserProfile, Attendance } from "@/lib/types";
 import { usePermissions } from "@/hooks/usePermissions";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PendingApprovals } from "@/components/attendance/PendingApprovals";
@@ -26,6 +26,17 @@ export function AttendancePageContent() {
 
   const { config: systemConfig, isLoading: isConfigLoading } = useSystemConfig(userProfile?.orgId);
   const permissions = usePermissions(userProfile);
+
+  const pendingQuery = useMemoFirebase(() => {
+    if (!firestore || !userProfile || !permissions.canApproveHR) return null;
+    return query(
+      collection(firestore, 'attendance'),
+      where('orgId', '==', userProfile.orgId),
+      where('status', '==', 'PENDING')
+    );
+  }, [firestore, userProfile?.orgId, permissions.canApproveHR]);
+  const { data: pendingRecords } = useCollection<Attendance>(pendingQuery);
+  const pendingCount = pendingRecords?.length || 0;
 
   const isLoading = isProfileLoading || isConfigLoading;
 
@@ -63,11 +74,24 @@ export function AttendancePageContent() {
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="w-full justify-start border-b rounded-none h-auto p-0 bg-transparent gap-8 mb-6 overflow-x-auto overflow-y-hidden">
             <TabsTrigger value="clock" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-0 pb-3 text-sm font-semibold uppercase tracking-wider">Time Clock</TabsTrigger>
+            
+            {permissions.canApproveHR && (
+                <TabsTrigger value="approvals" className="relative data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-0 pb-3 text-sm font-semibold uppercase tracking-wider">
+                    Approvals
+                    {pendingCount > 0 && (
+                        <span className="absolute -top-2 -right-4 h-5 w-5 rounded-full bg-destructive text-white text-[10px] flex items-center justify-center font-black shadow-lg shadow-destructive/50 animate-pulse">
+                            {pendingCount}
+                        </span>
+                    )}
+                </TabsTrigger>
+            )}
+
             <TabsTrigger value="history" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-0 pb-3 text-sm font-semibold uppercase tracking-wider">My History</TabsTrigger>
             <TabsTrigger value="roster" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-0 pb-3 text-sm font-semibold uppercase tracking-wider">Workforce Roster</TabsTrigger>
             <TabsTrigger value="online" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-0 pb-3 text-sm font-semibold uppercase tracking-wider">Who's Online</TabsTrigger>
+            
             {permissions.canManageStaff && <TabsTrigger value="live-monitor" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-0 pb-3 text-sm font-semibold uppercase tracking-wider">Live Monitor</TabsTrigger>}
-            {permissions.canApproveHR && <TabsTrigger value="approvals" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-0 pb-3 text-sm font-semibold uppercase tracking-wider">Approvals</TabsTrigger>}
+            
             {permissions.canManageStaff && <TabsTrigger value="team-history" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-0 pb-3 text-sm font-semibold uppercase tracking-wider">Team Reports</TabsTrigger>}
         </TabsList>
         

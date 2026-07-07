@@ -116,7 +116,8 @@ export function LoginForm() {
     if (!auth || !firestore) return;
     setIsSubmitting(true);
     
-    const identity = values.username.toLowerCase();
+    // TRIMMING THE INPUT IS CRITICAL - Mobile keyboards often add trailing spaces!
+    const identity = values.username.trim().toLowerCase();
     const deviceType = getDeviceType();
     const sessionId = crypto.randomUUID();
     

@@ -4,6 +4,7 @@
     "indexes": "firestore.indexes.json"
   },
   "hosting": {
+    "site": "basechanteam",
     "public": "out",
     "ignore": [
       "firebase.json",

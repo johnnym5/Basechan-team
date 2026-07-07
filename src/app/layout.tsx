@@ -8,8 +8,13 @@ import { MainAppLayout } from '@/components/layout/MainAppLayout';
 import { Suspense } from 'react';
 
 export const metadata: Metadata = {
-  title: 'Basechan Staff',
+  title: 'Basechan Team',
   description: 'Staff Internal Control & Automation',
+  icons: {
+    icon: '/logo.png',
+    apple: '/logo.png',
+    shortcut: '/logo.png',
+  },
 };
 
 export const viewport: Viewport = {
