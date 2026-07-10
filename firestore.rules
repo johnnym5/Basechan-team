@@ -87,8 +87,14 @@ service cloud.firestore {
     }
 
     match /users/{userId} {
+<<<<<<< HEAD
       // Fixed: Allow users to read their own profile document directly to prevent recursive rule loops
       allow read: if request.auth != null && (request.auth.uid == userId || isSuperAdmin() || isRequestingUserInOrg(resource.data.orgId));
+=======
+      // Allow public read for login ID verification (unauthenticated username/email lookup)
+      // and for authenticated users to read any profile (needed for org-wide features)
+      allow read: if true;
+>>>>>>> 8c2f2c7ee9c25fe21fb0f2e265f70b5d1d4e553a
       allow create: if isSuperAdmin() || request.auth.uid == userId;
       allow update: if isSuperAdmin() || request.auth.uid == userId || isHRManager();
       allow delete: if isSuperAdmin();

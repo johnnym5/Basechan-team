@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 {
   "name": "Palilious",
   "short_name": "Palilious",
@@ -19,3 +20,22 @@
     }
   ]
 }
+=======
+{
+  "name": "Basechan Team",
+  "short_name": "Basechan",
+  "description": "Staff Internal Control & Automation",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#030712",
+  "theme_color": "#101622",
+  "icons": [
+    {
+      "src": "/logo.png",
+      "sizes": "any",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
+>>>>>>> 8c2f2c7ee9c25fe21fb0f2e265f70b5d1d4e553a

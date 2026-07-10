@@ -1,6 +1,11 @@
 'use client';
 
+<<<<<<< HEAD
 import { BookCopy, Shield, Zap, Sparkles, Skull, RefreshCcw, Loader2 } from 'lucide-react';
+=======
+import { Shield, Zap, Sparkles, Skull, RefreshCcw, Loader2 } from 'lucide-react';
+import Image from 'next/image';
+>>>>>>> 8c2f2c7ee9c25fe21fb0f2e265f70b5d1d4e553a
 import { useUser, useFirestore, useDoc, useMemoFirebase } from '@/firebase';
 import { DashboardTaskList } from "@/components/dashboard/DashboardTaskList";
 import { doc } from "firebase/firestore";
@@ -47,12 +52,26 @@ export default function DashboardPage() {
       return (
         <div className="flex flex-col items-center justify-center min-h-[70vh] text-center px-4 animate-in fade-in duration-700">
             <div className="mb-12">
+<<<<<<< HEAD
                 <div className="relative inline-block">
                     <BookCopy className="h-20 w-20 text-primary mx-auto" />
                     <Sparkles className="absolute -top-2 -right-2 h-8 w-8 text-amber-500 animate-pulse" />
                 </div>
                 <h1 className="mt-6 text-4xl font-black font-headline tracking-tighter">Basechan Staff</h1>
                 <p className="mt-2 text-lg text-muted-foreground uppercase tracking-widest font-bold">Staff Portal</p>
+=======
+                <div className="relative inline-flex items-center justify-center">
+                    <Image
+                        src="/logo.png"
+                        alt="Basechan International"
+                        width={280}
+                        height={80}
+                        className="w-64 sm:w-72 h-auto object-contain drop-shadow-lg"
+                        priority
+                    />
+                </div>
+                <p className="mt-4 text-sm text-muted-foreground uppercase tracking-widest font-bold">Staff Portal</p>
+>>>>>>> 8c2f2c7ee9c25fe21fb0f2e265f70b5d1d4e553a
             </div>
             <Card className="w-full max-w-md apple-glass-darker border-none shadow-3xl overflow-hidden rounded-[2.5rem]">
                 <CardHeader className="pb-2">

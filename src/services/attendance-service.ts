@@ -91,7 +91,12 @@ export const attendanceService = {
     await setDoc(docRef, newRecord);
     
     const userRef = doc(db, 'users', user.id);
+<<<<<<< HEAD
     updateDocumentNonBlocking(userRef, { status: 'ONLINE', lastSeen: nowIso });
+=======
+    // User is awaiting admin verification, do not set to ONLINE yet
+    updateDocumentNonBlocking(userRef, { status: 'PENDING', lastSeen: nowIso });
+>>>>>>> 8c2f2c7ee9c25fe21fb0f2e265f70b5d1d4e553a
     
     return docRef;
   },

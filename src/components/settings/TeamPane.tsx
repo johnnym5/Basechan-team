@@ -1,8 +1,14 @@
 'use client';
 
+<<<<<<< HEAD
 import { useState, useMemo } from 'react';
 import { useCollection, useFirestore, useMemoFirebase, useAuth } from '@/firebase';
 import { collection, query, where, doc, deleteDoc, updateDoc } from 'firebase/firestore';
+=======
+import { useState, useMemo, useEffect } from 'react';
+import { useFirestore, useAuth } from '@/firebase';
+import { collection, query, where, doc, deleteDoc, updateDoc, getDocs } from 'firebase/firestore';
+>>>>>>> 8c2f2c7ee9c25fe21fb0f2e265f70b5d1d4e553a
 import type { UserProfile } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -36,11 +42,35 @@ export function TeamPane({ currentUserProfile, permissions }: TeamPaneProps) {
     const [searchTerm, setSearchTerm] = useState('');
     const [isProcessingCommand, setIsProcessingCommand] = useState<string | null>(null);
 
+<<<<<<< HEAD
     const usersQuery = useMemoFirebase(() =>
         firestore ? query(collection(firestore, 'users'), where('orgId', '==', currentUserProfile.orgId)) : null
     , [firestore, currentUserProfile.orgId]);
 
     const { data: users, isLoading } = useCollection<UserProfile>(usersQuery);
+=======
+    const [users, setUsers] = useState<UserProfile[] | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
+
+    const fetchUsers = async () => {
+        if (!firestore) return;
+        setIsLoading(true);
+        try {
+            const q = query(collection(firestore, 'users'), where('orgId', '==', currentUserProfile.orgId));
+            const snap = await getDocs(q);
+            const results = snap.docs.map(doc => ({ ...doc.data(), id: doc.id }) as UserProfile);
+            setUsers(results);
+        } catch (e) {
+            console.error("Error fetching users:", e);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchUsers();
+    }, [firestore, currentUserProfile.orgId]);
+>>>>>>> 8c2f2c7ee9c25fe21fb0f2e265f70b5d1d4e553a
     
     const filteredUsers = useMemo(() => {
         if (!users) return [];
@@ -119,6 +149,10 @@ export function TeamPane({ currentUserProfile, permissions }: TeamPaneProps) {
             await deleteDoc(doc(firestore, 'users', userToDelete.id));
             toast({ title: 'User Removed', description: `${userToDelete.fullName} has been deleted.` });
             setUserToDelete(null);
+<<<<<<< HEAD
+=======
+            fetchUsers();
+>>>>>>> 8c2f2c7ee9c25fe21fb0f2e265f70b5d1d4e553a
         } catch (error: any) {
              toast({ variant: 'destructive', title: 'Failed', description: error.message });
         } finally {
@@ -128,7 +162,11 @@ export function TeamPane({ currentUserProfile, permissions }: TeamPaneProps) {
     
     return (
         <TooltipProvider delayDuration={0}>
+<<<<<<< HEAD
             <div className="flex justify-between items-center mb-6 gap-4">
+=======
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4">
+>>>>>>> 8c2f2c7ee9c25fe21fb0f2e265f70b5d1d4e553a
                 <div className="flex flex-col gap-1">
                     <h3 className="text-xl font-black font-headline tracking-tighter uppercase flex items-center gap-2">
                         <ShieldCheck className="h-5 w-5 text-primary" />
@@ -136,18 +174,31 @@ export function TeamPane({ currentUserProfile, permissions }: TeamPaneProps) {
                     </h3>
                     <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground opacity-60">Manage Team Authorization & Oversight</p>
                 </div>
+<<<<<<< HEAD
                 <div className="flex items-center gap-3">
                     <div className="relative">
                         <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <Input 
                             placeholder="Filter personnel..."
                             className="pl-8 rounded-xl h-10 border-white/5 bg-background/50 w-64"
+=======
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
+                    <div className="relative w-full sm:w-64">
+                        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input 
+                            placeholder="Filter personnel..."
+                            className="pl-8 rounded-xl h-10 border-white/5 bg-background/50 w-full"
+>>>>>>> 8c2f2c7ee9c25fe21fb0f2e265f70b5d1d4e553a
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
                     </div>
                     {permissions.canManageStaff && (
+<<<<<<< HEAD
                         <Button onClick={() => setIsInviteOpen(true)} className="rounded-xl h-10 px-4 font-bold shadow-lg shadow-primary/20">
+=======
+                        <Button onClick={() => setIsInviteOpen(true)} className="rounded-xl h-10 px-4 font-bold shadow-lg shadow-primary/20 w-full sm:w-auto shrink-0">
+>>>>>>> 8c2f2c7ee9c25fe21fb0f2e265f70b5d1d4e553a
                             <PlusCircle className="mr-2 h-4 w-4" />
                             Add Member
                         </Button>
@@ -156,7 +207,11 @@ export function TeamPane({ currentUserProfile, permissions }: TeamPaneProps) {
             </div>
 
             <div className="border border-white/5 rounded-2xl bg-card/30 backdrop-blur-xl shadow-xl overflow-hidden">
+<<<<<<< HEAD
                 <div className="grid grid-cols-12 gap-4 p-4 border-b bg-secondary/20 font-black text-[9px] uppercase tracking-widest text-muted-foreground">
+=======
+                <div className="hidden md:grid grid-cols-12 gap-4 p-4 border-b bg-secondary/20 font-black text-[9px] uppercase tracking-widest text-muted-foreground">
+>>>>>>> 8c2f2c7ee9c25fe21fb0f2e265f70b5d1d4e553a
                     <div className="col-span-4">Staff Member</div>
                     <div className="col-span-2">Position / Sector</div>
                     <div className="col-span-2">Device Node</div>
@@ -168,9 +223,15 @@ export function TeamPane({ currentUserProfile, permissions }: TeamPaneProps) {
                         <div key={i} className="p-4"><Skeleton className="h-12 w-full rounded-xl" /></div>
                     ))}
                     {!isLoading && filteredUsers.map(user => (
+<<<<<<< HEAD
                         <div key={user.id} className="grid grid-cols-12 gap-4 p-3 items-center hover:bg-white/5 transition-colors">
                             <div className="col-span-4 flex items-center gap-3 truncate">
                                 <Avatar className="h-10 w-10 border-2 border-white/10 shadow-inner">
+=======
+                        <div key={user.id} className="flex flex-col md:grid md:grid-cols-12 gap-3 md:gap-4 p-4 md:p-3 items-start md:items-center hover:bg-white/5 transition-colors">
+                            <div className="w-full md:col-span-4 flex items-center gap-3 truncate">
+                                <Avatar className="h-10 w-10 border-2 border-white/10 shadow-inner shrink-0">
+>>>>>>> 8c2f2c7ee9c25fe21fb0f2e265f70b5d1d4e553a
                                     <AvatarFallback className="font-black bg-secondary text-xs">{user.fullName.split(' ').map(n => n[0]).join('')}</AvatarFallback>
                                 </Avatar>
                                 <div className="truncate">
@@ -183,11 +244,23 @@ export function TeamPane({ currentUserProfile, permissions }: TeamPaneProps) {
                                     </div>
                                 </div>
                             </div>
+<<<<<<< HEAD
                             <div className="col-span-2 space-y-1">
                                 <Badge variant="secondary" className="text-[8px] font-black uppercase tracking-tighter whitespace-nowrap bg-primary/10 text-primary border-primary/20">{user.position}</Badge>
                                 <p className="text-[8px] opacity-50 truncate font-bold uppercase">{user.departmentName}</p>
                             </div>
                             <div className="col-span-2">
+=======
+                            <div className="w-full md:col-span-2 flex items-center md:items-start justify-between md:justify-start gap-2">
+                                <span className="md:hidden font-black text-[8px] uppercase tracking-widest text-muted-foreground opacity-50">Position / Sector</span>
+                                <div className="flex flex-col items-end md:items-start space-y-1">
+                                    <Badge variant="secondary" className="text-[8px] font-black uppercase tracking-tighter whitespace-nowrap bg-primary/10 text-primary border-primary/20">{user.position}</Badge>
+                                    <p className="text-[8px] opacity-50 truncate font-bold uppercase">{user.departmentName}</p>
+                                </div>
+                            </div>
+                            <div className="w-full md:col-span-2 flex items-center md:items-start justify-between md:justify-start gap-2">
+                                <span className="md:hidden font-black text-[8px] uppercase tracking-widest text-muted-foreground opacity-50">Device Node</span>
+>>>>>>> 8c2f2c7ee9c25fe21fb0f2e265f70b5d1d4e553a
                                 {user.deviceType === 'PC' ? (
                                     <div className="flex items-center gap-2 text-primary">
                                         <Monitor className="h-4 w-4" />
@@ -202,6 +275,7 @@ export function TeamPane({ currentUserProfile, permissions }: TeamPaneProps) {
                                     <span className="text-[9px] opacity-30 uppercase font-black">N/A</span>
                                 )}
                             </div>
+<<<<<<< HEAD
                             <div className="col-span-4 flex items-center justify-end gap-1.5">
                                 {permissions.canManageStaff && (
                                     <>
@@ -269,6 +343,78 @@ export function TeamPane({ currentUserProfile, permissions }: TeamPaneProps) {
                                         )}
                                     </>
                                 )}
+=======
+                            <div className="w-full md:col-span-4 flex items-center justify-between md:justify-end gap-1.5 pt-3 md:pt-0 border-t md:border-none border-white/5">
+                                <span className="md:hidden font-black text-[8px] uppercase tracking-widest text-muted-foreground opacity-50">Oversight Actions</span>
+                                <div className="flex items-center gap-1.5">
+                                    {permissions.canManageStaff && (
+                                        <>
+                                            {user.deviceType === 'PC' && user.status === 'ONLINE' && (
+                                                <div className="flex items-center gap-1.5 p-1 rounded-2xl bg-primary/5 border border-primary/10">
+                                                    <Tooltip>
+                                                        <TooltipTrigger asChild>
+                                                            <Button 
+                                                                variant="ghost" 
+                                                                size="icon" 
+                                                                className="h-8 w-8 rounded-xl hover:bg-emerald-500/10 hover:text-emerald-500 transition-all active:scale-95" 
+                                                                onClick={() => handleRequestLiveMonitor(user)}
+                                                                disabled={isProcessingCommand === user.id}
+                                                            >
+                                                                {isProcessingCommand === user.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <MonitorPlay className="h-3.5 w-3.5" />}
+                                                            </Button>
+                                                        </TooltipTrigger>
+                                                        <TooltipContent className="apple-glass-darker border-none text-[9px] font-black uppercase">Live Screen Stream</TooltipContent>
+                                                    </Tooltip>
+                                                    <Tooltip>
+                                                        <TooltipTrigger asChild>
+                                                            <Button 
+                                                                variant="ghost" 
+                                                                size="icon" 
+                                                                className="h-8 w-8 rounded-xl hover:bg-primary/10 hover:text-primary transition-all active:scale-95" 
+                                                                onClick={() => handleRequestScreenshot(user)}
+                                                                disabled={isProcessingCommand === user.id}
+                                                            >
+                                                                {isProcessingCommand === user.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Camera className="h-3.5 w-3.5" />}
+                                                            </Button>
+                                                        </TooltipTrigger>
+                                                        <TooltipContent className="apple-glass-darker border-none text-[9px] font-black uppercase">Capture Immediate Screenshot</TooltipContent>
+                                                    </Tooltip>
+                                                </div>
+                                            )}
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl text-primary/70 hover:text-primary hover:bg-primary/10 transition-all active:scale-95" onClick={() => setUserToEdit(user)}>
+                                                        <Edit className="h-4 w-4" />
+                                                    </Button>
+                                                </TooltipTrigger>
+                                                <TooltipContent className="apple-glass-darker border-none text-[9px] font-black uppercase">Edit Authorization</TooltipContent>
+                                            </Tooltip>
+                                            
+                                            {user.id !== currentUserProfile.id && (
+                                                <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                        <Button 
+                                                            variant="ghost" 
+                                                            size="icon" 
+                                                            className="h-9 w-9 rounded-xl text-amber-500/70 hover:text-amber-500 hover:bg-amber-500/10 transition-all active:scale-95" 
+                                                            onClick={() => handlePasswordReset(user)}
+                                                            disabled={isProcessingCommand === user.id}
+                                                        >
+                                                            {isProcessingCommand === user.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <KeyRound className="h-4 w-4" />}
+                                                        </Button>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent className="apple-glass-darker border-none text-[9px] font-black uppercase">Reset Secure Access</TooltipContent>
+                                                </Tooltip>
+                                            )}
+                                            {user.position !== "Organization Administrator" && user.id !== currentUserProfile.id && (
+                                                 <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl text-destructive/70 hover:text-destructive hover:bg-destructive/10 transition-all active:scale-95" onClick={() => setUserToDelete(user)}>
+                                                    <Trash2 className="h-4 w-4" />
+                                                </Button>
+                                            )}
+                                        </>
+                                    )}
+                                </div>
+>>>>>>> 8c2f2c7ee9c25fe21fb0f2e265f70b5d1d4e553a
                             </div>
                         </div>
                     ))}
@@ -283,12 +429,34 @@ export function TeamPane({ currentUserProfile, permissions }: TeamPaneProps) {
             {userToEdit && (
                 <EditUserDialog 
                     open={!!userToEdit}
+<<<<<<< HEAD
                     onOpenChange={(isOpen) => !isOpen && setUserToEdit(null)}
+=======
+                    onOpenChange={(isOpen) => {
+                        if (!isOpen) {
+                            setUserToEdit(null);
+                            fetchUsers();
+                        }
+                    }}
+>>>>>>> 8c2f2c7ee9c25fe21fb0f2e265f70b5d1d4e553a
                     userToEdit={userToEdit}
                 />
             )}
             
+<<<<<<< HEAD
             <InviteUserDialog open={isInviteOpen} onOpenChange={setIsInviteOpen} currentUserProfile={currentUserProfile} />
+=======
+            <InviteUserDialog 
+                open={isInviteOpen} 
+                onOpenChange={(open) => {
+                    setIsInviteOpen(open);
+                    if (!open) {
+                        fetchUsers();
+                    }
+                }} 
+                currentUserProfile={currentUserProfile} 
+            />
+>>>>>>> 8c2f2c7ee9c25fe21fb0f2e265f70b5d1d4e553a
 
             {userToDelete && (
                  <AlertDialog open={!!userToDelete} onOpenChange={(isOpen) => !isOpen && setUserToDelete(null)}>
