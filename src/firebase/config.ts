@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 export const firebaseConfig = {
   apiKey: "AIzaSyCn0pLLYEpAHR6ehj6zWxVnoEzQgLCFVCs",
   authDomain: "basechanteam.firebaseapp.com",
@@ -8,14 +7,3 @@ export const firebaseConfig = {
   appId: "1:261796318440:web:e62d9bda06dac94b264d5d",
   measurementId: "G-WLTB42P50C"
 };
-=======
-export const firebaseConfig = {
-  apiKey: "AIzaSyCn0pLLYEpAHR6ehj6zWxVnoEzQgLCFVCs",
-  authDomain: "basechanteam.firebaseapp.com",
-  projectId: "basechanteam",
-  storageBucket: "basechanteam.firebasestorage.app",
-  messagingSenderId: "261796318440",
-  appId: "1:261796318440:web:e62d9bda06dac94b264d5d",
-  measurementId: "G-WLTB42P50C"
-};
->>>>>>> 8c2f2c7ee9c25fe21fb0f2e265f70b5d1d4e553a

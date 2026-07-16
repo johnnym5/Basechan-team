@@ -1,15 +1,9 @@
 
 'use client';
 
-<<<<<<< HEAD
-import { useState } from 'react';
-import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, query, where, orderBy, limit } from 'firebase/firestore';
-=======
 import { useState, useEffect } from 'react';
 import { useFirestore } from '@/firebase';
 import { collection, query, where, orderBy, limit, getDocs } from 'firebase/firestore';
->>>>>>> 8c2f2c7ee9c25fe21fb0f2e265f70b5d1d4e553a
 import type { AuditLog, UserProfile } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -27,25 +21,6 @@ interface AuditPaneProps {
 
 export function AuditPane({ currentUserProfile, searchTerm }: AuditPaneProps) {
     const firestore = useFirestore();
-<<<<<<< HEAD
-    const [searchTerm, setSearchTerm] = useState('');
-<<<<<<< HEAD
-
-    const auditQuery = useMemoFirebase(() => {
-        if (!firestore) return null;
-        return query(
-            collection(firestore, 'audit_logs'),
-            where('orgId', '==', currentUserProfile.orgId),
-            orderBy('timestamp', 'desc'),
-            limit(100)
-        );
-    }, [firestore, currentUserProfile.orgId]);
-
-    const { data: logs, isLoading } = useCollection<AuditLog>(auditQuery);
-
-=======
-=======
->>>>>>> 88c679d (feat: implement modular settings dialog with specialized maintenance, system, team, and audit panes)
     const [logs, setLogs] = useState<AuditLog[] | null>(null);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -73,7 +48,6 @@ export function AuditPane({ currentUserProfile, searchTerm }: AuditPaneProps) {
         fetchLogs();
     }, [firestore, currentUserProfile.orgId]);
 
->>>>>>> 8c2f2c7ee9c25fe21fb0f2e265f70b5d1d4e553a
     const filteredLogs = logs?.filter(log => 
         log.userName.toLowerCase().includes(searchTerm.toLowerCase()) ||
         log.action.toLowerCase().includes(searchTerm.toLowerCase()) ||

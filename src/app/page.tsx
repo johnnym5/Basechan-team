@@ -1,11 +1,7 @@
 'use client';
 
-<<<<<<< HEAD
-import { BookCopy, Shield, Zap, Sparkles, Skull, RefreshCcw, Loader2 } from 'lucide-react';
-=======
 import { Shield, Zap, Sparkles, Skull, RefreshCcw, Loader2 } from 'lucide-react';
 import Image from 'next/image';
->>>>>>> 8c2f2c7ee9c25fe21fb0f2e265f70b5d1d4e553a
 import { useUser, useFirestore, useDoc, useMemoFirebase } from '@/firebase';
 import { DashboardTaskList } from "@/components/dashboard/DashboardTaskList";
 import { doc } from "firebase/firestore";
@@ -34,9 +30,9 @@ export default function DashboardPage() {
     const { isSuperAdmin } = useSuperAdmin();
     const [greeting, setGreeting] = useState('');
 
-    const userProfileRef = useMemoFirebase(() => 
-        firestore && authUser ? doc(firestore, 'users', authUser.uid) : null, 
-    [firestore, authUser]);
+    const userProfileRef = useMemoFirebase(() =>
+        firestore && authUser ? doc(firestore, 'users', authUser.uid) : null,
+        [firestore, authUser]);
     const { data: userProfile, isLoading: isProfileLoading } = useDoc<UserProfile>(userProfileRef);
     const permissions = usePermissions(userProfile || null);
     const { config: systemConfig, isLoading: isConfigLoading } = useSystemConfig(userProfile?.orgId);
@@ -49,45 +45,36 @@ export default function DashboardPage() {
     }, []);
 
     if (!authUser && !isAuthLoading) {
-      return (
-        <div className="flex flex-col items-center justify-center min-h-[70vh] text-center px-4 animate-in fade-in duration-700">
-            <div className="mb-12">
-<<<<<<< HEAD
-                <div className="relative inline-block">
-                    <BookCopy className="h-20 w-20 text-primary mx-auto" />
-                    <Sparkles className="absolute -top-2 -right-2 h-8 w-8 text-amber-500 animate-pulse" />
+        return (
+            <div className="flex flex-col items-center justify-center min-h-[70vh] text-center px-4 animate-in fade-in duration-700">
+                <div className="mb-12">
+                    <div className="relative inline-flex items-center justify-center">
+                        <Image
+                            src="/logo.png"
+                            alt="Basechan International"
+                            width={280}
+                            height={80}
+                            className="w-64 sm:w-72 h-auto object-contain drop-shadow-lg"
+                            priority
+                        />
+                    </div>
+                    <p className="mt-4 text-sm text-muted-foreground uppercase tracking-widest font-bold">Staff Portal</p>
                 </div>
-                <h1 className="mt-6 text-4xl font-black font-headline tracking-tighter">Basechan Staff</h1>
-                <p className="mt-2 text-lg text-muted-foreground uppercase tracking-widest font-bold">Staff Portal</p>
-=======
-                <div className="relative inline-flex items-center justify-center">
-                    <Image
-                        src="/logo.png"
-                        alt="Basechan International"
-                        width={280}
-                        height={80}
-                        className="w-64 sm:w-72 h-auto object-contain drop-shadow-lg"
-                        priority
-                    />
-                </div>
-                <p className="mt-4 text-sm text-muted-foreground uppercase tracking-widest font-bold">Staff Portal</p>
->>>>>>> 8c2f2c7ee9c25fe21fb0f2e265f70b5d1d4e553a
+                <Card className="w-full max-w-md apple-glass-darker border-none shadow-3xl overflow-hidden rounded-[2.5rem]">
+                    <CardHeader className="pb-2">
+                        <CardTitle className="text-sm font-black uppercase tracking-widest opacity-50">Please Login</CardTitle>
+                    </CardHeader>
+                    <CardContent className="text-left">
+                        <LoginForm />
+                    </CardContent>
+                </Card>
             </div>
-            <Card className="w-full max-w-md apple-glass-darker border-none shadow-3xl overflow-hidden rounded-[2.5rem]">
-                <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-black uppercase tracking-widest opacity-50">Please Login</CardTitle>
-                </CardHeader>
-                <CardContent className="text-left">
-                    <LoginForm />
-                </CardContent>
-            </Card>
-        </div>
-      );
+        );
     }
-    
+
     if (isAuthLoading || isProfileLoading || isConfigLoading) {
         return (
-             <div className="grid grid-cols-12 gap-4 md:gap-6 p-6">
+            <div className="grid grid-cols-12 gap-4 md:gap-6 p-6">
                 <div className="col-span-12 lg:col-span-5 h-64"><Skeleton className="h-full w-full rounded-[2rem]" /></div>
                 <div className="col-span-12 lg:col-span-7 h-64"><Skeleton className="h-full w-full rounded-[2rem]" /></div>
                 <div className="col-span-12 h-96"><Skeleton className="h-full w-full rounded-[2rem]" /></div>
@@ -97,10 +84,10 @@ export default function DashboardPage() {
 
     return (
         <div className="space-y-4 md:space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-1000">
-             <div className="md:hidden space-y-1 px-1">
-                 <h1 className="text-4xl font-black font-headline tracking-tighter">Good {greeting},</h1>
-                 <p className="text-lg font-bold text-muted-foreground">{userProfile?.fullName.split(' ')[0]}</p>
-             </div>
+            <div className="md:hidden space-y-1 px-1">
+                <h1 className="text-4xl font-black font-headline tracking-tighter">Good {greeting},</h1>
+                <p className="text-lg font-bold text-muted-foreground">{userProfile?.fullName.split(' ')[0]}</p>
+            </div>
 
             {isSuperAdmin && (
                 <div className="grid grid-cols-1 gap-4">

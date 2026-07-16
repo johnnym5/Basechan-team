@@ -4,20 +4,23 @@
 
 @layer base {
   html {
-    font-size: 10.5px; /* Fixed 75% scale (14px * 0.75) */
+    font-size: 10.5px;
+    /* Fixed 75% scale (14px * 0.75) */
     scroll-behavior: smooth;
     scrollbar-gutter: stable;
   }
-  
+
   :root {
     /* Official Organizational Colors - Light Mode */
     --background: 0 0% 100%;
-    --foreground: 211 57% 12%; /* Org Navy foundation (#0d1e30) */
+    --foreground: 211 57% 12%;
+    /* Org Navy foundation (#0d1e30) */
     --card: 0 0% 100%;
     --card-foreground: 211 57% 12%;
     --popover: 0 0% 100%;
     --popover-foreground: 211 57% 12%;
-    --primary: 49 56% 54%; /* Org Gold signature (#cab348) */
+    --primary: 49 56% 54%;
+    /* Org Gold signature (#cab348) */
     --primary-foreground: 211 57% 12%;
     --secondary: 211 57% 95%;
     --secondary-foreground: 211 57% 12%;
@@ -30,20 +33,25 @@
     --border: 211 20% 90%;
     --input: 211 20% 90%;
     --ring: 49 56% 54%;
-    --radius: 1.25rem; 
+    --radius: 1.25rem;
   }
 
   .dark {
     /* Official Organizational Colors - Premium Dark Mode */
-    --background: 211 57% 4%; /* Ultra-deep OLED Navy */
-    --foreground: 0 0% 100%; /* Pure White (#ffffff) */
-    --card: 211 57% 8%; /* Deep Navy Surface */
+    --background: 211 57% 4%;
+    /* Ultra-deep OLED Navy */
+    --foreground: 0 0% 100%;
+    /* Pure White (#ffffff) */
+    --card: 211 57% 8%;
+    /* Deep Navy Surface */
     --card-foreground: 0 0% 100%;
     --popover: 211 57% 8%;
     --popover-foreground: 0 0% 100%;
-    --primary: 49 56% 54%; /* Org Gold Highlights (#cab348) */
+    --primary: 49 56% 54%;
+    /* Org Gold Highlights (#cab348) */
     --primary-foreground: 211 57% 4%;
-    --secondary: 211 57% 12%; /* Base Navy foundation (#0d1e30) */
+    --secondary: 211 57% 12%;
+    /* Base Navy foundation (#0d1e30) */
     --secondary-foreground: 0 0% 100%;
     --muted: 211 57% 10%;
     --muted-foreground: 211 20% 65%;
@@ -57,10 +65,19 @@
 }
 
 @layer base {
-  * { @apply border-border; }
-  html, body { height: 100%; margin: 0; padding: 0; }
-  body { 
-    @apply bg-background text-foreground overflow-hidden font-body; 
+  * {
+    @apply border-border;
+  }
+
+  html,
+  body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+  }
+
+  body {
+    @apply bg-background text-foreground overflow-hidden font-body;
     -webkit-font-smoothing: antialiased;
     padding-bottom: env(safe-area-inset-bottom);
   }
@@ -71,27 +88,64 @@
     scrollbar-color: hsl(var(--primary)) hsl(var(--secondary) / 0.1);
   }
 
-  ::-webkit-scrollbar { width: 8px; height: 8px; }
-  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
   ::-webkit-scrollbar-thumb {
     background-color: hsl(var(--primary) / 0.3);
     border-radius: 4px;
     border: 2px solid transparent;
     background-clip: padding-box;
   }
+
   ::-webkit-scrollbar-thumb:hover {
     background-color: hsl(var(--primary) / 0.6);
   }
 }
 
 @layer utilities {
-    .apple-glass { 
-      @apply bg-background/60 backdrop-blur-2xl border border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.05)]; 
+  .apple-glass {
+    @apply bg-background/60 backdrop-blur-2xl border border-white/10 shadow-[0_8px_32px_0_rgba(0, 0, 0, 0.05)];
+  }
+
+  .apple-glass-darker {
+    @apply bg-background/80 backdrop-blur-3xl border border-white/5 shadow-2xl;
+  }
+
+  .interactive-element {
+    @apply transition-all duration-300 ease-apple-ease hover:-translate-y-0.5 hover:shadow-lg active:scale-[0.98] active:shadow-sm;
+  }
+
+  .animate-pop-in {
+    @apply animate-[pop-in_0.3s_cubic-bezier(0.175, 0.885, 0.32, 1.1)_forwards];
+  }
+
+  .animate-slide-up-fade {
+    @apply animate-[slide-up-fade_0.5s_cubic-bezier(0.16, 1, 0.3, 1)_forwards];
+  }
+
+  /* Light mode overrides for hardcoded dark-theme classes */
+  html:not(.dark) {
+    .border-white\/5 {
+      border-color: rgba(0, 0, 0, 0.05) !important;
     }
-    .apple-glass-darker { 
-      @apply bg-background/80 backdrop-blur-3xl border border-white/5 shadow-2xl; 
+
+    .bg-white\/5 {
+      background-color: rgba(0, 0, 0, 0.05) !important;
     }
-    .interactive-element { @apply transition-all duration-300 ease-apple-ease hover:-translate-y-0.5 hover:shadow-lg active:scale-[0.98] active:shadow-sm; }
-    .animate-pop-in { @apply animate-[pop-in_0.3s_cubic-bezier(0.175,0.885,0.32,1.1)_forwards]; }
-    .animate-slide-up-fade { @apply animate-[slide-up-fade_0.5s_cubic-bezier(0.16,1,0.3,1)_forwards]; }
+
+    .border-white\/10 {
+      border-color: rgba(0, 0, 0, 0.1) !important;
+    }
+
+    .bg-white\/10 {
+      background-color: rgba(0, 0, 0, 0.1) !important;
+    }
+  }
 }
