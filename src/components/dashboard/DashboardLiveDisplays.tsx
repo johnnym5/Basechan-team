@@ -1,11 +1,7 @@
 'use client';
 
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-<<<<<<< Updated upstream
 import { collection, query, where, orderBy, limit } from 'firebase/firestore';
-=======
-import { collection, query, where, or, and } from 'firebase/firestore';
->>>>>>> Stashed changes
 import type { ExternalDisplay, UserProfile } from '@/lib/types';
 import { MonitorDot, ChevronRight, Globe } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -21,7 +17,6 @@ export function DashboardLiveDisplays({ userProfile }: DashboardLiveDisplaysProp
     const orgId = userProfile?.orgId || ORG_ID;
 
     const displaysQuery = useMemoFirebase(() => {
-<<<<<<< Updated upstream
         if (!firestore) return null;
         return query(
             collection(firestore, 'external_displays'),
@@ -30,27 +25,6 @@ export function DashboardLiveDisplays({ userProfile }: DashboardLiveDisplaysProp
             limit(3)
         );
     }, [firestore, orgId]);
-=======
-        if (!firestore || !userProfile?.orgId) return null;
-        if (permissions.canManageDisplays) {
-            return query(
-                collection(firestore, 'external_displays'),
-                where('orgId', '==', userProfile.orgId)
-            );
-        } else {
-            return query(
-                collection(firestore, 'external_displays'),
-                and(
-                    where('orgId', '==', userProfile.orgId),
-                    or(
-                        where('displayMode', '==', 'GLOBAL'),
-                        where('createdBy', '==', userProfile.id)
-                    )
-                )
-            );
-        }
-    }, [firestore, userProfile?.orgId, userProfile?.id, permissions.canManageDisplays]);
->>>>>>> Stashed changes
 
     const { data: displays, isLoading } = useCollection<ExternalDisplay>(displaysQuery);
 

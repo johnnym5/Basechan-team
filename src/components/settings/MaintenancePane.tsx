@@ -25,11 +25,10 @@ interface MaintenanceAlert {
     sheetName: string;
 }
 
-export function MaintenancePane({ currentUserProfile }: { currentUserProfile: UserProfile }) {
+export function MaintenancePane({ currentUserProfile, searchTerm }: { currentUserProfile: UserProfile, searchTerm: string }) {
     const firestore = useFirestore();
     const [alerts, setMaintenanceAlerts] = useState<MaintenanceAlert[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [searchTerm, setSearchTerm] = useState('');
 
     const workbooksQuery = useMemoFirebase(() => {
         if (!firestore) return null;
@@ -52,10 +51,10 @@ export function MaintenancePane({ currentUserProfile }: { currentUserProfile: Us
             try {
                 for (const wb of workbooks) {
                     const sheetsSnap = await getDocs(collection(firestore, `workbooks/${wb.id}/sheets`));
-                    
+
                     for (const docSnap of sheetsSnap.docs) {
                         const sheet = docSnap.data() as Sheet;
-                        const dateHeaders = sheet.headers.filter(h => 
+                        const dateHeaders = sheet.headers.filter(h =>
                             ['maintenance', 'service', 'expiry', 'next', 'due'].some(k => h.toLowerCase().includes(k))
                         );
 
@@ -87,7 +86,7 @@ export function MaintenancePane({ currentUserProfile }: { currentUserProfile: Us
                                                     sheetName: sheet.name
                                                 });
                                             }
-                                        } catch (e) {}
+                                        } catch (e) { }
                                     }
                                 });
                             });
@@ -105,10 +104,10 @@ export function MaintenancePane({ currentUserProfile }: { currentUserProfile: Us
         scanForMaintenance();
     }, [firestore, workbooks]);
 
-    const filteredAlerts = alerts.filter(a => 
+    const filteredAlerts = alerts.filter(a =>
+        !searchTerm.trim() ||
         a.assetName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        a.workbookTitle.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+        a.workbookTitle.toLowerCase().includes(searchTerm.toLowerCase()));
 
     const handleJumpToSheet = (alert: MaintenanceAlert) => {
         uiEmitter.emit('close-all-dialogs');
@@ -151,15 +150,6 @@ export function MaintenancePane({ currentUserProfile }: { currentUserProfile: Us
                     </h3>
                     <p className="text-sm text-muted-foreground">Automated scanning of all organizational data units for service dates and asset expiry.</p>
                 </div>
-                <div className="relative w-full sm:max-w-xs">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input 
-                        placeholder="Filter alerts..." 
-                        className="pl-10 h-10 rounded-xl"
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                    />
-                </div>
             </div>
 
             <div className="p-4 rounded-2xl bg-primary/5 border border-primary/10 flex gap-3 text-primary">
@@ -169,7 +159,13 @@ export function MaintenancePane({ currentUserProfile }: { currentUserProfile: Us
                 </p>
             </div>
 
-            {filteredAlerts.length === 0 ? (
+            {alerts.length > 0 && filteredAlerts.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-20 text-center opacity-40 border-2 border-dashed rounded-[2rem]">
+                    <Search className="h-16 w-16 text-primary mb-4" />
+                    <h4 className="text-lg font-bold font-headline uppercase tracking-widest">No Matching Alerts</h4>
+                    <p className="text-sm max-w-xs mt-1">Your search for "{searchTerm}" did not match any maintenance alerts.</p>
+                </div>
+            ) : filteredAlerts.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-20 text-center opacity-40 border-2 border-dashed rounded-[2rem]">
                     <CheckCircle2 className="h-16 w-16 text-emerald-500 mb-4" />
                     <h4 className="text-lg font-bold font-headline uppercase tracking-widest">All Systems Operational</h4>
@@ -178,7 +174,7 @@ export function MaintenancePane({ currentUserProfile }: { currentUserProfile: Us
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {filteredAlerts.map((alert, idx) => (
-                        <Card 
+                        <Card
                             key={idx}
                             onClick={() => handleJumpToSheet(alert)}
                             className={cn(
@@ -214,7 +210,7 @@ export function MaintenancePane({ currentUserProfile }: { currentUserProfile: Us
                                         <ChevronRight className="h-4 w-4" />
                                     </div>
                                 </div>
-                                <Button 
+                                <Button
                                     className="w-full h-10 rounded-xl font-black uppercase text-[9px] tracking-widest gap-2"
                                     onClick={(e) => handleDispatchTask(e, alert)}
                                 >
