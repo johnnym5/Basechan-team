@@ -25,11 +25,15 @@ interface MaintenanceAlert {
     sheetName: string;
 }
 
-export function MaintenancePane({ currentUserProfile }: { currentUserProfile: UserProfile }) {
+interface MaintenancePaneProps {
+    currentUserProfile: UserProfile;
+    searchTerm: string;
+}
+
+export function MaintenancePane({ currentUserProfile, searchTerm }: MaintenancePaneProps) {
     const firestore = useFirestore();
     const [alerts, setMaintenanceAlerts] = useState<MaintenanceAlert[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [searchTerm, setSearchTerm] = useState('');
 
     const workbooksQuery = useMemoFirebase(() => {
         if (!firestore) return null;
@@ -150,15 +154,6 @@ export function MaintenancePane({ currentUserProfile }: { currentUserProfile: Us
                         Maintenance Radar
                     </h3>
                     <p className="text-sm text-muted-foreground">Automated scanning of all organizational data units for service dates and asset expiry.</p>
-                </div>
-                <div className="relative w-full sm:max-w-xs">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input 
-                        placeholder="Filter alerts..." 
-                        className="pl-10 h-10 rounded-xl"
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                    />
                 </div>
             </div>
 

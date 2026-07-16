@@ -22,10 +22,12 @@ import { uiEmitter } from '@/lib/ui-emitter';
 
 interface AuditPaneProps {
     currentUserProfile: UserProfile;
+    searchTerm: string;
 }
 
-export function AuditPane({ currentUserProfile }: AuditPaneProps) {
+export function AuditPane({ currentUserProfile, searchTerm }: AuditPaneProps) {
     const firestore = useFirestore();
+<<<<<<< HEAD
     const [searchTerm, setSearchTerm] = useState('');
 <<<<<<< HEAD
 
@@ -42,6 +44,8 @@ export function AuditPane({ currentUserProfile }: AuditPaneProps) {
     const { data: logs, isLoading } = useCollection<AuditLog>(auditQuery);
 
 =======
+=======
+>>>>>>> 88c679d (feat: implement modular settings dialog with specialized maintenance, system, team, and audit panes)
     const [logs, setLogs] = useState<AuditLog[] | null>(null);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -101,15 +105,6 @@ export function AuditPane({ currentUserProfile }: AuditPaneProps) {
                         Organizational Audit Trail
                     </h3>
                     <p className="text-xs text-muted-foreground">Immutable record of high-priority system interactions.</p>
-                </div>
-                <div className="relative w-64">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input 
-                        placeholder="Filter by actor or event..." 
-                        className="pl-10 h-10 rounded-xl"
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                    />
                 </div>
             </div>
 

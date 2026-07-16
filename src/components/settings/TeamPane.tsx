@@ -1,11 +1,15 @@
 'use client';
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 import { useState, useMemo } from 'react';
 import { useCollection, useFirestore, useMemoFirebase, useAuth } from '@/firebase';
 import { collection, query, where, doc, deleteDoc, updateDoc } from 'firebase/firestore';
 =======
 import { useState, useMemo, useEffect } from 'react';
+=======
+import { useState, useMemo, useEffect, useRef } from 'react';
+>>>>>>> 88c679d (feat: implement modular settings dialog with specialized maintenance, system, team, and audit panes)
 import { useFirestore, useAuth } from '@/firebase';
 import { collection, query, where, doc, deleteDoc, updateDoc, getDocs } from 'firebase/firestore';
 >>>>>>> 8c2f2c7ee9c25fe21fb0f2e265f70b5d1d4e553a
@@ -29,9 +33,10 @@ import { uiEmitter } from '@/lib/ui-emitter';
 interface TeamPaneProps {
     currentUserProfile: UserProfile;
     permissions: Permissions;
+    searchTerm: string;
 }
 
-export function TeamPane({ currentUserProfile, permissions }: TeamPaneProps) {
+export function TeamPane({ currentUserProfile, permissions, searchTerm }: TeamPaneProps) {
     const firestore = useFirestore();
     const auth = useAuth();
     const { toast } = useToast();
@@ -39,7 +44,6 @@ export function TeamPane({ currentUserProfile, permissions }: TeamPaneProps) {
     const [userToEdit, setUserToEdit] = useState<UserProfile | null>(null);
     const [userToDelete, setUserToDelete] = useState<UserProfile | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
-    const [searchTerm, setSearchTerm] = useState('');
     const [isProcessingCommand, setIsProcessingCommand] = useState<string | null>(null);
 
 <<<<<<< HEAD
@@ -75,18 +79,11 @@ export function TeamPane({ currentUserProfile, permissions }: TeamPaneProps) {
     const filteredUsers = useMemo(() => {
         if (!users) return [];
         if (!searchTerm) return users;
-<<<<<<< Updated upstream
-        return users.filter(user => 
-            user.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            user.position.toLowerCase().includes(searchTerm.toLowerCase())
-=======
         const lowercasedTerm = searchTerm.toLowerCase();
         return users.filter(user => 
             user.fullName.toLowerCase().includes(lowercasedTerm) ||
             user.email.toLowerCase().includes(lowercasedTerm) ||
             (user.position && user.position.toLowerCase().includes(lowercasedTerm))
->>>>>>> Stashed changes
         );
     }, [users, searchTerm]);
 
@@ -149,8 +146,6 @@ export function TeamPane({ currentUserProfile, permissions }: TeamPaneProps) {
             setTimeout(() => setIsProcessingCommand(null), 1000);
         }
     };
-<<<<<<< Updated upstream
-=======
 
     const handleForceLogout = async (user: UserProfile) => {
         if (!firestore) return;
@@ -165,16 +160,14 @@ export function TeamPane({ currentUserProfile, permissions }: TeamPaneProps) {
             setTimeout(() => setIsProcessingCommand(null), 2000);
         }
     };
->>>>>>> Stashed changes
     
     const handleDeleteUser = async () => {
         if (!userToDelete || !firestore) return;
         setIsDeleting(true);
         try {
-<<<<<<< Updated upstream
-            await deleteDoc(doc(firestore, 'users', userToDelete.id));
-=======
-            const token = await auth.currentUser.getIdToken();
+            const token = await auth?.currentUser?.getIdToken();
+            if (!token) throw new Error("Authentication token not available.");
+
             const response = await fetch('/api/users/delete', {
                 method: 'POST',
                 headers: {
@@ -190,7 +183,6 @@ export function TeamPane({ currentUserProfile, permissions }: TeamPaneProps) {
                 throw new Error(data.error || 'Failed to delete user');
             }
 
->>>>>>> Stashed changes
             toast({ title: 'User Removed', description: `${userToDelete.fullName} has been deleted.` });
             setUserToDelete(null);
 <<<<<<< HEAD
@@ -227,6 +219,7 @@ export function TeamPane({ currentUserProfile, permissions }: TeamPaneProps) {
                             className="pl-8 rounded-xl h-10 border-white/5 bg-background/50 w-64"
 =======
                 <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
+<<<<<<< HEAD
                     <div className="relative w-full sm:w-64">
                         <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <Input 
@@ -237,6 +230,8 @@ export function TeamPane({ currentUserProfile, permissions }: TeamPaneProps) {
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
                     </div>
+=======
+>>>>>>> 88c679d (feat: implement modular settings dialog with specialized maintenance, system, team, and audit panes)
                     {permissions.canManageStaff && (
 <<<<<<< HEAD
                         <Button onClick={() => setIsInviteOpen(true)} className="rounded-xl h-10 px-4 font-bold shadow-lg shadow-primary/20">
