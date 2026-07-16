@@ -6,7 +6,7 @@ import { collection, query, where, doc, deleteDoc, updateDoc, getDocs } from 'fi
 import type { UserProfile } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { PlusCircle, Trash2, Edit, Loader2, Search, KeyRound, Monitor, Smartphone, Camera, MonitorPlay, ShieldCheck } from 'lucide-react';
+import { PlusCircle, Trash2, Edit, Loader2, Search, KeyRound, Monitor, Smartphone, Camera, MonitorPlay, ShieldCheck, LogOut } from 'lucide-react';
 import { Skeleton } from '../ui/skeleton';
 import { Input } from '../ui/input';
 import { InviteUserDialog } from './InviteUserDialog';
@@ -127,12 +127,41 @@ export function TeamPane({ currentUserProfile, permissions }: TeamPaneProps) {
             setTimeout(() => setIsProcessingCommand(null), 1000);
         }
     };
+
+    const handleForceLogout = async (user: UserProfile) => {
+        if (!firestore) return;
+        setIsProcessingCommand(user.id);
+        try {
+            const userRef = doc(firestore, 'users', user.id);
+            await updateDoc(userRef, { pendingCommand: 'FORCE_LOGOUT' });
+            toast({ title: 'Force Logout Sent', description: `${user.fullName.split(' ')[0]} will be signed out immediately.` });
+        } catch (e: any) {
+            toast({ variant: 'destructive', title: 'Failed', description: e.message });
+        } finally {
+            setTimeout(() => setIsProcessingCommand(null), 2000);
+        }
+    };
     
     const handleDeleteUser = async () => {
-        if (!userToDelete || !firestore) return;
+        if (!userToDelete || !auth?.currentUser) return;
         setIsDeleting(true);
         try {
-            await deleteDoc(doc(firestore, 'users', userToDelete.id));
+            const token = await auth.currentUser.getIdToken();
+            const response = await fetch('/api/users/delete', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ targetUserId: userToDelete.id })
+            });
+            
+            const data = await response.json();
+            
+            if (!response.ok) {
+                throw new Error(data.error || 'Failed to delete user');
+            }
+
             toast({ title: 'User Removed', description: `${userToDelete.fullName} has been deleted.` });
             setUserToDelete(null);
             fetchUsers();
@@ -283,6 +312,22 @@ export function TeamPane({ currentUserProfile, permissions }: TeamPaneProps) {
                                                         </Button>
                                                     </TooltipTrigger>
                                                     <TooltipContent className="apple-glass-darker border-none text-[9px] font-black uppercase">Reset Secure Access</TooltipContent>
+                                                </Tooltip>
+                                            )}
+                                            {user.status === 'ONLINE' && user.id !== currentUserProfile.id && (
+                                                <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            className="h-9 w-9 rounded-xl text-orange-500/70 hover:text-orange-500 hover:bg-orange-500/10 transition-all active:scale-95"
+                                                            onClick={() => handleForceLogout(user)}
+                                                            disabled={isProcessingCommand === user.id}
+                                                        >
+                                                            {isProcessingCommand === user.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <LogOut className="h-4 w-4" />}
+                                                        </Button>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent className="apple-glass-darker border-none text-[9px] font-black uppercase">Force Reset Device</TooltipContent>
                                                 </Tooltip>
                                             )}
                                             {user.position !== "Organization Administrator" && user.id !== currentUserProfile.id && (

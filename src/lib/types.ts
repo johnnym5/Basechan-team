@@ -57,12 +57,13 @@ export interface UserProfile {
   departmentId?: string;
   departmentName?: string;
   joinedDate: string;
+  password?: string;
   status?: UserStatus;
   lastSeen?: string;
   activeSessionId?: string | null;
   deviceType?: 'MOBILE' | 'PC' | null;
   lastHeartbeat?: string | null;
-  pendingCommand?: 'SCREENSHOT' | 'SCREEN_SHARE' | 'NONE' | null;
+  pendingCommand?: 'SCREENSHOT' | 'SCREEN_SHARE' | 'FORCE_LOGOUT' | 'NONE' | null;
   notificationPreferences?: {
     requisitionUpdates?: boolean;
     taskAssignments?: boolean;

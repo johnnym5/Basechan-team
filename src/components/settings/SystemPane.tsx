@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Loader2, MapPin, Clock, Palette, FileText, Info } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useFirestore, updateDocumentNonBlocking } from "@/firebase";
-import { doc } from "firebase/firestore";
+import { doc, updateDoc } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import type { UserProfile, SystemConfig } from "@/lib/types";
 import { useSystemConfig } from "@/hooks/useSystemConfig";
@@ -117,9 +117,9 @@ export function SystemPane({ currentUserProfile }: SystemPaneProps) {
         accent_color: values.accent_color || null,
         reporting_schedule: {
             required: values.reporting_required,
-            deadline: values.reporting_deadline,
+            deadline: values.reporting_deadline || "17:30",
         },
-        office_coordinates: (values.office_lat != null && values.office_lng != null) 
+        office_coordinates: (values.office_lat != null && values.office_lng != null && !Number.isNaN(values.office_lat) && !Number.isNaN(values.office_lng)) 
             ? { lat: values.office_lat, lng: values.office_lng } 
             : null,
         document_template: {
@@ -132,7 +132,7 @@ export function SystemPane({ currentUserProfile }: SystemPaneProps) {
 
     try {
       const configRef = doc(firestore, 'system_configs', config.id);
-      updateDocumentNonBlocking(configRef, updateData);
+      await updateDoc(configRef, updateData);
 
       // Apply theme update immediately for real-time visual feedback
       const root = document.documentElement;
@@ -313,7 +313,7 @@ export function SystemPane({ currentUserProfile }: SystemPaneProps) {
         <div className="pt-8 sticky bottom-8 z-50">
             <Button type="submit" disabled={isSubmitting || isConfigLoading} className="w-full h-18 text-base font-black uppercase tracking-[0.3em] rounded-[2.5rem] shadow-2xl shadow-primary/40 active:scale-95 transition-all py-8">
                 {isSubmitting ? <Loader2 className="mr-3 h-6 w-6 animate-spin" /> : null}
-                Execute Global Deployment
+                Save General Settings
             </Button>
         </div>
       </form>

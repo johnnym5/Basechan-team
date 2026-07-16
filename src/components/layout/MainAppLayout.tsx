@@ -215,7 +215,21 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
         };
         triggerCapture();
     }
-  }, [userProfile?.pendingCommand, userProfile?.deviceType, user?.uid, firestore, mounted, storage, toast]);
+
+    if (userProfile.pendingCommand === 'FORCE_LOGOUT') {
+        const triggerForceLogout = async () => {
+            try {
+                const userRef = doc(firestore, 'users', user.uid);
+                await updateDoc(userRef, { pendingCommand: 'NONE', status: 'OFFLINE' });
+            } catch (e) {
+                // best-effort cleanup
+            } finally {
+                if (auth) await signOut(auth);
+            }
+        };
+        triggerForceLogout();
+    }
+  }, [userProfile?.pendingCommand, userProfile?.deviceType, user?.uid, firestore, mounted, storage, toast, auth]);
 
   useEffect(() => {
     if (!user?.uid || !firestore || !mounted) return;

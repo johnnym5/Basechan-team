@@ -187,7 +187,7 @@ export function usePermissions(userProfile: UserProfile | null): Permissions {
     if (typeof customPerms.canAccessLibrary === 'boolean') perms.canAccessLibrary = customPerms.canAccessLibrary;
     
     perms.canEditOwnProfile = effectiveRole !== 'STAFF' || (systemConfig?.allow_self_edit ?? true);
-    perms.canViewTeam = perms.canManageStaff || (systemConfig?.admin_tools ?? false);
+    perms.canViewTeam = !!perms.canManageStaff;
 
     return perms;
   }, [isSuperAdmin, userProfile, systemConfig, isImpersonating]);

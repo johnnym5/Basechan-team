@@ -9,8 +9,8 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2 } from "lucide-react";
 import { useState, useEffect, useMemo } from "react";
-import { useFirestore, setDocumentNonBlocking } from "@/firebase";
-import { collection, doc } from "firebase/firestore";
+import { useFirestore } from "@/firebase";
+import { doc, setDoc } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import type { UserProfile, UserPosition } from "@/lib/types";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
@@ -112,11 +112,12 @@ export function InviteUserDialog({ open, onOpenChange, currentUserProfile }: Inv
         role: getRoleFromPosition(values.position as UserPosition),
         departmentName: values.departmentName,
         joinedDate: new Date().toISOString(),
+        password: values.password,
         status: 'OFFLINE',
       };
       
-      // Use setDoc to create the document with the specific ID.
-      setDocumentNonBlocking(userDocRef, newUserProfile, { merge: false });
+      // Use setDoc to create the document with the specific ID. Await so failures surface.
+      await setDoc(userDocRef, newUserProfile);
 
       toast({
         title: "User Account Created",

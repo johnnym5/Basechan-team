@@ -53,6 +53,7 @@ export const batchUserService = {
                 position,
                 departmentName,
                 joinedDate: new Date().toISOString(),
+                password,
                 status: 'OFFLINE',
             };
 
