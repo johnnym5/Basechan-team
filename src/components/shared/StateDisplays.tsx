@@ -38,7 +38,9 @@ interface DataStateWrapperProps<T> {
     children: React.ReactNode;
 
     // Loading state props
+    loadingType?: 'spinner' | 'skeleton';
     loadingMessage?: string;
+    skeletonComponent?: React.ReactNode;
 
     // Error state props
     onRetry?: () => void;
@@ -58,7 +60,9 @@ export function DataStateWrapper<T>({
     error,
     data,
     children,
+    loadingType = 'spinner',
     loadingMessage,
+    skeletonComponent,
     onRetry,
     emptyTitle = "No Data Found",
     emptyDescription = "There is nothing to display at the moment.",
@@ -67,6 +71,9 @@ export function DataStateWrapper<T>({
     className,
 }: DataStateWrapperProps<T>) {
     if (isLoading) {
+        if (loadingType === 'skeleton' && skeletonComponent) {
+            return <>{skeletonComponent}</>;
+        }
         return <LoadingState message={loadingMessage} className={className} />;
     }
 
