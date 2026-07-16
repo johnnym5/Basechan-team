@@ -75,10 +75,18 @@ export function TeamPane({ currentUserProfile, permissions }: TeamPaneProps) {
     const filteredUsers = useMemo(() => {
         if (!users) return [];
         if (!searchTerm) return users;
+<<<<<<< Updated upstream
         return users.filter(user => 
             user.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
             user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
             user.position.toLowerCase().includes(searchTerm.toLowerCase())
+=======
+        const lowercasedTerm = searchTerm.toLowerCase();
+        return users.filter(user => 
+            user.fullName.toLowerCase().includes(lowercasedTerm) ||
+            user.email.toLowerCase().includes(lowercasedTerm) ||
+            (user.position && user.position.toLowerCase().includes(lowercasedTerm))
+>>>>>>> Stashed changes
         );
     }, [users, searchTerm]);
 
@@ -141,12 +149,48 @@ export function TeamPane({ currentUserProfile, permissions }: TeamPaneProps) {
             setTimeout(() => setIsProcessingCommand(null), 1000);
         }
     };
+<<<<<<< Updated upstream
+=======
+
+    const handleForceLogout = async (user: UserProfile) => {
+        if (!firestore) return;
+        setIsProcessingCommand(user.id);
+        try {
+            const userRef = doc(firestore, 'users', user.id);
+            await updateDoc(userRef, { pendingCommand: 'FORCE_LOGOUT' });
+            toast({ title: 'Force Logout Sent', description: `${user.fullName.split(' ')[0]} will be signed out immediately.` });
+        } catch (e: any) {
+            toast({ variant: 'destructive', title: 'Failed', description: e.message });
+        } finally {
+            setTimeout(() => setIsProcessingCommand(null), 2000);
+        }
+    };
+>>>>>>> Stashed changes
     
     const handleDeleteUser = async () => {
         if (!userToDelete || !firestore) return;
         setIsDeleting(true);
         try {
+<<<<<<< Updated upstream
             await deleteDoc(doc(firestore, 'users', userToDelete.id));
+=======
+            const token = await auth.currentUser.getIdToken();
+            const response = await fetch('/api/users/delete', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ targetUserId: userToDelete.id })
+            });
+            
+            const data = await response.json();
+            
+            if (!response.ok) {
+                throw new Error(data.error || 'Failed to delete user');
+            }
+
+>>>>>>> Stashed changes
             toast({ title: 'User Removed', description: `${userToDelete.fullName} has been deleted.` });
             setUserToDelete(null);
 <<<<<<< HEAD

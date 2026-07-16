@@ -7,10 +7,19 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 =======
 "use client";
 
+<<<<<<< Updated upstream
 import { useEffect, useState, useRef } from 'react';
 import * as React from 'react';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
+<<<<<<< HEAD
 >>>>>>> 8c2f2c7ee9c25fe21fb0f2e265f70b5d1d4e553a
+=======
+=======
+import { useState, useEffect } from 'react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+>>>>>>> Stashed changes
+>>>>>>> e362553 (refactor: migrate settings dialog to shadcn/ui components and add new configuration UI modules)
 import { UserProfile } from '@/lib/types';
 import { TeamPane } from './TeamPane';
 import { SystemPane } from './SystemPane';
@@ -56,6 +65,11 @@ interface NavItem {
 }
 
 export function SettingsDialog({ open, onOpenChange, userProfile }: SettingsDialogProps) {
+<<<<<<< Updated upstream
+=======
+  const [searchTerm, setSearchTerm] = useState('');
+  const [inputValue, setInputValue] = useState('');
+>>>>>>> Stashed changes
   const permissions = usePermissions(userProfile);
   const { isSuperAdmin } = useSuperAdmin();
   const isMobile = useMediaQuery('(max-width: 768px)');
@@ -80,6 +94,17 @@ export function SettingsDialog({ open, onOpenChange, userProfile }: SettingsDial
     return () => { document.body.style.overflow = ''; };
   }, [open]);
 >>>>>>> 8c2f2c7ee9c25fe21fb0f2e265f70b5d1d4e553a
+
+  // Debounce search term to improve performance
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setSearchTerm(inputValue);
+    }, 300); // 300ms delay
+
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [inputValue]);
 
   if (!userProfile) return null;
 
@@ -236,6 +261,7 @@ export function SettingsDialog({ open, onOpenChange, userProfile }: SettingsDial
   // Use a raw Portal+Overlay+Content so we fully control the layout with NO
   // wrapper divs fighting our flex/scroll structure.
   return (
+<<<<<<< Updated upstream
     <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
       <DialogPrimitive.Portal>
         {/* Dim overlay */}
@@ -264,6 +290,32 @@ export function SettingsDialog({ open, onOpenChange, userProfile }: SettingsDial
               isMobile
                 ? "right-4 top-5 p-2 bg-secondary text-muted-foreground"
                 : "left-2 top-1/2 -translate-y-1/2 -translate-x-1/2 p-3 bg-primary text-primary-foreground border-4 border-background h-14 w-14 flex items-center justify-center"
+=======
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent position="left" className="flex flex-col p-0 overflow-hidden bg-background h-full max-h-full">
+        <DialogHeader className="p-4 md:p-8 pb-4 flex-shrink-0">
+          <div className="flex items-center gap-4">
+              <div className="p-3 rounded-2xl bg-primary/10 text-primary">
+                  <Cog className="h-6 w-6" />
+              </div>
+              <div>
+                  <DialogTitle className="text-2xl font-black font-headline tracking-tighter uppercase">Management Console</DialogTitle>
+                  <DialogDescription className="text-[10px] font-black uppercase tracking-widest opacity-60">Organizational Root & Infrastructure Control</DialogDescription>
+              </div>
+          </div>
+          <div className="relative mt-4">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search settings..."
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              className="pl-10 pr-10 w-full bg-secondary/20 border-transparent focus-visible:ring-primary"
+            />
+            {inputValue && (
+              <Button variant="ghost" size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7" onClick={() => setInputValue('')}>
+                <X className="h-4 w-4" />
+              </Button>
+>>>>>>> Stashed changes
             )}
           >
             {isMobile ? <X className="h-5 w-5" /> : <ChevronLeft className="h-6 w-6" />}
