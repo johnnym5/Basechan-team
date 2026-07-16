@@ -92,7 +92,8 @@ interface FeedbackViewerProps {
 export function FeedbackViewer({ open, onOpenChange }: FeedbackViewerProps) {
     const firestore = useFirestore();
 
-    const allFeedbackQuery = useMemoFirebase(() => firestore ? query(collection(firestore, 'feedback'), orderBy('createdAt', 'desc')) : null, [firestore]);
+    // Only query when the dialog is actually open — this component is only accessible to super admins
+    const allFeedbackQuery = useMemoFirebase(() => (firestore && open) ? query(collection(firestore, 'feedback'), orderBy('createdAt', 'desc')) : null, [firestore, open]);
     const { data: allFeedback, isLoading } = useCollection<Feedback>(allFeedbackQuery);
 
     const handleMarkAsRead = (feedbackId: string) => {

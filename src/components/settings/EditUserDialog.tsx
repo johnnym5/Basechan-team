@@ -184,7 +184,7 @@ export function EditUserDialog({ open, onOpenChange, userToEdit }: EditUserDialo
           <DialogDescription className="text-[10px] font-black uppercase tracking-widest opacity-60">Identity Ref: {userToEdit.id}</DialogDescription>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 bg-background/20">
+        <div className="flex-1 overflow-y-auto bg-background/20">
             <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="p-8 pt-0 space-y-8">
                     <div className="space-y-6">
@@ -262,7 +262,7 @@ export function EditUserDialog({ open, onOpenChange, userToEdit }: EditUserDialo
                         </div>
                     </div>
 
-                    <div className="pt-8">
+                    <div className="pt-8 pb-8">
                         <Button type="submit" className="w-full h-14 rounded-2xl font-black uppercase tracking-[0.2em] shadow-xl shadow-primary/20 interactive-element" disabled={isLoading}>
                             {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
                             Save Changes
@@ -270,7 +270,7 @@ export function EditUserDialog({ open, onOpenChange, userToEdit }: EditUserDialo
                     </div>
                 </form>
             </Form>
-        </ScrollArea>
+        </div>
       </DialogContent>
     </Dialog>
   );

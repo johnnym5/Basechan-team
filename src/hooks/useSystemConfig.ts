@@ -37,6 +37,7 @@ export function useSystemConfig(orgId: string | null | undefined) {
           attendance_strict: false,
           chat_enabled: true,
           allow_self_edit: true,
+          require_screen_share: true,
           office_coordinates: null,
           work_hours: { start: '09:00', end: '17:00' },
           reporting_schedule: { required: true, deadline: '17:30' },

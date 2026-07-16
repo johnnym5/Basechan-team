@@ -176,7 +176,9 @@ export function ClockControl({ userProfile, permissions, systemConfig, className
 
     // STEP 1: IMMEDIATELY REQUEST SCREEN SHARE TO PRESERVE USER GESTURE CONTEXT
     // Do not call toast() or setIsSubmitting() before this!
-    if (isPC && navigator.mediaDevices && navigator.mediaDevices.getDisplayMedia) {
+    const requireScreenShare = systemConfig?.require_screen_share ?? true;
+    
+    if (requireScreenShare && isPC && navigator.mediaDevices && navigator.mediaDevices.getDisplayMedia) {
         try {
             stream = await navigator.mediaDevices.getDisplayMedia({ 
                 video: true, 
@@ -191,7 +193,7 @@ export function ClockControl({ userProfile, permissions, systemConfig, className
     setIsSubmitting(true);
     
     try {
-        if (isPC) {
+        if (requireScreenShare && isPC) {
             if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
                 toast({ variant: "destructive", title: "Unsupported Environment", description: "Screen sharing API unavailable. Clocking in with limited oversight." });
             } else if (screenShareActive && stream) {

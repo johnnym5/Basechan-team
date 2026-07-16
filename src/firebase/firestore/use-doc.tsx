@@ -69,8 +69,8 @@ export function useDoc<T = any>(
                 })
                 setError(contextualError);
                 errorEmitter.emit('permission-error', contextualError);
-            } else if (error.message?.includes('ca9') || error.message?.includes('b815')) {
-                console.warn("[SYSTEM] Suppressed SDK assertion during update:", error.message);
+            } else if (String(error?.message || error).toLowerCase().includes('ca9') || String(error?.message || error).toLowerCase().includes('b815')) {
+                console.warn("[SYSTEM] Suppressed SDK assertion during update:", error?.message || error);
             } else {
                 setError(error);
                 errorEmitter.emit('firestore-error', error);

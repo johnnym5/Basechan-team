@@ -222,8 +222,8 @@ export function SettingsDialog({ open, onOpenChange, userProfile }: SettingsDial
               <div className="p-4 rounded-full bg-destructive/10">
                 <ShieldAlert className="w-10 h-10 text-destructive" />
               </div>
-              <h2 className="text-2xl font-black font-headline tracking-tighter">Access Denied</h2>
-              <p className="text-xs text-muted-foreground font-bold uppercase tracking-widest opacity-60">You do not have permission to access organization settings.</p>
+              <DialogPrimitive.Title className="text-2xl font-black font-headline tracking-tighter">Access Denied</DialogPrimitive.Title>
+              <DialogPrimitive.Description className="text-xs text-muted-foreground font-bold uppercase tracking-widest opacity-60">You do not have permission to access organization settings.</DialogPrimitive.Description>
               <Button onClick={() => onOpenChange(false)} className="w-full mt-4">Close</Button>
             </div>
           </DialogPrimitive.Content>
@@ -284,12 +284,12 @@ export function SettingsDialog({ open, onOpenChange, userProfile }: SettingsDial
                   <Cog className="h-6 w-6" />
                 </div>
                 <div>
-                  <h2 className="text-2xl md:text-3xl font-black font-headline tracking-tighter uppercase leading-none">
+                  <DialogPrimitive.Title className="text-2xl md:text-3xl font-black font-headline tracking-tighter uppercase leading-none">
                     Management Console
-                  </h2>
-                  <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground opacity-60 mt-0.5">
+                  </DialogPrimitive.Title>
+                  <DialogPrimitive.Description className="text-[10px] font-black uppercase tracking-widest text-muted-foreground opacity-60 mt-0.5">
                     Organizational Root &amp; Infrastructure Control
-                  </p>
+                  </DialogPrimitive.Description>
                 </div>
               </div>
             </div>

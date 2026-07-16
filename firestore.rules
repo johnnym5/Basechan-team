@@ -114,9 +114,19 @@ service cloud.firestore {
     }
 
     match /external_displays/{displayId} {
-      allow read: if isRequestingUserInOrg(resource.data.orgId) || isSuperAdmin();
-      allow create: if (getUserRole() in ['ORG_ADMIN', 'MANAGING_DIRECTOR'] || isSuperAdmin()) && isCreatingInOwnOrg();
-      allow update, delete: if (getUserRole() in ['ORG_ADMIN', 'MANAGING_DIRECTOR'] || isSuperAdmin()) && isRequestingUserInOrg(resource.data.orgId);
+      allow read: if isRequestingUserInOrg(resource.data.orgId) && 
+                 (!('displayMode' in resource.data) || resource.data.displayMode == 'GLOBAL' || resource.data.createdBy == request.auth.uid || isSuperAdmin());
+      allow create: if isCreatingInOwnOrg() && (
+        (request.resource.data.displayMode == 'GLOBAL' && (getUserRole() in ['ORG_ADMIN', 'MANAGING_DIRECTOR'] || isSuperAdmin())) ||
+        (request.resource.data.displayMode == 'PRIVATE' && request.resource.data.createdBy == request.auth.uid) ||
+        // Fallback for older code without displayMode
+        (!('displayMode' in request.resource.data) && (getUserRole() in ['ORG_ADMIN', 'MANAGING_DIRECTOR'] || isSuperAdmin()))
+      );
+      allow update, delete: if isRequestingUserInOrg(resource.data.orgId) && (
+        (!('displayMode' in resource.data) && (getUserRole() in ['ORG_ADMIN', 'MANAGING_DIRECTOR'] || isSuperAdmin())) ||
+        (resource.data.displayMode == 'GLOBAL' && (getUserRole() in ['ORG_ADMIN', 'MANAGING_DIRECTOR'] || isSuperAdmin())) ||
+        (resource.data.displayMode == 'PRIVATE' && resource.data.createdBy == request.auth.uid)
+      );
     }
 
     match /feedback/{feedbackId} {
@@ -145,9 +155,9 @@ service cloud.firestore {
     }
 
     match /{collection}/{docId} {
-      allow read, delete, update: if (collection in ['departments', 'attendance', 'tasks', 'system_configs', 'announcements', 'workbooks', 'notifications', 'leave_requests', 'daily_reports', 'chats', 'journal_entries', 'pulse_checks', 'activity_points', 'kudos', 'rosters']) 
+      allow read, delete, update: if (collection in ['departments', 'attendance', 'tasks', 'system_configs', 'announcements', 'workbooks', 'notifications', 'leave_requests', 'daily_reports', 'chats', 'journal_entries', 'pulse_checks', 'activity_points', 'kudos', 'rosters', 'library_items']) 
                           && (isRequestingUserInOrg(resource.data.orgId) || isSuperAdmin());
-      allow create: if (collection in ['departments', 'attendance', 'tasks', 'system_configs', 'announcements', 'workbooks', 'notifications', 'leave_requests', 'daily_reports', 'chats', 'journal_entries', 'pulse_checks', 'activity_points', 'kudos', 'rosters']) 
+      allow create: if (collection in ['departments', 'attendance', 'tasks', 'system_configs', 'announcements', 'workbooks', 'notifications', 'leave_requests', 'daily_reports', 'chats', 'journal_entries', 'pulse_checks', 'activity_points', 'kudos', 'rosters', 'library_items']) 
                     && (isCreatingInOwnOrg() || isSuperAdmin());
     }
   }

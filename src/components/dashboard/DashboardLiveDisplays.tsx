@@ -1,12 +1,15 @@
 'use client';
 
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, where, orderBy, limit } from 'firebase/firestore';
+import { collection, query, where, or } from 'firebase/firestore';
 import type { ExternalDisplay, UserProfile } from '@/lib/types';
-import { MonitorDot, ChevronRight, Globe } from 'lucide-react';
+import { MonitorDot, ChevronRight, Globe, Lock } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { uiEmitter } from '@/lib/ui-emitter';
 import { ORG_ID } from '@/lib/config';
+import { usePermissions } from '@/hooks/usePermissions';
+import { useMemo } from 'react';
+import { Badge } from '@/components/ui/badge';
 
 interface DashboardLiveDisplaysProps {
     userProfile: UserProfile | null;
@@ -15,18 +18,35 @@ interface DashboardLiveDisplaysProps {
 export function DashboardLiveDisplays({ userProfile }: DashboardLiveDisplaysProps) {
     const firestore = useFirestore();
     const orgId = userProfile?.orgId || ORG_ID;
+    const permissions = usePermissions(userProfile);
 
     const displaysQuery = useMemoFirebase(() => {
-        if (!firestore) return null;
-        return query(
-            collection(firestore, 'external_displays'),
-            where('orgId', '==', orgId),
-            orderBy('createdAt', 'desc'),
-            limit(3)
-        );
-    }, [firestore, orgId]);
+        if (!firestore || !userProfile?.orgId) return null;
+        if (permissions.canManageDisplays) {
+            return query(
+                collection(firestore, 'external_displays'),
+                where('orgId', '==', userProfile.orgId)
+            );
+        } else {
+            return query(
+                collection(firestore, 'external_displays'),
+                where('orgId', '==', userProfile.orgId),
+                or(
+                    where('displayMode', '==', 'GLOBAL'),
+                    where('createdBy', '==', userProfile.id)
+                )
+            );
+        }
+    }, [firestore, userProfile?.orgId, userProfile?.id, permissions.canManageDisplays]);
 
-    const { data: displays, isLoading } = useCollection<ExternalDisplay>(displaysQuery);
+    const { data: allDisplays, isLoading } = useCollection<ExternalDisplay>(displaysQuery);
+
+    const displays = useMemo(() => {
+        if (!allDisplays) return [];
+        return [...allDisplays]
+            .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+            .slice(0, 3);
+    }, [allDisplays]);
 
     const handleJumpToDisplay = (displayId: string) => {
         uiEmitter.emit('open-displays-dialog', { displayId });
@@ -49,11 +69,11 @@ export function DashboardLiveDisplays({ userProfile }: DashboardLiveDisplaysProp
             <div className="flex items-center justify-between mb-3">
                 <h3 className="text-xs font-bold font-headline flex items-center gap-2">
                     <Globe className="h-3.5 w-3.5 text-primary" />
-                    Shared Dashboards
+                    Live Displays
                 </h3>
-                {displays && displays.length > 0 && (
+                {allDisplays && allDisplays.length > 0 && (
                     <span className="text-[8px] font-black bg-primary/10 text-primary px-1.5 py-0.5 rounded-full uppercase tracking-tighter">
-                        {displays.length} Links
+                        {allDisplays.length} Links
                     </span>
                 )}
             </div>
@@ -72,11 +92,16 @@ export function DashboardLiveDisplays({ userProfile }: DashboardLiveDisplaysProp
                             className="flex items-center justify-between p-2 rounded-xl border border-white/5 bg-background/30 hover:bg-primary/5 hover:border-primary/20 transition-all cursor-pointer group"
                         >
                             <div className="flex items-center gap-3 min-w-0">
-                                <div className="p-1.5 rounded-lg bg-primary/10 text-primary group-hover:bg-primary/20 transition-colors shrink-0">
+                                <div className="p-1.5 rounded-lg bg-primary/10 text-primary group-hover:bg-primary/20 transition-colors shrink-0 relative">
                                     <MonitorDot className="h-3.5 w-3.5" />
                                 </div>
                                 <div className="min-w-0">
-                                    <p className="font-bold text-[10px] truncate leading-none">{display.title}</p>
+                                    <div className="flex items-center gap-1">
+                                        <p className="font-bold text-[10px] truncate leading-none">{display.title}</p>
+                                        {display.displayMode === 'PRIVATE' && (
+                                            <Lock className="h-2.5 w-2.5 text-muted-foreground ml-1" />
+                                        )}
+                                    </div>
                                     <p className="text-[7px] font-black uppercase tracking-widest text-muted-foreground mt-1 truncate">
                                         From: {new URL(display.url).hostname}
                                     </p>

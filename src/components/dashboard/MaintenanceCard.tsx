@@ -31,12 +31,12 @@ export function MaintenanceCard({ userProfile }: MaintenanceCardProps) {
     const [isLoading, setIsLoading] = useState(true);
 
     const workbooksQuery = useMemoFirebase(() => {
-        if (!firestore) return null;
+        if (!firestore || !userProfile?.orgId) return null;
         return query(
             collection(firestore, 'workbooks'),
-            where('orgId', '==', orgId)
+            where('orgId', '==', userProfile.orgId)
         );
-    }, [firestore, orgId]);
+    }, [firestore, userProfile?.orgId]);
 
     const { data: workbooks } = useCollection<Workbook>(workbooksQuery);
 

@@ -7,6 +7,7 @@ import type { Feedback } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Bell, UserPlus, Shield } from 'lucide-react';
 import { FeedbackViewer } from '@/components/superadmin/FeedbackViewer';
+import { useSuperAdmin } from '@/hooks/useSuperAdmin';
 import { DataManagement } from '@/components/superadmin/DataManagement';
 import { ErrorLogViewer } from '@/components/superadmin/ErrorLogViewer';
 import { InviteUserDialog } from '@/components/settings/InviteUserDialog';
@@ -20,13 +21,16 @@ interface SuperAdminDialogProps {
 
 export function SuperAdminDialog({ open, onOpenChange, modal = false }: SuperAdminDialogProps) {
     const firestore = useFirestore();
+    const { isSuperAdmin } = useSuperAdmin();
     const [showFeedback, setShowFeedback] = useState(false);
     const [isInviteOpen, setIsInviteOpen] = useState(false);
     
+    // Only query feedback if the user is actually a super admin — 
+    // Firestore rules restrict read access to super admins only
     const newFeedbackQuery = useMemoFirebase(() => {
-        if (!firestore) return null;
+        if (!firestore || !isSuperAdmin) return null;
         return query(collection(firestore, 'feedback'), where('status', '==', 'NEW'));
-    }, [firestore]);
+    }, [firestore, isSuperAdmin]);
     const { data: newFeedback } = useCollection<Feedback>(newFeedbackQuery);
 
     return (

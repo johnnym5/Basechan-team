@@ -21,15 +21,15 @@ export function DashboardRecentChats() {
     const orgId = userProfile?.orgId || ORG_ID;
 
     const chatsQuery = useMemoFirebase(() => {
-        if (!firestore || !authUser?.uid || !orgId) return null;
+        if (!firestore || !authUser?.uid || !userProfile?.orgId) return null;
         return query(
             collection(firestore, 'chats'),
-            where('orgId', '==', orgId),
+            where('orgId', '==', userProfile.orgId),
             where('participants', 'array-contains', authUser.uid),
             orderBy('updatedAt', 'desc'),
             limit(4)
         );
-    }, [firestore, authUser?.uid, orgId]);
+    }, [firestore, authUser?.uid, userProfile?.orgId]);
 
     const { data: chats, isLoading } = useCollection<Chat>(chatsQuery);
 

@@ -27,6 +27,7 @@ const formSchema = z.object({
   chat_enabled: z.boolean(),
   attendance_strict: z.boolean(),
   allow_self_edit: z.boolean(),
+  require_screen_share: z.boolean(),
   reporting_required: z.boolean(),
   reporting_deadline: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, "Invalid time format (HH:mm)"),
   office_lat: z.coerce.number().optional().nullable(),
@@ -58,6 +59,7 @@ export function SystemPane({ currentUserProfile }: SystemPaneProps) {
       chat_enabled: true,
       attendance_strict: false,
       allow_self_edit: true,
+      require_screen_share: true,
       reporting_required: true,
       reporting_deadline: "17:30",
     }
@@ -73,6 +75,7 @@ export function SystemPane({ currentUserProfile }: SystemPaneProps) {
             chat_enabled: config.chat_enabled ?? true,
             attendance_strict: config.attendance_strict ?? false,
             allow_self_edit: config.allow_self_edit ?? true,
+            require_screen_share: config.require_screen_share ?? true,
             reporting_required: config.reporting_schedule?.required ?? true,
             reporting_deadline: config.reporting_schedule?.deadline ?? "17:30",
             office_lat: config.office_coordinates?.lat,
@@ -112,6 +115,7 @@ export function SystemPane({ currentUserProfile }: SystemPaneProps) {
         chat_enabled: values.chat_enabled,
         attendance_strict: values.attendance_strict,
         allow_self_edit: values.allow_self_edit,
+        require_screen_share: values.require_screen_share,
         currency_symbol: values.currency_symbol || '$',
         branding_color: values.branding_color || null,
         accent_color: values.accent_color || null,
@@ -260,6 +264,12 @@ export function SystemPane({ currentUserProfile }: SystemPaneProps) {
                 <FormField control={form.control} name="attendance_strict" render={({ field }) => (
                     <FormItem className="flex flex-row items-center justify-between rounded-2xl border p-4 shadow-sm bg-secondary/10 border-white/5">
                         <div className="space-y-0.5"><FormLabel className="text-sm font-bold">Geofence Enforcement</FormLabel><FormDescription className="text-[10px] uppercase font-medium">Verify physical location on clock-in.</FormDescription></div>
+                        <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                    </FormItem>
+                )}/>
+                <FormField control={form.control} name="require_screen_share" render={({ field }) => (
+                    <FormItem className="flex flex-row items-center justify-between rounded-2xl border p-4 shadow-sm bg-secondary/10 border-white/5">
+                        <div className="space-y-0.5"><FormLabel className="text-sm font-bold">Require Screen Share</FormLabel><FormDescription className="text-[10px] uppercase font-medium">Require screen capture when clocking in on PC.</FormDescription></div>
                         <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
                     </FormItem>
                 )}/>

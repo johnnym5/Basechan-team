@@ -20,26 +20,27 @@ export function DashboardTaskList({ userProfile, permissions }: DashboardTaskLis
     const orgId = userProfile?.orgId || ORG_ID;
 
     const tasksQuery = useMemoFirebase(() => {
-        if (!firestore) return null;
+        if (!firestore || !userProfile) return null;
         
         const tasksRef = collection(firestore, 'tasks');
         
-        if (permissions.canAccessAllTasks || isSuperAdmin || !userProfile) {
+        if (permissions.canAccessAllTasks || isSuperAdmin) {
             return query(
                 tasksRef,
-                where('orgId', '==', orgId),
+                where('orgId', '==', userProfile.orgId),
                 orderBy('createdAt', 'desc'),
                 limit(20)
             );
         } else {
             return query(
                 tasksRef,
+                where('orgId', '==', userProfile.orgId),
                 where('assignedTo', '==', userProfile.id),
                 orderBy('createdAt', 'desc'),
                 limit(20)
             );
         }
-    }, [firestore, userProfile, permissions.canAccessAllTasks, isSuperAdmin, orgId]);
+    }, [firestore, userProfile, permissions.canAccessAllTasks, isSuperAdmin]);
 
     const { data: allTasks, isLoading } = useCollection<Task>(tasksQuery);
     

@@ -20,6 +20,7 @@ export interface SystemConfig {
   attendance_strict: boolean;
   chat_enabled: boolean;
   allow_self_edit: boolean;
+  require_screen_share?: boolean;
   office_coordinates?: {
     lat: number;
     lng: number;
@@ -442,4 +443,15 @@ export interface ErrorLog {
   stackTrace?: string;
   componentStack?: string;
   path?: string;
+}
+
+export interface ExternalDisplay {
+    id: string;
+    orgId: string;
+    title: string;
+    description?: string;
+    url: string;
+    displayMode: 'GLOBAL' | 'PRIVATE';
+    createdBy: string;
+    createdAt: string;
 }

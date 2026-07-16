@@ -33,9 +33,9 @@ export function logErrorToFirestore(
     addDocumentNonBlocking(collection(firestore, 'error_logs'), errorLog);
   } catch (loggingError) {
     // Prevent recursive error loops by only logging to console if the telemetry itself fails
-    console.error("--- TELEMETRY FAILURE ---");
-    console.error("Original Error:", error);
-    console.error("Logging Error:", loggingError);
-    console.error("-------------------------");
+    console.warn("--- TELEMETRY FAILURE ---");
+    console.warn("Original Error:", error);
+    console.warn("Logging Error:", loggingError);
+    console.warn("-------------------------");
   }
 }

@@ -23,14 +23,14 @@ export function DashboardRecentReports() {
     const orgId = userProfile?.orgId || ORG_ID;
 
     const reportsQuery = useMemoFirebase(() => {
-        if (!firestore) return null;
+        if (!firestore || !userProfile?.orgId) return null;
         return query(
             collection(firestore, 'daily_reports'),
-            where('orgId', '==', orgId),
+            where('orgId', '==', userProfile.orgId),
             orderBy('createdAt', 'desc'),
             limit(4)
         );
-    }, [firestore, orgId]);
+    }, [firestore, userProfile?.orgId]);
 
     const { data: reports, isLoading } = useCollection<DailyReport>(reportsQuery);
 

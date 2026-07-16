@@ -46,8 +46,8 @@ export function DebriefModal({ userProfile }: { userProfile: UserProfile }) {
 
     // DATA QUERIES
     const chatsQuery = useMemoFirebase(() => 
-        firestore ? query(collection(firestore, 'chats'), where('participants', 'array-contains', userProfile.id)) : null
-    , [firestore, userProfile.id]);
+        (firestore && userProfile.orgId) ? query(collection(firestore, 'chats'), where('orgId', '==', userProfile.orgId), where('participants', 'array-contains', userProfile.id)) : null
+    , [firestore, userProfile.id, userProfile.orgId]);
     const { data: chats } = useCollection<Chat>(chatsQuery);
 
     const unreadCount = useMemo(() => {
@@ -59,8 +59,8 @@ export function DebriefModal({ userProfile }: { userProfile: UserProfile }) {
     }, [chats, userProfile.id]);
 
     const tasksQuery = useMemoFirebase(() => 
-        firestore ? query(collection(firestore, 'tasks'), where('assignedTo', '==', userProfile.id), where('status', 'in', ['QUEUED', 'ACTIVE'])) : null
-    , [firestore, userProfile.id]);
+        firestore ? query(collection(firestore, 'tasks'), where('orgId', '==', userProfile.orgId), where('assignedTo', '==', userProfile.id), where('status', 'in', ['QUEUED', 'ACTIVE'])) : null
+    , [firestore, userProfile.id, userProfile.orgId]);
     const { data: tasks } = useCollection<Task>(tasksQuery);
 
     const taskIntel = useMemo(() => {

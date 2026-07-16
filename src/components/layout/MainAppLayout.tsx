@@ -75,14 +75,15 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
 
   // ATTENDANCE-STREAM SYNCHRONIZATION
   const attendanceQuery = useMemoFirebase(() => {
-    if (!user?.uid || !firestore || !today) return null;
+    if (!user?.uid || !firestore || !today || !userProfile?.orgId) return null;
     return query(
         collection(firestore, 'attendance'), 
+        where('orgId', '==', userProfile.orgId),
         where('userId', '==', user.uid), 
         where('date', '==', today), 
         limit(1)
     );
-  }, [user?.uid, firestore, today]);
+  }, [user?.uid, firestore, today, userProfile?.orgId]);
   const { data: attendanceData } = useCollection<Attendance>(attendanceQuery);
   const attendanceRecord = attendanceData?.[0] || null;
 

@@ -19,3 +19,12 @@ runConfig:
   minInstances: 0
   # The maximum number of instances to scale up to.
   maxInstances: 10
+
+# Environment variables for Google Drive integration
+env:
+  - variable: GOOGLE_CLIENT_EMAIL
+    secret: google-drive-client-email
+  - variable: GOOGLE_PRIVATE_KEY
+    secret: google-drive-private-key
+  - variable: GOOGLE_DRIVE_FOLDER_ID
+    secret: google-drive-folder-id

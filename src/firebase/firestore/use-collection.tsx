@@ -90,9 +90,9 @@ export function useCollection<T = any>(
 
                 setError(contextualError);
                 errorEmitter.emit('permission-error', contextualError);
-            } else if (error.message?.includes('ca9') || error.message?.includes('b815')) {
+            } else if (String(error?.message || error).toLowerCase().includes('ca9') || String(error?.message || error).toLowerCase().includes('b815')) {
                 // Silently handle internal assertion failures to prevent UI crash
-                console.warn("[SYSTEM] Suppressed SDK assertion during update:", error.message);
+                console.warn("[SYSTEM] Suppressed SDK assertion during update:", error?.message || error);
             } else {
                 setError(error);
                 errorEmitter.emit('firestore-error', error);
