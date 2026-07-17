@@ -231,13 +231,13 @@ export function usePermissions(userProfile: UserProfile | null): Permissions {
     perms.canCreateWorkbook = workbooksMode === 'staff' || !isStaffUser;
 
     perms.canAccessLibrary = libraryMode !== 'hidden' || !isStaffUser;
-    perms.canManageLibrary = (libraryMode === 'staff' || !isStaffUser) && (effectiveRole !== 'STAFF' || !!rolePerms.canManageLibrary || isSuperAdmin);
+    perms.canManageLibrary = (libraryMode === 'staff' || !isStaffUser) && (effectiveRole !== 'STAFF' || !!rolePerms.canManageLibrary || !!isSuperAdmin);
 
     perms.canAccessLeave = leaveMode !== 'hidden' || !isStaffUser;
     perms.canRequestLeave = leaveMode === 'staff' || !isStaffUser;
 
     perms.canAccessDisplays = displaysMode !== 'hidden' || !isStaffUser;
-    perms.canManageDisplays = (displaysMode === 'staff' || !isStaffUser) && (effectiveRole !== 'STAFF' || !!rolePerms.canManageDisplays || isSuperAdmin);
+    perms.canManageDisplays = (displaysMode === 'staff' || !isStaffUser) && (effectiveRole !== 'STAFF' || !!rolePerms.canManageDisplays || !!isSuperAdmin);
 
     perms.canAccessReports = reportsMode !== 'hidden' || !isStaffUser;
     perms.canSubmitReport = reportsMode === 'staff' || !isStaffUser;

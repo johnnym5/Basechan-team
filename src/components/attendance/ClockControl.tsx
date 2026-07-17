@@ -260,9 +260,20 @@ export function ClockControl({ userProfile, permissions, systemConfig, className
                         </Button>
                     </div>
                 ) : (
-                    <Button className="w-full h-16 md:h-20 bg-primary hover:bg-primary/90 text-primary-foreground rounded-2xl text-lg md:text-xl font-black uppercase shadow-xl shadow-primary/20 interactive-element" onClick={handleClockIn} disabled={isSubmitting}>
-                        {isSubmitting ? <Loader2 className="animate-spin" /> : <><MonitorPlay className="mr-2 h-5 w-5" /> Start Working</>}
-                    </Button>
+                    <div className="w-full space-y-2">
+                        <Button 
+                            className="w-full h-16 md:h-20 bg-primary hover:bg-primary/90 text-primary-foreground rounded-2xl text-lg md:text-xl font-black uppercase shadow-xl shadow-primary/20 interactive-element" 
+                            onClick={handleClockIn} 
+                            disabled={isSubmitting || !permissions?.canClockIn}
+                        >
+                            {isSubmitting ? <Loader2 className="animate-spin" /> : <><MonitorPlay className="mr-2 h-5 w-5" /> Start Working</>}
+                        </Button>
+                        {!permissions?.canClockIn && (
+                            <p className="text-center text-[10px] text-rose-500 font-bold uppercase tracking-wider bg-rose-500/10 p-2 rounded-xl border border-rose-500/20">
+                                Attendance clock-in is restricted by administrator.
+                            </p>
+                        )}
+                    </div>
                 )}
             </div>
 

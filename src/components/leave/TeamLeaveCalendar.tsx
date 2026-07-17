@@ -5,7 +5,7 @@ import { collection, query, where } from "firebase/firestore";
 import { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Calendar } from '@/components/ui/calendar';
-import { type DayContentProps } from 'react-day-picker';
+import { type DayButtonProps, DayButton } from 'react-day-picker';
 import { eachDayOfInterval, format, isSameDay } from 'date-fns';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Badge } from "../ui/badge";
@@ -60,26 +60,37 @@ export function TeamLeaveCalendar({ userProfile }: TeamLeaveCalendarProps) {
   const occupiedDays = useMemo(() => Object.keys(leavesByDay).map(dayStr => new Date(dayStr)), [leavesByDay]);
   const holidayDates = useMemo(() => PUBLIC_HOLIDAYS.map(h => new Date(h.date)), []);
 
-  function DayContent(props: DayContentProps) {
-    const dayString = format(props.date, 'yyyy-MM-dd');
+  function CustomDayButton(props: DayButtonProps) {
+    const { day, ...rest } = props;
+    const date = day.date;
+    const dayString = format(date, 'yyyy-MM-dd');
     const leaves = leavesByDay[dayString];
-    const holiday = getHolidayOnDate(props.date);
+    const holiday = getHolidayOnDate(date);
 
-    if (!leaves && !holiday) return <div className="w-full h-full flex items-center justify-center">{props.date.getDate()}</div>;
+    if (!leaves && !holiday) {
+      return (
+        <DayButton {...rest} day={day}>
+          {date.getDate()}
+        </DayButton>
+      );
+    }
 
     return (
       <Popover>
         <PopoverTrigger asChild>
-          <button className={cn(
-            "w-full h-full flex items-center justify-center rounded-lg transition-all interactive-element",
-            holiday ? "bg-amber-500/20 text-amber-600 font-bold" : "bg-destructive/10 text-destructive font-bold"
-          )}>
-            {props.date.getDate()}
+          <button 
+            type="button"
+            className={cn(
+              "rdp-day_button rdp-button w-full h-full flex items-center justify-center rounded-lg transition-all interactive-element",
+              holiday ? "bg-amber-500/20 text-amber-600 font-bold" : "bg-destructive/10 text-destructive font-bold"
+            )}
+          >
+            {date.getDate()}
           </button>
         </PopoverTrigger>
         <PopoverContent className="w-64 p-3 apple-glass border-none z-50 animate-pop-in" side="bottom" align="center">
           <div className="space-y-3">
-            <p className="font-bold text-sm tracking-tight">{format(props.date, 'PPPP')}</p>
+            <p className="font-bold text-sm tracking-tight">{format(date, 'PPPP')}</p>
             {holiday && (
                <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20">
                   <p className="text-[10px] font-bold text-amber-600 uppercase tracking-widest mb-1">Public Holiday</p>
@@ -134,7 +145,7 @@ export function TeamLeaveCalendar({ userProfile }: TeamLeaveCalendarProps) {
             occupied: 'border-destructive/30 text-destructive bg-destructive/5',
             holiday: 'border-amber-500/30 text-amber-600 bg-amber-500/5'
           }}
-          components={{ DayContent }}
+          components={{ DayButton: CustomDayButton }}
         />
       </CardContent>
     </Card>
