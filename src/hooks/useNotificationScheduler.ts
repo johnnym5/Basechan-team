@@ -41,24 +41,18 @@ export function useNotificationScheduler(
                 }
             }
 
-            // Check Shift End & Sign-out Escalation
-            if (systemConfig.work_hours?.end && attendance && !attendance.clockOut) {
-                const endTime = parse(systemConfig.work_hours.end, 'HH:mm', now);
+            // Check Shift End & Sign-out Warning (at 17:00 / 5:00 PM)
+            const closeTimeStr = systemConfig.work_hours?.end || '17:00';
+            if (attendance && !attendance.clockOut) {
+                const endTime = parse(closeTimeStr, 'HH:mm', now);
                 
                 if (isAfter(now, endTime)) {
-                    const minutesOver = differenceInMinutes(now, endTime);
-                    const thresholds = [0, 10, 15, 17, 19];
-                    const currentThreshold = thresholds[escalationStep] || 20;
-
-                    if (minutesOver >= currentThreshold) {
-                        triggerReminder(
-                            'End of Day Clearance',
-                            `Operational hours have concluded. Please submit your daily report and sign out.`,
-                            `shift-end-${escalationStep}`,
-                            [{ action: 'login', title: 'Sign Out Now' }]
-                        );
-                        setEscalationLevel(prev => Math.min(prev + 1, thresholds.length - 1));
-                    }
+                    triggerReminder(
+                        'End of Shift Clearance',
+                        `Closing time reached. Please clock out. Auto-clockout will occur at 18:30.`,
+                        'shift-end',
+                        [{ action: 'login', title: 'Sign Out Now' }]
+                    );
                 }
             }
         }, 30000);

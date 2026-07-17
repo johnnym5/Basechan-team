@@ -7,6 +7,7 @@ import type { UserProfile, Attendance, AttendanceLocation, SystemConfig, Attenda
 import { differenceInSeconds, parse, isAfter, isBefore } from 'date-fns';
 import { reportService } from './report-service';
 import { uiEmitter } from '@/lib/ui-emitter';
+import { auditService } from './audit-service';
 
 /**
  * Service to manage personnel shift lifecycle and automated reporting triggers.
@@ -83,6 +84,7 @@ export const attendanceService = {
       orgId: user.orgId,
       date: today,
       clockIn: nowIso,
+      clockOut: null,
       status: 'PENDING',
       location,
       remarks,
@@ -183,5 +185,123 @@ export const attendanceService = {
     updateDocumentNonBlocking(userRef, { status: 'OFFLINE', lastSeen: now.toISOString() });
     
     uiEmitter.emit('open-pulse-check' as any);
+  },
+
+  /**
+   * Forces an active work session to end.
+   */
+  async forceClockOut(db: Firestore, recordId: string, adminUser: UserProfile) {
+    const recordRef = doc(db, 'attendance', recordId);
+    const recordSnap = await getDoc(recordRef);
+    if (!recordSnap.exists()) throw new Error("Record not found");
+    const record = recordSnap.data() as Attendance;
+    const now = new Date();
+    const nowIso = now.toISOString();
+
+    const clockInTime = new Date(record.clockIn);
+    const totalDurationSec = differenceInSeconds(now, clockInTime);
+    let duration = Math.max(0, totalDurationSec - (record.totalBreak || 0) - (record.idleTime || 0));
+
+    const remarks = Array.from(new Set([...(record.remarks || []), 'FORCED_CLOCKOUT_BY_ADMIN' as AttendanceRemark]));
+    const finalUpdate: any = {
+      clockOut: nowIso,
+      status: 'APPROVED',
+      onBreak: false,
+      remarks,
+      duration
+    };
+
+    if (record.onBreak && record.breaks?.length) {
+      const lastBreak = record.breaks[record.breaks.length - 1];
+      if (!lastBreak.end) {
+        const breakSeconds = differenceInSeconds(now, new Date(lastBreak.start));
+        const updatedBreaks = [...record.breaks];
+        updatedBreaks[updatedBreaks.length - 1].end = nowIso;
+        finalUpdate.breaks = updatedBreaks;
+        finalUpdate.totalBreak = increment(breakSeconds);
+        finalUpdate.duration = Math.max(0, duration - breakSeconds);
+      }
+    }
+
+    try {
+      await reportService.generateAutomatedEODReport(db, { id: record.userId, fullName: record.userName, orgId: record.orgId } as any, { ...record, ...finalUpdate });
+    } catch (e) {
+      console.error("Automated EOD Report failure during force clockout:", e);
+    }
+
+    await updateDoc(recordRef, finalUpdate);
+    
+    const userRef = doc(db, 'users', record.userId);
+    await updateDoc(userRef, { status: 'OFFLINE', lastSeen: nowIso });
+
+    await auditService.logAction(
+      db,
+      adminUser,
+      'ATTENDANCE_FORCE_CLOCKOUT',
+      `Forced clock out for ${record.userName} (Record ID: ${recordId})`,
+      { id: recordId, type: 'ATTENDANCE' }
+    );
+  },
+
+  /**
+   * System-wide cron task to sweep and auto-close all open shifts.
+   */
+  async autoClockOutSystem(db: Firestore) {
+    const q = query(
+      collection(db, 'attendance'),
+      where('clockOut', '==', null)
+    );
+    const snap = await getDocs(q);
+    const now = new Date();
+
+    for (const docSnap of snap.docs) {
+      const record = docSnap.data() as Attendance;
+      const recordRef = doc(db, 'attendance', docSnap.id);
+
+      const clockInDate = new Date(record.clockIn);
+      let clockOutDate = new Date(clockInDate);
+      clockOutDate.setHours(17, 0, 0, 0);
+
+      // If clock-in happened after 17:00, use current time
+      if (clockOutDate <= clockInDate) {
+        clockOutDate = now;
+      }
+
+      const clockOutIso = clockOutDate.toISOString();
+      const totalDurationSec = differenceInSeconds(clockOutDate, clockInDate);
+      let duration = Math.max(0, totalDurationSec - (record.totalBreak || 0) - (record.idleTime || 0));
+
+      const remarks = Array.from(new Set([...(record.remarks || []), 'AUTO_CLOCKED_OUT' as AttendanceRemark]));
+      const finalUpdate: any = {
+        clockOut: clockOutIso,
+        status: 'APPROVED',
+        onBreak: false,
+        remarks,
+        duration
+      };
+
+      if (record.onBreak && record.breaks?.length) {
+        const lastBreak = record.breaks[record.breaks.length - 1];
+        if (!lastBreak.end) {
+          const breakSeconds = differenceInSeconds(clockOutDate, new Date(lastBreak.start));
+          const updatedBreaks = [...record.breaks];
+          updatedBreaks[updatedBreaks.length - 1].end = clockOutIso;
+          finalUpdate.breaks = updatedBreaks;
+          finalUpdate.totalBreak = increment(breakSeconds);
+          finalUpdate.duration = Math.max(0, duration - breakSeconds);
+        }
+      }
+
+      try {
+        await reportService.generateAutomatedEODReport(db, { id: record.userId, fullName: record.userName, orgId: record.orgId } as any, { ...record, ...finalUpdate });
+      } catch (e) {
+        console.error("Automated EOD Report failure during auto clockout:", e);
+      }
+
+      await updateDoc(recordRef, finalUpdate);
+
+      const userRef = doc(db, 'users', record.userId);
+      await updateDoc(userRef, { status: 'OFFLINE', lastSeen: clockOutIso });
+    }
   }
 };
