@@ -2,34 +2,6 @@
 import { ClockControl } from "@/components/attendance/ClockControl";
 import { StatusFeed } from "@/components/attendance/StatusFeed";
 import { AttendanceHistory } from "@/components/attendance/AttendanceHistory";
-{
-  "compilerOptions": {
-    "target": "ES2017",
-      "lib": ["dom", "dom.iterable", "esnext"],
-        "allowJs": true,
-          "skipLibCheck": true,
-            "strict": true,
-              "forceConsistentCasingInFileNames": true,
-                "noEmit": true,
-                  "esModuleInterop": true,
-                    "module": "esnext",
-                      "moduleResolution": "bundler",
-                        "resolveJsonModule": true,
-                          "isolatedModules": true,
-                            "jsx": "preserve",
-                              "incremental": true,
-                                "plugins": [
-                                  {
-                                    "name": "next"
-                                  }
-                                ],
-                                  "paths": {
-      "@/*": ["./src/*"]
-    }
-  },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
-    "exclude": ["node_modules"]
-}
 import { useUser, useDoc, useMemoFirebase, useFirestore, useCollection } from "@/firebase";
 import { doc, collection, query, where } from "firebase/firestore";
 import type { UserProfile, Attendance } from "@/lib/types";
