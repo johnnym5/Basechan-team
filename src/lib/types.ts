@@ -93,6 +93,17 @@ export interface UserProfile {
     canManageDisplays?: boolean;
     canManageAccounting?: boolean;
     canAccessLibrary?: boolean;
+    modules?: {
+      finance?: 'default' | 'hidden' | 'admin' | 'staff';
+      chat?: 'default' | 'hidden' | 'admin' | 'staff';
+      attendance?: 'default' | 'hidden' | 'admin' | 'staff';
+      tasks?: 'default' | 'hidden' | 'admin' | 'staff';
+      workbooks?: 'default' | 'hidden' | 'admin' | 'staff';
+      library?: 'default' | 'hidden' | 'admin' | 'staff';
+      leave?: 'default' | 'hidden' | 'admin' | 'staff';
+      live_displays?: 'default' | 'hidden' | 'admin' | 'staff';
+      reports?: 'default' | 'hidden' | 'admin' | 'staff';
+    };
   };
 }
 

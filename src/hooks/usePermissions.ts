@@ -202,16 +202,24 @@ export function usePermissions(userProfile: UserProfile | null): Permissions {
         ...rolePerms,
     };
 
-    // 3. Module level gating by SystemConfig
-    const financeMode = systemConfig?.modules?.finance ?? (systemConfig?.finance_access === false ? 'hidden' : 'staff');
-    const chatMode = systemConfig?.modules?.chat ?? (systemConfig?.chat_enabled === false ? 'hidden' : 'staff');
-    const attendanceMode = systemConfig?.modules?.attendance ?? 'staff';
-    const tasksMode = systemConfig?.modules?.tasks ?? 'staff';
-    const workbooksMode = systemConfig?.modules?.workbooks ?? 'staff';
-    const libraryMode = systemConfig?.modules?.library ?? 'staff';
-    const leaveMode = systemConfig?.modules?.leave ?? 'staff';
-    const displaysMode = systemConfig?.modules?.live_displays ?? 'staff';
-    const reportsMode = systemConfig?.modules?.reports ?? 'staff';
+    const getModuleMode = (key: 'finance' | 'chat' | 'attendance' | 'tasks' | 'workbooks' | 'library' | 'leave' | 'live_displays' | 'reports', systemVal: string) => {
+      const userOverride = customPerms?.modules?.[key];
+      if (userOverride && userOverride !== 'default') {
+        return userOverride;
+      }
+      return systemVal;
+    };
+
+    // 3. Module level gating by SystemConfig (with user-specific overrides)
+    const financeMode = getModuleMode('finance', systemConfig?.modules?.finance ?? (systemConfig?.finance_access === false ? 'hidden' : 'staff'));
+    const chatMode = getModuleMode('chat', systemConfig?.modules?.chat ?? (systemConfig?.chat_enabled === false ? 'hidden' : 'staff'));
+    const attendanceMode = getModuleMode('attendance', systemConfig?.modules?.attendance ?? 'staff');
+    const tasksMode = getModuleMode('tasks', systemConfig?.modules?.tasks ?? 'staff');
+    const workbooksMode = getModuleMode('workbooks', systemConfig?.modules?.workbooks ?? 'staff');
+    const libraryMode = getModuleMode('library', systemConfig?.modules?.library ?? 'staff');
+    const leaveMode = getModuleMode('leave', systemConfig?.modules?.leave ?? 'staff');
+    const displaysMode = getModuleMode('live_displays', systemConfig?.modules?.live_displays ?? 'staff');
+    const reportsMode = getModuleMode('reports', systemConfig?.modules?.reports ?? 'staff');
     
     const isStaffUser = effectiveRole === 'STAFF';
 

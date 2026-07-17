@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from 'next';
+import { Inter, Space_Grotesk } from 'next/font/google';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import { FirebaseClientProvider } from '@/firebase';
@@ -6,6 +7,19 @@ import { ThemeProvider } from '@/components/ThemeProvider';
 import { ImpersonationProvider } from '@/context/ImpersonationProvider';
 import { MainAppLayout } from '@/components/layout/MainAppLayout';
 import { Suspense } from 'react';
+import { CloseToDashboardButton } from '@/components/layout/CloseToDashboardButton';
+
+const inter = Inter({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-inter',
+});
+
+const spaceGrotesk = Space_Grotesk({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-space-grotesk',
+});
 
 export const metadata: Metadata = {
   title: 'Basechan Team',
@@ -31,11 +45,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" className={`${inter.variable} ${spaceGrotesk.variable}`} suppressHydrationWarning>
       <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
         <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet" />
       </head>
       <body className="font-body antialiased" suppressHydrationWarning>
@@ -53,6 +64,7 @@ export default function RootLayout({
                 </MainAppLayout>
               </Suspense>
               <Toaster />
+              <CloseToDashboardButton />
             </ImpersonationProvider>
           </FirebaseClientProvider>
         </ThemeProvider>
