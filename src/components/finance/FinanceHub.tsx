@@ -45,7 +45,7 @@ export function FinanceHub({ initialPayload }: FinanceHubProps) {
     return (
         <div className="h-full flex flex-col overflow-hidden bg-background">
             {/* Mission Header */}
-            <div className="p-8 pb-4 flex items-center justify-between flex-shrink-0">
+            <div className="p-8 pb-4 flex items-center justify-between flex-shrink-0 pr-16 md:pr-32">
                 <div>
                     <h1 className="text-3xl font-black font-headline tracking-tighter uppercase">Finance Command</h1>
                     <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground opacity-60">Integrated Fiscal Operations & Ledger Control</p>

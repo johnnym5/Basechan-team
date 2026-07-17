@@ -26,10 +26,9 @@ export const attendanceService = {
     // 1. PROACTIVE DUPLICATE SCAN
     const q = query(
         collection(db, 'attendance'),
+        where('orgId', '==', user.orgId),
         where('userId', '==', user.id),
-        where('date', '==', today),
-        orderBy('clockIn', 'desc'),
-        limit(1)
+        where('date', '==', today)
     );
     
     const snap = await getDocs(q);
@@ -46,7 +45,12 @@ export const attendanceService = {
     }
 
     if (!snap.empty) {
-        const existingDoc = snap.docs[0];
+        const sortedDocs = snap.docs.sort((a, b) => {
+             const tA = new Date(a.data().clockIn || 0).getTime();
+             const tB = new Date(b.data().clockIn || 0).getTime();
+             return tB - tA;
+        });
+        const existingDoc = sortedDocs[0];
         const data = existingDoc.data() as Attendance;
         const activeRef = doc(db, 'attendance', existingDoc.id);
 

@@ -66,7 +66,7 @@ export function TasksPageContent({ initialPayload, currentUserProfile, permissio
       <div className="flex-1 flex flex-col min-h-0 overflow-y-auto [scrollbar-gutter:stable] custom-scrollbar bg-background">
           <div className="max-w-[1600px] mx-auto w-full min-h-full border-x border-white/5 bg-background/30 p-4 md:p-8 space-y-6">
               <div className="flex flex-col gap-6">
-                <div className="flex items-start justify-between gap-4 flex-wrap">
+                <div className="flex items-start justify-between gap-4 flex-wrap pr-16 md:pr-32">
                   <div>
                     <h1 className="text-3xl font-black font-headline tracking-tighter">Task Manager</h1>
                     <p className="text-muted-foreground uppercase tracking-widest text-[10px] font-bold">

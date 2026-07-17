@@ -30,5 +30,5 @@ export const mainNavItems = [
   { dialog: "reports", icon: BarChart, label: "Reports", permission: 'canAccessReports' },
   { isSeparator: true },
   { dialog: "chat", icon: MessageSquare, label: "Chat", permission: "canAccessChat"},
-  { dialog: "settings", icon: Settings, label: "Management Console", permission: "canViewTeam"},
+  { dialog: "settings", icon: Settings, label: "Admin Console", permission: "canManageCompany"},
 ];

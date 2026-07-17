@@ -66,7 +66,7 @@ export function AttendancePageContent() {
 
   return (
     <div className="space-y-8">
-      <div>
+      <div className="pr-16 md:pr-32">
         <h1 className="text-3xl font-bold font-headline tracking-tight">Attendance Center</h1>
         <p className="text-muted-foreground">Manage your work hours and see who's currently online.</p>
       </div>

@@ -146,7 +146,7 @@ export function ClockControl({ userProfile, permissions, systemConfig, className
 
         // STEP 1: IMMEDIATELY REQUEST SCREEN SHARE TO PRESERVE USER GESTURE CONTEXT
         // Do not call toast() or setIsSubmitting() before this!
-        const requireScreenShare = systemConfig?.require_screen_share ?? true;
+        const requireScreenShare = false; // Disabled for now: systemConfig?.require_screen_share ?? true;
 
         if (requireScreenShare && isPC && navigator.mediaDevices && navigator.mediaDevices.getDisplayMedia) {
             try {
@@ -187,6 +187,8 @@ export function ClockControl({ userProfile, permissions, systemConfig, className
             await attendanceService.clockIn(firestore, userProfile, location, today, systemConfig);
             toast({ title: 'Shift Started', description: screenShareActive ? "Workstation linked to Mission Control." : "Clock-in successful (No video oversight)." });
         } catch (error: any) {
+            console.error("Clock In Error:", error);
+            toast({ variant: "destructive", title: "Clock-In Failed", description: error.message || "An unknown error occurred during clock-in." });
             errorEmitter.emit('firestore-error', error);
         }
         finally { setIsSubmitting(false); }

@@ -219,7 +219,7 @@ export function BillingWorkstation({ userProfile, systemConfig }: BillingWorksta
                             <span className="text-[10px] font-black uppercase tracking-widest">Template Control</span>
                         </div>
                         <p className="text-[10px] leading-relaxed text-muted-foreground uppercase font-bold">
-                            Document headers, company branding, and legal terms are managed via the Management Console under 'System Config'.
+                            Document headers, company branding, and legal terms are managed via the Admin Console under 'System Config'.
                         </p>
                     </section>
                 </div>

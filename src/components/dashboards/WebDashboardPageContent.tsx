@@ -198,7 +198,7 @@ export function WebDashboardPageContent({ initialPayload }: { initialPayload?: {
 
     return (
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-700">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pr-16 md:pr-32">
                 <div>
                     <h1 className="text-3xl font-bold font-headline tracking-tight flex items-center gap-3">
                         <Globe className="h-8 w-8 text-primary" />

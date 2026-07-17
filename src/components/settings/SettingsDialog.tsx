@@ -80,7 +80,7 @@ export function SettingsDialog({ open, onOpenChange, userProfile, modal }: Setti
 
   const navItems: NavItem[] = [
     { id: 'team', label: 'Team', icon: <Users className="h-4 w-4" /> },
-    ...(permissions.canManageCompany ? [{ id: 'system' as TabId, label: 'Config', icon: <Zap className="h-4 w-4" /> }] : []),
+    ...(permissions.canManageCompany ? [{ id: 'system' as TabId, label: 'System', icon: <Zap className="h-4 w-4" /> }] : []),
     { id: 'maintenance', label: 'Radar', icon: <Hammer className="h-4 w-4" /> },
     ...(permissions.canViewAudit ? [{ id: 'audit' as TabId, label: 'Audit', icon: <Lock className="h-4 w-4" /> }] : []),
     ...(isSuperAdmin ? [{ id: 'superadmin' as TabId, label: 'Root', icon: <Shield className="h-4 w-4" /> }] : []),
@@ -118,7 +118,7 @@ export function SettingsDialog({ open, onOpenChange, userProfile, modal }: Setti
     );
   }
 
-  // ─── Full Management Console ─────────────────────────────────────────────────
+  // ─── Full Admin Console ─────────────────────────────────────────────────
   // Use a raw Portal+Overlay+Content so we fully control the layout with NO
   // wrapper divs fighting our flex/scroll structure.
   return (
@@ -171,7 +171,7 @@ export function SettingsDialog({ open, onOpenChange, userProfile, modal }: Setti
                 </div>
                 <div>
                   <DialogPrimitive.Title className="text-2xl md:text-3xl font-black font-headline tracking-tighter uppercase leading-none">
-                    Management Console
+                    Admin Console
                   </DialogPrimitive.Title>
                   <DialogPrimitive.Description className="text-xs font-black uppercase tracking-widest text-muted-foreground opacity-60 mt-0.5">
                     Organizational Root &amp; Infrastructure Control

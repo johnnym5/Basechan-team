@@ -69,7 +69,7 @@ export function LeavePageContent() {
   return (
     <>
     <div className="space-y-6">
-       <div className="flex items-center justify-between">
+       <div className="flex items-center justify-between pr-16 md:pr-32">
          <div>
           <h1 className="text-3xl font-bold font-headline tracking-tight">Leave Management</h1>
           <p className="text-muted-foreground">

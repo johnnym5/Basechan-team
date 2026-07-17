@@ -3,7 +3,7 @@
 import * as React from "react"
 import * as DialogPrimitive from "@radix-ui/react-dialog"
 import { cva, type VariantProps } from "class-variance-authority"
-import { X, ChevronLeft } from "lucide-react"
+import { X, ChevronLeft, ArrowLeft } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 import { useMediaQuery } from "@/hooks/use-media-query"
@@ -83,6 +83,13 @@ const DialogContent = React.forwardRef<
                 {children}
             </div>
             
+            {isLeftPanel && (
+              <DialogPrimitive.Close className="absolute right-6 top-6 md:right-8 md:top-8 p-3 rounded-full bg-background/60 hover:bg-white/10 border border-white/5 hover:border-white/15 text-muted-foreground hover:text-white transition-all hover:scale-110 active:scale-95 focus:outline-none z-[60] flex items-center justify-center group shadow-xl backdrop-blur-md">
+                <ArrowLeft className="h-5 w-5 transition-transform group-hover:-translate-x-1" />
+                <span className="sr-only">Return to Dashboard</span>
+              </DialogPrimitive.Close>
+            )}
+
             <DialogPrimitive.Close className={cn(
                 "absolute rounded-full transition-all hover:scale-110 active:scale-95 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none shadow-2xl z-[60]",
                 isLeftPanel 
