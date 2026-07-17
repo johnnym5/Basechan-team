@@ -1,7 +1,7 @@
 'use client';
 
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, where, or } from 'firebase/firestore';
+import { collection, query, where, or, and } from 'firebase/firestore';
 import type { ExternalDisplay, UserProfile } from '@/lib/types';
 import { MonitorDot, ChevronRight, Globe, Lock } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -30,10 +30,12 @@ export function DashboardLiveDisplays({ userProfile }: DashboardLiveDisplaysProp
         } else {
             return query(
                 collection(firestore, 'external_displays'),
-                where('orgId', '==', userProfile.orgId),
-                or(
-                    where('displayMode', '==', 'GLOBAL'),
-                    where('createdBy', '==', userProfile.id)
+                and(
+                    where('orgId', '==', userProfile.orgId),
+                    or(
+                        where('displayMode', '==', 'GLOBAL'),
+                        where('createdBy', '==', userProfile.id)
+                    )
                 )
             );
         }

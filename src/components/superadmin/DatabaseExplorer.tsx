@@ -2,16 +2,17 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useFirestore } from '@/firebase';
-import { collection, getDocs, doc, getDoc, writeBatch, setDoc, query } from 'firebase/firestore';
+import { collection, getDocs, doc, getDoc, writeBatch, setDoc, query, deleteDoc, deleteField } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
-import { Database, FileJson, FileText, ChevronRight, Loader2, Save, Trash2, PlusCircle, ChevronLeft } from 'lucide-react';
+import { Database, FileJson, FileText, ChevronRight, Loader2, Save, Trash2, PlusCircle, ChevronLeft, Copy, Unlock, Lock, Edit2, RefreshCw } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { Switch } from '../ui/switch';
@@ -61,6 +62,14 @@ export function DatabaseExplorer() {
     const [newDocId, setNewDocId] = useState('');
     const [mobileView, setMobileView] = useState<'collections' | 'documents' | 'editor'>('collections');
 
+    // Advanced DB Manager states
+    const [deletedFields, setDeletedFields] = useState<string[]>([]);
+    const [unlockSystemFields, setUnlockSystemFields] = useState(false);
+    const [newFieldName, setNewFieldName] = useState('');
+    const [newFieldType, setNewFieldType] = useState('string');
+    const [cloneDocId, setCloneDocId] = useState('');
+    const [deleteOriginalAfterClone, setDeleteOriginalAfterClone] = useState(false);
+
     useEffect(() => {
         const sortedCollections = Object.keys(collectionSchemaMap)
             .map(id => ({ id, name: collectionSchemaMap[id].title }))
@@ -103,6 +112,7 @@ export function DatabaseExplorer() {
         setViewedDocument(null);
         setEditedDocument(null);
         setJsonStringValues({});
+        setDeletedFields([]);
         try {
             const docRef = doc(firestore, selectedCollection, docId);
             const docSnap = await getDoc(docRef);
@@ -130,11 +140,18 @@ export function DatabaseExplorer() {
         setIsSaving(true);
         try {
             const dataToWrite = { ...viewedDocument, ...editedDocument };
+            
+            // Mark deleted fields to be deleted in Firestore
+            deletedFields.forEach(field => {
+                dataToWrite[field] = deleteField();
+            });
+
             const { id, ...payload } = dataToWrite;
             const docRef = doc(firestore, selectedCollection, id);
             await setDoc(docRef, payload, { merge: true });
             
             toast({ title: 'Success', description: `Document ${id} has been saved.` });
+            setDeletedFields([]);
             
             await fetchDocuments(selectedCollection);
             // After saving, re-select the document to see the fresh data
@@ -143,6 +160,107 @@ export function DatabaseExplorer() {
         } catch (e: any) {
             console.error("Save error:", e);
             toast({ variant: 'destructive', title: 'Save Failed', description: e.message });
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    const handleDeleteField = (key: string) => {
+        setDeletedFields(prev => [...prev, key]);
+        toast({ title: 'Field Marked for Deletion', description: `Field "${key}" will be deleted when you Apply Mutation.` });
+    };
+
+    const handleRenameField = (oldKey: string, newKey: string) => {
+        if (!editedDocument) return;
+        if (editedDocument[newKey] !== undefined && !deletedFields.includes(newKey)) {
+            toast({ variant: 'destructive', title: 'Rename Failed', description: 'Target field name already exists.' });
+            return;
+        }
+
+        const value = editedDocument[oldKey];
+        setEditedDocument((prev: any) => {
+            const { [oldKey]: _, ...rest } = prev;
+            return { ...rest, [newKey]: value };
+        });
+
+        // Mark the old field name for deletion in Firestore
+        setDeletedFields(prev => [...prev, oldKey]);
+        // Remove the new field name from deleted fields list if it was deleted previously
+        setDeletedFields(prev => prev.filter(f => f !== newKey));
+
+        toast({ title: 'Field Renamed', description: `"${oldKey}" renamed to "${newKey}". Apply Mutation to persist.` });
+    };
+
+    const handleAddField = () => {
+        if (!newFieldName.trim() || !editedDocument) return;
+        const key = newFieldName.trim();
+        
+        if (editedDocument[key] !== undefined && !deletedFields.includes(key)) {
+            toast({ variant: 'destructive', title: 'Creation Failed', description: 'Field already exists.' });
+            return;
+        }
+
+        let initialValue: any = "";
+        switch (newFieldType) {
+            case 'number': initialValue = 0; break;
+            case 'boolean': initialValue = false; break;
+            case 'array': initialValue = []; break;
+            case 'object': initialValue = {}; break;
+            default: initialValue = "";
+        }
+
+        setEditedDocument((prev: any) => ({
+            ...prev,
+            [key]: initialValue
+        }));
+
+        // Remove from deleted fields list if it was previously marked for deletion
+        setDeletedFields(prev => prev.filter(f => f !== key));
+
+        setNewFieldName('');
+        setNewFieldType('string');
+        toast({ title: 'Field Added', description: `"${key}" added to document state. Apply Mutation to persist.` });
+    };
+
+    const handleCloneDocument = async () => {
+        if (!viewedDocument || !selectedCollection || !firestore || !cloneDocId.trim()) return;
+        const targetId = cloneDocId.trim();
+        const sourceId = viewedDocument.id;
+        
+        setIsSaving(true);
+        try {
+            const targetRef = doc(firestore, selectedCollection, targetId);
+            const targetSnap = await getDoc(targetRef);
+            if (targetSnap.exists()) {
+                toast({ variant: 'destructive', title: 'Clone Failed', description: 'Target Document ID already exists.' });
+                return;
+            }
+
+            // Copy all fields except the structural 'id' helper
+            const dataToCopy = { ...viewedDocument };
+            delete dataToCopy.id;
+
+            await setDoc(targetRef, dataToCopy);
+
+            if (deleteOriginalAfterClone) {
+                const sourceRef = doc(firestore, selectedCollection, sourceId);
+                await deleteDoc(sourceRef);
+                toast({ title: 'Rename Complete', description: `Document ${sourceId} has been renamed to ${targetId}.` });
+            } else {
+                toast({ title: 'Clone Complete', description: `Document ${sourceId} has been cloned to ${targetId}.` });
+            }
+
+            setCloneDocId('');
+            setDeleteOriginalAfterClone(false);
+            
+            // Refresh and select the new node
+            await fetchDocuments(selectedCollection);
+            await handleSelectDocument(targetId);
+            setMobileView('editor');
+
+        } catch (e: any) {
+            console.error("Clone error:", e);
+            toast({ variant: 'destructive', title: 'Clone Failed', description: e.message });
         } finally {
             setIsSaving(false);
         }
@@ -239,80 +357,167 @@ export function DatabaseExplorer() {
     };
 
 
-    const renderField = (key: string, value: any) => {
+    const renderFieldInput = (key: string, value: any) => {
         const schema = viewedSchema?.properties?.[key];
-        const isLocked = IMMUTABLE_FIELDS.includes(key);
+        const isLocked = IMMUTABLE_FIELDS.includes(key) && !unlockSystemFields;
+        const isDeleted = deletedFields.includes(key);
 
         if (typeof value === 'object' && value !== null) {
             return (
-                <div key={key} className="grid grid-cols-3 items-start gap-2">
-                    <Label htmlFor={key} className="text-right pt-2 truncate">{key}</Label>
-                    <Textarea 
-                        id={key}
-                        value={jsonStringValues[key] ?? JSON.stringify(value, null, 2)}
-                        disabled={isLocked}
-                        onChange={(e) => {
-                            setJsonStringValues(prev => ({...prev, [key]: e.target.value}));
-                            try {
-                                const parsed = JSON.parse(e.target.value);
-                                handleFieldChange(key, parsed);
-                            } catch (err) {
-                               // Invalid JSON, do nothing to main state, user can continue typing
-                            }
-                        }}
-                        className="col-span-2 font-mono text-xs bg-input"
-                        rows={Object.keys(value).length > 5 ? 10 : 5}
-                    />
-                </div>
+                <Textarea 
+                    id={key}
+                    value={jsonStringValues[key] ?? JSON.stringify(value, null, 2)}
+                    disabled={isLocked || isDeleted}
+                    onChange={(e) => {
+                        setJsonStringValues(prev => ({...prev, [key]: e.target.value}));
+                        try {
+                            const parsed = JSON.parse(e.target.value);
+                            handleFieldChange(key, parsed);
+                        } catch (err) {
+                           // Invalid JSON, user is typing
+                        }
+                    }}
+                    className="font-mono text-xs bg-background/30 border-white/5"
+                    rows={Object.keys(value).length > 5 ? 8 : 4}
+                />
             )
         }
         
-        if (schema?.type === 'boolean') {
+        if (schema?.type === 'boolean' || typeof value === 'boolean') {
             return (
-                <div key={key} className="grid grid-cols-3 items-center gap-2">
-                     <Label htmlFor={key} className="text-right">{key}</Label>
-                     <div className="col-span-2 flex items-center">
-                        <Switch 
-                            id={key}
-                            checked={!!value}
-                            onCheckedChange={(checked) => handleFieldChange(key, checked)}
-                            disabled={isLocked}
-                        />
-                     </div>
+                <div className="flex items-center">
+                    <Switch 
+                        id={key}
+                        checked={!!value}
+                        onCheckedChange={(checked) => handleFieldChange(key, checked)}
+                        disabled={isLocked || isDeleted}
+                    />
                 </div>
             )
         }
         
         if (schema?.enum) {
              return (
-                <div key={key} className="grid grid-cols-3 items-center gap-2">
-                     <Label htmlFor={key} className="text-right">{key}</Label>
-                     <Select value={value} onValueChange={(val) => handleFieldChange(key, val)} disabled={isLocked}>
-                         <SelectTrigger className="col-span-2">
-                             <SelectValue />
-                         </SelectTrigger>
-                         <SelectContent>
-                            {schema.enum.map((option: string) => <SelectItem key={option} value={option}>{option}</SelectItem>)}
-                         </SelectContent>
-                     </Select>
-                </div>
+                <Select value={value} onValueChange={(val) => handleFieldChange(key, val)} disabled={isLocked || isDeleted}>
+                    <SelectTrigger className="w-full bg-background/30 border-white/5 h-10">
+                        <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="apple-glass border-none">
+                       {schema.enum.map((option: string) => <SelectItem key={option} value={option}>{option}</SelectItem>)}
+                    </SelectContent>
+                </Select>
              )
         }
 
         return (
-            <div key={key} className="grid grid-cols-3 items-center gap-2">
-                <Label htmlFor={key} className="text-right truncate">{key}</Label>
-                <Input 
-                    id={key}
-                    type={schema?.type === 'number' ? 'number' : 'text'}
-                    value={value ?? ''}
-                    onChange={(e) => handleFieldChange(key, schema?.type === 'number' ? parseFloat(e.target.value) || 0 : e.target.value)}
-                    disabled={isLocked}
-                    className="col-span-2"
-                />
+            <Input 
+                id={key}
+                type={schema?.type === 'number' || typeof value === 'number' ? 'number' : 'text'}
+                value={value ?? ''}
+                onChange={(e) => handleFieldChange(key, schema?.type === 'number' || typeof value === 'number' ? parseFloat(e.target.value) || 0 : e.target.value)}
+                disabled={isLocked || isDeleted}
+                className="bg-background/30 border-white/5 h-10 text-xs"
+            />
+        );
+    };
+
+    const renderFieldRow = (key: string, value: any) => {
+        const schema = viewedSchema?.properties?.[key];
+        const isLocked = IMMUTABLE_FIELDS.includes(key) && !unlockSystemFields;
+        const isDeleted = deletedFields.includes(key);
+
+        const fieldType = schema?.type || (typeof value === 'object' && value !== null ? (Array.isArray(value) ? 'array' : 'object') : typeof value);
+
+        return (
+            <div 
+                key={key} 
+                className={cn(
+                    "flex flex-col gap-1.5 p-3 rounded-xl border transition-all",
+                    isDeleted 
+                        ? "bg-rose-950/10 border-rose-500/20 opacity-60 line-through decoration-rose-500/50" 
+                        : "bg-white/[0.01] border-white/5 hover:bg-white/[0.03]"
+                )}
+            >
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                        <span className="text-xs font-black text-primary font-mono">{key}</span>
+                        {fieldType && (
+                            <span className="text-[8px] bg-white/10 px-1.5 py-0.5 rounded-full text-muted-foreground uppercase tracking-wider font-bold">
+                                {fieldType}
+                            </span>
+                        )}
+                        {isLocked && (
+                            <span className="text-[8px] bg-amber-500/10 text-amber-400 px-1.5 py-0.5 rounded-full uppercase tracking-wider font-bold">
+                                System
+                            </span>
+                        )}
+                    </div>
+                    
+                    <div className="flex items-center gap-1.5">
+                        {isDeleted ? (
+                            <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="h-6 w-6 rounded-md hover:bg-emerald-500/20 hover:text-emerald-500 text-emerald-400"
+                                onClick={() => setDeletedFields(prev => prev.filter(f => f !== key))}
+                                title="Undo Deletion"
+                            >
+                                <RefreshCw className="h-3 w-3" />
+                            </Button>
+                        ) : (
+                            <>
+                                {!isLocked && (
+                                    <Popover>
+                                        <PopoverTrigger asChild>
+                                            <Button variant="ghost" size="icon" className="h-6 w-6 rounded-md hover:bg-white/10 text-muted-foreground hover:text-foreground">
+                                                <Edit2 className="h-3 w-3" />
+                                            </Button>
+                                        </PopoverTrigger>
+                                        <PopoverContent className="w-64 p-3 apple-glass border-none space-y-3 shadow-2xl">
+                                            <div className="space-y-1">
+                                                <Label className="text-[9px] font-black uppercase tracking-widest text-primary">Rename Field Key</Label>
+                                                <p className="text-[9px] text-muted-foreground">Changes the attribute identifier name</p>
+                                            </div>
+                                            <div className="flex gap-2">
+                                                <Input 
+                                                    placeholder="New name..." 
+                                                    defaultValue={key}
+                                                    id={`rename-input-${key}`}
+                                                    className="h-8 text-xs bg-background/50 border-white/5"
+                                                />
+                                                <Button size="sm" className="h-8 rounded-lg text-xs" onClick={() => {
+                                                    const input = document.getElementById(`rename-input-${key}`) as HTMLInputElement;
+                                                    if (input && input.value.trim() && input.value.trim() !== key) {
+                                                        handleRenameField(key, input.value.trim());
+                                                    }
+                                                }}>
+                                                    Rename
+                                                </Button>
+                                            </div>
+                                        </PopoverContent>
+                                    </Popover>
+                                )}
+                                
+                                <Button 
+                                    variant="ghost" 
+                                    size="icon" 
+                                    className="h-6 w-6 rounded-md hover:bg-rose-500/20 hover:text-rose-500 text-muted-foreground disabled:opacity-30"
+                                    onClick={() => handleDeleteField(key)}
+                                    disabled={isLocked}
+                                    title="Delete Field"
+                                >
+                                    <Trash2 className="h-3 w-3" />
+                                </Button>
+                            </>
+                        )}
+                    </div>
+                </div>
+                <div className="mt-1">
+                    {renderFieldInput(key, value)}
+                </div>
             </div>
         );
-    }
+    };
 
     return (
         <div className="grid grid-cols-1 md:grid-cols-3 border rounded-2xl h-[650px] overflow-hidden bg-background/50 shadow-inner">
@@ -459,11 +664,24 @@ export function DatabaseExplorer() {
             </div>
 
             <div className={cn("flex flex-col bg-background/30", mobileView !== 'editor' && "hidden md:flex")}>
-                 <div className="p-4 border-b font-bold text-xs uppercase tracking-widest flex items-center gap-2 bg-background/80">
-                    <Button variant="ghost" size="icon" className="md:hidden -ml-2 h-7 w-7" onClick={() => setMobileView('documents')}>
-                        <ChevronLeft className="h-4 w-4" />
-                    </Button>
-                    <FileJson className="h-4 w-4 text-primary" /> Data Editor
+                 <div className="p-4 border-b font-bold text-xs uppercase tracking-widest flex items-center justify-between bg-background/80">
+                    <div className="flex items-center gap-2">
+                        <Button variant="ghost" size="icon" className="md:hidden -ml-2 h-7 w-7" onClick={() => setMobileView('documents')}>
+                            <ChevronLeft className="h-4 w-4" />
+                        </Button>
+                        <FileJson className="h-4 w-4 text-primary" /> Data Editor
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <Label htmlFor="unlock-system" className="text-[10px] text-muted-foreground flex items-center gap-1 cursor-pointer">
+                            {unlockSystemFields ? <Unlock className="h-3 w-3 text-amber-500" /> : <Lock className="h-3 w-3" />}
+                            Force Unlock
+                        </Label>
+                        <Switch 
+                            id="unlock-system" 
+                            checked={unlockSystemFields} 
+                            onCheckedChange={setUnlockSystemFields}
+                        />
+                    </div>
                 </div>
                 <ScrollArea className="flex-1">
                     <div className="p-4">
@@ -473,8 +691,8 @@ export function DatabaseExplorer() {
                                 <p className="text-[10px] font-black uppercase tracking-widest">Retrieving Telemetry...</p>
                              </div>
                         ) : editedDocument && !editedDocument.error ? (
-                            <div className="space-y-4">
-                                 {Object.keys(editedDocument).map(key => renderField(key, editedDocument[key]))}
+                            <div className="space-y-3">
+                                 {Object.keys(editedDocument).map(key => renderFieldRow(key, editedDocument[key]))}
                             </div>
                         ) : (
                              <div className="flex flex-col items-center justify-center h-96 gap-4 opacity-30 p-12 text-center">
@@ -487,7 +705,95 @@ export function DatabaseExplorer() {
                     </div>
                     <ScrollBar />
                 </ScrollArea>
-                <div className="p-4 border-t bg-background/80 flex-shrink-0">
+                <div className="p-4 border-t bg-background/80 flex flex-col gap-3 flex-shrink-0">
+                    {editedDocument && !editedDocument.error && (
+                        <div className="flex gap-2">
+                            {/* Add Custom Field Popover */}
+                            <Popover>
+                                <PopoverTrigger asChild>
+                                    <Button variant="outline" size="sm" className="flex-1 h-9 rounded-xl font-bold uppercase text-[10px] tracking-widest border-white/5 bg-white/[0.02]">
+                                        <PlusCircle className="mr-2 h-3.5 w-3.5 text-primary" /> Add Attribute
+                                    </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-72 p-4 apple-glass border-none space-y-4 shadow-2xl">
+                                    <div className="space-y-1">
+                                        <Label className="text-[10px] font-black uppercase tracking-widest text-primary">New Custom Attribute</Label>
+                                        <p className="text-[10px] text-muted-foreground">Define a new typed key-value entry</p>
+                                    </div>
+                                    <div className="space-y-3">
+                                        <div className="space-y-1">
+                                            <Label htmlFor="new-field-name" className="text-[9px] uppercase font-black text-muted-foreground">Identifier Name</Label>
+                                            <Input 
+                                                id="new-field-name"
+                                                placeholder="e.g. trackingNumber" 
+                                                value={newFieldName}
+                                                onChange={(e) => setNewFieldName(e.target.value)}
+                                                className="h-9 text-xs bg-background/50 border-white/5 rounded-lg"
+                                            />
+                                        </div>
+                                        <div className="space-y-1">
+                                            <Label htmlFor="new-field-type" className="text-[9px] uppercase font-black text-muted-foreground">Value Type</Label>
+                                            <Select value={newFieldType} onValueChange={setNewFieldType}>
+                                                <SelectTrigger id="new-field-type" className="h-9 text-xs bg-background/50 border-white/5 rounded-lg">
+                                                    <SelectValue />
+                                                </SelectTrigger>
+                                                <SelectContent className="apple-glass border-none">
+                                                    <SelectItem value="string">String</SelectItem>
+                                                    <SelectItem value="number">Number</SelectItem>
+                                                    <SelectItem value="boolean">Boolean</SelectItem>
+                                                    <SelectItem value="array">Array (Blank)</SelectItem>
+                                                    <SelectItem value="object">Object (Blank)</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                        <Button className="w-full h-9 rounded-lg text-xs font-bold" onClick={handleAddField} disabled={!newFieldName.trim()}>
+                                            Create Attribute
+                                        </Button>
+                                    </div>
+                                </PopoverContent>
+                            </Popover>
+
+                            {/* Clone / Rename Popover */}
+                            <Popover>
+                                <PopoverTrigger asChild>
+                                    <Button variant="outline" size="sm" className="flex-1 h-9 rounded-xl font-bold uppercase text-[10px] tracking-widest border-white/5 bg-white/[0.02]">
+                                        <Copy className="mr-2 h-3.5 w-3.5 text-primary" /> Duplicate Node
+                                    </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-72 p-4 apple-glass border-none space-y-4 shadow-2xl">
+                                    <div className="space-y-1">
+                                        <Label className="text-[10px] font-black uppercase tracking-widest text-primary">Duplicate / Rename Document</Label>
+                                        <p className="text-[10px] text-muted-foreground">Creates a copy of this document with a new ID</p>
+                                    </div>
+                                    <div className="space-y-3">
+                                        <div className="space-y-1">
+                                            <Label htmlFor="clone-doc-id" className="text-[9px] uppercase font-black text-muted-foreground">New Target Document ID</Label>
+                                            <Input 
+                                                id="clone-doc-id"
+                                                placeholder="e.g. custom_doc_id" 
+                                                value={cloneDocId}
+                                                onChange={(e) => setCloneDocId(e.target.value)}
+                                                className="h-9 text-xs bg-background/50 border-white/5 rounded-lg"
+                                            />
+                                        </div>
+                                        <div className="flex items-center space-x-2">
+                                            <Checkbox 
+                                                id="delete-original-clone" 
+                                                checked={deleteOriginalAfterClone}
+                                                onCheckedChange={(checked) => setDeleteOriginalAfterClone(!!checked)}
+                                            />
+                                            <Label htmlFor="delete-original-clone" className="text-[10px] text-muted-foreground font-medium cursor-pointer">
+                                                Purge original node (Rename operation)
+                                            </Label>
+                                        </div>
+                                        <Button className="w-full h-9 rounded-lg text-xs font-bold" onClick={handleCloneDocument} disabled={!cloneDocId.trim() || isSaving}>
+                                            {isSaving ? <Loader2 className="animate-spin h-3.5 w-3.5 mr-2" /> : "Deploy Copy"}
+                                        </Button>
+                                    </div>
+                                </PopoverContent>
+                            </Popover>
+                        </div>
+                    )}
                     <Button className="w-full h-11 rounded-xl font-black uppercase text-[10px] tracking-[0.2em] shadow-lg shadow-primary/20" onClick={handleSave} disabled={isSaving || isLoadingDoc || !editedDocument || !!editedDocument.error}>
                         {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
                         Apply Mutation

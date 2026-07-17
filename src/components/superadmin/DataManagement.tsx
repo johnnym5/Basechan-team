@@ -192,6 +192,40 @@ export function DataManagement() {
         }
     };
 
+    const handlePurgeData = async () => {
+        if (!firestore) return;
+        setLoading('purge');
+        try {
+            const targets = collectionsToProcess.length > 0 ? collectionsToProcess : COLLECTIONS.map(c => c.id);
+            let totalDeleted = 0;
+
+            for (const collId of targets) {
+                if (collId === 'organizations' && targetOrg !== '__ALL__') continue;
+
+                let q = query(collection(firestore, collId));
+                if (targetOrg !== '__ALL__') {
+                    q = query(q, where('orgId', '==', targetOrg));
+                }
+                const snap = await getDocs(q);
+                if (snap.size > 0) {
+                    const batch = writeBatch(firestore);
+                    snap.docs.forEach(d => {
+                        batch.delete(doc(firestore, collId, d.id));
+                    });
+                    await batch.commit();
+                    totalDeleted += snap.size;
+                }
+            }
+
+            toast({ title: 'Purge Complete', description: `Successfully deleted ${totalDeleted} records from scope.` });
+        } catch (e: any) {
+            console.error("Purge error:", e);
+            toast({ variant: 'destructive', title: 'Purge Failed', description: e.message });
+        } finally {
+            setLoading(null);
+        }
+    };
+
     const anyLoading = !!loading || areOrgsLoading;
 
     return (
@@ -307,7 +341,8 @@ export function DataManagement() {
                         <AlertDialog>
                             <AlertDialogTrigger asChild>
                                 <Button variant="destructive" className="h-12 rounded-xl shadow-lg shadow-destructive/20" disabled={anyLoading}>
-                                    <Trash2 className="mr-2 h-4 w-4" /> Purge Scope
+                                    {loading === 'purge' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
+                                    Purge Scope
                                 </Button>
                             </AlertDialogTrigger>
                             <AlertDialogContent className="apple-glass-darker border-none">

@@ -3,7 +3,7 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import { useUser, useDoc, useFirestore, useMemoFirebase, useCollection } from '@/firebase';
-import { collection, query, where, orderBy, doc, deleteDoc, or } from 'firebase/firestore';
+import { collection, query, where, orderBy, doc, deleteDoc, or, and } from 'firebase/firestore';
 import type { UserProfile, ExternalDisplay } from '@/lib/types';
 import { usePermissions } from '@/hooks/usePermissions';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -58,10 +58,12 @@ export function WebDashboardPageContent({ initialPayload }: { initialPayload?: {
         } else {
             return query(
                 collection(firestore, 'external_displays'),
-                where('orgId', '==', userProfile.orgId),
-                or(
-                    where('displayMode', '==', 'GLOBAL'),
-                    where('createdBy', '==', userProfile.id)
+                and(
+                    where('orgId', '==', userProfile.orgId),
+                    or(
+                        where('displayMode', '==', 'GLOBAL'),
+                        where('createdBy', '==', userProfile.id)
+                    )
                 )
             );
         }
