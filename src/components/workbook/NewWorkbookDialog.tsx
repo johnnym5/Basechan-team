@@ -59,47 +59,99 @@ export function NewWorkbookDialog({ open, onOpenChange, userProfile }: NewWorkbo
         setFile(selectedFile);
         form.setValue("title", selectedFile.name.replace(/\.[^/.]+$/, ""));
         
-        const reader = new FileReader();
-        reader.onload = (event) => {
-            try {
-                const workbook = XLSX.read(event.target?.result, { type: 'binary' });
-                const sheets: ParsedSheet[] = [];
-                workbook.SheetNames.forEach(sheetName => {
-                    const ws = workbook.Sheets[sheetName];
-                    const data: Record<string, any>[] = XLSX.utils.sheet_to_json(ws);
-                    
-                    if (data.length === 0) {
-                         sheets.push({ name: sheetName, data: [], headers: [] });
-                         return;
+        const ext = selectedFile.name.split('.').pop()?.toLowerCase();
+        
+        if (ext === 'pdf') {
+            const reader = new FileReader();
+            reader.onload = async (event) => {
+                try {
+                    const pdfjsLib = await import('pdfjs-dist');
+                    pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
+                    const typedarray = new Uint8Array(event.target?.result as ArrayBuffer);
+                    const pdf = await pdfjsLib.getDocument(typedarray).promise;
+                    let fullText = '';
+                    for (let i = 1; i <= pdf.numPages; i++) {
+                        const page = await pdf.getPage(i);
+                        const textContent = await page.getTextContent();
+                        const pageText = textContent.items.map((item: any) => item.str).join(' ');
+                        fullText += pageText + '\n';
                     }
+                    const rows = fullText.split('\n').filter(r => r.trim() !== '').map(text => ({ Content: text }));
+                    setParsedSheets([{ name: 'Document Text', data: rows, headers: ['Content'] }]);
+                } catch(err) {
+                    console.error("Error parsing pdf:", err);
+                    toast({ variant: "destructive", title: "Parse Error", description: "Could not read PDF."});
+                    setFile(null); setParsedSheets(null); form.reset();
+                }
+            };
+            reader.readAsArrayBuffer(selectedFile);
+        } else if (ext === 'doc' || ext === 'docx') {
+            const reader = new FileReader();
+            reader.onload = async (event) => {
+                try {
+                    const mammoth = await import('mammoth');
+                    const arrayBuffer = event.target?.result as ArrayBuffer;
+                    const result = await mammoth.extractRawText({ arrayBuffer });
+                    const rows = result.value.split('\n').filter(r => r.trim() !== '').map(text => ({ Content: text }));
+                    setParsedSheets([{ name: 'Document Text', data: rows, headers: ['Content'] }]);
+                } catch(err) {
+                    console.error("Error parsing docx:", err);
+                    toast({ variant: "destructive", title: "Parse Error", description: "Could not read Word document."});
+                    setFile(null); setParsedSheets(null); form.reset();
+                }
+            };
+            reader.readAsArrayBuffer(selectedFile);
+        } else if (ext === 'txt') {
+             const reader = new FileReader();
+             reader.onload = (event) => {
+                  const text = event.target?.result as string;
+                  const rows = text.split('\n').filter(r => r.trim() !== '').map(t => ({ Content: t }));
+                  setParsedSheets([{ name: 'Document Text', data: rows, headers: ['Content'] }]);
+             };
+             reader.readAsText(selectedFile);
+        } else {
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                try {
+                    const workbook = XLSX.read(event.target?.result, { type: 'binary' });
+                    const sheets: ParsedSheet[] = [];
+                    workbook.SheetNames.forEach(sheetName => {
+                        const ws = workbook.Sheets[sheetName];
+                        const data: Record<string, any>[] = XLSX.utils.sheet_to_json(ws);
+                        
+                        if (data.length === 0) {
+                             sheets.push({ name: sheetName, data: [], headers: [] });
+                             return;
+                        }
 
-                    const headers = Object.keys(data[0]);
+                        const headers = Object.keys(data[0]);
 
-                    // Sanitize the data to ensure no `undefined` values are present, replacing them with `null`.
-                    const sanitizedData = data.map(row => {
-                        const newRow: Record<string, any> = {};
-                        headers.forEach(header => {
-                            newRow[header] = row[header] !== undefined ? row[header] : null;
+                        // Sanitize the data to ensure no `undefined` values are present, replacing them with `null`.
+                        const sanitizedData = data.map(row => {
+                            const newRow: Record<string, any> = {};
+                            headers.forEach(header => {
+                                newRow[header] = row[header] !== undefined ? row[header] : null;
+                            });
+                            return newRow;
                         });
-                        return newRow;
-                    });
 
-                    sheets.push({ name: sheetName, data: sanitizedData, headers });
-                });
-                setParsedSheets(sheets);
-            } catch (err) {
-                console.error("Error parsing file:", err);
-                toast({
-                    variant: "destructive",
-                    title: "File Parse Error",
-                    description: "Could not read the selected file. Please ensure it's a valid Excel or CSV file.",
-                })
-                setFile(null);
-                setParsedSheets(null);
-                form.reset();
-            }
-        };
-        reader.readAsBinaryString(selectedFile);
+                        sheets.push({ name: sheetName, data: sanitizedData, headers });
+                    });
+                    setParsedSheets(sheets);
+                } catch (err) {
+                    console.error("Error parsing file:", err);
+                    toast({
+                        variant: "destructive",
+                        title: "File Parse Error",
+                        description: "Could not read the selected file. Please ensure it's a valid Excel or CSV file.",
+                    })
+                    setFile(null);
+                    setParsedSheets(null);
+                    form.reset();
+                }
+            };
+            reader.readAsBinaryString(selectedFile);
+        }
     }
   };
 
@@ -230,13 +282,12 @@ export function NewWorkbookDialog({ open, onOpenChange, userProfile }: NewWorkbo
                             />
                         </TabsContent>
                         <TabsContent value="import" className="m-0 p-0 space-y-4">
-                             <FormItem>
-                                <FormLabel>Excel or CSV File</FormLabel>
-                                <FormControl>
-                                    <Input type="file" onChange={handleFileChange} accept=".xlsx, .xls, .csv" />
-                                </FormControl>
-                                <FormMessage />
-                            </FormItem>
+                             <div className="space-y-4">
+                                <FormLabel>Data File (Excel, CSV, Word, PDF, Text)</FormLabel>
+                                <div className="flex items-center gap-4">
+                                    <Input type="file" onChange={handleFileChange} accept=".xlsx, .xls, .csv, .doc, .docx, .pdf, .txt" />
+                                </div>
+                            </div>
                              {parsedSheets && (
                                 <div className="text-sm text-muted-foreground p-2 border rounded-md">
                                     <p className="font-semibold">{parsedSheets.length} sheet(s) found:</p>

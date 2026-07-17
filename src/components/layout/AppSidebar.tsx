@@ -57,8 +57,18 @@ export default function AppSidebar({
   };
 
   const handleNavClick = (item: any) => {
+    const isCurrentPanel = searchParams.get('panel') === item.dialog;
+    const isCurrentPath = pathname === item.href;
+    const isActive = isCurrentPath || isCurrentPanel;
+
     uiEmitter.emit('close-all-dialogs');
     
+    if (isActive && item.dialog) {
+        // Toggle off: it's already active, so we just closed it. Clear any panel query params.
+        router.push(pathname);
+        return;
+    }
+
     if (item.href) {
         router.push(item.href);
     } else if (item.dialog) {
@@ -73,7 +83,7 @@ export default function AppSidebar({
   // Ensure it's hidden on mobile even before hydration completes
   if (!mounted) {
     return (
-        <aside className="sidebar-bg hidden md:flex flex-shrink-0 flex flex-col border-r border-border h-screen w-20 transition-all duration-300 z-50 relative" />
+        <aside className="sidebar-bg hidden md:flex flex-shrink-0 flex flex-col border-r border-border h-screen w-20 transition-all duration-300 z-[450] relative" />
     );
   }
 
@@ -82,7 +92,7 @@ export default function AppSidebar({
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
         className={cn(
-            "sidebar-bg hidden md:flex flex-shrink-0 flex flex-col border-r border-border h-screen transition-all duration-300 z-50 relative",
+            "sidebar-bg hidden md:flex flex-shrink-0 flex flex-col border-r border-border h-screen transition-all duration-300 z-[450] relative",
             isExpanded ? "w-64 shadow-2xl" : "w-16 lg:w-20"
         )}
     >

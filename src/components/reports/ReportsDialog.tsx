@@ -18,8 +18,10 @@ export function ReportsDialog({ open, onOpenChange, initialPayload, modal = fals
           <DialogTitle>Organizational Analytics</DialogTitle>
           <DialogDescription>Analyze performance and review team reports.</DialogDescription>
         </DialogHeader>
-        <div className="flex-1 overflow-y-auto [scrollbar-gutter:stable] p-8 pb-32 custom-scrollbar bg-background">
-            <ReportsPageContent initialPayload={initialPayload} />
+        <div className="h-full flex flex-col min-h-0">
+          <div className="flex-1 overflow-y-auto [scrollbar-gutter:stable] p-8 pb-32 custom-scrollbar bg-background">
+              <ReportsPageContent initialPayload={initialPayload} />
+          </div>
         </div>
       </DialogContent>
     </Dialog>

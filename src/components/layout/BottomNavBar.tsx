@@ -47,6 +47,7 @@ export function BottomNavBar() {
 
   const handleNav = (item: any) => {
     setIsMenuOpen(false);
+    const wasActive = isActive(item.dialog || '');
     uiEmitter.emit('close-all-dialogs');
     
     if (item.href === '/') {
@@ -54,7 +55,7 @@ export function BottomNavBar() {
         return;
     }
 
-    if (item.dialog) {
+    if (item.dialog && !wasActive) {
         setTimeout(() => {
             uiEmitter.emit(`open-${item.dialog}-dialog` as any);
         }, 50);
@@ -75,14 +76,14 @@ export function BottomNavBar() {
     }
   };
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-[100] md:hidden">
+    <nav className="fixed bottom-0 left-0 right-0 z-[450] md:hidden">
       {/* Tab Bar Background */}
       <div className="absolute inset-0 bg-background/80 backdrop-blur-2xl border-t border-white/10 shadow-[0_-8px_32px_0_rgba(0,0,0,0.1)]" />
       
       <div className="relative h-20 max-w-lg mx-auto flex items-center justify-between px-2 pb-safe">
         {/* Assistant */}
         <button 
-            onClick={() => uiEmitter.emit('open-assistant-dialog')} 
+            onClick={() => handleNav({ dialog: 'assistant' })} 
             className={cn("flex-1 flex flex-col items-center gap-1.5 transition-all duration-300", isActive('assistant') ? "mobile-tab-active" : "text-muted-foreground opacity-60")}
         >
             <Sparkles className="h-5 w-5" />
@@ -91,7 +92,7 @@ export function BottomNavBar() {
 
         {/* Attendance */}
         <button 
-            onClick={() => uiEmitter.emit('open-attendance-dialog')} 
+            onClick={() => handleNav({ dialog: 'attendance' })} 
             className={cn("flex-1 flex flex-col items-center gap-1.5 transition-all duration-300", isActive('attendance') ? "mobile-tab-active" : "text-muted-foreground opacity-60")}
         >
             <Fingerprint className="h-5 w-5" />
@@ -162,7 +163,7 @@ export function BottomNavBar() {
 
         {/* Alerts */}
         <button 
-            onClick={() => uiEmitter.emit('open-notifications-dialog' as any)} 
+            onClick={() => handleNav({ dialog: 'notifications' })} 
             className={cn("flex-1 flex flex-col items-center gap-1.5 transition-all duration-300 relative", isActive('notifications') ? "mobile-tab-active" : "text-muted-foreground opacity-60")}
         >
             <Bell className="h-5 w-5" />
@@ -174,7 +175,7 @@ export function BottomNavBar() {
 
         {/* Profile */}
         <button 
-            onClick={() => uiEmitter.emit('open-profile-dialog')} 
+            onClick={() => handleNav({ dialog: 'profile' })} 
             className={cn("flex-1 flex flex-col items-center gap-1.5 transition-all duration-300", isActive('profile') ? "mobile-tab-active" : "text-muted-foreground opacity-60")}
         >
              <div className="h-5 w-5 rounded-full border border-current flex items-center justify-center overflow-hidden">

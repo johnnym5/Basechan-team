@@ -24,7 +24,7 @@ export function PerformanceDashboard({ userProfile }: { userProfile: UserProfile
 
     // 1. Fetch all telemetry for this user
     const tasksQuery = useMemoFirebase(() => 
-        query(collection(firestore!, 'tasks'), where('assignedTo', '==', userProfile.id), where('status', '==', 'ARCHIVED'))
+        query(collection(firestore!, 'tasks'), where('assignedTo', '==', userProfile.id))
     , [firestore, userProfile.id]);
     
     const kudosQuery = useMemoFirebase(() => 
@@ -32,7 +32,7 @@ export function PerformanceDashboard({ userProfile }: { userProfile: UserProfile
     , [firestore, userProfile.id]);
     
     const attendanceQuery = useMemoFirebase(() => 
-        query(collection(firestore!, 'attendance'), where('userId', '==', userProfile.id), where('status', '==', 'APPROVED'))
+        query(collection(firestore!, 'attendance'), where('userId', '==', userProfile.id))
     , [firestore, userProfile.id]);
 
     const { data: tasks, isLoading: isTasksLoading } = useCollection<Task>(tasksQuery);
@@ -42,11 +42,14 @@ export function PerformanceDashboard({ userProfile }: { userProfile: UserProfile
     const stats = useMemo(() => {
         if (!tasks || !kudos || !attendance) return null;
 
+        const archivedTasks = tasks.filter(t => t.status === 'ARCHIVED');
+        const approvedAttendance = attendance.filter(a => a.status === 'APPROVED');
+
         // Points Engine
         let points = 0;
         
         // Task Points: 10 per task, bonus 5 if LEVEL_3, bonus 5 if early (est > actual)
-        tasks.forEach(t => {
+        archivedTasks.forEach(t => {
             points += 10;
             if (t.priority === 'LEVEL_3') points += 5;
             if (t.estimatedHours && t.actualHours && t.actualHours < t.estimatedHours) points += 5;
@@ -56,7 +59,7 @@ export function PerformanceDashboard({ userProfile }: { userProfile: UserProfile
         points += kudos.length * 20;
 
         // Attendance Points: 5 per day with NO LATE
-        const perfectDays = attendance.filter(a => !a.remarks?.includes('LATE')).length;
+        const perfectDays = approvedAttendance.filter(a => !a.remarks?.includes('LATE')).length;
         points += perfectDays * 5;
 
         // Group Kudos by type
@@ -67,7 +70,7 @@ export function PerformanceDashboard({ userProfile }: { userProfile: UserProfile
 
         return {
             totalPoints: points,
-            taskCount: tasks.length,
+            taskCount: archivedTasks.length,
             kudosCount: kudos.length,
             perfectDays,
             badgeCounts,

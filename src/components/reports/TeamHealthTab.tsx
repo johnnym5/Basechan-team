@@ -20,9 +20,7 @@ export function TeamHealthTab({ userProfile }: { userProfile: UserProfile }) {
         if (!firestore || !userProfile?.orgId) return null;
         return query(
             collection(firestore, 'pulse_checks'),
-            where('orgId', '==', userProfile.orgId),
-            where('date', '>=', threeDaysAgo),
-            orderBy('date', 'desc')
+            where('orgId', '==', userProfile.orgId)
         );
     }, [firestore, userProfile?.orgId, threeDaysAgo]);
 
@@ -30,10 +28,15 @@ export function TeamHealthTab({ userProfile }: { userProfile: UserProfile }) {
 
     const moodAnalytics = useMemo(() => {
         if (!pulses) return null;
+        
+        const recentPulses = pulses
+            .filter(p => p.date >= threeDaysAgo)
+            .sort((a, b) => b.date.localeCompare(a.date));
+
         const counts = { SMOOTH: 0, HEAVY: 0, OVERWHELMED: 0 };
         const overwhelmedUsers = new Map<string, number>();
 
-        pulses.forEach(p => {
+        recentPulses.forEach(p => {
             counts[p.mood]++;
             if (p.mood === 'OVERWHELMED') {
                 overwhelmedUsers.set(p.userId, (overwhelmedUsers.get(p.userId) || 0) + 1);
@@ -42,10 +45,10 @@ export function TeamHealthTab({ userProfile }: { userProfile: UserProfile }) {
 
         const atRiskUsers = Array.from(overwhelmedUsers.entries())
             .filter(([_, count]) => count >= 2)
-            .map(([uid, _]) => pulses.find(p => p.userId === uid)?.userName || 'Unknown Personnel');
+            .map(([uid, _]) => recentPulses.find(p => p.userId === uid)?.userName || 'Unknown Personnel');
 
         return { counts, atRiskUsers };
-    }, [pulses]);
+    }, [pulses, threeDaysAgo]);
 
     if (isLoading) return <div className="space-y-6"><Skeleton className="h-48 w-full rounded-3xl" /><Skeleton className="h-96 w-full rounded-3xl" /></div>;
 

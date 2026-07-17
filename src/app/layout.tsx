@@ -25,9 +25,9 @@ export const metadata: Metadata = {
   title: 'Basechan Team',
   description: 'Staff Internal Control & Automation',
   icons: {
-    icon: '/logo.png',
-    apple: '/logo.png',
-    shortcut: '/logo.png',
+    icon: '/favicon.png',
+    apple: '/favicon.png',
+    shortcut: '/favicon.png',
   },
 };
 
