@@ -63,14 +63,14 @@ export const PREDEFINED_ROLES = [...new Set([...allDepartmentRoles, ...GENERIC_R
 export const getRoleFromPosition = (position: UserPosition): UserRole => {
     switch (position) {
         case "CEO / Managing Director":
-            return "MANAGING_DIRECTOR";
         case "Chief Financial Officer (CFO) / Finance Manager":
-            return "FINANCE_MANAGER";
         case "HR Manager / Director":
         case "Office Manager / Admin Lead":
-            return "HR_MANAGER";
         case "Organization Administrator":
         case "IT Manager / CTO":
+        case "Operations Manager":
+        case "Project Manager":
+        case "Sales Manager":
             return "ORG_ADMIN";
         default:
             return "STAFF";

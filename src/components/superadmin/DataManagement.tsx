@@ -30,6 +30,7 @@ import { ScrollArea } from '../ui/scroll-area';
 import { Separator } from '../ui/separator';
 import { demoDataService } from '@/services/demo-data';
 import { BatchUserImport } from './BatchUserImport';
+import { useSuperAdmin } from '@/hooks/useSuperAdmin';
 
 export const COLLECTIONS = [
     { id: 'requisitions', name: 'Requisitions' },
@@ -49,6 +50,7 @@ export const COLLECTIONS = [
 export function DataManagement() {
     const firestore = useFirestore();
     const database = useDatabase();
+    const { isSuperAdmin } = useSuperAdmin();
     const { toast } = useToast();
     const [loading, setLoading] = useState<string | null>(null);
 
@@ -65,12 +67,15 @@ export function DataManagement() {
     const [areOrgsLoading, setAreOrgsLoading] = useState(true);
 
     useEffect(() => {
-        if (!firestore) return;
+        if (!firestore || !isSuperAdmin) return;
         getDocs(collection(firestore, 'organizations')).then(snap => {
             setOrganizations(snap.docs.map(d => ({ id: d.id, ...d.data() } as Organization)));
             setAreOrgsLoading(false);
+        }).catch(e => {
+            console.error("Failed to load orgs", e);
+            setAreOrgsLoading(false);
         });
-    }, [firestore]);
+    }, [firestore, isSuperAdmin]);
     
     useEffect(() => {
         if (!database) return;

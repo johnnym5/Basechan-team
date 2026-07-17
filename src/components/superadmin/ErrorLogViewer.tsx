@@ -18,8 +18,11 @@ import { ScrollArea } from '../ui/scroll-area';
 import { useState, useEffect } from 'react';
 import { Button } from '../ui/button';
 
+import { useSuperAdmin } from '@/hooks/useSuperAdmin';
+
 export function ErrorLogViewer() {
     const firestore = useFirestore();
+    const { isSuperAdmin } = useSuperAdmin();
     const [errors, setErrors] = useState<ErrorLog[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isFetchingMore, setIsFetchingMore] = useState(false);
@@ -27,7 +30,7 @@ export function ErrorLogViewer() {
     const [hasMore, setHasMore] = useState(true);
 
     const fetchErrors = async (loadMore = false) => {
-        if (!firestore) return;
+        if (!firestore || !isSuperAdmin) return;
         
         if (loadMore) setIsFetchingMore(true);
         else setIsLoading(true);

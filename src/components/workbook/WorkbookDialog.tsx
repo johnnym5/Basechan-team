@@ -318,6 +318,7 @@ function WorkbookDialogContent({ initialPayload }: { initialPayload?: { workbook
     firestore && authUser ? doc(firestore, 'users', authUser.uid) : null
   , [firestore, authUser]);
   const { data: userProfile, isLoading: isProfileLoading } = useDoc<UserProfile>(userProfileRef);
+  const permissions = usePermissions(userProfile || null);
   
   const handleSelectSheet = (workbookId: string, sheetId: string | null) => {
     setViewingWorkbookId(workbookId);
@@ -337,8 +338,6 @@ function WorkbookDialogContent({ initialPayload }: { initialPayload?: { workbook
             </div>
       )
   }
-
-  const permissions = usePermissions(userProfile);
 
   if (!isProfileLoading && !permissions.canAccessWorkbooks) {
       return (

@@ -7,7 +7,7 @@ import { mainNavItems } from "@/lib/nav-items";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback } from "../ui/avatar";
 import { useAuth, useDoc, useMemoFirebase, useFirestore, useUser } from "@/firebase";
-import { doc } from "firebase/firestore";
+import { doc, updateDoc } from "firebase/firestore";
 import type { UserProfile } from "@/lib/types";
 import { signOut } from "firebase/auth";
 import { Skeleton } from "../ui/skeleton";
@@ -43,8 +43,11 @@ export default function AppSidebar({
   const permissions = usePermissions(userProfile || null);
   
   const handleLogout = async () => {
-    if (auth) {
+    if (auth && firestore && authUser?.uid) {
         try {
+            const userRef = doc(firestore, 'users', authUser.uid);
+            await updateDoc(userRef, { activeSessionId: null, status: 'OFFLINE' });
+            localStorage.removeItem('basechan-active-session');
             await signOut(auth);
             router.push('/');
         } catch (error) {

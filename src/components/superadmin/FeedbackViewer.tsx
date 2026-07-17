@@ -20,10 +20,16 @@ interface FeedbackViewerProps {
     onOpenChange: (open: boolean) => void;
 }
 
+import { useSuperAdmin } from '@/hooks/useSuperAdmin';
+
 export function FeedbackViewer({ open, onOpenChange }: FeedbackViewerProps) {
     const firestore = useFirestore();
+    const { isSuperAdmin } = useSuperAdmin();
 
-    const allFeedbackQuery = useMemoFirebase(() => firestore ? query(collection(firestore, 'feedback'), orderBy('createdAt', 'desc')) : null, [firestore]);
+    const allFeedbackQuery = useMemoFirebase(() => {
+        if (!firestore || !open || !isSuperAdmin) return null;
+        return query(collection(firestore, 'feedback'), orderBy('createdAt', 'desc'));
+    }, [firestore, open, isSuperAdmin]);
     const { data: allFeedback, isLoading } = useCollection<Feedback>(allFeedbackQuery);
 
     const handleMarkAsRead = (feedbackId: string) => {

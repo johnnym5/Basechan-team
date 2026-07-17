@@ -14,9 +14,10 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useUser, useAuth } from "@/firebase";
+import { useUser, useAuth, useFirestore } from "@/firebase";
 import { LogOut, User as UserIcon, Settings, Eye, Shield } from "lucide-react";
 import { signOut } from "firebase/auth";
+import { doc, updateDoc } from "firebase/firestore";
 import { uiEmitter } from "@/lib/ui-emitter";
 import type { UserProfile } from "@/lib/types";
 import { useImpersonation } from "@/context/ImpersonationProvider";
@@ -28,12 +29,16 @@ export function UserNav({ userProfile }: { userProfile: UserProfile | null }) {
   const auth = useAuth();
   const { isImpersonating, setIsImpersonating } = useImpersonation();
   const { isSuperAdmin } = useSuperAdmin();
+  const firestore = useFirestore();
 
   if (!user) return null;
   
   const handleLogout = async () => {
-    if (auth) {
+    if (auth && firestore && user?.uid) {
       try {
+        const userRef = doc(firestore, 'users', user.uid);
+        await updateDoc(userRef, { activeSessionId: null, status: 'OFFLINE' });
+        localStorage.removeItem('basechan-active-session');
         await signOut(auth);
         window.location.href = '/';
       } catch (error) {

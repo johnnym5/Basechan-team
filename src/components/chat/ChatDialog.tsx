@@ -237,7 +237,7 @@ export function ChatDialog({ open, onOpenChange, currentUserProfile, permissions
   const typingTimeoutRef = useRef<NodeJS.Timeout>(null);
 
   const chatsQuery = useMemoFirebase(() => 
-    query(collection(firestore!, 'chats'), where('participants', 'array-contains', currentUserProfile.id), orderBy('updatedAt', 'desc'))
+    query(collection(firestore!, 'chats'), where('participants', 'array-contains', currentUserProfile.id))
   , [firestore, currentUserProfile.id]);
   const { data: chats, isLoading: isChatsLoading } = useCollection<Chat>(chatsQuery);
 
@@ -249,8 +249,9 @@ export function ChatDialog({ open, onOpenChange, currentUserProfile, permissions
   const { channels, personnelTransmissions } = useMemo(() => {
     if (!chats) return { channels: [], personnelTransmissions: [] };
     
-    const ch: Chat[] = chats.filter(c => c.type === 'CHANNEL');
-    const dms: Chat[] = chats.filter(c => c.type === 'DIRECT');
+    const sortedChats = [...chats].sort((a, b) => new Date(b.updatedAt || 0).getTime() - new Date(a.updatedAt || 0).getTime());
+    const ch: Chat[] = sortedChats.filter(c => c.type === 'CHANNEL');
+    const dms: Chat[] = sortedChats.filter(c => c.type === 'DIRECT');
 
     if (!allUsers) return { channels: ch, personnelTransmissions: dms };
 

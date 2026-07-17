@@ -62,7 +62,9 @@ export function FirebaseErrorListener() {
             <ToastAction 
                 altText="Fix Index" 
                 onClick={() => {
-                    navigator.clipboard.writeText(url);
+                    if (navigator.clipboard) {
+                        navigator.clipboard.writeText(url).catch(console.error);
+                    }
                     window.open(url, '_blank');
                 }}
                 className="bg-white text-destructive font-black uppercase tracking-widest text-[9px] hover:bg-white/90"

@@ -14,6 +14,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Loader2, Monitor, Smartphone } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
@@ -43,12 +44,14 @@ const generateUUID = () => {
 const formSchema = z.object({
   username: z.string().min(1, "Username is required."),
   password: z.string().min(1, "Password is required."),
+  forceLogin: z.boolean().optional(),
 });
 
 export function LoginForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isIdVerified, setIsIdVerified] = useState<boolean | null>(null);
   const [isCheckingId, setIsCheckingId] = useState(false);
+  const [requiresForceLogin, setRequiresForceLogin] = useState(false);
   const { toast } = useToast();
   const auth = useAuth();
   const firestore = useFirestore();
@@ -58,6 +61,7 @@ export function LoginForm() {
     defaultValues: {
       username: "",
       password: "",
+      forceLogin: false,
     },
   });
 
@@ -174,13 +178,14 @@ export function LoginForm() {
       }
 
       // 2. CHECK FOR ACTIVE SESSION (Heartbeat logic)
-      if (userData && userData.activeSessionId && userData.lastHeartbeat) {
+      if (userData && userData.activeSessionId && userData.lastHeartbeat && !values.forceLogin) {
           const lastHeartbeat = new Date(userData.lastHeartbeat);
           const diff = differenceInMinutes(new Date(), lastHeartbeat);
           
           // If session was active in the last 3 minutes, prevent login
           if (diff < 3) {
-              throw new Error(`Security Alert: This account is already logged in on another ${userData.deviceType === 'PC' ? 'Desktop' : 'Mobile'} device. Please sign out from that device first.`);
+              setRequiresForceLogin(true);
+              throw new Error(`Security Alert: This account is already logged in on another ${userData.deviceType === 'PC' ? 'Desktop' : 'Mobile'} device. Please check "Force Login" to override this block and sign out the other device.`);
           }
       }
 
@@ -258,6 +263,31 @@ export function LoginForm() {
                 </FormItem>
             )}
             />
+            {requiresForceLogin && (
+                <FormField
+                control={form.control}
+                name="forceLogin"
+                render={({ field }) => (
+                    <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4 shadow-sm bg-destructive/10 border-destructive/20">
+                    <FormControl>
+                        <Checkbox
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                        className="border-destructive data-[state=checked]:bg-destructive data-[state=checked]:text-destructive-foreground"
+                        />
+                    </FormControl>
+                    <div className="space-y-1 leading-none">
+                        <FormLabel className="text-destructive font-semibold">
+                        Force Login & Terminate Other Sessions
+                        </FormLabel>
+                        <FormDescription className="text-xs text-destructive/80">
+                        Check this to override the active session block and immediately sign out your other devices.
+                        </FormDescription>
+                    </div>
+                    </FormItem>
+                )}
+                />
+            )}
             <Button type="submit" className="w-full" disabled={isSubmitting}>
                 {isSubmitting ? (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />

@@ -6,7 +6,7 @@ import { collection, query, where, doc, deleteDoc, updateDoc, getDocs } from 'fi
 import type { UserProfile } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { PlusCircle, Trash2, Edit, Loader2, Search, KeyRound, Monitor, Smartphone, Camera, MonitorPlay, ShieldCheck } from 'lucide-react';
+import { PlusCircle, Trash2, Edit, Loader2, Search, KeyRound, Monitor, Smartphone, Camera, MonitorPlay, ShieldCheck, LogOut } from 'lucide-react';
 import { Skeleton } from '../ui/skeleton';
 import { Input } from '../ui/input';
 import { InviteUserDialog } from './InviteUserDialog';
@@ -56,12 +56,12 @@ export function TeamPane({ currentUserProfile, permissions, searchTerm }: TeamPa
     useEffect(() => {
         fetchUsers();
     }, [firestore, currentUserProfile.orgId]);
-    
+
     const filteredUsers = useMemo(() => {
         if (!users) return [];
         if (!searchTerm) return users;
         const lowercasedTerm = searchTerm.toLowerCase();
-        return users.filter(user => 
+        return users.filter(user =>
             user.fullName.toLowerCase().includes(lowercasedTerm) ||
             user.email.toLowerCase().includes(lowercasedTerm) ||
             (user.position && user.position.toLowerCase().includes(lowercasedTerm))
@@ -141,7 +141,7 @@ export function TeamPane({ currentUserProfile, permissions, searchTerm }: TeamPa
             setTimeout(() => setIsProcessingCommand(null), 2000);
         }
     };
-    
+
     const handleDeleteUser = async () => {
         if (!userToDelete || !firestore) return;
         setIsDeleting(true);
@@ -157,9 +157,9 @@ export function TeamPane({ currentUserProfile, permissions, searchTerm }: TeamPa
                 },
                 body: JSON.stringify({ targetUserId: userToDelete.id })
             });
-            
+
             const data = await response.json();
-            
+
             if (!response.ok) {
                 throw new Error(data.error || 'Failed to delete user');
             }
@@ -168,12 +168,12 @@ export function TeamPane({ currentUserProfile, permissions, searchTerm }: TeamPa
             setUserToDelete(null);
             fetchUsers();
         } catch (error: any) {
-             toast({ variant: 'destructive', title: 'Failed', description: error.message });
+            toast({ variant: 'destructive', title: 'Failed', description: error.message });
         } finally {
             setIsDeleting(false);
         }
     };
-    
+
     return (
         <TooltipProvider delayDuration={0}>
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4">
@@ -203,7 +203,7 @@ export function TeamPane({ currentUserProfile, permissions, searchTerm }: TeamPa
                 </div>
 
                 <div className="divide-y divide-white/5">
-                    {isLoading && Array.from({length: 3}).map((_, i) => (
+                    {isLoading && Array.from({ length: 3 }).map((_, i) => (
                         <div key={i} className="p-4"><Skeleton className="h-12 w-full rounded-xl" /></div>
                     ))}
                     {!isLoading && filteredUsers.map(user => (
@@ -254,10 +254,10 @@ export function TeamPane({ currentUserProfile, permissions, searchTerm }: TeamPa
                                                 <div className="flex items-center gap-1.5 p-1 rounded-2xl bg-primary/5 border border-primary/10">
                                                     <Tooltip>
                                                         <TooltipTrigger asChild>
-                                                            <Button 
-                                                                variant="ghost" 
-                                                                size="icon" 
-                                                                className="h-8 w-8 rounded-xl hover:bg-emerald-500/10 hover:text-emerald-500 transition-all active:scale-95" 
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="icon"
+                                                                className="h-8 w-8 rounded-xl hover:bg-emerald-500/10 hover:text-emerald-500 transition-all active:scale-95"
                                                                 onClick={() => handleRequestLiveMonitor(user)}
                                                                 disabled={isProcessingCommand === user.id}
                                                             >
@@ -268,10 +268,10 @@ export function TeamPane({ currentUserProfile, permissions, searchTerm }: TeamPa
                                                     </Tooltip>
                                                     <Tooltip>
                                                         <TooltipTrigger asChild>
-                                                            <Button 
-                                                                variant="ghost" 
-                                                                size="icon" 
-                                                                className="h-8 w-8 rounded-xl hover:bg-primary/10 hover:text-primary transition-all active:scale-95" 
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="icon"
+                                                                className="h-8 w-8 rounded-xl hover:bg-primary/10 hover:text-primary transition-all active:scale-95"
                                                                 onClick={() => handleRequestScreenshot(user)}
                                                                 disabled={isProcessingCommand === user.id}
                                                             >
@@ -283,34 +283,39 @@ export function TeamPane({ currentUserProfile, permissions, searchTerm }: TeamPa
                                                 </div>
                                             )}
                                             <Tooltip>
-                                                <TooltipTrigger asChild>
-                                                    <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl text-primary/70 hover:text-primary hover:bg-primary/10 transition-all active:scale-95" onClick={() => setUserToEdit(user)}>
-                                                        <Edit className="h-4 w-4" />
-                                                    </Button>
-                                                </TooltipTrigger>
+                                                <TooltipTrigger asChild><Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl text-primary/70 hover:text-primary hover:bg-primary/10 transition-all active:scale-95" onClick={() => setUserToEdit(user)}><Edit className="h-4 w-4" /></Button></TooltipTrigger>
                                                 <TooltipContent className="apple-glass-darker border-none text-[9px] font-black uppercase">Edit Authorization</TooltipContent>
                                             </Tooltip>
-                                            
+
                                             {user.id !== currentUserProfile.id && (
-                                                <Tooltip>
-                                                    <TooltipTrigger asChild>
-                                                        <Button 
-                                                            variant="ghost" 
-                                                            size="icon" 
-                                                            className="h-9 w-9 rounded-xl text-amber-500/70 hover:text-amber-500 hover:bg-amber-500/10 transition-all active:scale-95" 
-                                                            onClick={() => handlePasswordReset(user)}
-                                                            disabled={isProcessingCommand === user.id}
-                                                        >
-                                                            {isProcessingCommand === user.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <KeyRound className="h-4 w-4" />}
-                                                        </Button>
-                                                    </TooltipTrigger>
-                                                    <TooltipContent className="apple-glass-darker border-none text-[9px] font-black uppercase">Reset Secure Access</TooltipContent>
-                                                </Tooltip>
+                                                <>
+                                                    <Tooltip>
+                                                        <TooltipTrigger asChild>
+                                                            <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl text-amber-500/70 hover:text-amber-500 hover:bg-amber-500/10 transition-all active:scale-95" onClick={() => handlePasswordReset(user)} disabled={isProcessingCommand === user.id}>
+                                                                {isProcessingCommand === user.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <KeyRound className="h-4 w-4" />}
+                                                            </Button>
+                                                        </TooltipTrigger>
+                                                        <TooltipContent className="apple-glass-darker border-none text-[9px] font-black uppercase">Reset Secure Access</TooltipContent>
+                                                    </Tooltip>
+                                                    <Tooltip>
+                                                        <TooltipTrigger asChild>
+                                                            <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl text-rose-500/70 hover:text-rose-500 hover:bg-rose-500/10 transition-all active:scale-95" onClick={() => handleForceLogout(user)} disabled={isProcessingCommand === user.id}>
+                                                                {isProcessingCommand === user.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <LogOut className="h-4 w-4" />}
+                                                            </Button>
+                                                        </TooltipTrigger>
+                                                        <TooltipContent className="apple-glass-darker border-none text-[9px] font-black uppercase">Force Sign Out</TooltipContent>
+                                                    </Tooltip>
+                                                </>
                                             )}
                                             {user.position !== "Organization Administrator" && user.id !== currentUserProfile.id && (
-                                                 <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl text-destructive/70 hover:text-destructive hover:bg-destructive/10 transition-all active:scale-95" onClick={() => setUserToDelete(user)}>
-                                                    <Trash2 className="h-4 w-4" />
-                                                </Button>
+                                                <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                        <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl text-destructive/70 hover:text-destructive hover:bg-destructive/10 transition-all active:scale-95" onClick={() => setUserToDelete(user)}>
+                                                            <Trash2 className="h-4 w-4" />
+                                                        </Button>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent className="apple-glass-darker border-none text-[9px] font-black uppercase">Delete User</TooltipContent>
+                                                </Tooltip>
                                             )}
                                         </>
                                     )}
@@ -318,7 +323,7 @@ export function TeamPane({ currentUserProfile, permissions, searchTerm }: TeamPa
                             </div>
                         </div>
                     ))}
-                     {!isLoading && filteredUsers.length === 0 && (
+                    {!isLoading && filteredUsers.length === 0 && (
                         <div className="text-center text-sm text-muted-foreground py-16 uppercase font-black tracking-widest opacity-20">
                             No matching members found in current sector
                         </div>
@@ -327,7 +332,7 @@ export function TeamPane({ currentUserProfile, permissions, searchTerm }: TeamPa
             </div>
 
             {userToEdit && (
-                <EditUserDialog 
+                <EditUserDialog
                     open={!!userToEdit}
                     onOpenChange={(isOpen) => {
                         if (!isOpen) {
@@ -338,20 +343,20 @@ export function TeamPane({ currentUserProfile, permissions, searchTerm }: TeamPa
                     userToEdit={userToEdit}
                 />
             )}
-            
-            <InviteUserDialog 
-                open={isInviteOpen} 
+
+            <InviteUserDialog
+                open={isInviteOpen}
                 onOpenChange={(open) => {
                     setIsInviteOpen(open);
                     if (!open) {
                         fetchUsers();
                     }
-                }} 
-                currentUserProfile={currentUserProfile} 
+                }}
+                currentUserProfile={currentUserProfile}
             />
 
             {userToDelete && (
-                 <AlertDialog open={!!userToDelete} onOpenChange={(isOpen) => !isOpen && setUserToDelete(null)}>
+                <AlertDialog open={!!userToDelete} onOpenChange={(isOpen) => !isOpen && setUserToDelete(null)}>
                     <AlertDialogContent className="apple-glass-darker border-none rounded-[2rem] p-8">
                         <AlertDialogHeader className="space-y-4 text-center">
                             <div className="mx-auto p-4 rounded-full bg-destructive/10 w-fit">
