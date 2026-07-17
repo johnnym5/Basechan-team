@@ -29,6 +29,18 @@ export interface Permissions {
   canViewAudit: boolean;
   canManageDisplays: boolean;
   canBypassGeofence: boolean;
+  canCreateRequisition: boolean;
+  canSendChatMessage: boolean;
+  canAccessAttendance: boolean;
+  canAccessLeave: boolean;
+  canRequestLeave: boolean;
+  canAccessTasks: boolean;
+  canCreateTask: boolean;
+  canAccessWorkbooks: boolean;
+  canCreateWorkbook: boolean;
+  canAccessDisplays: boolean;
+  canAccessReports: boolean;
+  canSubmitReport: boolean;
 }
 
 const rolePermissions: Record<UserRole, Partial<Permissions>> = {
@@ -106,6 +118,18 @@ const defaultPermissions: Permissions = {
   canViewAudit: false,
   canManageDisplays: false,
   canBypassGeofence: false,
+  canCreateRequisition: false,
+  canSendChatMessage: false,
+  canAccessAttendance: false,
+  canAccessLeave: false,
+  canRequestLeave: false,
+  canAccessTasks: false,
+  canCreateTask: false,
+  canAccessWorkbooks: false,
+  canCreateWorkbook: false,
+  canAccessDisplays: false,
+  canAccessReports: false,
+  canSubmitReport: false,
 };
 
 export function usePermissions(userProfile: UserProfile | null): Permissions {
@@ -138,6 +162,18 @@ export function usePermissions(userProfile: UserProfile | null): Permissions {
           canViewAudit: true,
           canManageDisplays: true,
           canBypassGeofence: true,
+          canCreateRequisition: true,
+          canSendChatMessage: true,
+          canAccessAttendance: true,
+          canAccessLeave: true,
+          canRequestLeave: true,
+          canAccessTasks: true,
+          canCreateTask: true,
+          canAccessWorkbooks: true,
+          canCreateWorkbook: true,
+          canAccessDisplays: true,
+          canAccessReports: true,
+          canSubmitReport: true,
       };
     }
     
@@ -167,8 +203,44 @@ export function usePermissions(userProfile: UserProfile | null): Permissions {
     };
 
     // 3. Module level gating by SystemConfig
-    perms.canAccessRequisitions = (systemConfig?.finance_access ?? false) || (effectiveRole === 'ORG_ADMIN');
-    perms.canAccessChat = (systemConfig?.chat_enabled ?? false) || (effectiveRole === 'ORG_ADMIN');
+    const financeMode = systemConfig?.modules?.finance ?? (systemConfig?.finance_access === false ? 'hidden' : 'staff');
+    const chatMode = systemConfig?.modules?.chat ?? (systemConfig?.chat_enabled === false ? 'hidden' : 'staff');
+    const attendanceMode = systemConfig?.modules?.attendance ?? 'staff';
+    const tasksMode = systemConfig?.modules?.tasks ?? 'staff';
+    const workbooksMode = systemConfig?.modules?.workbooks ?? 'staff';
+    const libraryMode = systemConfig?.modules?.library ?? 'staff';
+    const leaveMode = systemConfig?.modules?.leave ?? 'staff';
+    const displaysMode = systemConfig?.modules?.live_displays ?? 'staff';
+    const reportsMode = systemConfig?.modules?.reports ?? 'staff';
+    
+    const isStaffUser = effectiveRole === 'STAFF';
+
+    perms.canAccessRequisitions = financeMode !== 'hidden' || !isStaffUser;
+    perms.canCreateRequisition = financeMode === 'staff' || !isStaffUser;
+
+    perms.canAccessChat = chatMode !== 'hidden' || !isStaffUser;
+    perms.canSendChatMessage = chatMode === 'staff' || !isStaffUser;
+
+    perms.canAccessAttendance = attendanceMode !== 'hidden' || !isStaffUser;
+    perms.canClockIn = attendanceMode === 'staff' || !isStaffUser;
+
+    perms.canAccessTasks = tasksMode !== 'hidden' || !isStaffUser;
+    perms.canCreateTask = tasksMode === 'staff' || !isStaffUser;
+
+    perms.canAccessWorkbooks = workbooksMode !== 'hidden' || !isStaffUser;
+    perms.canCreateWorkbook = workbooksMode === 'staff' || !isStaffUser;
+
+    perms.canAccessLibrary = libraryMode !== 'hidden' || !isStaffUser;
+    perms.canManageLibrary = (libraryMode === 'staff' || !isStaffUser) && (effectiveRole !== 'STAFF' || !!rolePerms.canManageLibrary || isSuperAdmin);
+
+    perms.canAccessLeave = leaveMode !== 'hidden' || !isStaffUser;
+    perms.canRequestLeave = leaveMode === 'staff' || !isStaffUser;
+
+    perms.canAccessDisplays = displaysMode !== 'hidden' || !isStaffUser;
+    perms.canManageDisplays = (displaysMode === 'staff' || !isStaffUser) && (effectiveRole !== 'STAFF' || !!rolePerms.canManageDisplays || isSuperAdmin);
+
+    perms.canAccessReports = reportsMode !== 'hidden' || !isStaffUser;
+    perms.canSubmitReport = reportsMode === 'staff' || !isStaffUser;
 
     // 4. Visibility logic
     perms.canAccessAllTasks = !!rolePerms.canManageStaff;

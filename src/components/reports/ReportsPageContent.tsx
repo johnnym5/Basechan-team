@@ -15,7 +15,7 @@ import { PerformanceDashboard } from "@/components/reports/PerformanceDashboard"
 import { TeamHealthTab } from "@/components/reports/TeamHealthTab";
 import { useState, useEffect } from "react";
 import { Button } from "../ui/button";
-import { Download, FileSpreadsheet, Loader2, Trophy, BarChart3, UserCheck, Heart } from "lucide-react";
+import { Download, FileSpreadsheet, Loader2, Trophy, BarChart3, UserCheck, Heart, ShieldAlert } from "lucide-react";
 import * as XLSX from 'xlsx';
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
@@ -126,6 +126,16 @@ export function ReportsPageContent({ initialPayload }: { initialPayload?: { tab?
     return <div className="space-y-8 p-6"><Skeleton className="h-10 w-1/3" /><Skeleton className="h-[600px] w-full rounded-3xl" /></div>;
   }
 
+  if (!permissions.canAccessReports) {
+    return (
+         <div className="flex flex-col items-center justify-center h-full text-center p-8 bg-background">
+            <ShieldAlert className="w-16 h-16 text-destructive mb-4" />
+            <h1 className="text-2xl font-bold font-headline text-white">Access Denied</h1>
+            <p className="text-muted-foreground mt-2">The Reports and Analytics module is currently disabled for your account or organization.</p>
+          </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-start justify-between gap-4 flex-wrap">
@@ -161,7 +171,7 @@ export function ReportsPageContent({ initialPayload }: { initialPayload?: { tab?
                     </TabsTrigger>
                 </>
             )}
-            {!permissions.canManageStaff && (
+            {!permissions.canManageStaff && permissions.canSubmitReport && (
                 <TabsTrigger value="submit" className="rounded-xl px-6 font-black uppercase text-[10px] tracking-widest data-[state=active]:bg-background data-[state=active]:shadow-lg">
                     Submit Daily Report
                 </TabsTrigger>

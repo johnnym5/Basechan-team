@@ -337,6 +337,18 @@ function WorkbookDialogContent({ initialPayload }: { initialPayload?: { workbook
             </div>
       )
   }
+
+  const permissions = usePermissions(userProfile);
+
+  if (!isProfileLoading && !permissions.canAccessWorkbooks) {
+      return (
+           <div className="flex flex-col items-center justify-center h-full text-center p-8 min-h-[400px]">
+              <ShieldAlert className="w-16 h-16 text-destructive mb-4" />
+              <h1 className="text-2xl font-bold font-headline">Access Denied</h1>
+              <p className="text-muted-foreground mt-2">The Workbooks module is currently disabled for your account or organization.</p>
+            </div>
+      )
+  }
   
   if (viewingWorkbookId) {
       return <WorkbookDetailPage 
@@ -346,7 +358,7 @@ function WorkbookDialogContent({ initialPayload }: { initialPayload?: { workbook
                     setViewingWorkbookId(null)
                     setInitialSheetId(null);
                 }} 
-            />;
+              />;
   }
 
   return (
@@ -358,12 +370,15 @@ function WorkbookDialogContent({ initialPayload }: { initialPayload?: { workbook
             Create, manage, and distribute work from master documents.
           </p>
          </div>
-         <NewWorkbookDialog open={isNewWorkbookOpen} onOpenChange={setIsNewWorkbookOpen} userProfile={userProfile}>
-            <Button onClick={() => setIsNewWorkbookOpen(true)}>
-                <PlusCircle className="mr-2"/>
-                New Workbook
-            </Button>
-        </NewWorkbookDialog>
+         {permissions.canCreateWorkbook && (
+             <>
+                 <Button onClick={() => setIsNewWorkbookOpen(true)}>
+                     <PlusCircle className="mr-2"/>
+                     New Workbook
+                 </Button>
+                 <NewWorkbookDialog open={isNewWorkbookOpen} onOpenChange={setIsNewWorkbookOpen} userProfile={userProfile} />
+             </>
+         )}
        </div>
        <WorkbookList userProfile={userProfile} onSelectSheet={handleSelectSheet} />
     </div>

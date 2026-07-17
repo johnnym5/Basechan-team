@@ -106,6 +106,7 @@ export function InviteUserDialog({ open, onOpenChange, currentUserProfile }: Inv
         orgId: orgId,
         email: values.email.toLowerCase(),
         username: sanitizeInput(values.username.toLowerCase()),
+        password: values.password,
         fullName: sanitizeInput(values.fullName),
         phoneNumber: sanitizeInput(values.phoneNumber) || null,
         position: values.position as UserProfile['position'],

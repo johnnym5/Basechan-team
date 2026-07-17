@@ -82,7 +82,7 @@ export function useShiftReminders(
                 requireInteraction: true,
                 vibrate: [200, 100, 200],
                 badge: '/favicon.ico'
-            });
+            } as any);
 
             lastNotifiedRef.current[key] = new Date().toISOString();
         } catch (e) {

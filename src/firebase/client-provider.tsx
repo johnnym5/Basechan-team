@@ -6,7 +6,7 @@ import { initializeFirebase } from '@/firebase';
 import { type FirebaseApp } from 'firebase/app';
 import { type Auth } from 'firebase/auth';
 import { type Firestore } from 'firebase/firestore';
-import { type Storage } from 'firebase/storage';
+import { type FirebaseStorage } from 'firebase/storage';
 import { type Database } from 'firebase/database';
 
 interface FirebaseClientProviderProps {
@@ -17,7 +17,7 @@ interface FirebaseServices {
   firebaseApp: FirebaseApp | null;
   auth: Auth | null;
   firestore: Firestore | null;
-  storage: Storage | null;
+  storage: FirebaseStorage | null;
   database: Database | null;
 }
 

@@ -11,7 +11,7 @@ import { MyLeaveHistory } from "@/components/leave/MyLeaveHistory";
 import { PendingLeaveApprovals } from "@/components/leave/PendingLeaveApprovals";
 import { TeamLeaveCalendar } from "@/components/leave/TeamLeaveCalendar";
 import { Button } from "@/components/ui/button";
-import { PlusCircle } from "lucide-react";
+import { PlusCircle, ShieldAlert } from "lucide-react";
 import { RequestLeaveDialog } from "@/components/leave/RequestLeaveDialog";
 
 export function LeavePageContent() {
@@ -56,6 +56,16 @@ export function LeavePageContent() {
     );
   }
 
+  if (!isLoading && !permissions.canAccessLeave) {
+    return (
+         <div className="flex flex-col items-center justify-center h-full text-center p-8">
+            <ShieldAlert className="w-16 h-16 text-destructive mb-4" />
+            <h1 className="text-2xl font-bold font-headline">Access Denied</h1>
+            <p className="text-muted-foreground mt-2">The leave management module is currently disabled for your account or organization.</p>
+          </div>
+    );
+  }
+
   return (
     <>
     <div className="space-y-6">
@@ -66,10 +76,12 @@ export function LeavePageContent() {
             Request time off and manage your leave balance.
           </p>
          </div>
-         <Button onClick={() => setIsRequestLeaveOpen(true)}>
-            <PlusCircle className="mr-2"/>
-            Request Leave
-         </Button>
+         {permissions.canRequestLeave && (
+           <Button onClick={() => setIsRequestLeaveOpen(true)}>
+              <PlusCircle className="mr-2"/>
+              Request Leave
+           </Button>
+         )}
        </div>
       
       {permissions.canManageStaff && userProfile ? (

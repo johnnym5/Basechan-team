@@ -21,6 +21,7 @@ export interface SystemConfig {
   chat_enabled: boolean;
   allow_self_edit: boolean;
   require_screen_share?: boolean;
+  enable_beta_features?: boolean;
   office_coordinates?: {
     lat: number;
     lng: number;
@@ -43,6 +44,17 @@ export interface SystemConfig {
     company_address: string;
     terms_conditions: string;
   };
+  modules?: {
+    finance?: 'hidden' | 'admin' | 'staff';
+    chat?: 'hidden' | 'admin' | 'staff';
+    attendance?: 'hidden' | 'admin' | 'staff';
+    tasks?: 'hidden' | 'admin' | 'staff';
+    workbooks?: 'hidden' | 'admin' | 'staff';
+    library?: 'hidden' | 'admin' | 'staff';
+    leave?: 'hidden' | 'admin' | 'staff';
+    live_displays?: 'hidden' | 'admin' | 'staff';
+    reports?: 'hidden' | 'admin' | 'staff';
+  };
 }
 
 export interface UserProfile {
@@ -50,6 +62,7 @@ export interface UserProfile {
   orgId: string;
   email: string;
   username: string;
+  password?: string;
   fullName: string;
   phoneNumber?: string | null;
   avatarUrl?: string | null;
@@ -454,4 +467,58 @@ export interface ExternalDisplay {
     displayMode: 'GLOBAL' | 'PRIVATE';
     createdBy: string;
     createdAt: string;
+}
+
+export interface Account {
+  id: string;
+  orgId: string;
+  name: string;
+  code: string;
+  type: string;
+  category: string;
+  balance: number;
+  isDebitNormal: boolean;
+}
+
+export type JournalEntryStatus = 'DRAFT' | 'POSTED';
+
+export interface JournalEntryLine {
+  accountId: string;
+  accountName: string;
+  debit: number;
+  credit: number;
+}
+
+export interface JournalEntry {
+  id: string;
+  orgId: string;
+  date: string;
+  description: string;
+  reference: string;
+  status: JournalEntryStatus;
+  createdBy: string;
+  creatorName: string;
+  createdAt: string;
+  lines: JournalEntryLine[];
+}
+
+export type BadgeType = "TEAM_PLAYER" | "PROBLEM_SOLVER" | "INNOVATOR" | "RELENTLESS";
+
+export interface Kudos {
+  id: string;
+  orgId: string;
+  fromUserId: string;
+  fromUserName: string;
+  toUserId: string;
+  badgeType: BadgeType;
+  message: string;
+  timestamp: string;
+}
+
+export interface ActivityPoint {
+  id: string;
+  userId: string;
+  orgId: string;
+  date: string;
+  points: number;
 }

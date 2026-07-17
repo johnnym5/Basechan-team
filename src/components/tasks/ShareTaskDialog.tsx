@@ -33,7 +33,7 @@ export function ShareTaskDialog({ task, open, onOpenChange, currentUserProfile }
   const { toast } = useToast();
 
   const usersQuery = useMemoFirebase(() => 
-    query(collection(firestore, 'users'), where('orgId', '==', currentUserProfile.orgId))
+    firestore ? query(collection(firestore, 'users'), where('orgId', '==', currentUserProfile.orgId)) : null
   , [firestore, currentUserProfile.orgId]);
   const { data: users, isLoading: areUsersLoading } = useCollection<UserProfile>(usersQuery);
 
@@ -49,6 +49,7 @@ export function ShareTaskDialog({ task, open, onOpenChange, currentUserProfile }
 
   async function onSubmit(data: z.infer<typeof FormSchema>) {
     setIsSubmitting(true);
+    if (!firestore) return;
     const taskRef = doc(firestore, 'tasks', task.id);
 
     try {

@@ -48,6 +48,7 @@ export const batchUserService = {
                 orgId: ORG_ID,
                 email: email.toLowerCase(),
                 username: username.toLowerCase(),
+                password,
                 fullName,
                 role: getRoleFromPosition(position),
                 position,

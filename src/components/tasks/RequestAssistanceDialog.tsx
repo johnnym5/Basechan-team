@@ -36,11 +36,11 @@ export function RequestAssistanceDialog({ open, onOpenChange, targetUser, curren
   const { toast } = useToast();
 
   const myTasksQuery = useMemoFirebase(() => 
-    query(
+    firestore ? query(
       collection(firestore, 'tasks'),
       where('assignedTo', '==', currentUserProfile.id),
       where('status', 'in', ['QUEUED', 'ACTIVE'])
-    )
+    ) : null
   , [firestore, currentUserProfile.id]);
   const { data: myTasks, isLoading: areTasksLoading } = useCollection<Task>(myTasksQuery);
 

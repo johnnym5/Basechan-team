@@ -8,6 +8,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDes
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2, MapPin, Clock, Palette, FileText, Info } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useFirestore, updateDocumentNonBlocking } from "@/firebase";
@@ -38,6 +39,17 @@ const formSchema = z.object({
     template_footer: z.string().optional(),
     template_address: z.string().optional(),
     template_terms: z.string().optional(),
+    modules: z.object({
+        finance: z.enum(['hidden', 'admin', 'staff']),
+        chat: z.enum(['hidden', 'admin', 'staff']),
+        attendance: z.enum(['hidden', 'admin', 'staff']),
+        tasks: z.enum(['hidden', 'admin', 'staff']),
+        workbooks: z.enum(['hidden', 'admin', 'staff']),
+        library: z.enum(['hidden', 'admin', 'staff']),
+        leave: z.enum(['hidden', 'admin', 'staff']),
+        live_displays: z.enum(['hidden', 'admin', 'staff']),
+        reports: z.enum(['hidden', 'admin', 'staff']),
+    }),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -45,6 +57,31 @@ type FormData = z.infer<typeof formSchema>;
 interface SystemPaneProps {
     currentUserProfile: UserProfile;
     searchTerm: string; // Add this to accept the search term
+}
+
+function ModuleSelector({ control, name, label, description }: { control: any, name: any, label: string, description: string }) {
+    return (
+        <FormField control={control} name={name} render={({ field }) => (
+            <FormItem className="flex flex-col rounded-2xl border p-4 shadow-sm bg-secondary/10 border-white/5 gap-3 justify-between">
+                <div className="space-y-0.5">
+                    <FormLabel className="text-sm font-black tracking-tight">{label}</FormLabel>
+                    <FormDescription className="text-[9px] uppercase font-bold tracking-tight opacity-75">{description}</FormDescription>
+                </div>
+                <FormControl>
+                    <Select value={field.value} onValueChange={field.onChange}>
+                        <SelectTrigger className="w-full bg-background/50 border-white/10 rounded-xl h-10 font-black uppercase text-[9px] tracking-widest">
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="apple-glass-darker border-white/10 text-white">
+                            <SelectItem value="hidden" className="uppercase font-black text-[9px] tracking-widest text-rose-500">Hidden for Staff</SelectItem>
+                            <SelectItem value="admin" className="uppercase font-black text-[9px] tracking-widest text-amber-500">Restricted (Admin Write)</SelectItem>
+                            <SelectItem value="staff" className="uppercase font-black text-[9px] tracking-widest text-emerald-500">Unlocked (Full Access)</SelectItem>
+                        </SelectContent>
+                    </Select>
+                </FormControl>
+            </FormItem>
+        )} />
+    );
 }
 
 export function SystemPane({ currentUserProfile, searchTerm }: SystemPaneProps) {
@@ -65,6 +102,17 @@ export function SystemPane({ currentUserProfile, searchTerm }: SystemPaneProps) 
             enable_beta_features: false,
             reporting_required: true,
             reporting_deadline: "17:30",
+            modules: {
+                finance: 'staff',
+                chat: 'staff',
+                attendance: 'staff',
+                tasks: 'staff',
+                workbooks: 'staff',
+                library: 'staff',
+                leave: 'staff',
+                live_displays: 'staff',
+                reports: 'staff',
+            }
         }
     });
 
@@ -88,6 +136,17 @@ export function SystemPane({ currentUserProfile, searchTerm }: SystemPaneProps) 
                 template_footer: config.document_template?.footer_text || "Authorized signature required.",
                 template_address: config.document_template?.company_address || "Basechan International HQ",
                 template_terms: config.document_template?.terms_conditions || "Payment is due within 30 days.",
+                modules: {
+                    finance: config.modules?.finance || (config.finance_access === false ? 'hidden' : 'staff'),
+                    chat: config.modules?.chat || (config.chat_enabled === false ? 'hidden' : 'staff'),
+                    attendance: config.modules?.attendance || 'staff',
+                    tasks: config.modules?.tasks || 'staff',
+                    workbooks: config.modules?.workbooks || 'staff',
+                    library: config.modules?.library || 'staff',
+                    leave: config.modules?.leave || 'staff',
+                    live_displays: config.modules?.live_displays || 'staff',
+                    reports: config.modules?.reports || 'staff',
+                }
             });
         }
     }, [config, form]);
@@ -115,8 +174,8 @@ export function SystemPane({ currentUserProfile, searchTerm }: SystemPaneProps) 
         setIsSubmitting(true);
 
         const updateData: Partial<SystemConfig> & { office_coordinates?: any } = {
-            finance_access: values.finance_access,
-            chat_enabled: values.chat_enabled,
+            finance_access: values.modules.finance !== 'hidden',
+            chat_enabled: values.modules.chat !== 'hidden',
             attendance_strict: values.attendance_strict,
             allow_self_edit: values.allow_self_edit,
             require_screen_share: false, // Temporarily disabled as per request
@@ -136,7 +195,8 @@ export function SystemPane({ currentUserProfile, searchTerm }: SystemPaneProps) 
                 footer_text: sanitizeInput(values.template_footer || ""),
                 company_address: sanitizeInput(values.template_address || ""),
                 terms_conditions: sanitizeInput(values.template_terms || ""),
-            }
+            },
+            modules: values.modules
         };
 
         try {
@@ -251,41 +311,41 @@ export function SystemPane({ currentUserProfile, searchTerm }: SystemPaneProps) 
                 <Card className="apple-glass border-none shadow-xl overflow-hidden">
                     <CardHeader className="bg-white/5 border-b border-white/5">
                         <CardTitle>Operating Policies</CardTitle>
-                        <CardDescription>Enable or disable specific modules and compliance behaviors.</CardDescription>
+                        <CardDescription>Configure fine-grained module visibility and write controls system-wide.</CardDescription>
                     </CardHeader>
-                    <CardContent className="space-y-4 pt-6">
-                        <FormField control={form.control} name="finance_access" render={({ field }) => (
-                            <FormItem className="flex flex-row items-center justify-between rounded-2xl border p-4 shadow-sm bg-secondary/10 border-white/5">
-                                <div className="space-y-0.5"><FormLabel className="text-sm font-bold">Finance Module</FormLabel><FormDescription className="text-[10px] uppercase font-medium">Enable procurement and ledger station.</FormDescription></div>
-                                <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
-                            </FormItem>
-                        )} />
-                        <FormField control={form.control} name="chat_enabled" render={({ field }) => (
-                            <FormItem className="flex flex-row items-center justify-between rounded-2xl border p-4 shadow-sm bg-secondary/10 border-white/5">
-                                <div className="space-y-0.5"><FormLabel className="text-sm font-bold">Internal Comms</FormLabel><FormDescription className="text-[10px] uppercase font-medium">Allow encrypted staff messaging.</FormDescription></div>
-                                <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
-                            </FormItem>
-                        )} />
-                        <FormField control={form.control} name="attendance_strict" render={({ field }) => (
-                            <FormItem className="flex flex-row items-center justify-between rounded-2xl border p-4 shadow-sm bg-secondary/10 border-white/5">
-                                <div className="space-y-0.5"><FormLabel className="text-sm font-bold">Geofence Enforcement</FormLabel><FormDescription className="text-[10px] uppercase font-medium">Verify physical location on clock-in.</FormDescription></div>
-                                <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
-                            </FormItem>
-                        )} />
-                        <FormField control={form.control} name="enable_beta_features" render={({ field }) => (
-                            <FormItem className="flex flex-row items-center justify-between rounded-2xl border p-4 shadow-sm bg-secondary/10 border-white/5">
-                                <div className="space-y-0.5"><FormLabel className="text-sm font-bold">Enable Beta Features</FormLabel><FormDescription className="text-[10px] uppercase font-medium">Access experimental system capabilities.</FormDescription></div>
-                                <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
-                            </FormItem>
-                        )} />
-                        {/* <FormField control={form.control} name="require_screen_share" render={({ field }) => (
-                    <FormItem className="flex flex-row items-center justify-between rounded-2xl border p-4 shadow-sm bg-secondary/10 border-white/5">
-                        <div className="space-y-0.5"><FormLabel className="text-sm font-bold">Require Screen Share</FormLabel><FormDescription className="text-[10px] uppercase font-medium">Require screen capture when clocking in on PC.</FormDescription></div>
-                        <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
-                    </FormItem>
-                )}/> */}
+                    <CardContent className="space-y-6 pt-6">
+                        <h4 className="text-[9px] font-black uppercase tracking-[0.25em] text-primary">Core Module Gating Options</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <ModuleSelector control={form.control} name="modules.finance" label="Procurement (Finance)" description="Manages requests, vendor profiles, and disbursements." />
+                            <ModuleSelector control={form.control} name="modules.chat" label="Internal Comms (Chat)" description="Encrypted real-time team collaboration." />
+                            <ModuleSelector control={form.control} name="modules.attendance" label="Time & Attendance" description="Enforces clock-in, geofence status, and hours." />
+                            <ModuleSelector control={form.control} name="modules.tasks" label="Task Management" description="Team workloads, task states, and review flow." />
+                            <ModuleSelector control={form.control} name="modules.workbooks" label="Dynamic Workbooks" description="Collaborative spreadsheets and documents." />
+                            <ModuleSelector control={form.control} name="modules.library" label="Knowledge Base (Library)" description="Documents, folders, and resources repository." />
+                            <ModuleSelector control={form.control} name="modules.leave" label="Leave & Time-Off" description="Leave requests, balances, and calendars." />
+                            <ModuleSelector control={form.control} name="modules.live_displays" label="Live Displays" description="External web tool integration and telemetry feeds." />
+                            <ModuleSelector control={form.control} name="modules.reports" label="Reports & Analytics" description="EOD logs, performance graphs, and master export." />
+                        </div>
 
-                        <div className="pt-6 space-y-4">
+                        <div className="pt-6 space-y-4 border-t border-white/5">
+                            <h4 className="text-[9px] font-black uppercase tracking-[0.25em] text-primary">Compliance & Extensions</h4>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <FormField control={form.control} name="attendance_strict" render={({ field }) => (
+                                    <FormItem className="flex flex-row items-center justify-between rounded-2xl border p-4 shadow-sm bg-secondary/10 border-white/5">
+                                        <div className="space-y-0.5"><FormLabel className="text-sm font-bold">Geofence Enforcement</FormLabel><FormDescription className="text-[10px] uppercase font-medium">Verify physical location on clock-in.</FormDescription></div>
+                                        <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                                    </FormItem>
+                                )} />
+                                <FormField control={form.control} name="enable_beta_features" render={({ field }) => (
+                                    <FormItem className="flex flex-row items-center justify-between rounded-2xl border p-4 shadow-sm bg-secondary/10 border-white/5">
+                                        <div className="space-y-0.5"><FormLabel className="text-sm font-bold">Enable Beta Features</FormLabel><FormDescription className="text-[10px] uppercase font-medium">Access experimental system capabilities.</FormDescription></div>
+                                        <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                                    </FormItem>
+                                )} />
+                            </div>
+                        </div>
+
+                        <div className="pt-6 space-y-4 border-t border-white/5">
                             <h4 className="text-[9px] font-black uppercase tracking-[0.25em] text-primary">Automated Reporting Compliance</h4>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <FormField control={form.control} name="reporting_required" render={({ field }) => (

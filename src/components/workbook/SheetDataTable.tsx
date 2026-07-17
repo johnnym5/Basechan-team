@@ -19,6 +19,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
+  AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { AddRowDialog } from './AddRowDialog';
 import { EditRowDialog } from './EditRowDialog';
@@ -71,11 +72,11 @@ export function SheetDataTable({ sheet, permissions }: SheetDataTableProps) {
 
     const filteredData = useMemo(() => {
         if (!searchTerm) {
-            return data.map((row, index) => ({ ...row, __originalIndex: index }));
+            return data.map((row, index) => ({ ...row, __originalIndex: index } as any));
         }
         return data
-            .map((row, index) => ({ ...row, __originalIndex: index }))
-            .filter(row =>
+            .map((row, index) => ({ ...row, __originalIndex: index } as any))
+            .filter((row: any) =>
                 headers.some(header =>
                     String(row[header] ?? '').toLowerCase().includes(searchTerm.toLowerCase())
                 )

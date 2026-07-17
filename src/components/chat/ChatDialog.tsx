@@ -10,7 +10,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useState, useMemo, useRef, useEffect } from 'react';
 import { Input } from '../ui/input';
 import { Button } from '../ui/button';
-import { Send, Loader2, PlusCircle, Hash, MessageSquare, MoreVertical, Trash2, CheckCheck, History, Terminal, Paperclip, ArrowRight, ListTodo, Briefcase, ChevronLeft } from 'lucide-react';
+import { Send, Loader2, PlusCircle, Hash, MessageSquare, MoreVertical, Trash2, CheckCheck, History, Terminal, Paperclip, ArrowRight, ListTodo, Briefcase, ChevronLeft, ShieldAlert } from 'lucide-react';
 import { Skeleton } from '../ui/skeleton';
 import { cn, sanitizeInput } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
@@ -401,7 +401,20 @@ export function ChatDialog({ open, onOpenChange, currentUserProfile, permissions
       if (isMobile) setMobileView('chat');
   };
 
-  return (
+    if (open && !permissions.canAccessChat) {
+        return (
+          <Dialog open={open} onOpenChange={onOpenChange} modal={modal}>
+            <DialogContent position="center" className="p-8 flex flex-col items-center justify-center text-center rounded-[2.5rem] border-none apple-glass max-w-sm">
+               <ShieldAlert className="w-16 h-16 text-destructive mb-4" />
+               <h1 className="text-2xl font-bold font-headline text-white">Access Denied</h1>
+               <p className="text-muted-foreground mt-2">The Chat Hub module is currently disabled for your account or organization.</p>
+               <Button onClick={() => onOpenChange(false)} className="mt-6">Close</Button>
+            </DialogContent>
+          </Dialog>
+        );
+    }
+
+    return (
     <>
     <Dialog open={open} onOpenChange={onOpenChange} modal={modal}>
       <DialogContent position="left" className="p-0 flex flex-col apple-glass border-none overflow-hidden h-full">
@@ -426,18 +439,20 @@ export function ChatDialog({ open, onOpenChange, currentUserProfile, permissions
                         <div className="space-y-2">
                            <div className="flex items-center justify-between px-2 mb-2">
                              <h4 className="text-[9px] font-black uppercase tracking-[0.2em] text-primary opacity-70">Public Channels</h4>
-                             <Button 
-                                type="button"
-                                variant="ghost" 
-                                size="icon" 
-                                className="h-6 w-6 rounded-lg bg-primary/10 text-primary" 
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    uiEmitter.emit('open-create-channel-dialog');
-                                }}
-                            >
-                                <PlusCircle className="h-3.5 w-3.5" />
-                            </Button>
+                             {permissions.canSendChatMessage && (
+                                 <Button 
+                                    type="button"
+                                    variant="ghost" 
+                                    size="icon" 
+                                    className="h-6 w-6 rounded-lg bg-primary/10 text-primary" 
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        uiEmitter.emit('open-create-channel-dialog');
+                                    }}
+                                >
+                                    <PlusCircle className="h-3.5 w-3.5" />
+                                </Button>
+                             )}
                            </div>
                            <div className="space-y-1">
                                 {isChatsLoading && Array.from({length: 3}).map((_, i) => <Skeleton key={i} className="h-12 w-full rounded-xl" />)}
@@ -581,7 +596,7 @@ export function ChatDialog({ open, onOpenChange, currentUserProfile, permissions
                                     </Popover>
                                     
                                     <Input 
-                                        placeholder="Write a message..." 
+                                        placeholder={permissions.canSendChatMessage ? "Write a message..." : "Channel is read-only..."} 
                                         className="border-none bg-transparent focus-visible:ring-0 h-12 text-sm pl-2"
                                         value={message}
                                         onChange={handleInputChange}
@@ -590,9 +605,9 @@ export function ChatDialog({ open, onOpenChange, currentUserProfile, permissions
                                                 handleSendMessage();
                                             }
                                         }}
-                                        disabled={isSending}
+                                        disabled={isSending || !permissions.canSendChatMessage}
                                     />
-                                    <Button size="icon" onClick={handleSendMessage} disabled={isSending || (!message.trim() && !selectedAsset)} className="rounded-2xl h-10 w-10 shrink-0">
+                                    <Button size="icon" onClick={handleSendMessage} disabled={isSending || (!message.trim() && !selectedAsset) || !permissions.canSendChatMessage} className="rounded-2xl h-10 w-10 shrink-0">
                                         {isSending ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5" />}
                                     </Button>
                                 </div>

@@ -5,7 +5,7 @@ import { FirebaseApp } from 'firebase/app';
 import { Firestore } from 'firebase/firestore';
 import { Auth, User, onAuthStateChanged } from 'firebase/auth';
 import { FirebaseErrorListener } from '@/components/FirebaseErrorListener'
-import { type Storage } from 'firebase/storage';
+import { type FirebaseStorage } from 'firebase/storage';
 import { type Database } from 'firebase/database';
 
 interface FirebaseProviderProps {
@@ -13,7 +13,7 @@ interface FirebaseProviderProps {
   firebaseApp: FirebaseApp | null;
   firestore: Firestore | null;
   auth: Auth | null;
-  storage: Storage | null;
+  storage: FirebaseStorage | null;
   database: Database | null;
 }
 

@@ -27,6 +27,7 @@ export function FeedbackViewer({ open, onOpenChange }: FeedbackViewerProps) {
     const { data: allFeedback, isLoading } = useCollection<Feedback>(allFeedbackQuery);
 
     const handleMarkAsRead = (feedbackId: string) => {
+        if (!firestore) return;
         const feedbackRef = doc(firestore, 'feedback', feedbackId);
         updateDocumentNonBlocking(feedbackRef, { status: 'READ' });
     }

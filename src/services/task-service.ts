@@ -7,7 +7,7 @@ import type { Task, UserProfile, ActivityEntry, TaskStatus, Notification, TaskPr
 import { sanitizeInput } from '@/lib/utils';
 import { activityService } from './activity-service';
 import { errorEmitter } from '@/firebase/error-emitter';
-import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
+import { FirestorePermissionError } from '@/firebase/errors';
 
 export const taskService = {
   /**

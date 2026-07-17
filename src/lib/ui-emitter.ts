@@ -10,7 +10,7 @@ type AppEvents = {
   'open-attendance-dialog': { modal?: boolean } | void;
   'open-leave-dialog': { modal?: boolean } | void;
   'open-reports-dialog': { tab?: string; modal?: boolean } | void;
-  'open-assign-task-dialog': { modal?: boolean } | void;
+  'open-assign-task-dialog': { title?: string; description?: string; priority?: any; workbookId?: string; sheetId?: string | null; dueDate?: Date; modal?: boolean } | void;
   'open-new-requisition-dialog': { modal?: boolean } | void;
   'open-request-leave-dialog': { modal?: boolean } | void;
   'open-new-workbook-dialog': { modal?: boolean } | void;

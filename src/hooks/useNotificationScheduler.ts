@@ -126,7 +126,7 @@ export function useNotificationScheduler(
                 actions,
                 requireInteraction: true,
                 vibrate: [200, 100, 200]
-            });
+            } as any);
 
             lastNotifiedRef.current[key] = new Date().toISOString();
         } catch (e) {

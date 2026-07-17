@@ -161,10 +161,12 @@ export function RequisitionsPageContent({ initialPayload }: { initialPayload?: {
                         </div>
                      </div>
                  )}
-                <Button onClick={() => setIsNewRequestOpen(true)} className="rounded-xl h-11 px-6 font-black uppercase tracking-widest shadow-xl shadow-primary/20">
-                    <PlusCircle className="mr-2 h-4 w-4"/>
-                    New Request
-                </Button>
+                {permissions.canCreateRequisition && (
+                    <Button onClick={() => setIsNewRequestOpen(true)} className="rounded-xl h-11 px-6 font-black uppercase tracking-widest shadow-xl shadow-primary/20">
+                        <PlusCircle className="mr-2 h-4 w-4"/>
+                        New Request
+                    </Button>
+                )}
             </div>
         </div>
       {isProfileLoading ? (

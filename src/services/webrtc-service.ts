@@ -49,7 +49,7 @@ class WebRTCService {
         const data = snapshot.data();
         if (!this.peerConnection?.currentRemoteDescription && data?.answer) {
           const answerDescription = new RTCSessionDescription(data.answer);
-          this.peerConnection.setRemoteDescription(answerDescription);
+          this.peerConnection?.setRemoteDescription(answerDescription);
         }
       });
 

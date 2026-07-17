@@ -116,7 +116,7 @@ export function EditTaskDialog({ task, open, onOpenChange, currentUserProfile }:
             dueDate: dueDateISO,
             workbookId: values.workbookId || null,
             sheetId: values.sheetId || null,
-            estimatedHours: values.estimatedHours || null,
+            estimatedHours: values.estimatedHours || undefined,
         };
 
         if (values.attachment) {
@@ -133,7 +133,7 @@ export function EditTaskDialog({ task, open, onOpenChange, currentUserProfile }:
             timestamp: now,
             text: `updated the mission parameters.`,
         };
-        updateData.activity = arrayUnion(logEntry);
+        updateData.activity = arrayUnion(logEntry) as any;
 
         const taskRef = doc(firestore, 'tasks', task.id);
         updateDocumentNonBlocking(taskRef, updateData);

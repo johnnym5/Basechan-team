@@ -23,7 +23,8 @@ import {
     Globe,
     Layers,
     Pencil,
-    Lock
+    Lock,
+    ShieldAlert
 } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
@@ -114,6 +115,16 @@ export function WebDashboardPageContent({ initialPayload }: { initialPayload?: {
         );
     }
 
+    if (!permissions.canAccessDisplays) {
+        return (
+             <div className="flex flex-col items-center justify-center h-full text-center p-8 bg-background">
+                <ShieldAlert className="w-16 h-16 text-destructive mb-4" />
+                <h1 className="text-2xl font-bold font-headline text-white">Access Denied</h1>
+                <p className="text-muted-foreground mt-2">The Live Displays module is currently disabled for your account or organization.</p>
+              </div>
+        );
+    }
+
     if (selectedDisplay) {
         return (
             <div className="flex flex-col h-[calc(100vh-6rem)] animate-in fade-in zoom-in-95 duration-500">
@@ -195,9 +206,11 @@ export function WebDashboardPageContent({ initialPayload }: { initialPayload?: {
                     </h1>
                     <p className="text-muted-foreground">Monitor real-time documents, dashboards, and web-based telemetry nodes.</p>
                 </div>
-                <Button onClick={() => { setEditDisplay(null); setIsAddOpen(true); }} className="rounded-xl h-12 px-6 font-bold shadow-lg shadow-primary/20">
-                    <Plus className="mr-2 h-5 w-5" /> Integrate Feed
-                </Button>
+                {permissions.canManageDisplays && (
+                    <Button onClick={() => { setEditDisplay(null); setIsAddOpen(true); }} className="rounded-xl h-12 px-6 font-bold shadow-lg shadow-primary/20">
+                        <Plus className="mr-2 h-5 w-5" /> Integrate Feed
+                    </Button>
+                )}
             </div>
 
             {sortedDisplays?.length === 0 ? (
@@ -211,7 +224,7 @@ export function WebDashboardPageContent({ initialPayload }: { initialPayload?: {
             ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                     {sortedDisplays?.map(display => {
-                        const canManage = permissions.canManageDisplays || display.createdBy === userProfile?.id;
+                        const canManage = permissions.canManageDisplays;
                         
                         return (
                         <Card 

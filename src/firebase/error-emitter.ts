@@ -9,6 +9,7 @@ import { FirestoreError } from 'firebase/firestore';
 export interface AppEvents {
   'permission-error': FirestorePermissionError;
   'firestore-error': FirestoreError | Error;
+  'webrtc-error': Error;
 }
 
 // A generic type for a callback function.

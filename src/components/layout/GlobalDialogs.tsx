@@ -65,6 +65,7 @@ export function GlobalDialogs({ userProfile, permissions, onAnyDialogOpenChange 
   const [initialDisplaysPayload, setInitialDisplaysPayload] = useState<{ displayId?: string } | undefined>();
   
   const [isAssignTaskOpen, setIsAssignTaskOpen] = useState(false);
+  const [assignTaskPayload, setAssignTaskPayload] = useState<any>(null);
   const [isNewRequisitionOpen, setIsNewRequisitionOpen] = useState(false);
   const [isRequestLeaveOpen, setIsRequestLeaveOpen] = useState(false);
   const [isNewWorkbookOpen, setIsNewWorkbookOpen] = useState(false);
@@ -169,7 +170,10 @@ export function GlobalDialogs({ userProfile, permissions, onAnyDialogOpenChange 
         setIsDisplaysModal(!!payload?.modal);
         setIsDisplaysOpen(true);
     };
-    const openAssignTask = () => setIsAssignTaskOpen(true);
+    const openAssignTask = (payload?: any) => {
+        setAssignTaskPayload(payload || null);
+        setIsAssignTaskOpen(true);
+    };
     const openNewRequisition = () => setIsNewRequisitionOpen(true);
     const openRequestLeave = () => setIsRequestLeaveOpen(true);
     const openNewWorkbook = () => setIsNewWorkbookOpen(true);
@@ -320,7 +324,7 @@ export function GlobalDialogs({ userProfile, permissions, onAnyDialogOpenChange 
           <NotificationsDialog open={isNotificationsOpen} onOpenChange={setIsNotificationsOpen} userProfile={userProfile} />
       )}
 
-      {isAssignTaskOpen && userProfile && <AssignTaskDialog open={isAssignTaskOpen} onOpenChange={setIsAssignTaskOpen} currentUserProfile={userProfile} permissions={permissions} initialData={null} />}
+      {isAssignTaskOpen && userProfile && <AssignTaskDialog open={isAssignTaskOpen} onOpenChange={setIsAssignTaskOpen} currentUserProfile={userProfile} permissions={permissions} initialData={assignTaskPayload} />}
       {isNewRequisitionOpen && userProfile && <NewRequisitionDialog open={isNewRequisitionOpen} onOpenChange={setIsNewRequisitionOpen} userProfile={userProfile} />}
       {isRequestLeaveOpen && userProfile && <RequestLeaveDialog open={isRequestLeaveOpen} onOpenChange={setIsRequestLeaveOpen} userProfile={userProfile} />}
       {isNewWorkbookOpen && userProfile && <NewWorkbookDialog open={isNewWorkbookOpen} onOpenChange={setIsNewWorkbookOpen} userProfile={userProfile} />}

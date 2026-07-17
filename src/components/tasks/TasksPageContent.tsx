@@ -2,13 +2,14 @@
 import { useState, useEffect } from 'react';
 import { useDoc, useMemoFirebase, useFirestore } from '@/firebase';
 import { doc } from 'firebase/firestore';
-import type { Task, UserProfile, Permissions } from '@/lib/types';
+import type { Task, UserProfile } from '@/lib/types';
+import type { Permissions } from '@/hooks/usePermissions';
 import { Skeleton } from '@/components/ui/skeleton';
 import { TaskDetailDialog } from '@/components/tasks/TaskDetailDialog';
 import { TaskBoard } from '@/components/tasks/TaskBoard';
 import { TaskList } from '@/components/tasks/TaskList';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, Search, ListFilter } from 'lucide-react';
+import { PlusCircle, Search, ListFilter, ShieldAlert } from 'lucide-react';
 import { AssignTaskDialog } from '@/components/tasks/AssignTaskDialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '../ui/input';
@@ -50,6 +51,16 @@ export function TasksPageContent({ initialPayload, currentUserProfile, permissio
 
   if (!currentUserProfile) return <Skeleton className="h-full w-full rounded-[2rem]" />;
 
+  if (!permissions.canAccessTasks) {
+    return (
+         <div className="flex flex-col items-center justify-center h-full text-center p-8 bg-background">
+            <ShieldAlert className="w-16 h-16 text-destructive mb-4" />
+            <h1 className="text-2xl font-bold font-headline text-white">Access Denied</h1>
+            <p className="text-muted-foreground mt-2">The tasks module is currently disabled for your account or organization.</p>
+          </div>
+    );
+  }
+
   return (
     <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col overflow-hidden">
       <div className="flex-1 flex flex-col min-h-0 overflow-y-auto [scrollbar-gutter:stable] custom-scrollbar bg-background">
@@ -67,10 +78,12 @@ export function TasksPageContent({ initialPayload, currentUserProfile, permissio
                           <TabsTrigger value="board" className="rounded-lg px-4 font-black uppercase text-[10px] tracking-widest data-[state=active]:bg-background">Board</TabsTrigger>
                           <TabsTrigger value="list" className="rounded-lg px-4 font-black uppercase text-[10px] tracking-widest data-[state=active]:bg-background">List</TabsTrigger>
                       </TabsList>
-                      <Button onClick={() => setIsAssignTaskOpen(true)} className="rounded-xl font-bold shadow-lg shadow-primary/20">
-                          <PlusCircle className="mr-2 h-4 w-4"/>
-                          Add Task
-                      </Button>
+                      {permissions.canCreateTask && (
+                          <Button onClick={() => setIsAssignTaskOpen(true)} className="rounded-xl font-bold shadow-lg shadow-primary/20">
+                              <PlusCircle className="mr-2 h-4 w-4"/>
+                              Add Task
+                          </Button>
+                      )}
                   </div>
                 </div>
 

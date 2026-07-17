@@ -173,7 +173,7 @@ export function LiveMonitorDialog({ open, onOpenChange, targetUserId, targetUser
                 </div>
 
                 <div className="flex-1 bg-black relative flex items-center justify-center min-h-0 shadow-inner">
-                    {(status !== 'CONNECTED' || status === 'DISCONNECTED') && (
+                    {status !== 'CONNECTED' && (
                         <div className="text-center space-y-6 z-10 p-12 max-w-md animate-in fade-in zoom-in-95 duration-700">
                             {status === 'FAILED' || status === 'DISCONNECTED' ? (
                                 <>

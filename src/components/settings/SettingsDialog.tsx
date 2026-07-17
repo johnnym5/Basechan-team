@@ -129,7 +129,7 @@ export function SettingsDialog({ open, onOpenChange, userProfile }: SettingsDial
         {/* Panel — full screen left-side slide-in on desktop, bottom sheet on mobile */}
         <DialogPrimitive.Content
           className={cn(
-            "fixed z-[500] bg-background/98 backdrop-blur-xl shadow-2xl",
+            "fixed z-[500] bg-background/98 backdrop-blur-xl shadow-2xl flex flex-col h-full min-h-0 overflow-hidden",
             "data-[state=open]:animate-in data-[state=closed]:animate-out",
             "data-[state=closed]:duration-300 data-[state=open]:duration-500",
             isMobile

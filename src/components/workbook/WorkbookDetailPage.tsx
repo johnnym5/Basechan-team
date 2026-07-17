@@ -82,8 +82,16 @@ export default function WorkbookDetailPage({ workbookId, onBack, initialSheetId 
     [firestore, workbookId]);
     const { data: sheets, isLoading: areSheetsLoading } = useCollection<Sheet>(sheetsQuery);
 
-    const workbookPermissions = useWorkbookPermissions(workbook, userProfile);
+    const baseWorkbookPermissions = useWorkbookPermissions(workbook, userProfile);
     const generalPermissions = usePermissions(userProfile);
+
+    const workbookPermissions = useMemo(() => {
+        return {
+            ...baseWorkbookPermissions,
+            canEdit: baseWorkbookPermissions.canEdit && generalPermissions.canCreateWorkbook,
+            canManage: baseWorkbookPermissions.canManage && generalPermissions.canCreateWorkbook,
+        };
+    }, [baseWorkbookPermissions, generalPermissions.canCreateWorkbook]);
 
     const isLoading = isWorkbookLoading || areSheetsLoading || isProfileLoading;
     
@@ -132,7 +140,7 @@ export default function WorkbookDetailPage({ workbookId, onBack, initialSheetId 
 
     const handleDeleteSheet = () => {
         if (!sheetToDelete || !workbookPermissions.canEdit || !workbookId) return;
-        const sheetRef = doc(firestore, `workbooks/${workbookId}/sheets`, sheetToDelete.id);
+        const sheetRef = doc(firestore!, `workbooks/${workbookId}/sheets`, sheetToDelete.id);
         deleteDocumentNonBlocking(sheetRef);
         setSheetToDelete(null);
     }

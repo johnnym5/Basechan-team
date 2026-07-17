@@ -25,7 +25,7 @@ interface ShareWorkbookDialogProps {
   currentUserProfile: UserProfile;
 }
 
-interface SharedUser extends UserProfile {
+interface SharedUser extends Omit<UserProfile, 'role'> {
     role: WorkbookRole;
 }
 
@@ -40,7 +40,7 @@ export function ShareWorkbookDialog({ workbook, open, onOpenChange, currentUserP
   const [owner, setOwner] = useState<UserProfile | null>(null);
 
   const usersQuery = useMemoFirebase(() => 
-    query(collection(firestore, 'users'), where('orgId', '==', currentUserProfile.orgId))
+    firestore ? query(collection(firestore, 'users'), where('orgId', '==', currentUserProfile.orgId)) : null
   , [firestore, currentUserProfile.orgId]);
   const { data: allUsers, isLoading: areUsersLoading } = useCollection<UserProfile>(usersQuery);
 
@@ -86,6 +86,7 @@ export function ShareWorkbookDialog({ workbook, open, onOpenChange, currentUserP
   }
 
   async function onSubmit() {
+    if (!firestore) return;
     setIsSubmitting(true);
     const workbookRef = doc(firestore, 'workbooks', workbook.id);
 
