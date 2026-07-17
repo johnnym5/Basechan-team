@@ -15,15 +15,9 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Loader2, Monitor, Smartphone } from "lucide-react";
-<<<<<<< HEAD
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth, useFirestore } from "@/firebase";
-=======
-import { useState, useEffect } from "react";
-import { useToast } from "@/hooks/use-toast";
-import { useAuth, useFirestore, errorEmitter } from "@/firebase";
->>>>>>> 8c2f2c7ee9c25fe21fb0f2e265f70b5d1d4e553a
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { query, collection, where, getDocs, doc, updateDoc, getDoc } from "firebase/firestore";
 import type { UserProfile } from "@/lib/types";
@@ -38,11 +32,6 @@ const formSchema = z.object({
 
 export function LoginForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
-<<<<<<< HEAD
-=======
-  const [isIdVerified, setIsIdVerified] = useState<boolean | null>(null);
-  const [isCheckingId, setIsCheckingId] = useState(false);
->>>>>>> 8c2f2c7ee9c25fe21fb0f2e265f70b5d1d4e553a
   const { toast } = useToast();
   const auth = useAuth();
   const firestore = useFirestore();
@@ -55,65 +44,6 @@ export function LoginForm() {
     },
   });
 
-<<<<<<< HEAD
-=======
-  const watchedUsername = form.watch("username");
-
-  useEffect(() => {
-    if (!firestore) return;
-    
-    const cleaned = sanitizeInput((watchedUsername || "").trim().toLowerCase());
-    if (!cleaned) {
-      setIsIdVerified(null);
-      return;
-    }
-
-    setIsCheckingId(true);
-    const timer = setTimeout(async () => {
-      try {
-        let verified = false;
-        
-        // 1. Try Document ID / UID
-        const userDocRef = doc(firestore, "users", cleaned);
-        const userDoc = await getDoc(userDocRef);
-        if (userDoc.exists() && userDoc.data()?.orgId === ORG_ID) {
-          verified = true;
-        } else {
-          // 2. Try Username
-          const q1 = query(
-            collection(firestore, "users"), 
-            where("orgId", "==", ORG_ID),
-            where("username", "==", cleaned)
-          );
-          const s1 = await getDocs(q1);
-          if (!s1.empty) {
-            verified = true;
-          } else {
-            // 3. Try Email
-            const q2 = query(
-              collection(firestore, "users"), 
-              where("orgId", "==", ORG_ID),
-              where("email", "==", cleaned)
-            );
-            const s2 = await getDocs(q2);
-            if (!s2.empty) {
-              verified = true;
-            }
-          }
-        }
-        setIsIdVerified(verified);
-      } catch (err) {
-        errorEmitter.emit('firestore-error', err);
-        setIsIdVerified(null);
-      } finally {
-        setIsCheckingId(false);
-      }
-    }, 500);
-
-    return () => clearTimeout(timer);
-  }, [watchedUsername, firestore]);
-
->>>>>>> 8c2f2c7ee9c25fe21fb0f2e265f70b5d1d4e553a
   const getDeviceType = () => {
     if (typeof window === 'undefined') return 'PC';
     const ua = navigator.userAgent;
@@ -128,12 +58,7 @@ export function LoginForm() {
     if (!auth || !firestore) return;
     setIsSubmitting(true);
     
-<<<<<<< HEAD
     const identity = values.username.toLowerCase();
-=======
-    // TRIMMING THE INPUT IS CRITICAL - Mobile keyboards often add trailing spaces!
-    const identity = values.username.trim().toLowerCase();
->>>>>>> 8c2f2c7ee9c25fe21fb0f2e265f70b5d1d4e553a
     const deviceType = getDeviceType();
     const sessionId = crypto.randomUUID();
     
@@ -143,10 +68,6 @@ export function LoginForm() {
 
       // 1. Resolve User Identity
       if (!identity.includes('@')) {
-<<<<<<< HEAD
-=======
-          // If it is a username (no @), first query the Firestore users collection to find the document matching that username
->>>>>>> 8c2f2c7ee9c25fe21fb0f2e265f70b5d1d4e553a
           const usersRef = collection(firestore, "users");
           const userQuery = query(
             usersRef, 
@@ -156,13 +77,7 @@ export function LoginForm() {
           const userSnapshot = await getDocs(userQuery);
           
           if (userSnapshot.empty) {
-<<<<<<< HEAD
               throw new Error("User not found in organization records.");
-=======
-              toast({ variant: 'destructive', title: 'Login Failed', description: "Username not found in system." });
-              setIsSubmitting(false);
-              return;
->>>>>>> 8c2f2c7ee9c25fe21fb0f2e265f70b5d1d4e553a
           }
 
           userData = { id: userSnapshot.docs[0].id, ...userSnapshot.docs[0].data() } as UserProfile;
@@ -170,15 +85,7 @@ export function LoginForm() {
       } else {
           // If login by email, we still need to fetch the profile to check session
           const usersRef = collection(firestore, "users");
-<<<<<<< HEAD
           const userQuery = query(usersRef, where("email", "==", identity));
-=======
-          const userQuery = query(
-            usersRef, 
-            where("orgId", "==", ORG_ID),
-            where("email", "==", identity)
-          );
->>>>>>> 8c2f2c7ee9c25fe21fb0f2e265f70b5d1d4e553a
           const userSnapshot = await getDocs(userQuery);
           if (!userSnapshot.empty) {
               userData = { id: userSnapshot.docs[0].id, ...userSnapshot.docs[0].data() } as UserProfile;
@@ -243,24 +150,11 @@ export function LoginForm() {
             name="username"
             render={({ field }) => (
                 <FormItem>
-<<<<<<< HEAD
                 <FormLabel>Username</FormLabel>
                 <FormControl>
                     <Input placeholder="Username or Email" {...field} />
                 </FormControl>
                 <FormDescription className="text-[0.625rem] uppercase tracking-widest opacity-50">Enter your company ID or email</FormDescription>
-=======
-                <div className="flex justify-between items-center">
-                    <FormLabel>Username or User ID</FormLabel>
-                    {isCheckingId && <span className="text-[10px] text-muted-foreground animate-pulse">Checking ID...</span>}
-                    {isIdVerified === true && <span className="text-[10px] font-bold text-emerald-500 flex items-center gap-1">✓ ID Verified</span>}
-                    {isIdVerified === false && <span className="text-[10px] font-bold text-rose-500">✗ ID Not Found</span>}
-                </div>
-                <FormControl>
-                    <Input className="apple-glass" placeholder="Username, Email, or User ID" {...field} />
-                </FormControl>
-                <FormDescription className="text-[0.625rem] uppercase tracking-widest opacity-50">Enter your company ID, email, or username</FormDescription>
->>>>>>> 8c2f2c7ee9c25fe21fb0f2e265f70b5d1d4e553a
                 <FormMessage />
                 </FormItem>
             )}
@@ -272,11 +166,7 @@ export function LoginForm() {
                 <FormItem>
                 <FormLabel>Password</FormLabel>
                 <FormControl>
-<<<<<<< HEAD
                     <Input type="password" placeholder="••••••••" {...field} />
-=======
-                    <Input className="apple-glass" type="password" placeholder="••••••••" {...field} />
->>>>>>> 8c2f2c7ee9c25fe21fb0f2e265f70b5d1d4e553a
                 </FormControl>
                 <FormMessage />
                 </FormItem>

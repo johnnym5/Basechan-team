@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 
 'use client';
 
@@ -9,34 +8,14 @@ import { cn } from "@/lib/utils";
 import { useUser, useDoc, useMemoFirebase, useFirestore, useCollection } from "@/firebase";
 import { usePermissions } from "@/hooks/usePermissions";
 import { doc, collection, query, where, orderBy, limit } from "firebase/firestore";
-=======
-'use client';
-
-import { uiEmitter } from "@/lib/ui-emitter";
-import { Plus, LayoutDashboard, Fingerprint, LayoutGrid, X, Sparkles, Bell, LogOut } from 'lucide-react';
-import { useSearchParams } from "next/navigation";
-import { cn } from "@/lib/utils";
-import { useUser, useDoc, useMemoFirebase, useFirestore, useCollection, useAuth } from "@/firebase";
-import { usePermissions } from "@/hooks/usePermissions";
-import { doc, collection, query, where, orderBy, limit, updateDoc } from "firebase/firestore";
-import { signOut } from "firebase/auth";
->>>>>>> 8c2f2c7ee9c25fe21fb0f2e265f70b5d1d4e553a
 import type { UserProfile, Notification } from "@/lib/types";
 import { mainNavItems } from "@/lib/nav-items";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetDescription } from '@/components/ui/sheet';
 import { ScrollArea } from "../ui/scroll-area";
 import { useState } from "react";
-<<<<<<< HEAD
 
 export function BottomNavBar() {
   const { user } = useUser();
-=======
-import { Button } from "../ui/button";
-
-export function BottomNavBar() {
-  const { user } = useUser();
-  const auth = useAuth();
->>>>>>> 8c2f2c7ee9c25fe21fb0f2e265f70b5d1d4e553a
   const firestore = useFirestore();
   const searchParams = useSearchParams();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -80,23 +59,6 @@ export function BottomNavBar() {
     }
   };
 
-<<<<<<< HEAD
-=======
-  const handleLogout = async () => {
-    if (auth && user?.uid && firestore) {
-        try {
-            const userRef = doc(firestore, 'users', user.uid);
-            await updateDoc(userRef, { activeSessionId: null, status: 'OFFLINE' });
-            localStorage.removeItem('basechan-active-session');
-            await signOut(auth);
-            window.location.href = '/';
-        } catch (error) {
-            console.error("Logout failed:", error);
-        }
-    }
-  };
-
->>>>>>> 8c2f2c7ee9c25fe21fb0f2e265f70b5d1d4e553a
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-[100] md:hidden">
       {/* Tab Bar Background */}
@@ -129,30 +91,17 @@ export function BottomNavBar() {
                         <LayoutGrid className={cn("h-8 w-8 transition-transform duration-500", isMenuOpen && "rotate-90")} />
                     </button>
                 </SheetTrigger>
-<<<<<<< HEAD
                 <SheetContent side="bottom" className="h-[75dvh] rounded-t-[3rem] apple-glass-darker border-none p-0 overflow-hidden">
                     <div className="absolute top-4 left-1/2 -translate-x-1/2 w-12 h-1.5 bg-muted/30 rounded-full z-10" />
                     
                     <div className="flex flex-col h-full pt-10">
                         <SheetHeader className="px-8 pb-6 text-left">
-=======
-                <SheetContent side="bottom" className="h-[75dvh] rounded-t-[3rem] apple-glass-darker border-none p-0 overflow-hidden flex flex-col">
-                    <div className="absolute top-4 left-1/2 -translate-x-1/2 w-12 h-1.5 bg-muted/30 rounded-full z-10" />
-                    
-                    <div className="flex flex-col h-full pt-10">
-                        <SheetHeader className="px-8 pb-6 text-left shrink-0">
->>>>>>> 8c2f2c7ee9c25fe21fb0f2e265f70b5d1d4e553a
                             <SheetTitle className="text-3xl font-black font-headline tracking-tighter">Main Menu</SheetTitle>
                             <SheetDescription className="text-[10px] font-black uppercase tracking-[0.2em] opacity-50">Select a section</SheetDescription>
                         </SheetHeader>
                         
-<<<<<<< HEAD
                         <ScrollArea className="flex-1 px-6 pb-20">
                             <div className="grid grid-cols-3 gap-4">
-=======
-                        <ScrollArea className="flex-1 px-6">
-                            <div className="grid grid-cols-3 gap-4 pb-4">
->>>>>>> 8c2f2c7ee9c25fe21fb0f2e265f70b5d1d4e553a
                                 {mainNavItems.map((item, idx) => {
                                     if ('isSeparator' in item) return <div key={idx} className="col-span-3 h-px bg-white/5 my-2" />;
                                     if ('permission' in item && !permissions[item.permission as keyof typeof permissions]) return null;
@@ -180,20 +129,6 @@ export function BottomNavBar() {
                                 })}
                             </div>
                         </ScrollArea>
-<<<<<<< HEAD
-=======
-                        
-                        <div className="p-6 shrink-0 border-t border-white/5 bg-background/50">
-                            <Button 
-                                variant="ghost" 
-                                onClick={handleLogout}
-                                className="w-full h-14 rounded-2xl bg-destructive/10 text-destructive hover:bg-destructive hover:text-white transition-all interactive-element"
-                            >
-                                <LogOut className="mr-2 h-5 w-5" />
-                                <span className="font-black uppercase tracking-widest text-xs">Sign Out</span>
-                            </Button>
-                        </div>
->>>>>>> 8c2f2c7ee9c25fe21fb0f2e265f70b5d1d4e553a
                     </div>
                 </SheetContent>
             </Sheet>

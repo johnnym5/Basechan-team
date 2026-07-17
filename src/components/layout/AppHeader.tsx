@@ -6,10 +6,6 @@ import { useUser, useMemoFirebase, useCollection, updateDocumentNonBlocking, use
 import { collection, query, where, orderBy, limit, doc } from 'firebase/firestore';
 import type { UserProfile, Notification, Attendance, SystemConfig, Announcement } from '@/lib/types';
 import { Bell, Sparkles } from 'lucide-react';
-<<<<<<< HEAD
-=======
-import Image from 'next/image';
->>>>>>> 8c2f2c7ee9c25fe21fb0f2e265f70b5d1d4e553a
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { ScrollArea } from '../ui/scroll-area';
 import { format } from 'date-fns';
@@ -112,7 +108,6 @@ export default function AppHeader({
       return (
           <div className="flex flex-col items-center gap-4 py-4 border-b border-white/5">
               {/* Profile & Status Header */}
-<<<<<<< HEAD
               <div className="w-full px-3 overflow-hidden min-h-[2.5rem] flex flex-col justify-center">
                   <p className="text-[8px] font-black uppercase tracking-[0.2em] text-primary opacity-50 mb-0.5 truncate">
                       BASECHAN STAFF
@@ -120,10 +115,6 @@ export default function AppHeader({
                   <p className="text-[11px] font-black font-headline tracking-tighter leading-tight transition-all duration-500 group-hover:text-xs animate-in fade-in slide-in-from-left-1">
                       Good {greeting}
                   </p>
-=======
-              <div className="w-full px-2 overflow-hidden min-h-[2.5rem] flex flex-col justify-center items-center">
-                  <Image src="/logo.png" alt="Basechan International" width={120} height={34} className="w-full h-auto object-contain opacity-80" />
->>>>>>> 8c2f2c7ee9c25fe21fb0f2e265f70b5d1d4e553a
               </div>
 
               <div className="flex flex-col items-center gap-3">

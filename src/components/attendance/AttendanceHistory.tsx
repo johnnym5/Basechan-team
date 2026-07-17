@@ -8,6 +8,7 @@ import { collection, query, where, orderBy, limit } from "firebase/firestore";
 import { format, differenceInSeconds } from 'date-fns';
 import { Badge } from "../ui/badge";
 import { cn } from "@/lib/utils";
+import { formatDuration } from "@/lib/formatters";
 
 interface AttendanceHistoryProps {
   userProfile: UserProfile | null;
@@ -27,27 +28,6 @@ export function AttendanceHistory({ userProfile }: AttendanceHistoryProps) {
   }, [firestore, userProfile]);
 
   const { data: attendanceHistory, isLoading } = useCollection<Attendance>(attendanceQuery);
-
-  const formatDuration = (totalSeconds: number | undefined): string => {
-    if (totalSeconds == null || totalSeconds < 0) return '00:00:00';
-    const h = Math.floor(totalSeconds / 3600).toString().padStart(2, '0');
-    const m = Math.floor((totalSeconds % 3600) / 60).toString().padStart(2, '0');
-    const s = (totalSeconds % 60).toString().padStart(2, '0');
-    return `${h}:${m}:${s}`;
-  };
-
-  const calculateDuration = (clockIn: string, clockOut?: string): string => {
-    if (!clockOut) {
-      return "In Progress";
-    }
-    const start = new Date(clockIn);
-    const end = new Date(clockOut);
-    const diffSeconds = differenceInSeconds(end, start);
-
-    if (diffSeconds < 0) return "Invalid";
-
-    return formatDuration(diffSeconds);
-  };
 
   return (
     <Card>

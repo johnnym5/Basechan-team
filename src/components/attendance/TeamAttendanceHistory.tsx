@@ -17,6 +17,7 @@ import * as XLSX from 'xlsx';
 import { useToast } from "@/hooks/use-toast";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { formatDuration } from '@/lib/formatters';
 
 
 interface TeamAttendanceHistoryProps {
@@ -56,14 +57,6 @@ export function TeamAttendanceHistory({ userProfile }: TeamAttendanceHistoryProp
         }, {} as Record<string, Attendance[]>);
     }, [recordsForSelectedDay]);
 
-
-    const formatDuration = (totalSeconds: number | undefined): string => {
-        if (totalSeconds == null || totalSeconds < 0) return '00:00:00';
-        const h = Math.floor(totalSeconds / 3600).toString().padStart(2, '0');
-        const m = Math.floor((totalSeconds % 3600) / 60).toString().padStart(2, '0');
-        const s = (totalSeconds % 60).toString().padStart(2, '0');
-        return `${h}:${m}:${s}`;
-    };
 
     const handleExport = () => {
         if (!attendanceHistory || attendanceHistory.length === 0) {
