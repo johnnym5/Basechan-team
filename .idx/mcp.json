@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 {
   "mcpServers": {
     "firebase": {
@@ -12,19 +11,4 @@
       ]
     }
   }
-=======
-{
-  "mcpServers": {
-    "firebase": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "firebase-tools@latest",
-        "experimental:mcp",
-        "--only",
-        "auth,firestore"
-      ]
-    }
-  }
->>>>>>> 8c2f2c7ee9c25fe21fb0f2e265f70b5d1d4e553a
 }

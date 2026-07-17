@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
 # Dependencies
@@ -46,52 +45,3 @@ pnpm-debug.log*
 
 # Turbo repo
 .turbo
-=======
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
-
-# Dependencies
-/node_modules
-/.pnp
-.pnp.js
-
-# Firebase
-/.firebase
-
-# Next.js build output
-/.next/
-/out/
-
-# Production builds
-/build
-/dist
-
-# Test results
-/coverage
-
-# Environment variables
-.env
-.env*.local
-!.env.example
-
-# Logs
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-
-# Editor directories and files
-.idea
-.vscode/*
-!.vscode/settings.json
-!.vscode/tasks.json
-!.vscode/launch.json
-!.vscode/extensions.json
-*.sublime-workspace
-
-# Miscellaneous
-.DS_Store
-*.pem
-
-# Turbo repo
-.turbo
->>>>>>> 8c2f2c7ee9c25fe21fb0f2e265f70b5d1d4e553a
