@@ -30,7 +30,7 @@ export interface FirebaseContextState {
   firebaseApp: FirebaseApp | null;
   firestore: Firestore | null;
   auth: Auth | null; // The Auth service instance
-  storage: Storage | null;
+  storage: FirebaseStorage | null;
   database: Database | null;
   // User authentication state
   user: User | null;
@@ -43,7 +43,7 @@ export interface FirebaseServicesAndUser {
   firebaseApp: FirebaseApp;
   firestore: Firestore;
   auth: Auth;
-  storage: Storage;
+  storage: FirebaseStorage;
   database: Database;
   user: User | null;
   isUserLoading: boolean;
@@ -153,7 +153,7 @@ export const useFirebaseApp = (): FirebaseApp | null => {
 };
 
 /** Hook to access Firebase Storage instance. */
-export const useStorage = (): Storage | null => {
+export const useStorage = (): FirebaseStorage | null => {
   const context = useContext(FirebaseContext);
   return context?.storage ?? null;
 };

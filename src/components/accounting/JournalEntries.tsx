@@ -46,7 +46,7 @@ export function JournalEntries({ userProfile, permissions }: JournalEntriesProps
     if (!firestore) return;
     setIsPosting(entry.id);
     try {
-      await accountingService.postJournalEntry(firestore, entry);
+      await accountingService.postJournalEntry(firestore, entry, userProfile);
       toast({ title: "Entry Posted", description: "Ledger updated successfully." });
     } catch (e: any) {
       toast({ variant: "destructive", title: "Posting Failed", description: e.message });

@@ -46,11 +46,11 @@ export function SubmitDailyReport({ userProfile }: SubmitDailyReportProps) {
 
   // Fetch tasks that could have been worked on today
   const tasksQuery = useMemoFirebase(() => 
-    query(
+    firestore ? query(
         collection(firestore, 'tasks'),
         where('assignedTo', '==', userProfile.id),
         where('status', 'in', ['ACTIVE', 'AWAITING_REVIEW'])
-    ), 
+    ) : null, 
   [firestore, userProfile.id]);
   const { data: activeTasks, isLoading: areTasksLoading } = useCollection<Task>(tasksQuery);
 
@@ -80,6 +80,7 @@ export function SubmitDailyReport({ userProfile }: SubmitDailyReportProps) {
             createdAt: new Date().toISOString(),
         };
 
+        if (!firestore) return;
         await addDocumentNonBlocking(collection(firestore, 'daily_reports'), newReport);
 
         toast({ title: 'Report Submitted', description: 'Your daily report has been sent to your manager.' });

@@ -469,15 +469,19 @@ export interface ExternalDisplay {
     createdAt: string;
 }
 
+export type AccountType = 'ASSET' | 'LIABILITY' | 'EQUITY' | 'REVENUE' | 'EXPENSE';
+
 export interface Account {
   id: string;
   orgId: string;
   name: string;
   code: string;
-  type: string;
+  type: AccountType;
   category: string;
   balance: number;
   isDebitNormal: boolean;
+  description?: string;
+  isActive: boolean;
 }
 
 export type JournalEntryStatus = 'DRAFT' | 'POSTED';

@@ -25,6 +25,7 @@ interface SettingsDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   userProfile: UserProfile | null;
+  modal?: boolean;
 }
 
 type TabId = 'team' | 'system' | 'maintenance' | 'audit' | 'superadmin';
@@ -35,7 +36,7 @@ interface NavItem {
   icon: React.ReactNode;
 }
 
-export function SettingsDialog({ open, onOpenChange, userProfile }: SettingsDialogProps) {
+export function SettingsDialog({ open, onOpenChange, userProfile, modal }: SettingsDialogProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [inputValue, setInputValue] = useState('');
   const permissions = usePermissions(userProfile);
@@ -99,7 +100,7 @@ export function SettingsDialog({ open, onOpenChange, userProfile }: SettingsDial
   // ─── Access Denied ──────────────────────────────────────────────────────────
   if (!hasAccess) {
     return (
-      <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
+      <DialogPrimitive.Root open={open} onOpenChange={onOpenChange} modal={modal}>
         <DialogPrimitive.Portal>
           <DialogPrimitive.Overlay className="fixed inset-0 z-[400] bg-black/40 backdrop-blur-sm animate-in fade-in-0" />
           <DialogPrimitive.Content className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-[500] w-full max-w-sm bg-background/95 backdrop-blur-xl rounded-2xl border p-8 shadow-2xl text-center animate-in zoom-in-95 fade-in-0">
@@ -121,7 +122,7 @@ export function SettingsDialog({ open, onOpenChange, userProfile }: SettingsDial
   // Use a raw Portal+Overlay+Content so we fully control the layout with NO
   // wrapper divs fighting our flex/scroll structure.
   return (
-    <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
+    <DialogPrimitive.Root open={open} onOpenChange={onOpenChange} modal={modal}>
       <DialogPrimitive.Portal>
         {/* Dim overlay */}
         <DialogPrimitive.Overlay className="fixed inset-0 z-[400] bg-black/50 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:duration-300 data-[state=open]:duration-500" />

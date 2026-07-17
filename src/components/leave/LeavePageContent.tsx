@@ -21,7 +21,7 @@ export function LeavePageContent() {
   const [isRequestLeaveOpen, setIsRequestLeaveOpen] = useState(false);
 
   const userProfileRef = useMemoFirebase(() => 
-    authUser ? doc(firestore, "users", authUser.uid) : null,
+    authUser && firestore ? doc(firestore, "users", authUser.uid) : null,
   [firestore, authUser]);
   const { data: userProfile, isLoading: isProfileLoading } = useDoc<UserProfile>(userProfileRef);
   const permissions = usePermissions(userProfile);

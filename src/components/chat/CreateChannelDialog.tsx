@@ -37,7 +37,7 @@ export function CreateChannelDialog({ open, onOpenChange, currentUserProfile }: 
   const { toast } = useToast();
 
   const usersQuery = useMemoFirebase(() => 
-    query(collection(firestore, 'users'), where('orgId', '==', currentUserProfile.orgId))
+    firestore ? query(collection(firestore, 'users'), where('orgId', '==', currentUserProfile.orgId)) : null
   , [firestore, currentUserProfile.orgId]);
   const { data: allUsers, isLoading: areUsersLoading } = useCollection<UserProfile>(usersQuery);
 

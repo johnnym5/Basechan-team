@@ -30,12 +30,12 @@ export function MyDailyReports({ userProfile }: MyDailyReportsProps) {
 
   const reportsQuery = useMemoFirebase(
     () =>
-      query(
+      firestore ? query(
         collection(firestore, 'daily_reports'),
         where('userId', '==', userProfile.id),
         orderBy('createdAt', 'desc'),
         limit(10)
-      ),
+      ) : null,
     [firestore, userProfile.id]
   );
 

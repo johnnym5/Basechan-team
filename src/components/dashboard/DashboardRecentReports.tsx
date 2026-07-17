@@ -16,7 +16,7 @@ export function DashboardRecentReports() {
     const firestore = useFirestore();
 
     const userProfileRef = useMemoFirebase(() =>
-        authUser ? doc(firestore, "users", authUser.uid) : null,
+        authUser && firestore ? doc(firestore, "users", authUser.uid) : null,
         [firestore, authUser]
     );
     const { data: userProfile } = useDoc<UserProfile>(userProfileRef);

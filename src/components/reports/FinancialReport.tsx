@@ -18,6 +18,7 @@ export function FinancialReport({ userProfile }: FinancialReportProps) {
     const { config: systemConfig } = useSystemConfig(userProfile.orgId);
 
     const requisitionsQuery = useMemoFirebase(() => {
+        if (!firestore) return null;
         return query(
             collection(firestore, 'requisitions'),
             where('orgId', '==', userProfile.orgId),

@@ -38,7 +38,11 @@ function AssetPreview({ asset }: { asset: ChatMessage['asset'] }) {
     const Icon = asset.type === 'TASK' ? ListTodo : Briefcase;
     
     const handleNavigate = () => {
-        uiEmitter.emit(asset.type === 'TASK' ? 'open-tasks-dialog' : 'open-finance-dialog', { [asset.type === 'TASK' ? 'taskId' : 'reqId']: asset.id });
+        if (asset.type === 'TASK') {
+            uiEmitter.emit('open-tasks-dialog', { taskId: asset.id });
+        } else {
+            uiEmitter.emit('open-requisitions-dialog', { reqId: asset.id });
+        }
     };
 
     return (
@@ -590,7 +594,7 @@ export function ChatDialog({ open, onOpenChange, currentUserProfile, permissions
                                             <h4 className="text-[10px] font-black uppercase tracking-widest mb-3 opacity-60">Share an Item</h4>
                                             <AssetPicker onPick={(asset) => {
                                                 setSelectedAsset(asset);
-                                                toast({ title: 'Item Linked', description: `${asset.type} ready to send.` });
+                                                toast({ title: 'Item Linked', description: `${asset?.type || 'Asset'} ready to send.` });
                                             }} />
                                         </PopoverContent>
                                     </Popover>

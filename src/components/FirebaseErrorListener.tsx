@@ -26,7 +26,7 @@ export function FirebaseErrorListener() {
       if (error.request.path.includes('error_logs')) return;
 
       if (firestore) {
-        logErrorToFirestore(firestore, error, null, userProfile);
+        logErrorToFirestore(firestore, error, undefined, userProfile);
       }
 
       // Extract the collection name for clearer user feedback
@@ -50,7 +50,7 @@ export function FirebaseErrorListener() {
         const url = indexMatch ? indexMatch[0] : `https://console.firebase.google.com/v1/r/project/${firestore?.app.options.projectId}/firestore/indexes`;
         
         if (firestore) {
-          logErrorToFirestore(firestore, error, null, userProfile);
+          logErrorToFirestore(firestore, error, undefined, userProfile);
         }
 
         toast({
@@ -72,7 +72,7 @@ export function FirebaseErrorListener() {
           ),
         });
       } else if (firestore) {
-        logErrorToFirestore(firestore, error, null, userProfile);
+        logErrorToFirestore(firestore, error, undefined, userProfile);
       }
     };
 

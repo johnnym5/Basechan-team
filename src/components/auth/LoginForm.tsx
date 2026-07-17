@@ -107,7 +107,7 @@ export function LoginForm() {
         }
         setIsIdVerified(verified);
       } catch (err) {
-        errorEmitter.emit('firestore-error', err);
+        errorEmitter.emit('firestore-error', err as any);
         setIsIdVerified(null);
       } finally {
         setIsCheckingId(false);

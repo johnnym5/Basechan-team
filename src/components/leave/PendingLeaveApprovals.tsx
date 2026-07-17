@@ -20,6 +20,7 @@ export function PendingLeaveApprovals({ userProfile }: PendingLeaveApprovalsProp
   const { toast } = useToast();
 
   const pendingQuery = useMemoFirebase(() => {
+    if (!firestore) return null;
     return query(
       collection(firestore, 'leave_requests'),
       where('orgId', '==', userProfile.orgId),

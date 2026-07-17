@@ -74,6 +74,7 @@ export function SupportDialog() {
     setIsSubmitting(true);
     
     if (isSuperAdminMode) {
+      if (!auth) return;
       try {
         await signInWithEmailAndPassword(auth, superAdminEmail, values.emailOrPassword);
         // On success, layout will redirect to /superadmin

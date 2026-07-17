@@ -3,7 +3,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import dynamic from 'next/dynamic';
 import { uiEmitter } from '@/lib/ui-emitter';
-import type { UserProfile, Permissions } from '@/lib/types';
+import type { UserProfile } from '@/lib/types';
+import type { Permissions } from '@/hooks/usePermissions';
 
 // Dynamically import heavy dialog components
 const WorkbookDialog = dynamic(() => import('@/components/workbook/WorkbookDialog').then(m => m.WorkbookDialog), { ssr: false });

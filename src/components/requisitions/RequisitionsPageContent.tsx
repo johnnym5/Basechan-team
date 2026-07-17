@@ -197,7 +197,7 @@ export function RequisitionsPageContent({ initialPayload }: { initialPayload?: {
                                     <RequisitionTable 
                                         filter={tab} 
                                         userProfile={userProfile} 
-                                        isSuperAdmin={isSuperAdmin} 
+                                        isSuperAdmin={!!isSuperAdmin} 
                                         permissions={permissions} 
                                         onSelectRequest={setSelectedRequest}
                                     />
@@ -214,7 +214,7 @@ export function RequisitionsPageContent({ initialPayload }: { initialPayload?: {
                     isOpen={!!selectedRequest}
                     onOpenChange={handleDialogClose}
                     currentUserProfile={userProfile}
-                    isSuperAdmin={isSuperAdmin}
+                    isSuperAdmin={!!isSuperAdmin}
                     permissions={permissions}
                     currencySymbol={currencySymbol}
                 />

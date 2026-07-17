@@ -2,7 +2,8 @@
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { TasksPageContent } from './TasksPageContent';
-import type { UserProfile, Permissions } from '@/lib/types';
+import type { UserProfile } from '@/lib/types';
+import type { Permissions } from '@/hooks/usePermissions';
 
 interface TasksDialogProps {
   open: boolean;

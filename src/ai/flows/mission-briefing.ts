@@ -50,7 +50,7 @@ const missionBriefingFlow = ai.defineFlow(
     inputSchema: MissionBriefingInputSchema,
     outputSchema: z.string(),
   },
-  async (input) => {
+  async (input: MissionBriefingInput) => {
     return await getMissionBriefing(input);
   }
 );

@@ -8,11 +8,12 @@ interface WebDashboardDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   initialPayload?: { displayId?: string };
+  modal?: boolean;
 }
 
-export function WebDashboardDialog({ open, onOpenChange, initialPayload }: WebDashboardDialogProps) {
+export function WebDashboardDialog({ open, onOpenChange, initialPayload, modal }: WebDashboardDialogProps) {
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={onOpenChange} modal={modal}>
       <DialogContent position="left" className="flex flex-col p-0">
         <DialogHeader className="sr-only">
           <DialogTitle>Live Displays & Dashboards</DialogTitle>

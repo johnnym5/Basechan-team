@@ -25,7 +25,7 @@ export default function Error({
 
   useEffect(() => {
     if (firestore) {
-        logErrorToFirestore(firestore, error, null, userProfile);
+        logErrorToFirestore(firestore, error, undefined, userProfile);
     } else {
         console.error("Local Error Boundary:", error);
     }
