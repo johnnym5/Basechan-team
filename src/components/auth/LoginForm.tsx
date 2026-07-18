@@ -189,8 +189,27 @@ export function LoginForm() {
           }
       }
 
-      // 3. Authenticate
-      const userCredential = await signInWithEmailAndPassword(auth, userEmail, values.password);
+      // 3. Authenticate against Firestore database first (source of truth)
+      if (!userData) {
+          throw new Error("Invalid username or password.");
+      }
+      if (!userData.password || userData.password !== values.password) {
+          throw new Error("Invalid username or password.");
+      }
+
+      // Synchronize/log in on Firebase Auth to preserve active secure session
+      let userCredential;
+      try {
+          userCredential = await signInWithEmailAndPassword(auth, userEmail, values.password);
+      } catch (authError: any) {
+          // If password matched in Firestore but user account doesn't exist yet in Firebase Auth, register on the fly
+          if (authError.code === 'auth/user-not-found' || authError.code === 'auth/invalid-credential') {
+              const { createUserWithEmailAndPassword } = await import('firebase/auth');
+              userCredential = await createUserWithEmailAndPassword(auth, userEmail, values.password);
+          } else {
+              throw authError;
+          }
+      }
       
       // 4. Register Session & Node Info
       const userRef = doc(firestore, 'users', userCredential.user.uid);

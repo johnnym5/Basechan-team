@@ -54,12 +54,8 @@ export function initializeFirebase() {
 
   if (!globalThis._firestore) {
     try {
-        // TACTICAL REMEDY FOR CA9 ASSERTION:
-        // Disabling gRPC streams (experimentalForceLongPolling) and IndexedDB (memoryLocalCache)
-        // is the absolute resolution for Watch Aggregator collisions in dev environments.
         globalThis._firestore = initializeFirestore(app, {
             localCache: memoryLocalCache(),
-            experimentalForceLongPolling: true,
         });
     } catch (e) {
         // If already initialized (e.g. by another library), retrieve the instance

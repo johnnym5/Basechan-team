@@ -16,7 +16,7 @@
     }
   ],
   "hosting": {
-    "site": "basechanteam",
+    "site": "basechan-team",
     "public": "out",
     "ignore": [
       "firebase.json",

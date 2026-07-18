@@ -1,5 +1,7 @@
 {
   "projects": {
-    "default": "basechanteam"
+    "default": "basechan",
+    "backend": "basechan",
+    "hosting": "basechan"
   }
 }

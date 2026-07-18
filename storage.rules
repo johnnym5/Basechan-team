@@ -5,11 +5,11 @@ service firebase.storage {
   match /b/{bucket}/o {
     
     function isUserInOrg(orgId) {
-      return request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.orgId == orgId;
+      return request.auth != null && firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.orgId == orgId;
     }
 
     function isAdmin() {
-        return request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['ORG_ADMIN', 'MANAGING_DIRECTOR'];
+        return request.auth != null && firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.role in ['ORG_ADMIN', 'MANAGING_DIRECTOR'];
     }
 
     match /requisitions/{orgId}/{fileName} {

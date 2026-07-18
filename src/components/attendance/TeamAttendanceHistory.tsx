@@ -160,7 +160,7 @@ export function TeamAttendanceHistory({ userProfile }: TeamAttendanceHistoryProp
                             <div className="space-y-3">
                                 {staffAttendanceList.map(({ user, records }) => {
                                     const hasRecords = records.length > 0;
-                                    const isUserOnline = user.status === 'ONLINE' || user.status === 'PENDING';
+                                    const isUserOnline = user.status === 'ONLINE';
 
                                     return (
                                         <div key={user.id} className="border border-gray-800 bg-secondary/20 rounded-xl p-3.5 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:bg-white/[0.02] transition-all">

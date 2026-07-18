@@ -33,15 +33,15 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.autoClockOutDaily = void 0;
-const scheduler_1 = require("firebase-functions/v2/scheduler");
+exports.autoClockOutDailyV1 = void 0;
+const functions = __importStar(require("firebase-functions"));
 const admin = __importStar(require("firebase-admin"));
 const date_fns_1 = require("date-fns");
 admin.initializeApp();
-exports.autoClockOutDaily = (0, scheduler_1.onSchedule)({
-    schedule: "30 18 * * *",
-    timeZone: "Africa/Lagos"
-}, async (event) => {
+exports.autoClockOutDailyV1 = functions.pubsub
+    .schedule("30 18 * * *")
+    .timeZone("Africa/Lagos")
+    .onRun(async (context) => {
     const db = admin.firestore();
     const now = new Date();
     // Query all active attendance sessions where clockOut is null

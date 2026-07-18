@@ -44,6 +44,8 @@ export function AttendancePageContent() {
   const [activeTab, setActiveTab] = useState(() => {
     if (typeof window !== 'undefined') {
       const savedTab = localStorage.getItem(storageKey);
+      if (savedTab === 'history') return 'clock';
+      if (savedTab === 'team-history') return 'live-view';
       if (savedTab) return savedTab;
     }
     return 'clock';
@@ -86,48 +88,46 @@ export function AttendancePageContent() {
             </TabsTrigger>
           )}
 
-          <TabsTrigger value="history" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-0 pb-3 text-sm font-semibold uppercase tracking-wider">My History</TabsTrigger>
           <TabsTrigger value="roster" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-0 pb-3 text-sm font-semibold uppercase tracking-wider">Workforce Roster</TabsTrigger>
-          <TabsTrigger value="online" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-0 pb-3 text-sm font-semibold uppercase tracking-wider">Who's Online</TabsTrigger>
-
-          {permissions.canManageStaff && <TabsTrigger value="live-monitor" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-0 pb-3 text-sm font-semibold uppercase tracking-wider">Live Monitor</TabsTrigger>}
-
-          {permissions.canManageStaff && <TabsTrigger value="team-history" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-0 pb-3 text-sm font-semibold uppercase tracking-wider">Team Reports</TabsTrigger>}
+          <TabsTrigger value="live-view" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-0 pb-3 text-sm font-semibold uppercase tracking-wider">Live View</TabsTrigger>
         </TabsList>
 
         <TabsContent value="clock" className="mt-0">
-          <div className="max-w-2xl mx-auto py-8">
-            <ClockControl userProfile={userProfile || null} permissions={permissions} systemConfig={systemConfig || null} />
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start py-6">
+            <div className="lg:col-span-5 xl:col-span-4">
+              <ClockControl userProfile={userProfile || null} permissions={permissions} systemConfig={systemConfig || null} />
+            </div>
+            <div className="lg:col-span-7 xl:col-span-8">
+              <AttendanceHistory userProfile={userProfile || null} />
+            </div>
           </div>
-        </TabsContent>
-
-        <TabsContent value="history" className="mt-0">
-          <AttendanceHistory userProfile={userProfile || null} />
         </TabsContent>
 
         <TabsContent value="roster" className="mt-0">
           {userProfile && <WorkforceRoster userProfile={userProfile} permissions={permissions} />}
         </TabsContent>
 
-        <TabsContent value="online" className="mt-0">
-          <StatusFeed userProfile={userProfile || null} permissions={permissions} />
+        <TabsContent value="live-view" className="mt-0">
+          <div className="space-y-8 py-6">
+            {permissions.canManageStaff && userProfile && (
+              <LiveStaffMonitor userProfile={userProfile} />
+            )}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+              <div className="lg:col-span-8">
+                {permissions.canManageStaff && userProfile && (
+                  <TeamAttendanceHistory userProfile={userProfile} />
+                )}
+              </div>
+              <div className="lg:col-span-4">
+                <StatusFeed userProfile={userProfile || null} permissions={permissions} />
+              </div>
+            </div>
+          </div>
         </TabsContent>
-
-        {permissions.canManageStaff && userProfile && (
-          <TabsContent value="live-monitor" className="mt-0">
-            <LiveStaffMonitor userProfile={userProfile} />
-          </TabsContent>
-        )}
 
         {permissions.canApproveHR && userProfile && (
           <TabsContent value="approvals" className="mt-0">
             <PendingApprovals userProfile={userProfile} />
-          </TabsContent>
-        )}
-
-        {permissions.canManageStaff && userProfile && (
-          <TabsContent value="team-history" className="mt-0">
-            <TeamAttendanceHistory userProfile={userProfile} />
           </TabsContent>
         )}
       </Tabs>

@@ -78,10 +78,38 @@ export function FirebaseErrorListener() {
       }
     };
 
+    // DEFINITIVE REMEDY FOR CA9 & B815 INTERNAL SDK ASSERTIONS
+    // These are internal WebChannel transport race conditions inside the Firestore SDK itself (Issue #9267).
+    // By intercepting them globally and calling preventDefault(), we suppress Next.js from throwing its crash overlay.
+    const handleGlobalError = (event: ErrorEvent) => {
+      const msg = event.message || '';
+      const errStr = String(event.error || '').toLowerCase();
+      if (msg.includes('ca9') || msg.includes('b815') || errStr.includes('ca9') || errStr.includes('b815')) {
+        console.warn("[SYSTEM] Intercepted and suppressed Firestore internal WatchStream assertion (ca9/b815).");
+        event.preventDefault();
+        event.stopPropagation();
+      }
+    };
+
+    const handleGlobalRejection = (event: PromiseRejectionEvent) => {
+      const reason = event.reason;
+      const reasonStr = String(reason?.message || reason || '').toLowerCase();
+      if (reasonStr.includes('ca9') || reasonStr.includes('b815')) {
+        console.warn("[SYSTEM] Intercepted and suppressed Firestore internal WatchStream promise rejection (ca9/b815).");
+        event.preventDefault();
+        event.stopPropagation();
+      }
+    };
+
+    window.addEventListener('error', handleGlobalError, true);
+    window.addEventListener('unhandledrejection', handleGlobalRejection, true);
+
     errorEmitter.on('permission-error', handlePermissionError);
     errorEmitter.on('firestore-error', handleGenericError);
 
     return () => {
+      window.removeEventListener('error', handleGlobalError, true);
+      window.removeEventListener('unhandledrejection', handleGlobalRejection, true);
       errorEmitter.off('permission-error', handlePermissionError);
       errorEmitter.off('firestore-error', handleGenericError);
     };

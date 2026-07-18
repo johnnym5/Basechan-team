@@ -40,7 +40,7 @@ export function DashboardQuickActions() {
             <CardHeader className="py-3 px-5">
                 <CardTitle className="text-[8px] font-black uppercase tracking-[0.25em] text-primary opacity-70">Quick Actions</CardTitle>
             </CardHeader>
-            <CardContent className="grid grid-cols-2 gap-2 p-4 pt-0">
+            <CardContent className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 p-4 pt-0">
                 {actions.map(({ label, icon: Icon, action }) => (
                     <Button 
                         key={label} 

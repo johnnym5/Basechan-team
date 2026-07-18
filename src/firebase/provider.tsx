@@ -183,6 +183,37 @@ export function useMemoFirebase<T>(factory: () => T, deps: DependencyList): T | 
  */
 export const useUser = (): UserHookResult => { // Renamed from useAuthUser
   const context = useContext(FirebaseContext);
+
+  // ========================================================
+  // 🔐 TEMPORARY HARDCODED SUPER ADMIN BYPASS
+  // To restore normal login, change bypassActive to false!
+  // ========================================================
+  const bypassActive = false; 
+  if (bypassActive) {
+    return {
+      user: {
+        uid: 'nM0bBwaybEQP95OPKUyQ97iAm3u2',
+        email: 'jegbase@gmail.com',
+        displayName: 'Super Admin',
+        emailVerified: true,
+        isAnonymous: false,
+        metadata: {},
+        providerData: [],
+        tenantId: null,
+        delete: async () => {},
+        getIdToken: async () => 'mock-token',
+        getIdTokenResult: async () => ({} as any),
+        reload: async () => {},
+        toJSON: () => ({}),
+        phoneNumber: null,
+        photoURL: null,
+        providerId: 'firebase',
+      } as any,
+      isUserLoading: false,
+      userError: null,
+    };
+  }
+
   return {
     user: context?.user ?? null,
     isUserLoading: context?.isUserLoading ?? true,

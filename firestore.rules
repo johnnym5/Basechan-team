@@ -47,6 +47,13 @@ service cloud.firestore {
     function isAdmin() {
         return getUserRole() in ['ORG_ADMIN', 'MANAGING_DIRECTOR', 'HR_MANAGER'];
     }
+
+    function hasCustomPermission(perm) {
+      let data = getUserData();
+      return 'customPermissions' in data && 
+             perm in data.customPermissions && 
+             data.customPermissions[perm] == true;
+    }
     
     // ===== Root Collections =====
 
@@ -145,15 +152,111 @@ service cloud.firestore {
       allow update: if isSuperAdmin();
       allow delete: if isSuperAdmin() || (
         request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants &&
-        timestamp(resource.data.timestamp) < (request.time - duration.value(24, 'h'))
+        resource.data.timestamp < (request.time - duration.value(24, 'h'))
       );
     }
 
+    // ===== Specific Roles & Custom Permission aware Rules =====
+
+    match /departments/{id} {
+      allow read: if isRequestingUserInOrg(resource.data.orgId);
+      allow write: if isSuperAdmin() || (isRequestingUserInOrg(request.resource.data.orgId) && (isAdmin() || isHRManager() || isManagingDirector()));
+    }
+
+    match /attendance/{id} {
+      allow read: if isRequestingUserInOrg(resource.data.orgId);
+      allow write: if isRequestingUserInOrg(request.resource.data.orgId);
+    }
+
+    match /tasks/{id} {
+      allow read: if isRequestingUserInOrg(resource.data.orgId) && (
+        getUserRole() != 'STAFF' || 
+        resource.data.createdBy == request.auth.uid || 
+        resource.data.assigneeId == request.auth.uid || 
+        hasCustomPermission('canAccessAllTasks')
+      );
+      allow create: if isCreatingInOwnOrg() || isSuperAdmin();
+      allow update, delete: if isRequestingUserInOrg(resource.data.orgId);
+    }
+
+    match /system_configs/{id} {
+      allow read: if isRequestingUserInOrg(resource.data.orgId);
+      allow write: if isSuperAdmin() || (isRequestingUserInOrg(request.resource.data.orgId) && getUserRole() == 'ORG_ADMIN');
+    }
+
+    match /announcements/{id} {
+      allow read: if isRequestingUserInOrg(resource.data.orgId);
+      allow write: if isSuperAdmin() || (isRequestingUserInOrg(request.resource.data.orgId) && (isAdmin() || hasCustomPermission('canManageAnnouncements')));
+    }
+
+    match /workbooks/{id} {
+      allow read: if isRequestingUserInOrg(resource.data.orgId) && (
+        getUserRole() != 'STAFF' || 
+        hasCustomPermission('canAccessAllWorkbooks')
+      );
+      allow create: if isCreatingInOwnOrg() || isSuperAdmin();
+      allow update, delete: if isSuperAdmin() || (isRequestingUserInOrg(resource.data.orgId) && (isAdmin() || hasCustomPermission('canAccessAllWorkbooks')));
+    }
+
+    match /rosters/{id} {
+      allow read: if isRequestingUserInOrg(resource.data.orgId);
+      allow write: if isSuperAdmin() || (isRequestingUserInOrg(request.resource.data.orgId) && (isHRManager() || isManagingDirector()));
+    }
+
+    match /library_items/{id} {
+      allow read: if isRequestingUserInOrg(resource.data.orgId) && (
+        getUserRole() != 'STAFF' || 
+        hasCustomPermission('canAccessLibrary')
+      );
+      allow write: if isSuperAdmin() || (isRequestingUserInOrg(request.resource.data.orgId) && (isAdmin() || hasCustomPermission('canManageLibrary')));
+    }
+
+    match /leave_requests/{id} {
+      allow read: if isRequestingUserInOrg(resource.data.orgId);
+      allow create: if isCreatingInOwnOrg() || isSuperAdmin();
+      allow update: if isRequestingUserInOrg(resource.data.orgId) && (
+        isHRManager() || 
+        isManagingDirector() || 
+        resource.data.userId == request.auth.uid
+      );
+      allow delete: if isSuperAdmin();
+    }
+
+    match /daily_reports/{id} {
+      allow read: if isRequestingUserInOrg(resource.data.orgId);
+      allow create: if isCreatingInOwnOrg() || isSuperAdmin();
+      allow update: if isRequestingUserInOrg(resource.data.orgId) && (
+        isAdmin() || 
+        resource.data.createdBy == request.auth.uid
+      );
+      allow delete: if isSuperAdmin();
+    }
+
+    match /journal_entries/{id} {
+      allow read: if isRequestingUserInOrg(resource.data.orgId);
+      allow write: if isSuperAdmin() || (isRequestingUserInOrg(request.resource.data.orgId) && (isFinanceManager() || hasCustomPermission('canManageAccounting')));
+    }
+
+    match /pulse_checks/{id} {
+      allow read: if isRequestingUserInOrg(resource.data.orgId);
+      allow write: if isRequestingUserInOrg(request.resource.data.orgId);
+    }
+
+    match /activity_points/{id} {
+      allow read: if isRequestingUserInOrg(resource.data.orgId);
+      allow write: if isSuperAdmin() || (isRequestingUserInOrg(request.resource.data.orgId) && isAdmin());
+    }
+
+    match /kudos/{id} {
+      allow read: if isRequestingUserInOrg(resource.data.orgId);
+      allow create: if isCreatingInOwnOrg() || isSuperAdmin();
+      allow update, delete: if isSuperAdmin() || (isRequestingUserInOrg(resource.data.orgId) && resource.data.createdBy == request.auth.uid);
+    }
+
+    // Generic fallback for any unhandled core collection, ensuring basic multi-tenant isolation
     match /{collection}/{docId} {
-      allow read, delete, update: if (collection in ['departments', 'attendance', 'tasks', 'system_configs', 'announcements', 'workbooks', 'notifications', 'leave_requests', 'daily_reports', 'chats', 'journal_entries', 'pulse_checks', 'activity_points', 'kudos', 'rosters', 'library_items']) 
-                          && (isRequestingUserInOrg(resource.data.orgId) || isSuperAdmin());
-      allow create: if (collection in ['departments', 'attendance', 'tasks', 'system_configs', 'announcements', 'workbooks', 'notifications', 'leave_requests', 'daily_reports', 'chats', 'journal_entries', 'pulse_checks', 'activity_points', 'kudos', 'rosters', 'library_items']) 
-                    && (isCreatingInOwnOrg() || isSuperAdmin());
+      allow read, delete, update: if isRequestingUserInOrg(resource.data.orgId) || isSuperAdmin();
+      allow create: if isCreatingInOwnOrg() || isSuperAdmin();
     }
   }
 }

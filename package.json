@@ -8,7 +8,10 @@
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "deploy:hosting": "npm run build && firebase deploy --only hosting --project hosting",
+    "deploy:backend": "npm run --prefix functions build && firebase deploy --except hosting --project backend",
+    "deploy:all": "npm run deploy:backend && npm run deploy:hosting"
   },
   "dependencies": {
     "@genkit-ai/google-genai": "^1.40.0",

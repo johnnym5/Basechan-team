@@ -68,7 +68,7 @@ export function NewWorkbookDialog({ open, onOpenChange, userProfile }: NewWorkbo
                     const pdfjsLib = await import('pdfjs-dist');
                     pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
                     const typedarray = new Uint8Array(event.target?.result as ArrayBuffer);
-                    const pdf = await pdfjsLib.getDocument(typedarray).promise;
+                    const pdf = await pdfjsLib.getDocument({ data: typedarray }).promise;
                     let fullText = '';
                     for (let i = 1; i <= pdf.numPages; i++) {
                         const page = await pdf.getPage(i);

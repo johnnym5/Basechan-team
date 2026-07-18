@@ -102,26 +102,28 @@ export default function DashboardPage() {
                 </div>
             )}
 
-            <div className="grid grid-cols-12 gap-4 md:gap-6">
-                <section className="col-span-12 lg:col-span-5 xl:col-span-4 interactive-element h-fit">
+            <div className="grid grid-cols-12 gap-4 md:gap-6 w-full h-full">
+                <section className="col-span-12 md:col-span-6 lg:col-span-5 xl:col-span-4 interactive-element flex flex-col h-full w-full">
                     <ClockControl userProfile={userProfile || null} permissions={permissions} systemConfig={systemConfig} />
                 </section>
 
-                <section className="col-span-12 lg:col-span-7 xl:col-span-8 h-full">
+                <section className="col-span-12 md:col-span-6 lg:col-span-7 xl:col-span-8 flex flex-col h-full w-full">
                     <PerformanceCard userProfile={userProfile || null} />
                 </section>
 
-                <section className="col-span-12 lg:col-span-8 xl:col-span-9 h-full">
+                <section className="col-span-12 lg:col-span-8 xl:col-span-9 flex flex-col h-full w-full">
                     <DashboardTaskList userProfile={userProfile || null} permissions={permissions} />
                 </section>
 
-                <div className="col-span-12 lg:col-span-4 xl:col-span-3">
-                    <div className="flex flex-col gap-4 md:gap-6">
+                <div className="col-span-12 lg:col-span-4 xl:col-span-3 flex flex-col h-full w-full">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 gap-4 md:gap-6 h-full w-full">
                         <DashboardQuickActions />
                         <DashboardLiveDisplays userProfile={userProfile || null} />
                         <DashboardRecentReports />
                         <DashboardRecentChats />
-                        <Announcements />
+                        <div className="md:col-span-2 lg:col-span-1">
+                            <Announcements />
+                        </div>
                     </div>
                 </div>
             </div>

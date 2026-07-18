@@ -1,16 +1,20 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
 import { useFirestore, useDatabase } from '@/firebase';
-import { collection, getDocs, query, where, writeBatch, doc } from 'firebase/firestore';
+import { collection, getDocs, query, where, writeBatch, doc, getFirestore, initializeFirestore, memoryLocalCache } from 'firebase/firestore';
 import { ref, get, set, onValue } from 'firebase/database';
+import { getApps, initializeApp } from 'firebase/app';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, Download, CloudCog, Trash2, PlusCircle, Server, ChevronDown, DatabaseBackup, RefreshCcw, Skull } from 'lucide-react';
+import { 
+  Loader2, Download, CloudCog, Trash2, PlusCircle, Server, ChevronDown, 
+  DatabaseBackup, RefreshCcw, Skull, ArrowRightLeft, Play, Copy, Check, Terminal 
+} from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Progress } from '@/components/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import type { Organization } from '@/lib/types';
 import {
@@ -31,6 +35,39 @@ import { Separator } from '../ui/separator';
 import { demoDataService } from '@/services/demo-data';
 import { BatchUserImport } from './BatchUserImport';
 import { useSuperAdmin } from '@/hooks/useSuperAdmin';
+
+const OLD_FIREBASE_CONFIG = {
+  apiKey: "AIzaSyCn0pLLYEpAHR6ehj6zWxVnoEzQgLCFVCs",
+  authDomain: "basechanteam.firebaseapp.com",
+  projectId: "basechanteam",
+  storageBucket: "basechanteam.firebasestorage.app",
+  messagingSenderId: "261796318440",
+  appId: "1:261796318440:web:e62d9bda06dac94b264d5d",
+  measurementId: "G-WLTB42P50C"
+};
+
+const MIGRATION_COLLECTIONS = [
+    { id: 'organizations', name: 'Organizations' },
+    { id: 'users', name: 'Users' },
+    { id: 'departments', name: 'Departments' },
+    { id: 'vendors', name: 'Vendors' },
+    { id: 'purchase_orders', name: 'Purchase Orders' },
+    { id: 'requisitions', name: 'Requisitions' },
+    { id: 'tasks', name: 'Tasks' },
+    { id: 'attendance', name: 'Attendance' },
+    { id: 'rosters', name: 'Workforce Rosters' },
+    { id: 'announcements', name: 'Announcements' },
+    { id: 'workbooks', name: 'Workbooks' },
+    { id: 'leave_requests', name: 'Leave Requests' },
+    { id: 'daily_reports', name: 'Daily Reports' },
+    { id: 'chats', name: 'Chats' },
+    { id: 'journal_entries', name: 'Journal Entries' },
+    { id: 'pulse_checks', name: 'Pulse Checks' },
+    { id: 'activity_points', name: 'Activity Points' },
+    { id: 'kudos', name: 'Kudos' },
+    { id: 'system_configs', name: 'System Configs' },
+    { id: 'feedback', name: 'Feedback' }
+];
 
 export const COLLECTIONS = [
     { id: 'requisitions', name: 'Requisitions' },
@@ -53,6 +90,127 @@ export function DataManagement() {
     const { isSuperAdmin } = useSuperAdmin();
     const { toast } = useToast();
     const [loading, setLoading] = useState<string | null>(null);
+
+    // Live Migration state
+    const [isMigrating, setIsMigrating] = useState(false);
+    const [migrationProgress, setMigrationProgress] = useState(0);
+    const [migrationLogs, setMigrationLogs] = useState<string[]>([]);
+    const [migrationCollections, setMigrationCollections] = useState<string[]>(
+        MIGRATION_COLLECTIONS.map(c => c.id)
+    );
+    const [copiedCmd, setCopiedCmd] = useState<string | null>(null);
+
+    // Old authentication state for permission bypass
+    const [oldEmail, setOldEmail] = useState('jegbase@gmail.com');
+    const [oldPassword, setOldPassword] = useState('');
+    const [isOldAuthed, setIsOldAuthed] = useState(false);
+    const [isAuthenticatingOld, setIsAuthenticatingOld] = useState(false);
+
+    const handleAuthenticateOld = async () => {
+        setIsAuthenticatingOld(true);
+        setMigrationLogs(prev => [...prev, `Authenticating on old project as ${oldEmail}...`]);
+        try {
+            const { getAuth, signInWithEmailAndPassword } = await import('firebase/auth');
+            const oldApp = getApps().find(app => app.name === 'old-project') 
+                || initializeApp(OLD_FIREBASE_CONFIG, 'old-project');
+            const oldAuth = getAuth(oldApp);
+            
+            await signInWithEmailAndPassword(oldAuth, oldEmail, oldPassword);
+            setIsOldAuthed(true);
+            setMigrationLogs(prev => [...prev, `Successfully authenticated on basechanteam as ${oldEmail}!`]);
+            toast({ title: "Authentication Successful", description: `You are now authenticated on basechanteam.` });
+        } catch (e: any) {
+            console.error("Old authentication failed:", e);
+            setMigrationLogs(prev => [...prev, `AUTHENTICATION ERROR: ${e.message}`]);
+            toast({ variant: "destructive", title: "Authentication Failed", description: e.message });
+        } finally {
+            setIsAuthenticatingOld(false);
+        }
+    };
+
+    const handleLiveMigration = async () => {
+        if (!firestore) return;
+        
+        setIsMigrating(true);
+        setMigrationProgress(0);
+        setMigrationLogs(["Initiating cross-project live migration..."]);
+
+        try {
+            // Initialize OLD project app and firestore with matching localCache
+            const oldApp = getApps().find(app => app.name === 'old-project') 
+                || initializeApp(OLD_FIREBASE_CONFIG, 'old-project');
+            
+            let oldFirestore;
+            try {
+                oldFirestore = initializeFirestore(oldApp, {
+                    localCache: memoryLocalCache(),
+                });
+            } catch {
+                oldFirestore = getFirestore(oldApp);
+            }
+            
+            setMigrationLogs(prev => [...prev, "Connected to old project (basechanteam) successfully."]);
+
+            let step = 0;
+            const totalSteps = migrationCollections.length;
+            
+            for (const collId of migrationCollections) {
+                const collectionName = MIGRATION_COLLECTIONS.find(c => c.id === collId)?.name || collId;
+                setMigrationLogs(prev => [...prev, `[${collectionName}] Reading documents from old Firestore...`]);
+                
+                // Get all docs from old Firestore
+                const snap = await getDocs(collection(oldFirestore, collId));
+                setMigrationLogs(prev => [...prev, `[${collectionName}] Found ${snap.size} documents.`]);
+
+                if (snap.size > 0) {
+                    let batch = writeBatch(firestore);
+                    let count = 0;
+                    let batchCount = 0;
+
+                    for (const d of snap.docs) {
+                        batch.set(doc(firestore, collId, d.id), d.data(), { merge: true });
+                        count++;
+                        
+                        if (count % 500 === 0) {
+                            await batch.commit();
+                            batchCount++;
+                            setMigrationLogs(prev => [...prev, `[${collectionName}] Committed batch #${batchCount} (${count} docs)...`]);
+                            batch = writeBatch(firestore);
+                        }
+                    }
+
+                    if (count % 500 !== 0) {
+                        await batch.commit();
+                        batchCount++;
+                        setMigrationLogs(prev => [...prev, `[${collectionName}] Committed final batch #${batchCount} (${count} docs).`]);
+                    }
+
+                    setMigrationLogs(prev => [...prev, `[${collectionName}] Successfully copied all ${count} documents!`]);
+                } else {
+                    setMigrationLogs(prev => [...prev, `[${collectionName}] Collection is empty. Skipped.`]);
+                }
+
+                step++;
+                setMigrationProgress((step / totalSteps) * 100);
+            }
+
+            setMigrationLogs(prev => [...prev, "SUCCESS: Firestore live migration complete!"]);
+            toast({ title: "Migration Successful", description: "All selected collections migrated to basechan." });
+        } catch (e: any) {
+            console.error("Migration failed:", e);
+            setMigrationLogs(prev => [...prev, `ERROR: ${e.message}`]);
+            toast({ variant: "destructive", title: "Migration Failed", description: e.message });
+        } finally {
+            setIsMigrating(false);
+        }
+    };
+
+    const copyToClipboard = (text: string, id: string) => {
+        navigator.clipboard.writeText(text);
+        setCopiedCmd(id);
+        setTimeout(() => setCopiedCmd(null), 2000);
+        toast({ title: "Command Copied", description: "Ready to paste in your terminal." });
+    };
 
     // Export state
     const [targetOrg, setTargetOrg] = useState<string>('__ALL__');
@@ -231,7 +389,7 @@ export function DataManagement() {
         }
     };
 
-    const anyLoading = !!loading || areOrgsLoading;
+    const anyLoading = !!loading || areOrgsLoading || isMigrating;
 
     return (
         <div className="space-y-8 animate-in fade-in duration-500">
@@ -286,6 +444,187 @@ export function DataManagement() {
             </div>
 
             <BatchUserImport />
+
+            <Card className="apple-glass border-none shadow-xl overflow-hidden">
+                <CardHeader className="bg-white/5 border-b border-white/5 pb-4">
+                    <CardTitle className="flex items-center gap-2">
+                        <ArrowRightLeft className="h-5 w-5 text-primary" />
+                        Cross-Project Live Migration (Old to New)
+                    </CardTitle>
+                    <CardDescription>
+                        Safely migrate your entire Firestore database and Authentication accounts from the old project (<code className="font-mono text-[11px] text-primary">basechanteam</code>) to your new project (<code className="font-mono text-[11px] text-primary">basechan</code>).
+                    </CardDescription>
+                </CardHeader>
+                <CardContent className="pt-6 space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        
+                        {/* Left Side: Firestore Copy */}
+                        <div className="space-y-4">
+                            <div>
+                                <h3 className="text-xs font-black uppercase tracking-widest text-primary mb-2">Step 1: Migrate Firestore Database</h3>
+                                <p className="text-[11px] text-muted-foreground leading-relaxed mb-4">
+                                    Select the Firestore collections you want to copy. This will fetch records from <code className="font-mono bg-background/50 px-1 py-0.5 rounded">basechanteam</code> and merge them directly into <code className="font-mono bg-background/50 px-1 py-0.5 rounded">basechan</code>.
+                                </p>
+                            </div>
+
+                            {!isOldAuthed ? (
+                                <div className="space-y-3 border border-yellow-500/20 bg-yellow-500/5 p-4 rounded-2xl">
+                                    <div className="flex items-center gap-1.5 text-yellow-500 font-bold text-xs uppercase tracking-wider">
+                                        ⚠️ Connection Authentication Required
+                                    </div>
+                                    <p className="text-[10px] text-muted-foreground leading-relaxed">
+                                        Because the old database <code className="font-mono">basechanteam</code> has active security rules, you must authenticate with a valid admin account from that project (e.g. <code className="font-mono">jegbase@gmail.com</code>) to unlock read access.
+                                    </p>
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <div className="space-y-1">
+                                            <Label className="text-[9px] uppercase font-black opacity-60">Old Project Email</Label>
+                                            <input 
+                                                type="email" 
+                                                value={oldEmail} 
+                                                onChange={(e) => setOldEmail(e.target.value)}
+                                                className="w-full h-8 bg-background/50 border border-white/10 rounded-lg px-2.5 text-xs text-foreground focus:outline-none focus:border-primary"
+                                                disabled={isAuthenticatingOld}
+                                            />
+                                        </div>
+                                        <div className="space-y-1">
+                                            <Label className="text-[9px] uppercase font-black opacity-60">Old Project Password</Label>
+                                            <input 
+                                                type="password" 
+                                                value={oldPassword} 
+                                                onChange={(e) => setOldPassword(e.target.value)}
+                                                placeholder="••••••••"
+                                                className="w-full h-8 bg-background/50 border border-white/10 rounded-lg px-2.5 text-xs text-foreground focus:outline-none focus:border-primary"
+                                                disabled={isAuthenticatingOld}
+                                            />
+                                        </div>
+                                    </div>
+                                    <Button 
+                                        onClick={handleAuthenticateOld} 
+                                        disabled={isAuthenticatingOld || !oldPassword}
+                                        className="w-full h-9 rounded-lg text-xs font-black uppercase tracking-wider bg-yellow-600 hover:bg-yellow-700 text-white"
+                                    >
+                                        {isAuthenticatingOld ? <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" /> : null}
+                                        Authenticate Connection
+                                    </Button>
+                                </div>
+                            ) : (
+                                <>
+                                    <div className="space-y-2 max-h-48 overflow-y-auto border border-white/5 bg-background/20 rounded-xl p-3 custom-scrollbar">
+                                        <div className="text-[10px] text-emerald-500 font-bold flex items-center gap-1.5 pb-1 border-b border-white/5 mb-1.5">
+                                            <Check className="h-3 w-3" /> Authenticated on old project as {oldEmail}
+                                        </div>
+                                        {MIGRATION_COLLECTIONS.map(c => (
+                                            <div key={c.id} className="flex items-center gap-3 py-1 text-xs">
+                                                <Checkbox 
+                                                    id={`mig-${c.id}`}
+                                                    checked={migrationCollections.includes(c.id)} 
+                                                    onCheckedChange={(checked) => {
+                                                        if (checked) {
+                                                            setMigrationCollections(prev => [...prev, c.id]);
+                                                        } else {
+                                                            setMigrationCollections(prev => prev.filter(id => id !== c.id));
+                                                        }
+                                                    }}
+                                                    disabled={isMigrating}
+                                                    className="rounded border-primary/50" 
+                                                />
+                                                <Label htmlFor={`mig-${c.id}`} className="font-medium cursor-pointer">{c.name}</Label>
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    <Button 
+                                        onClick={handleLiveMigration} 
+                                        disabled={isMigrating || migrationCollections.length === 0}
+                                        className="w-full h-12 rounded-xl font-black uppercase tracking-[0.2em] shadow-lg shadow-primary/20"
+                                    >
+                                        {isMigrating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Play className="mr-2 h-4 w-4" />}
+                                        Begin Live Firestore Migration
+                                    </Button>
+                                </>
+                            )}
+                        </div>
+
+                        {/* Right Side: Auth Migration Guides */}
+                        <div className="space-y-4 flex flex-col justify-between">
+                            <div>
+                                <h3 className="text-xs font-black uppercase tracking-widest text-primary mb-2 flex items-center gap-1.5">
+                                    <Terminal className="h-4 w-4" /> Step 2: Migrate Auth Accounts
+                                </h3>
+                                <p className="text-[11px] text-muted-foreground leading-relaxed mb-4">
+                                    To preserve your users' original passwords, salts, and IDs, run these two official Firebase CLI commands in your local project terminal:
+                                </p>
+                            </div>
+
+                            <div className="space-y-3 flex-1 flex flex-col justify-center">
+                                {/* Command 1 */}
+                                <div className="border border-white/5 rounded-xl bg-background/30 p-3 relative group overflow-hidden">
+                                    <span className="text-[8px] font-black text-muted-foreground uppercase tracking-wider block mb-1">1. Export users from old project</span>
+                                    <code className="text-[10px] font-mono text-primary block truncate pr-8">
+                                        firebase auth:export users_backup.json --project basechanteam
+                                    </code>
+                                    <Button 
+                                        size="icon" 
+                                        variant="ghost" 
+                                        onClick={() => copyToClipboard("firebase auth:export users_backup.json --project basechanteam", "export")}
+                                        className="absolute right-2 top-2 h-7 w-7 text-muted-foreground hover:text-primary hover:bg-white/5 rounded-lg"
+                                    >
+                                        {copiedCmd === 'export' ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5" />}
+                                    </Button>
+                                </div>
+
+                                {/* Command 2 */}
+                                <div className="border border-white/5 rounded-xl bg-background/30 p-3 relative group overflow-hidden">
+                                    <span className="text-[8px] font-black text-muted-foreground uppercase tracking-wider block mb-1">2. Import users to new project with password salt</span>
+                                    <code className="text-[10px] font-mono text-primary block truncate pr-8">
+                                        firebase auth:import users_backup.json --project basechan --hash-algo=SCRYPT --rounds=8 --mem-cost=14
+                                    </code>
+                                    <Button 
+                                        size="icon" 
+                                        variant="ghost" 
+                                        onClick={() => copyToClipboard("firebase auth:import users_backup.json --project basechan --hash-algo=SCRYPT --rounds=8 --mem-cost=14", "import")}
+                                        className="absolute right-2 top-2 h-7 w-7 text-muted-foreground hover:text-primary hover:bg-white/5 rounded-lg"
+                                    >
+                                        {copiedCmd === 'import' ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5" />}
+                                    </Button>
+                                </div>
+                            </div>
+
+                            <div className="border border-amber-500/10 bg-amber-500/5 rounded-xl p-3">
+                                <p className="text-[9px] text-amber-500/80 font-bold uppercase tracking-wider leading-relaxed">
+                                    IMPORTANT: Running these commands via the CLI ensures that existing user credentials and secure hashes are copied perfectly without triggering email reset cycles.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Progress / Migration Log */}
+                    {(isMigrating || migrationLogs.length > 0) && (
+                        <div className="flex flex-col border border-white/5 rounded-2xl bg-secondary/5 overflow-hidden mt-4">
+                            <div className="p-3 border-b border-white/5 bg-background/40 flex items-center justify-between">
+                                <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Firestore Migration Log</span>
+                                <span className="text-[10px] font-black text-primary">{Math.round(migrationProgress)}%</span>
+                            </div>
+                            <Progress value={migrationProgress} className="h-1 rounded-none" />
+                            <ScrollArea className="h-36 bg-background/10">
+                                <div className="p-3 font-mono text-[9px] text-muted-foreground space-y-1">
+                                    {migrationLogs.map((log, idx) => (
+                                        <div key={idx} className={`leading-relaxed ${
+                                            log.startsWith("SUCCESS") ? "text-emerald-400 font-bold" : ""
+                                        } ${
+                                            log.startsWith("ERROR") ? "text-rose-400 font-bold" : ""
+                                        } ${
+                                            log.startsWith("[") ? "text-white" : ""
+                                        }`}>
+                                            {log}
+                                        </div>
+                                    ))}
+                                </div>
+                            </ScrollArea>
+                        </div>
+                    )}
+                </CardContent>
+            </Card>
 
             <Card className="apple-glass border-none shadow-xl overflow-hidden">
                 <CardHeader className="bg-white/5 border-b border-white/5 pb-4">

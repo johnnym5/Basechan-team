@@ -100,8 +100,6 @@
   ::-webkit-scrollbar-thumb {
     background-color: hsl(var(--primary) / 0.3);
     border-radius: 4px;
-    border: 2px solid transparent;
-    background-clip: padding-box;
   }
 
   ::-webkit-scrollbar-thumb:hover {
