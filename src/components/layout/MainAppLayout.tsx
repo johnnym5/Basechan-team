@@ -299,9 +299,9 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
           )}
         </div>
         
-        <main className="flex-1 overflow-y-scroll scroll-smooth [scrollbar-gutter:stable] custom-scrollbar bg-background/20 relative w-full h-full">
+        <main className="flex-1 min-h-0 overflow-y-auto scroll-smooth custom-scrollbar bg-background/20 relative w-full h-full">
             <div className="w-full mx-auto max-w-[1600px] min-h-full border-x border-white/5 bg-background/30 animate-in fade-in duration-700 flex flex-col">
-                <div className="p-4 md:p-6 flex-1 flex flex-col h-full w-full">
+                <div className="p-4 md:p-6 flex-1 flex flex-col min-h-0 w-full">
                     {children}
                 </div>
             </div>
