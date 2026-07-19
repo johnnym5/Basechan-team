@@ -84,7 +84,6 @@ export const attendanceService = {
       orgId: user.orgId,
       date: today,
       clockIn: nowIso,
-      clockOut: undefined,
       status: 'PENDING',
       location,
       remarks,
