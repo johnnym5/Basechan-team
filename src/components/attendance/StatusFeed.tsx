@@ -9,13 +9,14 @@ import { Skeleton } from "../ui/skeleton";
 import { useMemo, useState } from "react";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import { Button } from "../ui/button";
-import { MessageSquare, LifeBuoy, Trophy, Monitor, Smartphone, MonitorPlay, Camera, Loader2 } from "lucide-react";
+import { MessageSquare, LifeBuoy, Trophy, Monitor, Smartphone, MonitorPlay, Camera, Radio } from "lucide-react";
 import { RequestAssistanceDialog } from "../tasks/RequestAssistanceDialog";
 import { AwardKudosDialog } from "../reports/AwardKudosDialog";
 import { uiEmitter } from '@/lib/ui-emitter';
 import { useToast } from "@/hooks/use-toast";
 import { useContextMenu } from "@/hooks/useContextMenu";
 import { ContextMenu, type ContextMenuItem } from "../shared/ContextMenu";
+import { cn } from "@/lib/utils";
 
 interface StatusFeedProps {
   userProfile: UserProfile | null;
@@ -88,74 +89,85 @@ export function StatusFeed({ userProfile, permissions }: StatusFeedProps) {
   }, [contextUser, userProfile, permissions]);
 
   return (
-    <>
-      <div className="space-y-6">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                 {isLoading && Array.from({ length: 8 }).map((_, i) => (
-                      <Card key={i} className="p-4"><Skeleton className="h-12 w-full" /></Card>
-                 ))}
-                 {!isLoading && sortedUsers.map(user => {
-                     const isSelf = user.id === userProfile?.id;
-                     return (
-                        <Popover key={user.id}>
-                            <PopoverTrigger asChild>
-                                <Card 
-                                    className="p-4 hover:bg-accent cursor-pointer transition-all active:scale-[0.98] group overflow-hidden relative"
-                                    onContextMenu={(e) => { setContextUser(user); handleContextMenu(e); }}
-                                    onTouchStart={(e) => { setContextUser(user); handleTouchStart(e); }}
-                                    onTouchEnd={handleTouchEnd}
-                                >
-                                    {user.status === 'ONLINE' && (
-                                        <div className="absolute top-0 left-0 w-1 h-full bg-emerald-500" />
-                                    )}
-                                    <div className="flex items-center gap-4">
-                                        <div className="relative">
-                                            <span className={`absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-background ${user.status === 'ONLINE' ? 'bg-emerald-500' : user.status === 'ON_LEAVE' ? 'bg-amber-500' : 'bg-muted-foreground'}`} />
-                                            <div className="h-10 w-10 rounded-full bg-secondary flex items-center justify-center font-bold text-sm">
-                                                {user.fullName.split(' ').map(n=>n[0]).join('')}
-                                            </div>
-                                        </div>
-                                        <div className="flex-1 min-w-0">
-                                            <div className="flex items-center justify-between gap-2">
-                                                <p className="font-bold text-sm truncate">{user.fullName} {isSelf && "(You)"}</p>
-                                                {user.deviceType === 'PC' ? <Monitor className="h-3 w-3 text-primary opacity-30" /> : user.deviceType === 'MOBILE' ? <Smartphone className="h-3 w-3 text-amber-500 opacity-30" /> : null}
-                                            </div>
-                                            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest truncate">{user.position}</p>
-                                        </div>
-                                    </div>
-                                </Card>
-                            </PopoverTrigger>
-                            {!isSelf && (
-                                <PopoverContent className="w-56 p-1 apple-glass-darker border-none rounded-xl shadow-2xl">
-                                    <Button variant="ghost" className="w-full justify-start text-xs font-bold rounded-lg" onClick={() => handleChat(user.id)}>
-                                        <MessageSquare className="mr-2 h-4 w-4 text-primary" /> Send Transmission
-                                    </Button>
-                                    <Button variant="ghost" className="w-full justify-start text-xs font-bold rounded-lg" onClick={() => setKudosUser(user)}>
-                                        <Trophy className="mr-2 h-4 w-4 text-amber-500" /> Recognize Unit
-                                    </Button>
-                                    <Button variant="ghost" className="w-full justify-start text-xs font-bold rounded-lg" onClick={() => setAssistanceUser(user)}>
-                                        <LifeBuoy className="mr-2 h-4 w-4 text-primary" /> Request Assistance
-                                    </Button>
-                                    {permissions.canManageStaff && user.status === 'ONLINE' && user.deviceType === 'PC' && (
-                                        <>
-                                            <div className="h-px bg-white/5 my-1" />
-                                            <Button variant="ghost" className="w-full justify-start text-xs font-bold rounded-lg text-emerald-500" onClick={() => handleOversight(user, 'SCREEN_SHARE')}>
-                                                <MonitorPlay className="mr-2 h-4 w-4" /> View Screen
-                                            </Button>
-                                            <Button variant="ghost" className="w-full justify-start text-xs font-bold rounded-lg" onClick={() => handleOversight(user, 'SCREENSHOT')}>
-                                                <Camera className="mr-2 h-4 w-4" /> Capture Screenshot
-                                            </Button>
-                                        </>
-                                    )}
-                                </PopoverContent>
-                            )}
-                        </Popover>
-                 )})}
-                  {!isLoading && sortedUsers.length === 0 && (
-                       <p className="text-sm text-muted-foreground text-center py-20 col-span-full uppercase tracking-widest font-black opacity-30">Zero Personnel Found</p>
+    <Card className="m3-surface-low border-none shadow-xl overflow-hidden rounded-[2.5rem] flex flex-col h-full">
+      <CardHeader className="bg-white/5 border-b border-white/5 pb-4 px-6 pt-6 shrink-0">
+          <CardTitle className="text-xl font-black font-headline tracking-tighter flex items-center gap-2 text-white">
+              <Radio className="h-5 w-5 text-primary animate-pulse" />
+              Live Status
+          </CardTitle>
+          <CardDescription className="text-[9px] font-black uppercase tracking-widest opacity-60">Real-time Team Activity</CardDescription>
+      </CardHeader>
+      <CardContent className="p-0 flex-1 min-h-0 overflow-hidden">
+          <ScrollArea className="h-full">
+              <div className="p-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {isLoading ? (
+                      Array.from({ length: 8 }).map((_, i) => (
+                          <Skeleton key={i} className="h-14 w-full rounded-2xl bg-white/5" />
+                      ))
+                  ) : sortedUsers.length === 0 ? (
+                      <div className="p-8 text-center text-[9px] font-black uppercase tracking-widest text-muted-foreground opacity-30 col-span-full">No Active Nodes</div>
+                  ) : (
+                      sortedUsers.map(user => {
+                          const isSelf = user.id === userProfile?.id;
+                          const isOnline = user.status === 'ONLINE';
+
+                          return (
+                              <Popover key={user.id}>
+                                  <PopoverTrigger asChild>
+                                      <div
+                                          className={cn(
+                                              "p-3 rounded-2xl bg-white/5 border border-white/5 hover:bg-white/10 transition-all cursor-pointer relative group",
+                                              isOnline && "border-emerald-500/30 bg-emerald-500/5 shadow-[0_0_15px_-5px_rgba(16,185,129,0.2)]"
+                                          )}
+                                          onContextMenu={(e) => { setContextUser(user); handleContextMenu(e); }}
+                                          onTouchStart={(e) => { setContextUser(user); handleTouchStart(e); }}
+                                          onTouchEnd={handleTouchEnd}
+                                      >
+                                          <div className="flex items-center gap-3">
+                                              <div className="relative">
+                                                  <div className="h-8 w-8 rounded-xl bg-secondary flex items-center justify-center font-black text-xs text-white">
+                                                      {user.fullName.charAt(0)}
+                                                  </div>
+                                                  <span className={`absolute -bottom-1 -right-1 h-3 w-3 rounded-full border-2 border-background ${isOnline ? 'bg-emerald-500' : 'bg-muted-foreground opacity-30'}`} />
+                                              </div>
+                                              <div className="flex-1 min-w-0">
+                                                  <p className="font-black text-[11px] truncate text-white">{user.fullName} {isSelf && "(You)"}</p>
+                                                  <p className="text-[8px] font-bold text-muted-foreground uppercase tracking-widest truncate opacity-50">{user.position}</p>
+                                              </div>
+                                          </div>
+                                      </div>
+                                  </PopoverTrigger>
+                                  {!isSelf && (
+                                      <PopoverContent className="w-56 p-1 m3-surface-high border-none rounded-2xl shadow-3xl">
+                                          <Button variant="ghost" className="w-full justify-start text-[10px] font-black uppercase tracking-widest rounded-xl h-10" onClick={() => handleChat(user.id)}>
+                                              <MessageSquare className="mr-3 h-4 w-4 text-primary" /> Transmission
+                                          </Button>
+                                          <Button variant="ghost" className="w-full justify-start text-[10px] font-black uppercase tracking-widest rounded-xl h-10" onClick={() => setKudosUser(user)}>
+                                              <Trophy className="mr-3 h-4 w-4 text-amber-500" /> Recognize
+                                          </Button>
+                                          <Button variant="ghost" className="w-full justify-start text-[10px] font-black uppercase tracking-widest rounded-xl h-10" onClick={() => setAssistanceUser(user)}>
+                                              <LifeBuoy className="mr-3 h-4 w-4 text-primary" /> Assistance
+                                          </Button>
+                                          {permissions.canManageStaff && user.status === 'ONLINE' && user.deviceType === 'PC' && (
+                                              <>
+                                                  <div className="h-px bg-white/5 my-1 mx-2" />
+                                                  <Button variant="ghost" className="w-full justify-start text-[10px] font-black uppercase tracking-widest rounded-xl h-10 text-emerald-500" onClick={() => handleOversight(user, 'SCREEN_SHARE')}>
+                                                      <MonitorPlay className="mr-3 h-4 w-4" /> Live Feed
+                                                  </Button>
+                                                  <Button variant="ghost" className="w-full justify-start text-[10px] font-black uppercase tracking-widest rounded-xl h-10" onClick={() => handleOversight(user, 'SCREENSHOT')}>
+                                                      <Camera className="mr-3 h-4 w-4 text-primary" /> Capture
+                                                  </Button>
+                                              </>
+                                          )}
+                                      </PopoverContent>
+                                  )}
+                              </Popover>
+                          );
+                      })
                   )}
-          </div>
-      </div>
+              </div>
+          </ScrollArea>
+      </CardContent>
       
       {assistanceUser && userProfile && (
         <RequestAssistanceDialog
@@ -175,6 +187,6 @@ export function StatusFeed({ userProfile, permissions }: StatusFeedProps) {
           />
       )}
       <ContextMenu isOpen={isOpen} anchorPoint={anchorPoint} items={menuItems} onClose={closeMenu} />
-    </>
+    </Card>
   );
 }

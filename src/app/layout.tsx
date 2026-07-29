@@ -36,7 +36,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
-  themeColor: '#101622',
+  themeColor: '#0b121e', // Matches Dark Mode Pastel Navy background (hsl(215, 45%, 8%))
 };
 
 export default function RootLayout({

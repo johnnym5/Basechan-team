@@ -1,41 +1,18 @@
 'use client';
 
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Paperclip, CalendarIcon } from "lucide-react";
-import { useState, useEffect } from "react";
-import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
-import { collection, query, where } from "firebase/firestore";
-import { useToast } from "@/hooks/use-toast";
-import type { Task, UserProfile, Permissions, Workbook, Sheet, TaskPriority } from "@/lib/types";
+import { Loader2, CalendarIcon } from "lucide-react";
+import type { UserProfile, Permissions, TaskPriority } from "@/lib/types";
 import { ResponsiveDialog } from "@/components/shared/ResponsiveDialog";
 import { cn } from "@/lib/utils";
-import { useFileUpload } from "@/hooks/useFileUpload";
-import { Progress } from "@/components/ui/progress";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import { Calendar } from "../ui/calendar";
 import { format } from "date-fns";
-import { taskService } from "@/services/task-service";
-
-const formSchema = z.object({
-  title: z.string().min(5, { message: "Title must be at least 5 characters." }),
-  description: z.string().optional(),
-  assignedTo: z.string().optional(),
-  priority: z.enum(["LEVEL_1", "LEVEL_2", "LEVEL_3"]),
-  dueDate: z.date().optional(),
-  workbookId: z.string().optional(),
-  sheetId: z.string().optional(),
-  estimatedHours: z.coerce.number().optional(),
-  attachment: z.custom<File>().optional(),
-});
-
-type FormData = z.infer<typeof formSchema>;
+import { useAssignTaskForm } from "@/hooks/forms/useAssignTaskForm";
 
 interface AssignTaskDialogProps {
   open: boolean;
@@ -53,87 +30,17 @@ interface AssignTaskDialogProps {
 }
 
 export function AssignTaskDialog({ open, onOpenChange, initialData, currentUserProfile, permissions }: AssignTaskDialogProps) {
-  const [isLoading, setIsLoading] = useState(false);
-  const firestore = useFirestore();
-  const { toast } = useToast();
-  const { isUploading, uploadProgress, uploadFile } = useFileUpload();
-  const [fileName, setFileName] = useState<string | null>(null);
-
-  const isBusy = isLoading || isUploading;
-
-  const usersQuery = useMemoFirebase(() => 
-    currentUserProfile ? query(collection(firestore!, 'users'), where('orgId', '==', currentUserProfile.orgId)) : null
-  , [firestore, currentUserProfile]);
-  const { data: users, isLoading: areUsersLoading } = useCollection<UserProfile>(usersQuery);
-
-  const workbooksQuery = useMemoFirebase(() => 
-    currentUserProfile ? query(collection(firestore!, 'workbooks'), where('orgId', '==', currentUserProfile.orgId)) : null
-  , [firestore, currentUserProfile]);
-  const { data: workbooks, isLoading: areWorkbooksLoading } = useCollection<Workbook>(workbooksQuery);
-
-  const form = useForm<FormData>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      title: "",
-      description: "",
-      priority: "LEVEL_1",
-      estimatedHours: undefined,
-    },
-  });
-
-  const selectedWorkbookId = form.watch('workbookId');
-
-  const sheetsQuery = useMemoFirebase(() =>
-      selectedWorkbookId ? query(collection(firestore!, `workbooks/${selectedWorkbookId}/sheets`)) : null
-  , [firestore, selectedWorkbookId]);
-  const { data: sheets, isLoading: areSheetsLoading } = useCollection<Sheet>(sheetsQuery);
-
-  useEffect(() => {
-    if (open) {
-        form.reset({
-            title: initialData?.title || "",
-            description: initialData?.description || "",
-            priority: initialData?.priority || "LEVEL_1",
-            assignedTo: "",
-            dueDate: initialData?.dueDate || undefined,
-            workbookId: initialData?.workbookId || "",
-            sheetId: initialData?.sheetId || "",
-            estimatedHours: undefined,
-        });
-        setFileName(null);
-    }
-  }, [initialData, open, form]);
-
-  async function onSubmit(values: FormData) {
-    const assigneeId = permissions.canManageStaff && values.assignedTo ? values.assignedTo : currentUserProfile.id;
-    if (!firestore || !currentUserProfile || !assigneeId) return;
-    
-    const assignedUser = users?.find(u => u.id === assigneeId);
-    if (!assignedUser) {
-        toast({ variant: "destructive", title: "Error", description: "Selected member not found." });
-        return;
-    }
-
-    setIsLoading(true);
-
-    try {
-        let attachmentUrl: string | undefined;
-        if (values.attachment) {
-            const filePath = `tasks/${currentUserProfile.orgId}/${Date.now()}_${values.attachment.name}`;
-            attachmentUrl = await uploadFile(values.attachment, filePath);
-        }
-
-        await taskService.createTask(firestore, currentUserProfile, assignedUser, values, attachmentUrl);
-        
-        toast({ title: "Task Assigned", description: `"${values.title}" has been assigned successfully.`});
-        onOpenChange(false);
-        form.reset();
-    } catch (error: any) {
-        toast({ variant: "destructive", title: "Error", description: error.message });
-    } finally {
-        setIsLoading(false);
-    }
-  }
+  const {
+    form,
+    onSubmit,
+    isBusy,
+    users,
+    areUsersLoading,
+    workbooks,
+    areWorkbooksLoading,
+    sheets,
+    areSheetsLoading,
+  } = useAssignTaskForm({ open, onOpenChange, initialData, currentUserProfile, permissions });
 
   return (
     <ResponsiveDialog 
@@ -220,6 +127,35 @@ export function AssignTaskDialog({ open, onOpenChange, initialData, currentUserP
                             <FormMessage />
                         </FormItem>
                     )} />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                     <FormField control={form.control} name="workbookId" render={({ field }) => (
+                         <FormItem>
+                             <FormLabel className="text-[10px] font-black uppercase tracking-widest opacity-60">Reference Workbook</FormLabel>
+                             <Select onValueChange={field.onChange} value={field.value || ""}>
+                                 <FormControl><SelectTrigger disabled={areWorkbooksLoading} className="h-12 rounded-xl bg-background/50 border-white/5"><SelectValue placeholder="Select Workbook" /></SelectTrigger></FormControl>
+                                 <SelectContent className="apple-glass-darker border-none">
+                                     <SelectItem value="">None</SelectItem>
+                                     {workbooks?.map(wb => <SelectItem key={wb.id} value={wb.id}>{wb.title}</SelectItem>)}
+                                 </SelectContent>
+                             </Select>
+                             <FormMessage />
+                         </FormItem>
+                     )} />
+                     <FormField control={form.control} name="sheetId" render={({ field }) => (
+                         <FormItem>
+                             <FormLabel className="text-[10px] font-black uppercase tracking-widest opacity-60">Reference Sheet</FormLabel>
+                             <Select onValueChange={field.onChange} value={field.value || ""}>
+                                 <FormControl><SelectTrigger disabled={areSheetsLoading || !form.watch('workbookId')} className="h-12 rounded-xl bg-background/50 border-white/5"><SelectValue placeholder="Select Sheet" /></SelectTrigger></FormControl>
+                                 <SelectContent className="apple-glass-darker border-none">
+                                     <SelectItem value="">None</SelectItem>
+                                     {sheets?.map(sh => <SelectItem key={sh.id} value={sh.id}>{sh.name}</SelectItem>)}
+                                 </SelectContent>
+                             </Select>
+                             <FormMessage />
+                         </FormItem>
+                     )} />
                 </div>
 
                 <Button type="submit" className="w-full h-14 rounded-2xl font-black uppercase tracking-[0.2em] shadow-xl shadow-primary/20 active:scale-95 transition-all" disabled={isBusy}>

@@ -215,24 +215,30 @@ export function LiveStaffMonitor({ userProfile }: LiveStaffMonitorProps) {
 
     return (
         <>
-            <Card className="apple-glass border-none shadow-xl overflow-hidden">
-                <CardHeader className="bg-white/5 border-b border-white/5 pb-4">
+            <Card className="m3-surface-low border-none shadow-xl overflow-hidden rounded-[2.5rem]">
+                <CardHeader className="bg-white/5 border-b border-white/5 pb-4 px-6 pt-6">
                     <div className="flex items-center justify-between">
                         <div>
-                            <CardTitle className="text-xl flex items-center gap-2">
+                            <CardTitle className="text-xl font-black font-headline tracking-tighter flex items-center gap-2">
                                 <Activity className="h-5 w-5 text-emerald-500" />
                                 Live Personnel Monitor
                             </CardTitle>
-                            <CardDescription>Performance metrics and oversight control for the current shift.</CardDescription>
+                            <CardDescription className="text-[9px] font-black uppercase tracking-widest opacity-60">Operations Performance & Oversight</CardDescription>
                         </div>
-                        <div className="p-2 rounded-xl bg-primary/10">
-                            <Timer className="h-5 w-5 text-primary animate-pulse" />
+                        <div className="flex items-center gap-2">
+                             <div className="hidden md:flex justify-end gap-2">
+                                <CarouselPrevious className="static h-8 w-8 rounded-xl bg-white/5 hover:bg-white/10 border-white/5 text-white translate-y-0" />
+                                <CarouselNext className="static h-8 w-8 rounded-xl bg-white/5 hover:bg-white/10 border-white/5 text-white translate-y-0" />
+                            </div>
+                            <div className="p-2 rounded-xl bg-primary/10 border border-primary/20">
+                                <Timer className="h-5 w-5 text-primary animate-pulse" />
+                            </div>
                         </div>
                     </div>
                 </CardHeader>
                 <CardContent className="p-4 sm:p-6 relative">
                     {monitoringData.length === 0 ? (
-                        <div className="h-48 flex flex-col items-center justify-center border border-dashed border-white/5 rounded-2xl bg-secondary/5">
+                        <div className="h-40 flex flex-col items-center justify-center border border-dashed border-white/5 rounded-[2rem] bg-secondary/5">
                             <p className="text-muted-foreground uppercase font-black text-[9px] tracking-widest opacity-30">
                                 No personnel detected in current cycle
                             </p>
@@ -241,9 +247,9 @@ export function LiveStaffMonitor({ userProfile }: LiveStaffMonitorProps) {
                         <Carousel opts={{ dragFree: true }} className="w-full relative">
                             <CarouselContent className="-ml-4">
                                 {monitoringData.map((record) => (
-                                    <CarouselItem key={record.id} className="pl-4 basis-[85%] sm:basis-1/2 lg:basis-1/3 xl:basis-1/4">
+                                    <CarouselItem key={record.id} className="pl-4 basis-[90%] sm:basis-1/2 lg:basis-1/3 xl:basis-1/4">
                                         <Card
-                                            className="apple-glass border border-white/5 shadow-xl hover:bg-white/5 transition-all duration-300 relative flex flex-col justify-between h-full select-none cursor-pointer group p-5 rounded-2xl"
+                                            className="m3-surface-low border border-white/5 shadow-xl hover:bg-white/10 transition-all duration-300 relative flex flex-col justify-between h-full select-none cursor-pointer group p-5 rounded-[2rem] m3-interactive"
                                             onClick={(e) => handleRowClick(e, record)}
                                             onContextMenu={(e) => {
                                                 if (record.profile) {
@@ -376,10 +382,6 @@ export function LiveStaffMonitor({ userProfile }: LiveStaffMonitorProps) {
                                     </CarouselItem>
                                 ))}
                             </CarouselContent>
-                            <div className="hidden md:flex justify-end gap-2 mt-4">
-                                <CarouselPrevious className="static h-8 w-8 rounded-lg bg-white/5 hover:bg-white/10 border-white/5 text-white translate-y-0" />
-                                <CarouselNext className="static h-8 w-8 rounded-lg bg-white/5 hover:bg-white/10 border-white/5 text-white translate-y-0" />
-                            </div>
                         </Carousel>
                     )}
                 </CardContent>

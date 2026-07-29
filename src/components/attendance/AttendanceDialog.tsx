@@ -13,16 +13,14 @@ interface AttendanceDialogProps {
 export function AttendanceDialog({ open, onOpenChange, modal = false }: AttendanceDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange} modal={modal}>
-      <DialogContent position={modal ? "center" : "left"} className="flex flex-col p-0">
+      <DialogContent position={modal ? "center" : "left"} className="flex flex-col p-0 overflow-hidden">
         <DialogHeader className="sr-only">
             <DialogTitle>Attendance Center</DialogTitle>
             <DialogDescription>Manage your work hours and see who's currently online.</DialogDescription>
         </DialogHeader>
-        <ScrollArea className="flex-1">
-            <div className="p-6">
-                <AttendancePageContent />
-            </div>
-        </ScrollArea>
+        <div className="flex-1 min-h-0">
+            <AttendancePageContent />
+        </div>
       </DialogContent>
     </Dialog>
   );

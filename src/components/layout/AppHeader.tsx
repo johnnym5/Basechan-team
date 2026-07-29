@@ -105,59 +105,60 @@ export default function AppHeader({
     uiEmitter.emit('open-assistant-dialog');
   };
 
-  if (isVertical) {
+    if (isVertical) {
       return (
-          <div className="flex flex-col items-center gap-4 py-4 border-b border-white/5">
-              <div className="w-full px-2 overflow-hidden min-h-[2.5rem] flex flex-col justify-center items-center">
-                  <Image src="/logo.png" alt="Basechan International" width={120} height={34} className="w-full h-auto object-contain opacity-80" />
+          <div className="flex flex-col items-center gap-6 py-6 border-b border-white/5">
+              <div className="w-full px-4 overflow-hidden min-h-[3rem] flex flex-col justify-center items-center">
+                  <Image src="/logo.png" alt="Basechan International" width={140} height={40} className="w-full h-auto object-contain opacity-90 brightness-110" />
               </div>
 
-              <div className="flex flex-col items-center gap-3">
+              <div className="flex flex-col items-center gap-5">
                   <UserNav userProfile={userProfile} />
                   <ThemeToggle />
                   
                   {/* Daily Updates Button */}
                   <button 
                     onClick={handleOpenIntelligence}
-                    className="relative text-gray-400 hover:text-amber-500 transition-all p-1.5 rounded-full hover:bg-amber-500/5 group/btn"
+                    className="relative text-muted-foreground hover:text-amber-500 transition-all p-2 rounded-2xl hover:bg-amber-500/10 group/btn m3-interactive"
                     title="Daily Updates"
                   >
-                      <Sparkles className="w-5 h-5" />
+                      <Sparkles className="w-6 h-6" />
                       {broadcastCount > 0 && (
-                          <span className="absolute top-0.5 right-0.5 flex h-2.5 w-2.5 items-center justify-center rounded-full bg-primary text-[7px] font-black text-white ring-2 ring-background animate-pulse">
+                          <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[8px] font-black text-primary-foreground ring-2 ring-background animate-pulse shadow-sm">
                               {broadcastCount}
                           </span>
                       )}
-                      <div className="absolute left-full ml-4 px-2 py-1 bg-amber-500 text-white text-[9px] font-black uppercase rounded opacity-0 group-hover/btn:opacity-100 transition-opacity whitespace-nowrap z-50 shadow-xl">
-                          Updates
+                      <div className="absolute left-full ml-4 px-3 py-1.5 bg-amber-500 text-white text-[9px] font-black uppercase tracking-widest rounded-lg opacity-0 group-hover/btn:opacity-100 transition-opacity whitespace-nowrap z-50 shadow-2xl">
+                          Intelligence
                       </div>
                   </button>
 
                    <Popover open={isNotificationsOpen} onOpenChange={setIsNotificationsOpen}>
                       <PopoverTrigger asChild>
-                          <button className="relative text-gray-400 hover:text-primary transition-all p-1.5 rounded-full hover:bg-primary/5 group/btn">
-                              <Bell className={cn("w-5 h-5", unreadCount > 0 && "text-primary")} />
+                          <button className="relative text-muted-foreground hover:text-primary transition-all p-2 rounded-2xl hover:bg-primary/10 group/btn m3-interactive">
+                              <Bell className={cn("w-6 h-6", unreadCount > 0 && "text-primary")} />
                               {unreadCount > 0 && (
-                                  <span className="absolute top-0.5 right-0.5 flex h-2.5 w-2.5 items-center justify-center rounded-full bg-destructive text-[7px] font-black text-white ring-2 ring-background">
+                                  <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[8px] font-black text-white ring-2 ring-background shadow-sm">
                                       {unreadCount}
                                   </span>
                               )}
-                              <div className="absolute left-full ml-4 px-2 py-1 bg-destructive text-white text-[9px] font-black uppercase rounded opacity-0 group-hover/btn:opacity-100 transition-opacity whitespace-nowrap z-50">
+                              <div className="absolute left-full ml-4 px-3 py-1.5 bg-destructive text-white text-[9px] font-black uppercase tracking-widest rounded-lg opacity-0 group-hover/btn:opacity-100 transition-opacity whitespace-nowrap z-50 shadow-2xl">
                                   Alerts
                               </div>
                           </button>
                       </PopoverTrigger>
-                      <PopoverContent align="start" side="right" className="w-[85vw] sm:w-80 p-0 apple-glass border-none shadow-2xl ml-2">
-                            <div className="p-3 border-b border-white/5 bg-secondary/10 flex items-center justify-between">
-                                <h3 className="font-black text-[9px] uppercase tracking-widest opacity-60">Notifications</h3>
+                      <PopoverContent align="start" side="right" className="w-[85vw] sm:w-80 p-0 m3-surface-high border-none shadow-3xl ml-4 rounded-[2rem] overflow-hidden">
+                            <div className="p-4 border-b border-white/5 bg-secondary/20 flex items-center justify-between">
+                                <h3 className="font-black text-[10px] uppercase tracking-[0.2em] opacity-80">Notifications</h3>
                             </div>
-                            <ScrollArea className="h-80">
+                            <ScrollArea className="h-96">
                                 {notifications?.length === 0 ? (
-                                    <div className="p-10 text-center text-[9px] text-muted-foreground uppercase font-black opacity-30">No new messages</div>
+                                    <div className="p-16 text-center text-[10px] text-muted-foreground uppercase font-black opacity-20 tracking-tighter">No Active Intel</div>
                                 ) : notifications?.map(n => (
-                                    <div key={n.id} className={cn("p-3 border-b border-white/5 transition-colors cursor-pointer", n.isRead ? "opacity-40" : "bg-primary/5")} onClick={() => handleNotificationClick(n)}>
-                                        <p className="font-bold text-xs leading-tight">{n.title}</p>
-                                        <p className="text-[10px] text-muted-foreground mt-1 line-clamp-2">{n.description}</p>
+                                    <div key={n.id} className={cn("p-4 border-b border-white/5 transition-all cursor-pointer hover:bg-primary/5", n.isRead ? "opacity-50" : "bg-primary/10")} onClick={() => handleNotificationClick(n)}>
+                                        <p className="font-black text-xs leading-tight tracking-tight">{n.title}</p>
+                                        <p className="text-[10px] text-muted-foreground mt-2 line-clamp-2 leading-relaxed font-medium">{n.description}</p>
+                                        <div className="mt-2 text-[8px] font-black uppercase tracking-widest text-primary/60">{format(new Date(n.createdAt), 'MMM d, HH:mm')}</div>
                                     </div>
                                 ))}
                             </ScrollArea>

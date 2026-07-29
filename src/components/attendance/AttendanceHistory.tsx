@@ -10,6 +10,10 @@ import { Badge } from "../ui/badge";
 import { cn } from "@/lib/utils";
 import { formatDuration } from "@/lib/formatters";
 
+import { Download, History, ArrowRight } from "lucide-react";
+import { Button } from "../ui/button";
+import { ScrollArea } from "../ui/scroll-area";
+
 interface AttendanceHistoryProps {
   userProfile: UserProfile | null;
 }
@@ -23,67 +27,71 @@ export function AttendanceHistory({ userProfile }: AttendanceHistoryProps) {
       collection(firestore, 'attendance'),
       where('userId', '==', userProfile.id),
       orderBy('date', 'desc'),
-      limit(15) // Get the last 15 records
+      limit(20)
     );
   }, [firestore, userProfile]);
 
-  const { data: attendanceHistory, isLoading } = useCollection<Attendance>(attendanceQuery);
+  const { data: records, isLoading } = useCollection<Attendance>(attendanceQuery);
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>My Attendance History</CardTitle>
-        <CardDescription>A log of your recent clock-ins and clock-outs.</CardDescription>
+    <Card className="m3-surface-low border-none shadow-xl overflow-hidden rounded-[2.5rem] flex flex-col h-full">
+      <CardHeader className="bg-white/5 border-b border-white/5 pb-4 px-6 pt-6 shrink-0">
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle className="text-xl font-black font-headline tracking-tighter flex items-center gap-2">
+              <History className="h-5 w-5 text-primary" />
+              Attendance History
+            </CardTitle>
+            <CardDescription className="text-[9px] font-black uppercase tracking-widest opacity-60">Chronological Shift Records</CardDescription>
+          </div>
+          <Button variant="outline" size="sm" className="h-8 rounded-xl text-[8px] font-black uppercase tracking-widest border-white/5 bg-white/5 hover:bg-white/10">
+            <Download className="mr-2 h-3.5 w-3.5" /> Export Month
+          </Button>
+        </div>
       </CardHeader>
-      <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Date</TableHead>
-              <TableHead>Clock In</TableHead>
-              <TableHead>Clock Out</TableHead>
-              <TableHead>Work Time</TableHead>
-              <TableHead>Break</TableHead>
-              <TableHead className="text-right">Remarks</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {isLoading && Array.from({ length: 5 }).map((_, i) => (
-              <TableRow key={i}>
-                <TableCell colSpan={6}><Skeleton className="h-6 w-full" /></TableCell>
-              </TableRow>
-            ))}
-            {!isLoading && attendanceHistory?.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={6} className="h-24 text-center">
-                  No attendance history found.
-                </TableCell>
-              </TableRow>
+      <CardContent className="p-0 flex-1 min-h-0 overflow-hidden">
+        <ScrollArea className="h-full">
+          <div className="p-4 space-y-3">
+            {isLoading ? (
+              Array.from({ length: 5 }).map((_, i) => (
+                <Skeleton key={i} className="h-20 w-full rounded-[1.5rem]" />
+              ))
+            ) : records?.length === 0 ? (
+              <div className="h-40 flex flex-col items-center justify-center border border-dashed border-white/5 rounded-[2rem] bg-secondary/5">
+                <p className="text-muted-foreground uppercase font-black text-[9px] tracking-widest opacity-30">No history available for this cycle</p>
+              </div>
+            ) : (
+              records?.map(record => (
+                <div key={record.id} className="p-4 rounded-[1.5rem] bg-white/5 border border-white/5 hover:bg-white/10 transition-all flex items-center justify-between group">
+                  <div className="flex items-center gap-4">
+                    <div className="h-10 w-10 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center font-black text-xs text-primary">
+                      {format(new Date(record.date), 'dd')}
+                    </div>
+                    <div>
+                      <p className="font-bold text-sm text-white">Attendance for {format(new Date(record.date), 'MMMM do, yyyy')}</p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest opacity-50">Showing active and completed rosters for this date.</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <div className="text-right hidden sm:block">
+                      <div className="flex items-center gap-1.5 justify-end">
+                        <span className="text-xs font-black text-emerald-400 font-mono">{format(new Date(record.clockIn), 'h:mm a')}</span>
+                        <ArrowRight className="h-3 w-3 text-muted-foreground" />
+                        <span className="text-xs font-black text-primary font-mono">{record.status}</span>
+                      </div>
+                      <div className="text-[9px] font-black uppercase tracking-widest text-muted-foreground opacity-40 mt-0.5">{record.location}</div>
+                    </div>
+                    <Button variant="ghost" size="sm" className="h-8 rounded-xl text-destructive hover:bg-destructive/10 hover:text-destructive border border-transparent hover:border-destructive/20 font-black text-[9px] uppercase tracking-widest">
+                      Force Close
+                    </Button>
+                  </div>
+                </div>
+              ))
             )}
-            {!isLoading && attendanceHistory?.map(record => (
-              <TableRow key={record.id}>
-                <TableCell className="font-medium">{format(new Date(record.clockIn), 'PPP')}</TableCell>
-                <TableCell>{format(new Date(record.clockIn), 'p')}</TableCell>
-                <TableCell>{record.clockOut ? format(new Date(record.clockOut), 'p') : '—'}</TableCell>
-                <TableCell className="font-mono">{formatDuration(record.duration)}</TableCell>
-                <TableCell className="font-mono">{formatDuration(record.totalBreak)}</TableCell>
-                <TableCell className="text-right space-x-1">
-                  {record.remarks?.map(remark => (
-                    <Badge key={remark} variant="secondary" className={cn(
-                      remark === 'LATE' && 'bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300',
-                      remark === 'EARLY' && 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300',
-                      remark === 'OVERTIME' && 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300',
-                      remark === 'UNDERTIME' && 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300',
-                      "capitalize text-xs"
-                    )}>
-                      {remark.toLowerCase()}
-                    </Badge>
-                  ))}
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+          </div>
+        </ScrollArea>
       </CardContent>
     </Card>
   );

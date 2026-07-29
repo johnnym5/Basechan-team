@@ -214,14 +214,14 @@ export function ClockControl({ userProfile, permissions, systemConfig, className
         finally { setIsSubmitting(false); }
     };
 
-    if (isLoading) return <div className="apple-glass rounded-2xl h-64 flex items-center justify-center"><Loader2 className="animate-spin" /></div>;
+    if (isLoading) return <div className="m3-surface-low rounded-[2.5rem] h-64 flex items-center justify-center"><Loader2 className="animate-spin" /></div>;
 
     return (
-        <section className={cn("apple-glass rounded-2xl p-6 flex flex-col items-center justify-center text-center shadow-lg relative overflow-hidden h-full min-h-[300px]", className)}>
-            {isOnBreak && <div className="absolute top-0 left-0 w-full h-1 bg-amber-500 animate-pulse" />}
-            <div className="mb-4 flex items-center gap-2 text-muted-foreground uppercase tracking-[0.2em] text-[10px] font-black">
+        <section className={cn("m3-surface-high rounded-[2.5rem] p-8 flex flex-col items-center justify-center text-center shadow-lg relative overflow-hidden h-full min-h-[350px]", className)}>
+            {isOnBreak && <div className="absolute top-0 left-0 w-full h-1.5 bg-amber-500 animate-pulse" />}
+            <div className="mb-6 flex items-center gap-2 text-muted-foreground uppercase tracking-[0.3em] text-[10px] font-black opacity-60">
                 <Clock className="w-4 h-4" />
-                {isClockedIn ? (isOnBreak ? 'On Break' : 'Work Status') : 'Ready to Start'}
+                {isClockedIn ? (isOnBreak ? 'Resting Phase' : 'Active Duty') : 'Ready for Duty'}
             </div>
 
             <div className="flex flex-col items-center gap-2 mb-6">
@@ -248,27 +248,27 @@ export function ClockControl({ userProfile, permissions, systemConfig, className
 
             <div className={cn("w-full space-y-4 mb-4", !isClockedIn && "mt-2")}>
                 {isClockedIn ? (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full">
                         <Button
                             variant={isOnBreak ? 'default' : 'outline'}
-                            className={cn("h-14 md:h-16 rounded-2xl text-xs font-black uppercase transition-all", isOnBreak ? "bg-amber-600 hover:bg-amber-700" : "border-amber-500/50 text-amber-500 hover:bg-amber-500/5")}
+                            className={cn("h-16 rounded-[1.5rem] text-[10px] font-black uppercase tracking-widest transition-all", isOnBreak ? "bg-amber-600 hover:bg-amber-700" : "border-amber-500/30 text-amber-500 hover:bg-amber-500/10")}
                             onClick={handleToggleBreak}
                             disabled={isSubmitting}
                         >
-                            {isSubmitting ? <Loader2 className="animate-spin" /> : (isOnBreak ? <><Play className="mr-2 h-5 w-5" /> Resume</> : <><Coffee className="mr-2 h-5 w-5" /> Break</>)}
+                            {isSubmitting ? <Loader2 className="animate-spin" /> : (isOnBreak ? <><Play className="mr-2 h-5 w-5" /> Resume</> : <><Coffee className="mr-2 h-5 w-5" /> Take Break</>)}
                         </Button>
-                        <Button className="h-14 md:h-16 bg-rose-600 hover:bg-rose-700 text-destructive-foreground rounded-2xl text-xs font-black uppercase" onClick={handleClockOut} disabled={isSubmitting}>
-                            {isSubmitting ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <><LogOut className="mr-2 h-5 w-5" /> Clock Out</>}
+                        <Button className="h-16 bg-rose-600/10 hover:bg-rose-600 text-rose-500 hover:text-white border border-rose-600/20 rounded-[1.5rem] text-[10px] font-black uppercase tracking-widest transition-all" onClick={handleClockOut} disabled={isSubmitting}>
+                            {isSubmitting ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <><LogOut className="mr-2 h-5 w-5" /> End Shift</>}
                         </Button>
                     </div>
                 ) : (
-                    <div className="w-full space-y-2">
+                    <div className="w-full space-y-3">
                         <Button 
-                            className="w-full h-16 md:h-20 bg-primary hover:bg-primary/90 text-primary-foreground rounded-2xl text-lg md:text-xl font-black uppercase shadow-xl shadow-primary/20 interactive-element" 
+                            className="w-full h-20 bg-primary hover:bg-primary/90 text-primary-foreground rounded-[2rem] text-xl font-black uppercase tracking-[0.1em] shadow-2xl shadow-primary/30 m3-interactive"
                             onClick={handleClockIn} 
                             disabled={isSubmitting || !permissions?.canClockIn}
                         >
-                            {isSubmitting ? <Loader2 className="animate-spin" /> : <><MonitorPlay className="mr-2 h-5 w-5" /> Start Working</>}
+                            {isSubmitting ? <Loader2 className="animate-spin" /> : <><MonitorPlay className="mr-2 h-6 w-6" /> Start Working</>}
                         </Button>
                         {!permissions?.canClockIn && (
                             <p className="text-center text-[10px] text-rose-500 font-bold uppercase tracking-wider bg-rose-500/10 p-2 rounded-xl border border-rose-500/20">
