@@ -4,10 +4,10 @@ import { useEffect, useState, useRef } from 'react';
 import * as React from 'react';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { UserProfile } from '@/lib/types';
-import { TeamPane } from './TeamPane';
 import { SystemPane } from './SystemPane';
 import { AuditPane } from './AuditPane';
 import { MaintenancePane } from './MaintenancePane';
+import { RoleManager } from './security/RoleManager';
 import { ErrorLogViewer } from '../superadmin/ErrorLogViewer';
 import { usePermissions } from '@/hooks/usePermissions';
 import {
@@ -28,7 +28,7 @@ interface SettingsDialogProps {
   modal?: boolean;
 }
 
-type TabId = 'team' | 'system' | 'maintenance' | 'audit' | 'superadmin';
+type TabId = 'team' | 'system' | 'security' | 'maintenance' | 'audit' | 'superadmin';
 
 interface NavItem {
   id: TabId;
@@ -44,7 +44,7 @@ export function SettingsDialog({ open, onOpenChange, userProfile, modal }: Setti
   const isMobile = useMediaQuery('(max-width: 768px)');
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  const [activeTab, setActiveTab] = useState<TabId>('team');
+  const [activeTab, setActiveTab] = useState<TabId>('system');
 
   // Reset scroll position when tab changes
   useEffect(() => {
@@ -76,11 +76,13 @@ export function SettingsDialog({ open, onOpenChange, userProfile, modal }: Setti
 
   if (!userProfile) return null;
 
-  const hasAccess = permissions.canViewTeam || userProfile.role === 'ORG_ADMIN' || isSuperAdmin;
+  const hasAccess = permissions.canManageCompany || userProfile.role === 'ORG_ADMIN' || isSuperAdmin;
 
   const navItems: NavItem[] = [
-    { id: 'team', label: 'Team', icon: <Users className="h-4 w-4" /> },
-    ...(permissions.canManageCompany ? [{ id: 'system' as TabId, label: 'System', icon: <Zap className="h-4 w-4" /> }] : []),
+    ...(permissions.canManageCompany ? [
+        { id: 'system' as TabId, label: 'System', icon: <Zap className="h-4 w-4" /> },
+        { id: 'security' as TabId, label: 'Security', icon: <Shield className="h-4 w-4" /> }
+    ] : []),
     { id: 'maintenance', label: 'Radar', icon: <Hammer className="h-4 w-4" /> },
     ...(permissions.canViewAudit ? [{ id: 'audit' as TabId, label: 'Audit', icon: <Lock className="h-4 w-4" /> }] : []),
     ...(isSuperAdmin ? [{ id: 'superadmin' as TabId, label: 'Root', icon: <Shield className="h-4 w-4" /> }] : []),
@@ -222,11 +224,11 @@ export function SettingsDialog({ open, onOpenChange, userProfile, modal }: Setti
               style={{ scrollbarGutter: 'stable' }}
             >
               <div className="max-w-[1200px] mx-auto">
-                {activeTab === 'team' && (
-                  <TeamPane currentUserProfile={userProfile} permissions={permissions} searchTerm={searchTerm} />
-                )}
                 {activeTab === 'system' && permissions.canManageCompany && (
                   <SystemPane currentUserProfile={userProfile} searchTerm={searchTerm} />
+                )}
+                {activeTab === 'security' && permissions.canManageCompany && (
+                  <RoleManager orgId={userProfile.orgId} />
                 )}
                 {activeTab === 'maintenance' && (
                   <MaintenancePane currentUserProfile={userProfile} searchTerm={searchTerm} />

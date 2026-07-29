@@ -25,6 +25,7 @@ import { LogOut, MonitorPlay, ShieldAlert, Loader2, Signal } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast';
 import { telemetryService } from '@/services/telemetry-service';
 import { uiEmitter } from '@/lib/ui-emitter';
+import { authService } from '@/services/auth-service';
 
 const GlobalDialogs = dynamic(() => import('@/components/layout/GlobalDialogs').then(m => m.GlobalDialogs), { 
   ssr: false,
@@ -229,6 +230,13 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
   const { isIdle } = useIdleTimer(attendanceRecord);
   const permissions = usePermissions(stableProfile);
   const { config } = useSystemConfig(stableProfile?.orgId);
+
+  // AUTH SYNC: Ensure permissions are cached and up-to-date
+  useEffect(() => {
+    if (firestore && user?.uid) {
+        authService.syncUserPermissions(firestore, user.uid);
+    }
+  }, [firestore, user?.uid]);
 
   useShiftReminders(stableProfile, config || null, attendanceRecord);
 

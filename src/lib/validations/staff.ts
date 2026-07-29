@@ -10,6 +10,15 @@ export const staffProfileSchema = z.object({
   avatarUrl: z.string().url().nullable().optional(),
   address: z.string().optional(),
 
+  // Identity & Personalization
+  preferredName: z.string().optional(),
+  pronouns: z.string().optional(),
+  bio: z.string().max(500, "Bio must be less than 500 characters.").optional(),
+  timezone: z.string().optional(),
+  location: z.string().optional(),
+  skills: z.array(z.string()).optional(),
+  languages: z.array(z.string()).optional(),
+
   // Employment Details
   employeeId: z.string().min(1, "Employee ID is required."),
   jobTitle: z.string().min(1, "Job title is required."),
@@ -19,6 +28,28 @@ export const staffProfileSchema = z.object({
   managerId: z.string().optional(), // Reference to another user ID
   joinDate: z.string().optional(), // ISO string
   status: z.enum(["ONLINE", "OFFLINE", "ON_LEAVE", "ACTIVE", "SUSPENDED", "TERMINATED"]),
+  employmentHistory: z.array(z.object({
+    role: z.string(),
+    date: z.string(),
+    type: z.enum(['HIRING', 'PROMOTION', 'TRANSFER', 'ADJUSTMENT']),
+    notes: z.string().optional(),
+  })).optional(),
+  workSchedule: z.object({
+    days: z.array(z.string()),
+    hours: z.string(),
+  }).optional(),
+  assignedEquipment: z.array(z.object({
+    id: z.string(),
+    name: z.string(),
+    serialNumber: z.string(),
+    assignedDate: z.string(),
+  })).optional(),
+  softwareLicenses: z.array(z.object({
+    id: z.string(),
+    name: z.string(),
+    key: z.string().optional(),
+    assignedDate: z.string(),
+  })).optional(),
 
   // Emergency Contact
   emergencyContact: z.object({

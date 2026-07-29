@@ -17,9 +17,10 @@ export function MyLeaveHistory({ userProfile }: MyLeaveHistoryProps) {
   const firestore = useFirestore();
 
   const leaveQuery = useMemoFirebase(() => {
-    if (!firestore) return null;
+    if (!firestore || !userProfile?.orgId) return null;
     return query(
       collection(firestore, 'leave_requests'),
+      where('orgId', '==', userProfile.orgId),
       where('userId', '==', userProfile.id),
       orderBy('createdAt', 'desc')
     );

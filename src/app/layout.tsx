@@ -39,6 +39,8 @@ export const viewport: Viewport = {
   themeColor: '#0b121e', // Matches Dark Mode Pastel Navy background (hsl(215, 45%, 8%))
 };
 
+import { QueryClientProvider } from '@/components/providers/QueryClientProvider';
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -57,15 +59,17 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <FirebaseClientProvider>
-            <ImpersonationProvider>
-              <Suspense fallback={<div className="min-h-screen bg-background" />}>
-                <MainAppLayout>
-                  {children}
-                </MainAppLayout>
-              </Suspense>
-              <Toaster />
-              <CloseToDashboardButton />
-            </ImpersonationProvider>
+            <QueryClientProvider>
+              <ImpersonationProvider>
+                <Suspense fallback={<div className="min-h-screen bg-background" />}>
+                  <MainAppLayout>
+                    {children}
+                  </MainAppLayout>
+                </Suspense>
+                <Toaster />
+                <CloseToDashboardButton />
+              </ImpersonationProvider>
+            </QueryClientProvider>
           </FirebaseClientProvider>
         </ThemeProvider>
       </body>

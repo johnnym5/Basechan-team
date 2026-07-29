@@ -14,6 +14,7 @@ import {
 } from 'firebase/firestore';
 import type { UserProfile, AppRole } from '@/lib/types';
 import { PERMISSIONS, DUTIES } from '@/lib/permissions-registry';
+import { getRoleFromPosition } from '@/lib/roles-and-departments';
 
 /**
  * AUTH SERVICE
@@ -105,7 +106,10 @@ export const authService = {
 
     // Add default role if none assigned (migration support)
     if (roleIds.length === 0) {
-        // Map legacy role string to new role IDs
+        // Map position to role first for more accurate resolution
+        const positionRole = getRoleFromPosition(user.position);
+        const legacyRole = positionRole || user.role;
+
         const legacyMapping: Record<string, string> = {
             'STAFF': 'role_staff',
             'HR_MANAGER': 'role_hr_manager',
@@ -113,7 +117,7 @@ export const authService = {
             'MANAGING_DIRECTOR': 'role_md',
             'ORG_ADMIN': 'role_org_admin'
         };
-        roleIds.push(legacyMapping[user.role] || 'role_staff');
+        roleIds.push(legacyMapping[legacyRole] || 'role_staff');
     }
 
     const permissionSet = new Set<string>();
@@ -124,6 +128,14 @@ export const authService = {
         if (roleSnap.exists()) {
             const roleData = roleSnap.data() as AppRole;
             roleData.permissions.forEach(p => permissionSet.add(p));
+        } else {
+            // FALLBACK: Hardcoded permissions for system roles if not seeded
+            if (roleId === 'role_staff') DUTIES.STAFF_BASIC.forEach(p => permissionSet.add(p));
+            if (roleId === 'role_hr_manager') [...DUTIES.STAFF_BASIC, ...DUTIES.HR_OPERATIONS].forEach(p => permissionSet.add(p));
+            if (roleId === 'role_finance_manager') [...DUTIES.STAFF_BASIC, ...DUTIES.FINANCE_CONTROL].forEach(p => permissionSet.add(p));
+            if (roleId === 'role_md' || roleId === 'role_org_admin') {
+                [...DUTIES.STAFF_BASIC, ...DUTIES.HR_OPERATIONS, ...DUTIES.FINANCE_CONTROL, ...DUTIES.EXECUTIVE_OVERSIGHT].forEach(p => permissionSet.add(p));
+            }
         }
     }
 
@@ -148,5 +160,41 @@ export const authService = {
     }, { merge: true });
 
     return flatPermissions;
+  },
+
+  /**
+   * Checks for Separation of Duties (SoD) conflicts in a list of permissions.
+   * Returns a list of identified conflicts.
+   */
+  checkSoDConflicts(permissions: string[]) {
+    const conflicts: { title: string; description: string; permissions: string[] }[] = [];
+
+    // Conflict 1: Procurement Fraud (Create + Approve)
+    const canCreate = permissions.includes(PERMISSIONS.REQUISITION_CREATE);
+    const canApprove = permissions.includes(PERMISSIONS.REQUISITION_APPROVE_HR) ||
+                       permissions.includes(PERMISSIONS.REQUISITION_APPROVE_FINANCE) ||
+                       permissions.includes(PERMISSIONS.REQUISITION_APPROVE_MD);
+
+    if (canCreate && canApprove) {
+        conflicts.push({
+            title: "Procurement Lifecycle Conflict",
+            description: "A single unit cannot have the authority to both initiate and authorize financial requisitions.",
+            permissions: [PERMISSIONS.REQUISITION_CREATE, "requisition:approve:*"]
+        });
+    }
+
+    // Conflict 2: Disbursement Fraud (Approve + Disburse)
+    const canDisburse = permissions.includes(PERMISSIONS.REQUISITION_DISBURSE);
+    const canFinanceApprove = permissions.includes(PERMISSIONS.REQUISITION_APPROVE_FINANCE);
+
+    if (canDisburse && canFinanceApprove) {
+        conflicts.push({
+            title: "Disbursement Control Conflict",
+            description: "Finance units with disbursement authority should not be the sole approvers for the same transactions.",
+            permissions: [PERMISSIONS.REQUISITION_APPROVE_FINANCE, PERMISSIONS.REQUISITION_DISBURSE]
+        });
+    }
+
+    return conflicts;
   }
 };

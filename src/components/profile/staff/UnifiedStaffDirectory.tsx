@@ -18,7 +18,7 @@ import {
   SelectValue
 } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { Search, MoreHorizontal, Eye, Filter, ShieldCheck, Users } from 'lucide-react';
+import { Search, MoreHorizontal, Eye, Filter, ShieldCheck, Users, PlusCircle } from 'lucide-react';
 import { useOrganizationStaff } from '@/hooks/useStaff';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -31,17 +31,21 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 import type { UserProfile } from '@/lib/types';
+import { InviteUserDialog } from '@/components/settings/InviteUserDialog';
 
 interface UnifiedStaffDirectoryProps {
   orgId: string;
+  currentUserProfile: UserProfile;
+  canManageStaff: boolean;
   onViewEmployee360: (userId: string) => void;
 }
 
-export function UnifiedStaffDirectory({ orgId, onViewEmployee360 }: UnifiedStaffDirectoryProps) {
-  const { data: staff, isLoading } = useOrganizationStaff(orgId);
+export function UnifiedStaffDirectory({ orgId, currentUserProfile, canManageStaff, onViewEmployee360 }: UnifiedStaffDirectoryProps) {
+  const { data: staff, isLoading, refetch } = useOrganizationStaff(orgId);
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>('ALL');
   const [deptFilter, setDepartmentFilter] = useState<string>('ALL');
+  const [isInviteOpen, setIsInviteOpen] = useState(false);
 
   const filteredStaff = useMemo(() => {
     if (!staff) return [];
@@ -75,12 +79,19 @@ export function UnifiedStaffDirectory({ orgId, onViewEmployee360 }: UnifiedStaff
           <Input
             placeholder="Identify unit by name, email, or serial..."
             className="pl-12 rounded-2xl bg-background/50 border-white/5 h-12 text-sm font-medium"
-            value={searchTerm}
+            value={searchTerm ?? ""}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
 
         <div className="flex gap-3 w-full md:w-auto">
+          {canManageStaff && (
+              <Button onClick={() => setIsInviteOpen(true)} className="rounded-2xl h-12 px-6 font-black uppercase text-[10px] tracking-widest shadow-xl shadow-primary/20 m3-interactive">
+                  <PlusCircle className="mr-2 h-4 w-4" />
+                  Add Unit
+              </Button>
+          )}
+
           <Select value={roleFilter} onValueChange={setRoleFilter}>
             <SelectTrigger className="w-[150px] rounded-2xl bg-background/50 border-white/5 h-12 text-[10px] font-black uppercase tracking-widest">
               <SelectValue placeholder="System Role" />
@@ -185,6 +196,15 @@ export function UnifiedStaffDirectory({ orgId, onViewEmployee360 }: UnifiedStaff
           </Table>
         </div>
       </div>
+
+      <InviteUserDialog
+          open={isInviteOpen}
+          onOpenChange={(open) => {
+              setIsInviteOpen(open);
+              if (!open) refetch();
+          }}
+          currentUserProfile={currentUserProfile}
+      />
     </div>
   );
 }

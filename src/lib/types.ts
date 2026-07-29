@@ -3,7 +3,9 @@ import { PREDEFINED_ROLES } from './roles-and-departments';
 
 export type UserPosition = (typeof PREDEFINED_ROLES)[number];
 export type UserRole = "ORG_ADMIN" | "MANAGING_DIRECTOR" | "HR_MANAGER" | "FINANCE_MANAGER" | "STAFF";
-export type UserStatus = "ONLINE" | "OFFLINE" | "ON_LEAVE";
+export type UserStatus = "ONLINE" | "OFFLINE" | "ON_LEAVE" | "ACTIVE" | "SUSPENDED" | "TERMINATED";
+export type EmploymentType = "FULL_TIME" | "PART_TIME" | "CONTRACT" | "INTERN";
+export type ModuleOverrideState = "default" | "restricted" | "unlocked";
 
 export interface Organization {
   id: string;
@@ -57,6 +59,26 @@ export interface SystemConfig {
   };
 }
 
+export interface EmergencyContact {
+  name: string;
+  relationship: string;
+  phone: string;
+}
+
+export interface StaffDocument {
+  name: string;
+  url: string;
+  type: string;
+  uploadedAt: string;
+}
+
+export interface EmploymentMilestone {
+  role: string;
+  date: string;
+  type: 'HIRING' | 'PROMOTION' | 'TRANSFER' | 'ADJUSTMENT';
+  notes?: string;
+}
+
 export interface UserProfile {
   id: string;
   orgId: string;
@@ -64,6 +86,8 @@ export interface UserProfile {
   username: string;
   password?: string;
   fullName: string;
+  firstName?: string;
+  lastName?: string;
   phoneNumber?: string | null;
   avatarUrl?: string | null;
   role: UserRole;
@@ -72,6 +96,52 @@ export interface UserProfile {
   departmentName?: string;
   joinedDate: string;
   status?: UserStatus;
+
+  // RBAC & Authorization
+  roleIds?: string[]; // IDs of roles assigned to this user
+  resolvedPermissions?: string[]; // Cached flat list of all permissions (for performance)
+
+  // Enhanced Staff Profile Fields
+  dateOfBirth?: string;
+  address?: string;
+  employeeId?: string;
+  jobTitle?: string;
+  managerId?: string; // Reference to another UserProfile ID
+  employmentType?: EmploymentType;
+  joinDate?: string;
+  emergencyContact?: EmergencyContact;
+  documents?: StaffDocument[];
+  employmentHistory?: EmploymentMilestone[];
+  workSchedule?: {
+    days: string[]; // e.g. ["MON", "TUE", ...]
+    hours: string; // e.g. "09:00 - 17:00"
+  };
+
+  // IT & Asset Management
+  assignedEquipment?: {
+    id: string;
+    name: string;
+    serialNumber: string;
+    assignedDate: string;
+  }[];
+  softwareLicenses?: {
+    id: string;
+    name: string;
+    key?: string;
+    assignedDate: string;
+  }[];
+
+  // Identity & Personalization
+  preferredName?: string;
+  pronouns?: string;
+  bio?: string;
+  timezone?: string;
+  location?: string; // e.g. "Office", "Remote - Abuja"
+
+  // Skills & Culture
+  skills?: string[];
+  languages?: string[];
+
   lastSeen?: string;
   activeSessionId?: string | null;
   deviceType?: 'MOBILE' | 'PC' | null;
@@ -536,4 +606,16 @@ export interface ActivityPoint {
   orgId: string;
   date: string;
   points: number;
+}
+
+export interface AppRole {
+  id: string;
+  name: string;
+  description?: string;
+  orgId: string | 'SYSTEM';
+  duties: string[]; // List of Duty IDs (from registry)
+  permissions: string[]; // Resolved flat list of technical permission strings
+  isSystem?: boolean; // If true, cannot be deleted
+  createdAt: string;
+  updatedAt: string;
 }

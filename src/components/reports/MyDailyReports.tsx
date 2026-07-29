@@ -30,13 +30,14 @@ export function MyDailyReports({ userProfile }: MyDailyReportsProps) {
 
   const reportsQuery = useMemoFirebase(
     () =>
-      firestore ? query(
+      firestore && userProfile?.orgId ? query(
         collection(firestore, 'daily_reports'),
+        where('orgId', '==', userProfile.orgId),
         where('userId', '==', userProfile.id),
         orderBy('createdAt', 'desc'),
         limit(10)
       ) : null,
-    [firestore, userProfile.id]
+    [firestore, userProfile?.id, userProfile?.orgId]
   );
 
   const { data: reports, isLoading } = useCollection<DailyReport>(reportsQuery);

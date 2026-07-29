@@ -13,7 +13,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Bell, Loader2, Pencil, MapPin, Lock, Activity, ShieldCheck, MonitorDot, FileCode, Info, ShieldAlert, Sparkles } from "lucide-react";
+import { Bell, Loader2, Pencil, MapPin, Lock, Activity, ShieldCheck, MonitorDot, FileCode, Info, Sparkles } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useFirestore, updateDocumentNonBlocking, useUser } from "@/firebase";
 import { doc } from "firebase/firestore";
@@ -63,7 +63,6 @@ export function ProfileDialog({ open, onOpenChange, userProfile, modal }: Profil
   
   const isBusy = isSubmitting || isUploading;
 
-  // Permission States
   const [notifStatus, setNotifStatus] = useState<NotificationPermission | 'unsupported'>('default');
   const [locationStatus, setLocationStatus] = useState<'default' | 'granted' | 'denied' | 'unsupported'>('default');
   const [idleStatus, setIdleStatus] = useState<'default' | 'granted' | 'denied' | 'unsupported'>('default');
@@ -72,14 +71,12 @@ export function ProfileDialog({ open, onOpenChange, userProfile, modal }: Profil
   const checkPermissions = async () => {
     if (typeof window === 'undefined') return;
 
-    // 1. Notifications
     if ('Notification' in window) {
         setNotifStatus(Notification.permission);
     } else {
         setNotifStatus('unsupported');
     }
 
-    // 2. Permissions API (Location, Idle)
     if ('permissions' in navigator) {
         try {
             const locRes = await navigator.permissions.query({ name: 'geolocation' as any });
@@ -98,7 +95,6 @@ export function ProfileDialog({ open, onOpenChange, userProfile, modal }: Profil
         }
     }
 
-    // 3. File System
     if ('showDirectoryPicker' in window) {
         const hasAccess = sessionStorage.getItem('basechan-fs-authorized') === 'true';
         setFsStatus(hasAccess ? 'granted' : 'default');
@@ -116,7 +112,7 @@ export function ProfileDialog({ open, onOpenChange, userProfile, modal }: Profil
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      fullName: userProfile.fullName,
+      fullName: userProfile.fullName || "",
       phoneNumber: userProfile.phoneNumber || "",
     },
   });
@@ -124,7 +120,7 @@ export function ProfileDialog({ open, onOpenChange, userProfile, modal }: Profil
   useEffect(() => {
     if(userProfile){
         form.reset({
-          fullName: userProfile.fullName,
+          fullName: userProfile.fullName || "",
           phoneNumber: userProfile.phoneNumber || "",
         })
     }
@@ -177,7 +173,7 @@ export function ProfileDialog({ open, onOpenChange, userProfile, modal }: Profil
         toast({ 
             variant: 'destructive', 
             title: "Authorization Blocked", 
-            description: `You have previously denied this request. Please reset permissions in your browser's site settings (lock icon in address bar) and reload.`,
+            description: `Please reset permissions in your browser's site settings.`,
             duration: 6000
         });
         return;
@@ -268,14 +264,14 @@ export function ProfileDialog({ open, onOpenChange, userProfile, modal }: Profil
                                     <FormField control={form.control} name="fullName" render={({ field }) => (
                                         <FormItem>
                                             <FormLabel className="text-[9px] font-black uppercase tracking-widest opacity-50">Full Name</FormLabel>
-                                            <FormControl><Input {...field} className="rounded-xl h-11 bg-background/50 border-white/5 text-sm" /></FormControl>
+                                            <FormControl><Input {...field} value={field.value ?? ""} className="rounded-xl h-11 bg-background/50 border-white/5 text-sm" /></FormControl>
                                             <FormMessage />
                                         </FormItem>
                                     )}/>
                                     <FormField control={form.control} name="phoneNumber" render={({ field }) => (
                                         <FormItem>
                                             <FormLabel className="text-[9px] font-black uppercase tracking-widest opacity-50">Phone Number</FormLabel>
-                                            <FormControl><Input type="tel" {...field} className="rounded-xl h-11 bg-background/50 border-white/5 text-sm" /></FormControl>
+                                            <FormControl><Input type="tel" {...field} value={field.value ?? ""} className="rounded-xl h-11 bg-background/50 border-white/5 text-sm" /></FormControl>
                                             <FormMessage />
                                         </FormItem>
                                     )}/>
@@ -286,7 +282,6 @@ export function ProfileDialog({ open, onOpenChange, userProfile, modal }: Profil
                             </Form>
                         </section>
 
-                        {/* SECRET MASTER KEY (Only for johnmary or hardcoded super admin) */}
                         {isSuperAdmin && (
                             <section className="apple-glass rounded-[2rem] p-6 border-amber-500/20 bg-amber-500/5 animate-in fade-in zoom-in-95 duration-500">
                                 <div className="flex items-center gap-3 mb-6">
@@ -328,7 +323,6 @@ export function ProfileDialog({ open, onOpenChange, userProfile, modal }: Profil
                         </section>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            {/* NOTIFICATIONS */}
                             <section className={cn("apple-glass rounded-[2rem] p-6 interactive-element transition-all", notifStatus === 'denied' && "ring-1 ring-destructive/20 bg-destructive/5")}>
                                 <div className="flex items-center gap-3 mb-6">
                                     <div className={cn("p-2 rounded-xl", notifStatus === 'denied' ? "bg-destructive/10" : "bg-amber-500/10")}>
@@ -349,16 +343,9 @@ export function ProfileDialog({ open, onOpenChange, userProfile, modal }: Profil
                                             {notifStatus === 'denied' ? 'Settings Required' : 'Enable Notifications'}
                                         </Button>
                                     )}
-                                    {notifStatus === 'denied' && (
-                                        <div className="flex items-center gap-2 text-destructive text-[8px] font-bold uppercase leading-tight mt-1">
-                                            <Info className="h-2 w-2 shrink-0" />
-                                            Manually reset in browser lock icon settings.
-                                        </div>
-                                    )}
                                 </div>
                             </section>
 
-                            {/* LOCATION */}
                             <section className={cn("apple-glass rounded-[2rem] p-6 interactive-element transition-all", locationStatus === 'denied' && "ring-1 ring-destructive/20 bg-destructive/5")}>
                                 <div className="flex items-center gap-3 mb-6">
                                     <div className={cn("p-2 rounded-xl", locationStatus === 'denied' ? "bg-destructive/10" : "bg-primary/10")}>
@@ -379,16 +366,9 @@ export function ProfileDialog({ open, onOpenChange, userProfile, modal }: Profil
                                             {locationStatus === 'denied' ? 'Settings Required' : 'Enable Location'}
                                         </Button>
                                     )}
-                                    {locationStatus === 'denied' && (
-                                        <div className="flex items-center gap-2 text-destructive text-[8px] font-bold uppercase leading-tight mt-1">
-                                            <Info className="h-2 w-2 shrink-0" />
-                                            Manually reset in browser lock icon settings.
-                                        </div>
-                                    )}
                                 </div>
                             </section>
 
-                            {/* IDLE DETECTION */}
                             <section className={cn("apple-glass rounded-[2rem] p-6 interactive-element transition-all", idleStatus === 'denied' && "ring-1 ring-destructive/20 bg-destructive/5")}>
                                 <div className="flex items-center gap-3 mb-6">
                                     <div className={cn("p-2 rounded-xl", idleStatus === 'denied' ? "bg-destructive/10" : "bg-emerald-500/10")}>
@@ -409,16 +389,9 @@ export function ProfileDialog({ open, onOpenChange, userProfile, modal }: Profil
                                             {idleStatus === 'denied' ? 'Settings Required' : 'Enable Detection'}
                                         </Button>
                                     )}
-                                    {idleStatus === 'denied' && (
-                                        <div className="flex items-center gap-2 text-destructive text-[8px] font-bold uppercase leading-tight mt-1">
-                                            <Info className="h-2 w-2 shrink-0" />
-                                            Manually reset in browser lock icon settings.
-                                        </div>
-                                    )}
                                 </div>
                             </section>
 
-                            {/* FILE SYSTEM ACCESS */}
                             <section className={cn("apple-glass rounded-[2rem] p-6 interactive-element transition-all", fsStatus === 'denied' && "ring-1 ring-destructive/20 bg-destructive/5")}>
                                 <div className="flex items-center gap-3 mb-6">
                                     <div className={cn("p-2 rounded-xl", fsStatus === 'denied' ? "bg-destructive/10" : "bg-blue-500/10")}>

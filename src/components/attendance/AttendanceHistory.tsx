@@ -22,14 +22,15 @@ export function AttendanceHistory({ userProfile }: AttendanceHistoryProps) {
   const firestore = useFirestore();
 
   const attendanceQuery = useMemoFirebase(() => {
-    if (!firestore || !userProfile) return null;
+    if (!firestore || !userProfile?.id || !userProfile?.orgId) return null;
     return query(
       collection(firestore, 'attendance'),
+      where('orgId', '==', userProfile.orgId),
       where('userId', '==', userProfile.id),
       orderBy('date', 'desc'),
       limit(20)
     );
-  }, [firestore, userProfile]);
+  }, [firestore, userProfile?.id, userProfile?.orgId]);
 
   const { data: records, isLoading } = useCollection<Attendance>(attendanceQuery);
 

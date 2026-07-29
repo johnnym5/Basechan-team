@@ -24,16 +24,16 @@ export function PerformanceDashboard({ userProfile }: { userProfile: UserProfile
 
     // 1. Fetch all telemetry for this user
     const tasksQuery = useMemoFirebase(() => 
-        query(collection(firestore!, 'tasks'), where('assignedTo', '==', userProfile.id))
-    , [firestore, userProfile.id]);
+        query(collection(firestore!, 'tasks'), where('orgId', '==', userProfile.orgId), where('assignedTo', '==', userProfile.id))
+    , [firestore, userProfile.id, userProfile.orgId]);
     
     const kudosQuery = useMemoFirebase(() => 
-        query(collection(firestore!, 'kudos'), where('toUserId', '==', userProfile.id))
-    , [firestore, userProfile.id]);
+        query(collection(firestore!, 'kudos'), where('orgId', '==', userProfile.orgId), where('toUserId', '==', userProfile.id))
+    , [firestore, userProfile.id, userProfile.orgId]);
     
     const attendanceQuery = useMemoFirebase(() => 
-        query(collection(firestore!, 'attendance'), where('userId', '==', userProfile.id))
-    , [firestore, userProfile.id]);
+        query(collection(firestore!, 'attendance'), where('orgId', '==', userProfile.orgId), where('userId', '==', userProfile.id))
+    , [firestore, userProfile.id, userProfile.orgId]);
 
     const { data: tasks, isLoading: isTasksLoading } = useCollection<Task>(tasksQuery);
     const { data: kudos, isLoading: isKudosLoading } = useCollection<Kudos>(kudosQuery);

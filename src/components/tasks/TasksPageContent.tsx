@@ -63,63 +63,63 @@ export function TasksPageContent({ initialPayload, currentUserProfile, permissio
 
   return (
     <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col overflow-hidden">
-      <div className="flex-1 flex flex-col min-h-0 overflow-y-auto [scrollbar-gutter:stable] custom-scrollbar bg-background">
-          <div className="max-w-[1600px] mx-auto w-full min-h-full border-x border-white/5 bg-background/30 p-4 md:p-8 space-y-6">
+      <div className="flex-1 min-h-0 overflow-y-auto [scrollbar-gutter:stable] custom-scrollbar bg-background">
+          <div className="max-w-full mx-auto w-full min-h-full bg-background/30 p-4 md:p-8 lg:p-10 space-y-8">
               <div className="flex flex-col gap-6">
-                <div className="flex items-start justify-between gap-4 flex-wrap pr-16 md:pr-32">
+                <div className="flex items-start justify-between gap-4 flex-wrap">
                   <div>
-                    <h1 className="text-3xl font-black font-headline tracking-tighter">Task Manager</h1>
-                    <p className="text-muted-foreground uppercase tracking-widest text-[10px] font-bold">
-                      {permissions.canManageStaff ? "Manage Team Tasks & Workload" : "View Your Active Tasks"}
+                    <h1 className="text-4xl font-black font-headline tracking-tighter">Mission Control</h1>
+                    <p className="text-muted-foreground uppercase tracking-widest text-[10px] font-bold opacity-60">
+                      {permissions.canManageStaff ? "Team Tactical Oversight & Tasking" : "Active Personal Missions"}
                     </p>
                   </div>
                   <div className="flex items-center gap-3">
-                      <TabsList className="bg-secondary/20 rounded-xl p-1">
-                          <TabsTrigger value="board" className="rounded-lg px-4 font-black uppercase text-[10px] tracking-widest data-[state=active]:bg-background">Board</TabsTrigger>
-                          <TabsTrigger value="list" className="rounded-lg px-4 font-black uppercase text-[10px] tracking-widest data-[state=active]:bg-background">List</TabsTrigger>
+                      <TabsList className="bg-secondary/20 rounded-xl p-1 border border-white/5">
+                          <TabsTrigger value="board" className="rounded-lg px-4 font-black uppercase text-[10px] tracking-widest data-[state=active]:bg-background transition-all">Board</TabsTrigger>
+                          <TabsTrigger value="list" className="rounded-lg px-4 font-black uppercase text-[10px] tracking-widest data-[state=active]:bg-background transition-all">List</TabsTrigger>
                       </TabsList>
                       {permissions.canCreateTask && (
-                          <Button onClick={() => setIsAssignTaskOpen(true)} className="rounded-xl font-bold shadow-lg shadow-primary/20">
+                          <Button onClick={() => setIsAssignTaskOpen(true)} className="rounded-xl font-black uppercase text-[10px] tracking-widest h-10 px-6 shadow-xl shadow-primary/20 m3-interactive">
                               <PlusCircle className="mr-2 h-4 w-4"/>
-                              Add Task
+                              New Task
                           </Button>
                       )}
                   </div>
                 </div>
 
-                <div className="flex flex-col sm:flex-row items-center gap-4 bg-secondary/10 p-3 rounded-2xl border border-white/5">
+                <div className="flex flex-col sm:flex-row items-center gap-4 m3-surface-low p-4 rounded-[2rem]">
                     <div className="relative flex-1 w-full">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <Input 
-                            placeholder="Find task by name or ID..." 
-                            className="pl-10 h-11 bg-background/50 border-none rounded-xl text-sm"
+                            placeholder="Identify tactical node..."
+                            className="pl-12 h-12 bg-background/50 border-white/5 rounded-2xl text-sm font-medium"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
                     </div>
                     <div className="flex items-center gap-3 w-full sm:w-auto">
-                        <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-muted-foreground shrink-0">
-                            <ListFilter className="h-3 w-3" />
-                            Sort By:
+                        <div className="flex items-center gap-2 text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground shrink-0 opacity-60">
+                            <ListFilter className="h-3.5 w-3.5" />
+                            Sort:
                         </div>
                         <Select value={sortBy} onValueChange={setSortBy}>
-                            <SelectTrigger className="h-11 w-[180px] bg-background/50 border-none rounded-xl text-xs font-bold uppercase tracking-wider">
+                            <SelectTrigger className="h-12 w-[200px] bg-background/50 border-white/5 rounded-2xl text-[10px] font-black uppercase tracking-widest">
                                 <SelectValue placeholder="Sort order" />
                             </SelectTrigger>
-                            <SelectContent className="apple-glass-darker border-none">
-                                <SelectItem value="newest" className="text-xs font-bold uppercase tracking-widest">Newest First</SelectItem>
-                                <SelectItem value="priority" className="text-xs font-bold uppercase tracking-widest">Priority (High to Low)</SelectItem>
-                                <SelectItem value="deadline" className="text-xs font-bold uppercase tracking-widest">Deadline (Soonest)</SelectItem>
-                                <SelectItem value="user" className="text-xs font-bold uppercase tracking-widest">Staff (A-Z)</SelectItem>
+                            <SelectContent className="m3-surface-high border-none rounded-2xl">
+                                <SelectItem value="newest" className="text-[10px] font-black uppercase tracking-widest">Newest First</SelectItem>
+                                <SelectItem value="priority" className="text-[10px] font-black uppercase tracking-widest">Priority (H-L)</SelectItem>
+                                <SelectItem value="deadline" className="text-[10px] font-black uppercase tracking-widest">Deadline</SelectItem>
+                                <SelectItem value="user" className="text-[10px] font-black uppercase tracking-widest">Staff</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
                 </div>
               </div>
 
-              <div className="grid grid-cols-12 gap-8 pb-32">
-                  <div className="col-span-12 lg:col-span-8 xl:col-span-9">
-                      <div className="border rounded-3xl bg-background/20 backdrop-blur-sm relative overflow-hidden min-h-[500px]">
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                  <div className="col-span-12 lg:col-span-8 xl:col-span-9 h-full">
+                      <div className="m3-surface-low rounded-[2.5rem] relative overflow-hidden min-h-[600px] h-full shadow-2xl border-none">
                         <TabsContent value="board" className="m-0 h-full">
                             <TaskBoard 
                                 userProfile={currentUserProfile}
@@ -129,7 +129,7 @@ export function TasksPageContent({ initialPayload, currentUserProfile, permissio
                                 sortBy={sortBy}
                             />
                         </TabsContent>
-                        <TabsContent value="list" className="m-0 h-full p-6">
+                        <TabsContent value="list" className="m-0 h-full">
                             <TaskList
                                 userProfile={currentUserProfile}
                                 permissions={permissions}
@@ -141,7 +141,7 @@ export function TasksPageContent({ initialPayload, currentUserProfile, permissio
                       </div>
                   </div>
 
-                  <div className="col-span-12 lg:col-span-4 xl:col-span-3 space-y-6">
+                  <div className="col-span-12 lg:col-span-4 xl:col-span-3 flex flex-col gap-6">
                       <PerformanceCard userProfile={currentUserProfile} />
                       <DashboardRecentReports />
                   </div>

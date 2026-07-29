@@ -6,6 +6,7 @@ import { useSystemConfig } from './useSystemConfig';
 import { useMemo } from 'react';
 import { useImpersonation } from '@/context/ImpersonationProvider';
 import { getRoleFromPosition } from '@/lib/roles-and-departments';
+import { PERMISSIONS } from '@/lib/permissions-registry';
 
 export interface Permissions {
   canApproveHR: boolean;
@@ -197,10 +198,16 @@ export function usePermissions(userProfile: UserProfile | null): Permissions {
     const rolePerms = rolePermissions[effectiveRole] || {};
     const customPerms = (isSuperAdmin && isImpersonating) ? {} : (userProfile.customPermissions || {});
 
+    // NEW: Dynamic Permission Resolution
+    const resolved = userProfile.resolvedPermissions || [];
+    const has = (p: string) => resolved.includes(p);
+
     const perms: Permissions = {
         ...defaultPermissions,
         ...rolePerms,
     };
+
+    // --- REFACTORED GATING LOGIC (Hybrid Mode) ---
 
     const getModuleMode = (key: 'finance' | 'chat' | 'attendance' | 'tasks' | 'workbooks' | 'library' | 'leave' | 'live_displays' | 'reports', systemVal: string) => {
       const userOverride = customPerms?.modules?.[key];
@@ -210,7 +217,6 @@ export function usePermissions(userProfile: UserProfile | null): Permissions {
       return systemVal;
     };
 
-    // 3. Module level gating by SystemConfig (with user-specific overrides)
     const financeMode = getModuleMode('finance', systemConfig?.modules?.finance ?? (systemConfig?.finance_access === false ? 'hidden' : 'staff'));
     const chatMode = getModuleMode('chat', systemConfig?.modules?.chat ?? (systemConfig?.chat_enabled === false ? 'hidden' : 'staff'));
     const attendanceMode = getModuleMode('attendance', systemConfig?.modules?.attendance ?? 'staff');
@@ -220,54 +226,49 @@ export function usePermissions(userProfile: UserProfile | null): Permissions {
     const leaveMode = getModuleMode('leave', systemConfig?.modules?.leave ?? 'staff');
     const displaysMode = getModuleMode('live_displays', systemConfig?.modules?.live_displays ?? 'staff');
     const reportsMode = getModuleMode('reports', systemConfig?.modules?.reports ?? 'staff');
-    
+
     const isStaffUser = effectiveRole === 'STAFF';
 
-    perms.canAccessRequisitions = financeMode !== 'hidden' || !isStaffUser;
-    perms.canCreateRequisition = financeMode === 'staff' || !isStaffUser;
+    perms.canApproveHR = has(PERMISSIONS.ATTENDANCE_APPROVE_HR) || has(PERMISSIONS.REQUISITION_APPROVE_HR) || !!rolePerms.canApproveHR;
+    perms.canApproveFinance = has(PERMISSIONS.REQUISITION_APPROVE_FINANCE) || !!rolePerms.canApproveFinance;
+    perms.canApproveMD = has(PERMISSIONS.REQUISITION_APPROVE_MD) || !!rolePerms.canApproveMD;
+    perms.canDisburse = has(PERMISSIONS.REQUISITION_DISBURSE) || !!rolePerms.canDisburse;
 
-    perms.canAccessChat = chatMode !== 'hidden' || !isStaffUser;
-    perms.canSendChatMessage = chatMode === 'staff' || !isStaffUser;
+    perms.canManageStaff = has(PERMISSIONS.ADMIN_MANAGE_STAFF) || !!rolePerms.canManageStaff;
+    perms.canManageCompany = has(PERMISSIONS.ADMIN_MANAGE_COMPANY) || !!rolePerms.canManageCompany;
 
-    perms.canAccessAttendance = attendanceMode !== 'hidden' || !isStaffUser;
-    perms.canClockIn = attendanceMode === 'staff' || !isStaffUser;
+    perms.canAccessRequisitions = has(PERMISSIONS.REQUISITION_CREATE) || financeMode !== 'hidden' || !isStaffUser;
+    perms.canCreateRequisition = has(PERMISSIONS.REQUISITION_CREATE) || financeMode === 'staff' || !isStaffUser;
 
-    perms.canAccessTasks = tasksMode !== 'hidden' || !isStaffUser;
-    perms.canCreateTask = tasksMode === 'staff' || !isStaffUser;
+    perms.canAccessChat = has(PERMISSIONS.CHAT_ACCESS) || chatMode !== 'hidden' || !isStaffUser;
+    perms.canSendChatMessage = has(PERMISSIONS.CHAT_SEND_MESSAGE) || chatMode === 'staff' || !isStaffUser;
 
-    perms.canAccessWorkbooks = workbooksMode !== 'hidden' || !isStaffUser;
-    perms.canCreateWorkbook = workbooksMode === 'staff' || !isStaffUser;
+    perms.canAccessAttendance = has(PERMISSIONS.ATTENDANCE_CLOCK_IN) || !!perms.canApproveHR || has(PERMISSIONS.ATTENDANCE_VIEW_TEAM);
+    perms.canClockIn = has(PERMISSIONS.ATTENDANCE_CLOCK_IN);
 
-    perms.canAccessLibrary = libraryMode !== 'hidden' || !isStaffUser;
-    perms.canManageLibrary = (libraryMode === 'staff' || !isStaffUser) && (effectiveRole !== 'STAFF' || !!rolePerms.canManageLibrary || !!isSuperAdmin);
+    perms.canAccessTasks = has(PERMISSIONS.TASK_CREATE) || has(PERMISSIONS.TASK_ACCESS_ALL);
+    perms.canCreateTask = has(PERMISSIONS.TASK_CREATE);
+    perms.canAccessAllTasks = has(PERMISSIONS.TASK_ACCESS_ALL) || !!rolePerms.canManageStaff;
 
-    perms.canAccessLeave = leaveMode !== 'hidden' || !isStaffUser;
-    perms.canRequestLeave = leaveMode === 'staff' || !isStaffUser;
+    perms.canAccessWorkbooks = has(PERMISSIONS.WORKBOOK_CREATE) || has(PERMISSIONS.WORKBOOK_ACCESS_ALL);
+    perms.canCreateWorkbook = has(PERMISSIONS.WORKBOOK_CREATE);
+    perms.canAccessAllWorkbooks = has(PERMISSIONS.WORKBOOK_ACCESS_ALL) || !!rolePerms.canManageStaff;
 
-    perms.canAccessDisplays = displaysMode !== 'hidden' || !isStaffUser;
-    perms.canManageDisplays = (displaysMode === 'staff' || !isStaffUser) && (effectiveRole !== 'STAFF' || !!rolePerms.canManageDisplays || !!isSuperAdmin);
+    perms.canAccessLibrary = has(PERMISSIONS.LIBRARY_ACCESS);
+    perms.canManageLibrary = has(PERMISSIONS.LIBRARY_MANAGE);
+    perms.canViewFiles = has(PERMISSIONS.LIBRARY_VIEW_FILES);
 
-    perms.canAccessReports = reportsMode !== 'hidden' || !isStaffUser;
-    perms.canSubmitReport = reportsMode === 'staff' || !isStaffUser;
+    perms.canViewAudit = has(PERMISSIONS.ADMIN_VIEW_AUDIT);
+    perms.canManageDisplays = has(PERMISSIONS.ADMIN_MANAGE_DISPLAYS);
+    perms.canBypassGeofence = has(PERMISSIONS.ATTENDANCE_BYPASS_GEOFENCE);
 
-    // 4. Visibility logic
-    perms.canAccessAllTasks = !!rolePerms.canManageStaff;
-    perms.canAccessAllWorkbooks = !!rolePerms.canManageStaff;
+    perms.canAccessReports = has(PERMISSIONS.REPORT_ACCESS) || has(PERMISSIONS.FINANCE_VIEW_REPORTS);
+    perms.canSubmitReport = has(PERMISSIONS.REPORT_SUBMIT);
 
-    // 5. Apply user-specific custom overrides
-    if (typeof customPerms.canAccessRequisitions === 'boolean') perms.canAccessRequisitions = customPerms.canAccessRequisitions;
-    if (typeof customPerms.canAccessChat === 'boolean') perms.canAccessChat = customPerms.canAccessChat;
-    if (typeof customPerms.canAccessAllTasks === 'boolean') perms.canAccessAllTasks = customPerms.canAccessAllTasks;
-    if (typeof customPerms.canAccessAllWorkbooks === 'boolean') perms.canAccessAllWorkbooks = customPerms.canAccessAllWorkbooks;
-    if (typeof customPerms.canManageAnnouncements === 'boolean') perms.canManageAnnouncements = customPerms.canManageAnnouncements;
-    if (typeof customPerms.canManageLibrary === 'boolean') perms.canManageLibrary = customPerms.canManageLibrary;
-    if (typeof customPerms.canViewAudit === 'boolean') perms.canViewAudit = customPerms.canViewAudit;
-    if (typeof customPerms.canManageDisplays === 'boolean') perms.canManageDisplays = customPerms.canManageDisplays;
-    if (typeof customPerms.canManageAccounting === 'boolean') perms.canManageAccounting = customPerms.canManageAccounting;
-    if (typeof customPerms.canAccessLibrary === 'boolean') perms.canAccessLibrary = customPerms.canAccessLibrary;
+    perms.canViewTeam = perms.canManageStaff || has(PERMISSIONS.ATTENDANCE_VIEW_TEAM);
     
-    perms.canEditOwnProfile = effectiveRole !== 'STAFF' || (systemConfig?.allow_self_edit ?? true);
-    perms.canViewTeam = perms.canManageStaff || (systemConfig?.admin_tools ?? false);
+    // Safety check for self-edit
+    perms.canEditOwnProfile = has(PERMISSIONS.PROFILE_EDIT_OWN) || (systemConfig?.allow_self_edit ?? true);
 
     return perms;
   }, [isSuperAdmin, userProfile, systemConfig, isImpersonating]);

@@ -169,6 +169,8 @@ function RoleEditor({ role, onSave, onCancel }: { role?: AppRole, onSave: (r: Pa
     const [selectedDuties, setSelectedDuties] = useState<string[]>(role?.duties || []);
     const [selectedPermissions, setSelectedPermissions] = useState<string[]>(role?.permissions || []);
 
+    const conflicts = authService.checkSoDConflicts(selectedPermissions);
+
     const toggleDuty = (dutyId: string) => {
         const duties = selectedDuties.includes(dutyId)
             ? selectedDuties.filter(d => d !== dutyId)
@@ -194,6 +196,19 @@ function RoleEditor({ role, onSave, onCancel }: { role?: AppRole, onSave: (r: Pa
                     </DialogTitle>
                 </DialogHeader>
                 <div className="space-y-6 py-4">
+                    {conflicts.length > 0 && (
+                        <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20 space-y-2 animate-in slide-in-from-top duration-500">
+                            <div className="flex items-center gap-2 text-amber-500">
+                                <AlertTriangle className="h-4 w-4" />
+                                <span className="text-[10px] font-black uppercase tracking-widest text-white">SoD Conflict Detected</span>
+                            </div>
+                            {conflicts.map((c, i) => (
+                                <p key={i} className="text-[9px] font-bold text-amber-600/80 uppercase leading-relaxed italic">
+                                    {c.description}
+                                </p>
+                            ))}
+                        </div>
+                    )}
                     <div className="space-y-4">
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-1.5">
@@ -250,3 +265,4 @@ function RoleEditor({ role, onSave, onCancel }: { role?: AppRole, onSave: (r: Pa
 
 // Sub-components need to be imported or defined... I'll assume they exist or use local ones
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { ScrollArea } from '@/components/ui/scroll-area';

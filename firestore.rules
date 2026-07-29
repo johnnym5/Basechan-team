@@ -11,9 +11,10 @@ service cloud.firestore {
     }
 
     function getUserData() {
-      // Hardened check for profile existence to prevent rule evaluation crashes
       let userPath = /databases/$(database)/documents/users/$(request.auth.uid);
-      return exists(userPath) ? get(userPath).data : {"role": "STAFF", "orgId": "none"};
+      return request.auth != null && exists(userPath)
+        ? get(userPath).data
+        : {"role": "STAFF", "orgId": "none", "resolvedPermissions": []};
     }
 
     function getUserOrgId() {
@@ -21,31 +22,46 @@ service cloud.firestore {
     }
 
     function getUserRole() {
-      return getUserData().role;
+      let data = getUserData();
+      return 'role' in data ? data.role : "STAFF";
     }
 
     function isRequestingUserInOrg(docOrgId) {
-      return request.auth != null && (isSuperAdmin() || getUserOrgId() == docOrgId);
+      return request.auth != null && (
+        isSuperAdmin() ||
+        getUserOrgId() == docOrgId ||
+        docOrgId == 'SYSTEM'
+      );
     }
 
     function isCreatingInOwnOrg() {
-      return request.auth != null && (isSuperAdmin() || getUserOrgId() == request.resource.data.orgId);
+      return request.auth != null && (
+        isSuperAdmin() ||
+        getUserOrgId() == request.resource.data.orgId ||
+        (request.resource.data.orgId == 'SYSTEM' && isSuperAdmin())
+      );
+    }
+
+    function hasPermission(perm) {
+      let data = getUserData();
+      return (request.auth != null && 'resolvedPermissions' in data && data.resolvedPermissions.contains(perm)) ||
+             isSuperAdmin();
     }
 
     function isHRManager() {
-        return getUserRole() in ['HR_MANAGER', 'ORG_ADMIN'];
+        return getUserRole() in ['HR_MANAGER', 'ORG_ADMIN'] || hasPermission('admin:manage-staff');
     }
 
     function isFinanceManager() {
-        return getUserRole() in ['FINANCE_MANAGER', 'ORG_ADMIN'];
+        return getUserRole() in ['FINANCE_MANAGER', 'ORG_ADMIN'] || hasPermission('finance:manage-accounts');
     }
 
     function isManagingDirector() {
-        return getUserRole() in ['MANAGING_DIRECTOR', 'ORG_ADMIN'];
+        return getUserRole() in ['MANAGING_DIRECTOR', 'ORG_ADMIN'] || hasPermission('requisition:approve:md');
     }
 
     function isAdmin() {
-        return getUserRole() in ['ORG_ADMIN', 'MANAGING_DIRECTOR', 'HR_MANAGER'];
+        return getUserRole() in ['ORG_ADMIN', 'MANAGING_DIRECTOR', 'HR_MANAGER'] || hasPermission('admin:manage-company');
     }
 
     function hasCustomPermission(perm) {
@@ -79,6 +95,11 @@ service cloud.firestore {
         allow delete: if isSuperAdmin();
     }
 
+    match /roles/{roleId} {
+        allow read: if isRequestingUserInOrg(resource.data.orgId);
+        allow write: if isSuperAdmin() || (isAdmin() && isRequestingUserInOrg(request.resource.data.orgId));
+    }
+
     match /requisitions/{reqId} {
       allow read: if isRequestingUserInOrg(resource.data.orgId);
       allow create: if isCreatingInOwnOrg() || isSuperAdmin();
@@ -94,11 +115,22 @@ service cloud.firestore {
     }
 
     match /users/{userId} {
-      // Allow public read for login ID verification (unauthenticated username/email lookup)
-      // and for authenticated users to read any profile (needed for org-wide features)
-      allow read: if true;
+      // Allow authenticated users in the same org to read basic profile info
+      // SuperAdmins can read everything.
+      allow read: if isRequestingUserInOrg(resource.data.orgId) || isSuperAdmin();
+
       allow create: if isSuperAdmin() || request.auth.uid == userId;
-      allow update: if isSuperAdmin() || request.auth.uid == userId || isHRManager();
+
+      allow update: if isSuperAdmin() || (isRequestingUserInOrg(resource.data.orgId) && (
+        // HR/Admin can update anything in their org
+        isHRManager() ||
+        // Users can update their own profile
+        (request.auth.uid == userId && (
+          !request.resource.data.diff(resource.data).affectedKeys()
+            .hasAny(['role', 'status', 'orgId', 'employeeId', 'employmentType', 'joinDate', 'managerId'])
+        ))
+      ));
+
       allow delete: if isSuperAdmin();
       
       match /telemetry/{docId} {
@@ -163,16 +195,26 @@ service cloud.firestore {
       allow write: if isSuperAdmin() || (isRequestingUserInOrg(request.resource.data.orgId) && (isAdmin() || isHRManager() || isManagingDirector()));
     }
 
+    match /organization_settings/{id} {
+      allow read: if isRequestingUserInOrg(id);
+      allow write: if isSuperAdmin() || (isRequestingUserInOrg(id) && getUserRole() == 'ORG_ADMIN');
+    }
+
     match /attendance/{id} {
       allow read: if isRequestingUserInOrg(resource.data.orgId);
       allow write: if isRequestingUserInOrg(request.resource.data.orgId);
+      allow list: if isRequestingUserInOrg(getUserOrgId()) && (
+        isAdmin() ||
+        hasPermission('attendance:view-team') ||
+        resource.data.userId == request.auth.uid
+      );
     }
 
     match /tasks/{id} {
       allow read: if isRequestingUserInOrg(resource.data.orgId) && (
-        getUserRole() != 'STAFF' || 
+        hasPermission('task:access-all') ||
         resource.data.createdBy == request.auth.uid || 
-        resource.data.assigneeId == request.auth.uid || 
+        resource.data.assignedTo == request.auth.uid ||
         hasCustomPermission('canAccessAllTasks')
       );
       allow create: if isCreatingInOwnOrg() || isSuperAdmin();

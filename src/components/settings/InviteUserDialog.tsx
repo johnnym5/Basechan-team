@@ -41,7 +41,7 @@ interface InviteUserDialogProps {
 }
 
 export function InviteUserDialog({ open, onOpenChange, currentUserProfile }: InviteUserDialogProps) {
-  const [isLoading, setIsLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const firestore = useFirestore();
   const { toast } = useToast();
 
@@ -53,6 +53,8 @@ export function InviteUserDialog({ open, onOpenChange, currentUserProfile }: Inv
       email: "",
       password: "",
       phoneNumber: "",
+      departmentName: "",
+      position: "",
     },
   });
   
@@ -66,7 +68,6 @@ export function InviteUserDialog({ open, onOpenChange, currentUserProfile }: Inv
   const rolesForSelectedDepartment = useMemo(() => {
     if (!selectedDepartment) return [];
     const departmentRoles = ROLES_BY_DEPARTMENT[selectedDepartment as keyof typeof ROLES_BY_DEPARTMENT] || [];
-    // Also include 'Staff' as a generic option for any department, but exclude Org Admin from creation
     const genericRoles = ["Staff"];
     return [...new Set([...departmentRoles, ...genericRoles])];
   }, [selectedDepartment]);
@@ -85,21 +86,18 @@ export function InviteUserDialog({ open, onOpenChange, currentUserProfile }: Inv
         toast({ variant: 'destructive', title: 'Error', description: 'Organization ID is missing.' });
         return;
     }
-    setIsLoading(true);
+    setIsSubmitting(true);
     
     const tempAppName = `temp-user-creation-app-${Date.now()}`;
     let secondaryApp;
 
     try {
-      // Initialize a secondary Firebase app to not interfere with the admin's auth state
       secondaryApp = initializeApp(firebaseConfig, tempAppName);
       const secondaryAuth = getAuth(secondaryApp);
 
-      // Create the user in Firebase Authentication
       const userCredential = await createUserWithEmailAndPassword(secondaryAuth, values.email, values.password);
       const newAuthUser = userCredential.user;
       
-      // Create the user's profile in Firestore using the new Auth UID
       const userDocRef = doc(firestore, "users", newAuthUser.uid);
 
       const newUserProfile: Omit<UserProfile, 'id'> = {
@@ -116,7 +114,6 @@ export function InviteUserDialog({ open, onOpenChange, currentUserProfile }: Inv
         status: 'OFFLINE',
       };
       
-      // Use setDoc to create the document with the specific ID.
       setDocumentNonBlocking(userDocRef, newUserProfile, { merge: false });
 
       toast({
@@ -139,8 +136,7 @@ export function InviteUserDialog({ open, onOpenChange, currentUserProfile }: Inv
             description: errorMessage,
         });
     } finally {
-        setIsLoading(false);
-        // Clean up the temporary app instance
+        setIsSubmitting(false);
         if (secondaryApp) {
             await deleteApp(secondaryApp);
         }
@@ -149,53 +145,77 @@ export function InviteUserDialog({ open, onOpenChange, currentUserProfile }: Inv
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md m3-surface-high border-none rounded-[2.5rem] p-8 shadow-3xl">
         <DialogHeader>
-          <DialogTitle>Invite New User</DialogTitle>
-          <DialogDescription>
-            Create a new user account with their own credentials and database record.
+          <DialogTitle className="text-2xl font-black font-headline tracking-tighter uppercase">Invite New Unit</DialogTitle>
+          <DialogDescription className="text-[10px] font-black uppercase tracking-widest opacity-60">
+            Provision authentication and personnel record.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
             <FormField control={form.control} name="fullName" render={({ field }) => (
-                <FormItem><FormLabel>Full Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                <FormItem>
+                  <FormLabel className="text-[9px] uppercase font-black opacity-50">Full Name</FormLabel>
+                  <FormControl><Input {...field} value={field.value ?? ""} className="rounded-xl h-11 bg-background/50 border-white/5" /></FormControl>
+                  <FormMessage />
+                </FormItem>
             )}/>
             <FormField control={form.control} name="username" render={({ field }) => (
-                <FormItem><FormLabel>Username</FormLabel><FormControl><Input placeholder="e.g., jdoe" {...field} /></FormControl><FormMessage /></FormItem>
+                <FormItem>
+                  <FormLabel className="text-[9px] uppercase font-black opacity-50">Username</FormLabel>
+                  <FormControl><Input placeholder="e.g., jdoe" {...field} value={field.value ?? ""} className="rounded-xl h-11 bg-background/50 border-white/5" /></FormControl>
+                  <FormMessage />
+                </FormItem>
             )}/>
             <FormField control={form.control} name="email" render={({ field }) => (
-                <FormItem><FormLabel>Email</FormLabel><FormControl><Input type="email" {...field} /></FormControl><FormMessage /></FormItem>
+                <FormItem>
+                  <FormLabel className="text-[9px] uppercase font-black opacity-50">Email</FormLabel>
+                  <FormControl><Input type="email" {...field} value={field.value ?? ""} className="rounded-xl h-11 bg-background/50 border-white/5" /></FormControl>
+                  <FormMessage />
+                </FormItem>
             )}/>
              <FormField control={form.control} name="password" render={({ field }) => (
-                <FormItem><FormLabel>Password</FormLabel><FormControl><Input type="password" placeholder="Min. 8 characters" {...field} /></FormControl><FormMessage /></FormItem>
+                <FormItem>
+                  <FormLabel className="text-[9px] uppercase font-black opacity-50">Password</FormLabel>
+                  <FormControl><Input type="password" placeholder="Min. 8 characters" {...field} value={field.value ?? ""} className="rounded-xl h-11 bg-background/50 border-white/5" /></FormControl>
+                  <FormMessage />
+                </FormItem>
             )}/>
              <FormField control={form.control} name="phoneNumber" render={({ field }) => (
-                <FormItem><FormLabel>Phone Number (Optional)</FormLabel><FormControl><Input type="tel" {...field} /></FormControl><FormMessage /></FormItem>
+                <FormItem>
+                  <FormLabel className="text-[9px] uppercase font-black opacity-50">Phone Number (Optional)</FormLabel>
+                  <FormControl><Input type="tel" {...field} value={field.value ?? ""} className="rounded-xl h-11 bg-background/50 border-white/5" /></FormControl>
+                  <FormMessage />
+                </FormItem>
             )}/>
             <FormField control={form.control} name="departmentName" render={({ field }) => (
-                <FormItem><FormLabel>Department</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl><SelectTrigger><SelectValue placeholder="Select a department" /></SelectTrigger></FormControl>
-                        <SelectContent>
+                <FormItem>
+                  <FormLabel className="text-[9px] uppercase font-black opacity-50">Department</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value ?? ""}>
+                        <FormControl><SelectTrigger className="rounded-xl h-11 bg-background/50 border-white/5"><SelectValue placeholder="Select a department" /></SelectTrigger></FormControl>
+                        <SelectContent className="rounded-xl border-none m3-surface-high">
                             {PREDEFINED_DEPARTMENTS.map(dep => <SelectItem key={dep} value={dep}>{dep}</SelectItem>)}
                         </SelectContent>
                     </Select>
-                <FormMessage /></FormItem>
+                  <FormMessage />
+                </FormItem>
             )}/>
              <FormField control={form.control} name="position" render={({ field }) => (
-                <FormItem><FormLabel>Position</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value} disabled={!selectedDepartment}>
-                        <FormControl><SelectTrigger><SelectValue placeholder="Select a role" /></SelectTrigger></FormControl>
-                        <SelectContent>
+                <FormItem>
+                  <FormLabel className="text-[9px] uppercase font-black opacity-50">Position</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value ?? ""} disabled={!selectedDepartment}>
+                        <FormControl><SelectTrigger className="rounded-xl h-11 bg-background/50 border-white/5"><SelectValue placeholder="Select a role" /></SelectTrigger></FormControl>
+                        <SelectContent className="rounded-xl border-none m3-surface-high">
                             {rolesForSelectedDepartment.map(role => <SelectItem key={role} value={role}>{role}</SelectItem>)}
                         </SelectContent>
                     </Select>
-                <FormMessage /></FormItem>
+                  <FormMessage />
+                </FormItem>
             )}/>
-            <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Create User Account
+            <Button type="submit" className="w-full h-14 rounded-2xl font-black uppercase tracking-[0.2em] shadow-xl shadow-primary/20 m3-interactive" disabled={isSubmitting}>
+              {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Provision Account
             </Button>
           </form>
         </Form>

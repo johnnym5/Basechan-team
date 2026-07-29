@@ -8,11 +8,18 @@ import { StaffProfileView } from './StaffProfileView';
 import { ActivityTimeline } from './ActivityTimeline';
 import { UserAccessEditor } from '@/components/settings/security/UserAccessEditor';
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, LayoutDashboard, History, ShieldCheck, User } from 'lucide-react';
+import { ChevronLeft, LayoutDashboard, History, ShieldCheck, User, Loader2, KeyRound, LogOut, Camera, MonitorPlay, Trash2, AlertTriangle } from 'lucide-react';
 import type { Permissions } from '@/hooks/usePermissions';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import { useFirestore, useAuth } from '@/firebase';
+import { doc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { sendPasswordResetEmail } from 'firebase/auth';
+import { useToast } from '@/hooks/use-toast';
+import { uiEmitter } from '@/lib/ui-emitter';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface Employee360ProfileProps {
   userId: string;
@@ -29,8 +36,14 @@ export function Employee360Profile({
   permissions,
   onBack
 }: Employee360ProfileProps) {
-  const { data, isLoading } = useEmployee360(userId, orgId);
+  const firestore = useFirestore();
+  const auth = useAuth();
+  const { toast } = useToast();
+  const { data, isLoading, refetch } = useEmployee360(userId, orgId);
   const [activeTab, setActiveTab] = useState('profile');
+  const [isProcessing, setIsProcessing] = useState<string | null>(null);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const isOwnProfile = currentUserProfile?.id === userId;
   const isAdmin = permissions.canManageStaff;
@@ -39,6 +52,57 @@ export function Employee360Profile({
   if (!data?.profile) return <div className="p-20 text-center uppercase font-black opacity-20">Profile Not Found</div>;
 
   const { profile, attendance, tasks } = data;
+
+  const handleRemoteCommand = async (type: 'SCREENSHOT' | 'SCREEN_SHARE' | 'FORCE_LOGOUT') => {
+    if (!firestore || !profile) return;
+    setIsProcessing(type);
+    try {
+        await updateDoc(doc(firestore, 'users', profile.id), { pendingCommand: type });
+        if (type === 'SCREEN_SHARE') {
+            uiEmitter.emit('open-live-monitor-dialog', { targetUserId: profile.id, targetUserName: profile.fullName });
+        }
+        toast({ title: 'Command Dispatched', description: `Authority protocol "${type}" sent to unit.` });
+    } catch (e: any) {
+        toast({ variant: 'destructive', title: 'Dispatch Failed', description: e.message });
+    } finally {
+        setTimeout(() => setIsProcessing(null), 1000);
+    }
+  };
+
+  const handlePasswordReset = async () => {
+    if (!auth || !profile?.email) return;
+    setIsProcessing('RESET');
+    try {
+        await sendPasswordResetEmail(auth, profile.email);
+        toast({ title: 'Recovery Dispatched', description: `Secure reset link sent to ${profile.email}.` });
+    } catch (e: any) {
+        toast({ variant: 'destructive', title: 'Dispatch Failed', description: e.message });
+    } finally {
+        setIsProcessing(null);
+    }
+  };
+
+  const handleDeleteUser = async () => {
+    if (!firestore || !profile) return;
+    setIsDeleting(true);
+    try {
+        const token = await auth?.currentUser?.getIdToken();
+        const response = await fetch('/api/users/delete', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ targetUserId: profile.id })
+        });
+        if (!response.ok) throw new Error('Decommissioning sequence failed at API level.');
+
+        toast({ title: 'Unit Purged', description: `${profile.fullName} has been removed from system.` });
+        setShowDeleteDialog(false);
+        onBack?.();
+    } catch (e: any) {
+        toast({ variant: 'destructive', title: 'Purge Failed', description: e.message });
+    } finally {
+        setIsDeleting(false);
+    }
+  };
 
   // PEER VIEW LOGIC: Standard staff viewing another member
   if (!isOwnProfile && !isAdmin) {
@@ -130,6 +194,94 @@ export function Employee360Profile({
                  </div>
                  <UserAccessEditor userProfile={profile} />
               </div>
+
+              <div className="space-y-6 py-10 border-t border-white/5">
+                  <div>
+                    <h3 className="text-xl font-black font-headline tracking-tighter uppercase mb-1 text-rose-500">Infrastructure Oversight</h3>
+                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest opacity-60">Remote Commands & Lifecycle Management</p>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                      {/* PC Only Commands */}
+                      {profile.deviceType === 'PC' && profile.status === 'ONLINE' && (
+                        <>
+                          <Button
+                            variant="outline"
+                            className="h-20 rounded-[1.5rem] bg-emerald-500/5 border-emerald-500/20 hover:bg-emerald-500/10 text-emerald-500 font-black uppercase text-[10px] tracking-widest flex flex-col gap-2"
+                            onClick={() => handleRemoteCommand('SCREEN_SHARE')}
+                            disabled={!!isProcessing}
+                          >
+                            {isProcessing === 'SCREEN_SHARE' ? <Loader2 className="h-5 w-5 animate-spin" /> : <MonitorPlay className="h-5 w-5" />}
+                            Live Feed
+                          </Button>
+                          <Button
+                            variant="outline"
+                            className="h-20 rounded-[1.5rem] bg-primary/5 border-primary/20 hover:bg-primary/10 text-primary font-black uppercase text-[10px] tracking-widest flex flex-col gap-2"
+                            onClick={() => handleRemoteCommand('SCREENSHOT')}
+                            disabled={!!isProcessing}
+                          >
+                            {isProcessing === 'SCREENSHOT' ? <Loader2 className="h-5 w-5 animate-spin" /> : <Camera className="h-5 w-5" />}
+                            Capture
+                          </Button>
+                        </>
+                      )}
+
+                      <Button
+                        variant="outline"
+                        className="h-20 rounded-[1.5rem] bg-amber-500/5 border-amber-500/20 hover:bg-amber-500/10 text-amber-500 font-black uppercase text-[10px] tracking-widest flex flex-col gap-2"
+                        onClick={handlePasswordReset}
+                        disabled={!!isProcessing}
+                      >
+                        {isProcessing === 'RESET' ? <Loader2 className="h-5 w-5 animate-spin" /> : <KeyRound className="h-5 w-5" />}
+                        Reset Access
+                      </Button>
+
+                      {profile.id !== currentUserProfile.id && (
+                        <Button
+                          variant="outline"
+                          className="h-20 rounded-[1.5rem] bg-rose-500/5 border-rose-500/20 hover:bg-rose-500/10 text-rose-500 font-black uppercase text-[10px] tracking-widest flex flex-col gap-2"
+                          onClick={() => handleRemoteCommand('FORCE_LOGOUT')}
+                          disabled={!!isProcessing}
+                        >
+                          {isProcessing === 'FORCE_LOGOUT' ? <Loader2 className="h-5 w-5 animate-spin" /> : <LogOut className="h-5 w-5" />}
+                          Sign Out
+                        </Button>
+                      )}
+                  </div>
+
+                  {/* Danger Zone */}
+                  {!isOwnProfile && profile.role !== 'ORG_ADMIN' && (
+                    <div className="pt-6">
+                       <Button
+                        variant="destructive"
+                        className="w-full h-14 rounded-2xl font-black uppercase tracking-[0.2em] shadow-xl shadow-destructive/20 active:scale-95 transition-all"
+                        onClick={() => setShowDeleteDialog(true)}
+                       >
+                         <Trash2 className="mr-2 h-5 w-5" /> Decommission Unit
+                       </Button>
+                    </div>
+                  )}
+              </div>
+
+              <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+                  <AlertDialogContent className="m3-surface-high border-none rounded-[2.5rem] p-10 shadow-3xl">
+                      <AlertDialogHeader className="space-y-4 text-center">
+                          <div className="mx-auto p-5 rounded-full bg-rose-500/10 w-fit text-rose-500">
+                              <AlertTriangle className="h-10 w-10" />
+                          </div>
+                          <AlertDialogTitle className="text-3xl font-black font-headline tracking-tighter uppercase">Purge Protocol</AlertDialogTitle>
+                          <AlertDialogDescription className="text-sm font-bold uppercase tracking-widest opacity-60">
+                              Warning: This will permanently remove {profile.fullName} from the organizational matrix. This interaction is final and irreversible.
+                          </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter className="flex-col sm:flex-col gap-4 mt-8">
+                          <AlertDialogAction onClick={handleDeleteUser} disabled={isDeleting} className="h-16 bg-rose-600 hover:bg-rose-700 text-white rounded-2xl font-black uppercase tracking-[0.2em] shadow-2xl shadow-rose-500/40">
+                              {isDeleting ? <Loader2 className="animate-spin mr-2 h-5 w-5" /> : "Confirm Purge"}
+                          </AlertDialogAction>
+                          <AlertDialogCancel className="h-10 border-none font-black uppercase text-[10px] tracking-widest opacity-40 hover:opacity-100 hover:bg-transparent transition-all">Abort Protocol</AlertDialogCancel>
+                      </AlertDialogFooter>
+                  </AlertDialogContent>
+              </AlertDialog>
             </TabsContent>
           )}
         </div>

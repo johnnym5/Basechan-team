@@ -32,6 +32,11 @@ import {
 import { cn } from '@/lib/utils';
 import type { UserProfile } from '@/lib/types';
 
+/**
+ * Staff Directory Table Component
+ * Displays a searchable and filterable list of organization staff.
+ */
+
 interface StaffDirectoryTableProps {
   orgId: string;
   onViewProfile: (userId: string) => void;
@@ -39,16 +44,16 @@ interface StaffDirectoryTableProps {
 
 export function StaffDirectoryTable({ orgId, onViewProfile }: StaffDirectoryTableProps) {
   const { data: staff, isLoading } = useOrganizationStaff(orgId);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState<string>('');
   const [roleFilter, setRoleFilter] = useState<string>('ALL');
   const [deptFilter, setDepartmentFilter] = useState<string>('ALL');
 
   const filteredStaff = useMemo(() => {
     if (!staff) return [];
     return staff.filter(person => {
-      const searchStr = searchTerm.toLowerCase();
-      const matchesSearch = person.fullName.toLowerCase().includes(searchStr) ||
-                           person.email.toLowerCase().includes(searchStr) ||
+      const searchStr = (searchTerm || '').toLowerCase();
+      const matchesSearch = (person.fullName || '').toLowerCase().includes(searchStr) ||
+                           (person.email || '').toLowerCase().includes(searchStr) ||
                            (person.employeeId && person.employeeId.toLowerCase().includes(searchStr)) ||
                            (person.skills && person.skills.some(skill => skill.toLowerCase().includes(searchStr))) ||
                            (person.languages && person.languages.some(lang => lang.toLowerCase().includes(searchStr)));
@@ -86,25 +91,25 @@ export function StaffDirectoryTable({ orgId, onViewProfile }: StaffDirectoryTabl
           <Input
             placeholder="Search name, email, or ID..."
             className="pl-10 rounded-xl bg-background/50 border-white/5 h-11"
-            value={searchTerm}
+            value={searchTerm ?? ""}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
         <div className="flex gap-3 w-full md:w-auto">
-          <Select value={roleFilter} onValueChange={setRoleFilter}>
+          <Select value={roleFilter ?? "ALL"} onValueChange={setRoleFilter}>
             <SelectTrigger className="w-[140px] rounded-xl bg-background/50 border-white/5 h-11">
               <SelectValue placeholder="Role" />
             </SelectTrigger>
             <SelectContent className="rounded-xl m3-surface-high border-none">
               <SelectItem value="ALL">All Roles</SelectItem>
               <SelectItem value="ORG_ADMIN">Admin</SelectItem>
-              <SelectItem value="HR_MANAGER">HR</SelectItem>
-              <SelectItem value="FINANCE_MANAGER">Finance</SelectItem>
+              <SelectItem value="HR_MANAGER">HR Manager</SelectItem>
+              <SelectItem value="FINANCE_MANAGER">Finance Manager</SelectItem>
               <SelectItem value="STAFF">Staff</SelectItem>
             </SelectContent>
           </Select>
 
-          <Select value={deptFilter} onValueChange={setDepartmentFilter}>
+          <Select value={deptFilter ?? "ALL"} onValueChange={setDepartmentFilter}>
             <SelectTrigger className="w-[160px] rounded-xl bg-background/50 border-white/5 h-11">
               <SelectValue placeholder="Department" />
             </SelectTrigger>

@@ -20,11 +20,13 @@ import {
   SelectTrigger,
   SelectValue
 } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useUpdateStaffProfile } from '@/hooks/useStaff';
 import { Loader2, Save, X } from 'lucide-react';
 import type { UserProfile } from '@/lib/types';
 import type { Permissions } from '@/hooks/usePermissions';
+import { cn } from '@/lib/utils';
 
 interface EditStaffProfileFormProps {
   profile: UserProfile;
@@ -38,28 +40,40 @@ export function EditStaffProfileForm({ profile, onCancel, permissions }: EditSta
   const form = useForm<StaffProfileFormValues>({
     resolver: zodResolver(staffProfileSchema),
     defaultValues: {
-      firstName: profile.firstName || profile.fullName.split(' ')[0] || '',
-      lastName: profile.lastName || profile.fullName.split(' ').slice(1).join(' ') || '',
-      email: profile.email,
+      firstName: profile.firstName || profile.fullName?.split(' ')[0] || '',
+      lastName: profile.lastName || profile.fullName?.split(' ').slice(1).join(' ') || '',
+      email: profile.email || '',
       phoneNumber: profile.phoneNumber || '',
       dateOfBirth: profile.dateOfBirth || '',
       address: profile.address || '',
       employeeId: profile.employeeId || '',
       jobTitle: profile.jobTitle || '',
       departmentName: profile.departmentName || '',
-      role: profile.role,
+      role: profile.role || 'STAFF',
       employmentType: profile.employmentType || 'FULL_TIME',
       managerId: profile.managerId || '',
       joinDate: profile.joinDate || '',
       status: profile.status || 'ACTIVE',
-      emergencyContact: profile.emergencyContact || { name: '', relationship: '', phone: '' },
-      orgId: profile.orgId,
-      id: profile.id,
+      employmentHistory: profile.employmentHistory || [],
+      workSchedule: profile.workSchedule || { days: ['MON', 'TUE', 'WED', 'THU', 'FRI'], hours: '09:00 - 17:00' },
+      assignedEquipment: profile.assignedEquipment || [],
+      softwareLicenses: profile.softwareLicenses || [],
+      emergencyContact: {
+        name: profile.emergencyContact?.name || '',
+        relationship: profile.emergencyContact?.relationship || '',
+        phone: profile.emergencyContact?.phone || '',
+      },
+      preferredName: profile.preferredName || '',
+      pronouns: profile.pronouns || '',
+      bio: profile.bio || '',
+      timezone: profile.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone,
+      location: profile.location || '',
+      orgId: profile.orgId || '',
+      id: profile.id || '',
     },
   });
 
   const onSubmit = async (values: StaffProfileFormValues) => {
-    // Re-construct fullName if names changed
     const fullName = `${values.firstName} ${values.lastName}`.trim();
     await updateMutation.mutateAsync({
       userId: profile.id,
@@ -74,28 +88,123 @@ export function EditStaffProfileForm({ profile, onCancel, permissions }: EditSta
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Section 1: Personal Info */}
           <div className="lg:col-span-2 space-y-6">
+            <Card className="m3-surface-low border-none rounded-[2rem] shadow-xl">
+              <CardHeader><CardTitle className="text-sm uppercase tracking-widest opacity-50">Identity & Bio</CardTitle></CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField control={form.control} name="preferredName" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Preferred Name</FormLabel>
+                      <FormControl><Input {...field} value={field.value ?? ""} placeholder="How should we call you?" className="rounded-xl bg-background/50" /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+                  <FormField control={form.control} name="pronouns" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Pronouns</FormLabel>
+                      <FormControl><Input {...field} value={field.value ?? ""} placeholder="e.g. He/Him, They/Them" className="rounded-xl bg-background/50" /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+                </div>
+                <FormField control={form.control} name="bio" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Professional Bio</FormLabel>
+                    <FormControl><Textarea {...field} value={field.value ?? ""} placeholder="Tell us about yourself..." className="rounded-xl bg-background/50 min-h-[100px]" /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                   <FormField control={form.control} name="location" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Work Location</FormLabel>
+                      <FormControl><Input {...field} value={field.value ?? ""} placeholder="e.g. Remote - Lagos, Office" className="rounded-xl bg-background/50" /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+                  <FormField control={form.control} name="timezone" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Timezone</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value ?? ""}>
+                        <FormControl><SelectTrigger className="rounded-xl bg-background/50"><SelectValue placeholder="Select Timezone" /></SelectTrigger></FormControl>
+                        <SelectContent className="rounded-xl border-none m3-surface-high max-h-[300px]">
+                          {Intl.supportedValuesOf('timeZone').map(tz => (
+                            <SelectItem key={tz} value={tz}>{tz.replace(/_/g, ' ')}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="m3-surface-low border-none rounded-[2rem] shadow-xl">
+              <CardHeader><CardTitle className="text-sm uppercase tracking-widest opacity-50">Skills & Languages</CardTitle></CardHeader>
+              <CardContent className="space-y-4">
+                <FormField control={form.control} name="skills" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Expertise Tags (Comma separated)</FormLabel>
+                    <FormControl><Input placeholder="e.g. React, Project Management, Sales" value={field.value?.join(', ') || ''} onChange={(e) => field.onChange(e.target.value.split(',').map(s => s.trim()).filter(Boolean))} className="rounded-xl bg-background/50" /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+                <FormField control={form.control} name="languages" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Languages Spoken (Comma separated)</FormLabel>
+                    <FormControl><Input placeholder="e.g. English, Hausa, French" value={field.value?.join(', ') || ''} onChange={(e) => field.onChange(e.target.value.split(',').map(s => s.trim()).filter(Boolean))} className="rounded-xl bg-background/50" /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+              </CardContent>
+            </Card>
+
             <Card className="m3-surface-low border-none rounded-[2rem] shadow-xl">
               <CardHeader><CardTitle className="text-sm uppercase tracking-widest opacity-50">Personal Information</CardTitle></CardHeader>
               <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField control={form.control} name="firstName" render={({ field }) => (
-                  <FormItem><FormLabel>First Name</FormLabel><FormControl><Input {...field} className="rounded-xl bg-background/50" /></FormControl><FormMessage /></FormItem>
+                  <FormItem>
+                    <FormLabel>First Name</FormLabel>
+                    <FormControl><Input {...field} value={field.value ?? ""} className="rounded-xl bg-background/50" /></FormControl>
+                    <FormMessage />
+                  </FormItem>
                 )} />
                 <FormField control={form.control} name="lastName" render={({ field }) => (
-                  <FormItem><FormLabel>Last Name</FormLabel><FormControl><Input {...field} className="rounded-xl bg-background/50" /></FormControl><FormMessage /></FormItem>
+                  <FormItem>
+                    <FormLabel>Last Name</FormLabel>
+                    <FormControl><Input {...field} value={field.value ?? ""} className="rounded-xl bg-background/50" /></FormControl>
+                    <FormMessage />
+                  </FormItem>
                 )} />
                 <FormField control={form.control} name="email" render={({ field }) => (
-                  <FormItem><FormLabel>Corporate Email</FormLabel><FormControl><Input {...field} disabled={!isHR} className="rounded-xl bg-background/50" /></FormControl><FormMessage /></FormItem>
+                  <FormItem>
+                    <FormLabel>Corporate Email</FormLabel>
+                    <FormControl><Input {...field} value={field.value ?? ""} disabled={!isHR} className="rounded-xl bg-background/50" /></FormControl>
+                    <FormMessage />
+                  </FormItem>
                 )} />
                 <FormField control={form.control} name="phoneNumber" render={({ field }) => (
-                  <FormItem><FormLabel>Phone Number</FormLabel><FormControl><Input {...field} value={field.value || ''} className="rounded-xl bg-background/50" /></FormControl><FormMessage /></FormItem>
+                  <FormItem>
+                    <FormLabel>Phone Number</FormLabel>
+                    <FormControl><Input {...field} value={field.value ?? ""} className="rounded-xl bg-background/50" /></FormControl>
+                    <FormMessage />
+                  </FormItem>
                 )} />
                 <FormField control={form.control} name="dateOfBirth" render={({ field }) => (
-                  <FormItem><FormLabel>Date of Birth</FormLabel><FormControl><Input type="date" {...field} className="rounded-xl bg-background/50" /></FormControl><FormMessage /></FormItem>
+                  <FormItem>
+                    <FormLabel>Date of Birth</FormLabel>
+                    <FormControl><Input type="date" {...field} value={field.value ?? ""} className="rounded-xl bg-background/50" /></FormControl>
+                    <FormMessage />
+                  </FormItem>
                 )} />
                 <FormField control={form.control} name="address" render={({ field }) => (
-                  <FormItem className="md:col-span-2"><FormLabel>Residential Address</FormLabel><FormControl><Input {...field} className="rounded-xl bg-background/50" /></FormControl><FormMessage /></FormItem>
+                  <FormItem className="md:col-span-2">
+                    <FormLabel>Residential Address</FormLabel>
+                    <FormControl><Input {...field} value={field.value ?? ""} className="rounded-xl bg-background/50" /></FormControl>
+                    <FormMessage />
+                  </FormItem>
                 )} />
               </CardContent>
             </Card>
@@ -104,36 +213,60 @@ export function EditStaffProfileForm({ profile, onCancel, permissions }: EditSta
               <CardHeader><CardTitle className="text-sm uppercase tracking-widest opacity-50">Emergency Contact</CardTitle></CardHeader>
               <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <FormField control={form.control} name="emergencyContact.name" render={({ field }) => (
-                  <FormItem><FormLabel>Contact Name</FormLabel><FormControl><Input {...field} className="rounded-xl bg-background/50" /></FormControl><FormMessage /></FormItem>
+                  <FormItem>
+                    <FormLabel>Contact Name</FormLabel>
+                    <FormControl><Input {...field} value={field.value ?? ""} className="rounded-xl bg-background/50" /></FormControl>
+                    <FormMessage />
+                  </FormItem>
                 )} />
                 <FormField control={form.control} name="emergencyContact.relationship" render={({ field }) => (
-                  <FormItem><FormLabel>Relationship</FormLabel><FormControl><Input {...field} className="rounded-xl bg-background/50" /></FormControl><FormMessage /></FormItem>
+                  <FormItem>
+                    <FormLabel>Relationship</FormLabel>
+                    <FormControl><Input {...field} value={field.value ?? ""} className="rounded-xl bg-background/50" /></FormControl>
+                    <FormMessage />
+                  </FormItem>
                 )} />
                 <FormField control={form.control} name="emergencyContact.phone" render={({ field }) => (
-                  <FormItem><FormLabel>Phone</FormLabel><FormControl><Input {...field} className="rounded-xl bg-background/50" /></FormControl><FormMessage /></FormItem>
+                  <FormItem>
+                    <FormLabel>Phone</FormLabel>
+                    <FormControl><Input {...field} value={field.value ?? ""} className="rounded-xl bg-background/50" /></FormControl>
+                    <FormMessage />
+                  </FormItem>
                 )} />
               </CardContent>
             </Card>
           </div>
 
-          {/* Section 2: Employment Details (HR Restricted) */}
           <div className="space-y-6">
             <Card className={cn("m3-surface-low border-none rounded-[2rem] shadow-xl overflow-hidden", !isHR && "opacity-60 grayscale pointer-events-none")}>
               <CardHeader className="bg-primary/5 border-b border-primary/10"><CardTitle className="text-sm uppercase tracking-widest text-primary">Employment (HR ONLY)</CardTitle></CardHeader>
               <CardContent className="space-y-4 pt-6">
                 <FormField control={form.control} name="employeeId" render={({ field }) => (
-                  <FormItem><FormLabel>Employee ID</FormLabel><FormControl><Input {...field} className="rounded-xl bg-background/50 font-mono" /></FormControl><FormMessage /></FormItem>
+                  <FormItem>
+                    <FormLabel>Employee ID</FormLabel>
+                    <FormControl><Input {...field} value={field.value ?? ""} className="rounded-xl bg-background/50 font-mono" /></FormControl>
+                    <FormMessage />
+                  </FormItem>
                 )} />
                 <FormField control={form.control} name="jobTitle" render={({ field }) => (
-                  <FormItem><FormLabel>Job Title</FormLabel><FormControl><Input {...field} className="rounded-xl bg-background/50" /></FormControl><FormMessage /></FormItem>
+                  <FormItem>
+                    <FormLabel>Job Title</FormLabel>
+                    <FormControl><Input {...field} value={field.value ?? ""} className="rounded-xl bg-background/50" /></FormControl>
+                    <FormMessage />
+                  </FormItem>
                 )} />
                 <FormField control={form.control} name="departmentName" render={({ field }) => (
-                  <FormItem><FormLabel>Department</FormLabel><FormControl><Input {...field} className="rounded-xl bg-background/50" /></FormControl><FormMessage /></FormItem>
+                  <FormItem>
+                    <FormLabel>Department</FormLabel>
+                    <FormControl><Input {...field} value={field.value ?? ""} className="rounded-xl bg-background/50" /></FormControl>
+                    <FormMessage />
+                  </FormItem>
                 )} />
                 <FormField control={form.control} name="employmentType" render={({ field }) => (
-                  <FormItem><FormLabel>Employment Type</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl><SelectTrigger className="rounded-xl bg-background/50"><SelectValue /></SelectTrigger></FormControl>
+                  <FormItem>
+                    <FormLabel>Employment Type</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value ?? ""}>
+                      <FormControl><SelectTrigger className="rounded-xl bg-background/50"><SelectValue placeholder="Select Type" /></SelectTrigger></FormControl>
                       <SelectContent className="rounded-xl border-none m3-surface-high">
                         <SelectItem value="FULL_TIME">Full Time</SelectItem>
                         <SelectItem value="PART_TIME">Part Time</SelectItem>
@@ -141,12 +274,14 @@ export function EditStaffProfileForm({ profile, onCancel, permissions }: EditSta
                         <SelectItem value="INTERN">Intern</SelectItem>
                       </SelectContent>
                     </Select>
-                  <FormMessage /></FormItem>
+                    <FormMessage />
+                  </FormItem>
                 )} />
                 <FormField control={form.control} name="role" render={({ field }) => (
-                  <FormItem><FormLabel>System Role</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl><SelectTrigger className="rounded-xl bg-background/50"><SelectValue /></SelectTrigger></FormControl>
+                  <FormItem>
+                    <FormLabel>System Role</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value ?? ""}>
+                      <FormControl><SelectTrigger className="rounded-xl bg-background/50"><SelectValue placeholder="Select Role" /></SelectTrigger></FormControl>
                       <SelectContent className="rounded-xl border-none m3-surface-high">
                         <SelectItem value="STAFF">Staff</SelectItem>
                         <SelectItem value="HR_MANAGER">HR Manager</SelectItem>
@@ -155,12 +290,14 @@ export function EditStaffProfileForm({ profile, onCancel, permissions }: EditSta
                         <SelectItem value="ORG_ADMIN">Org Admin</SelectItem>
                       </SelectContent>
                     </Select>
-                  <FormMessage /></FormItem>
+                    <FormMessage />
+                  </FormItem>
                 )} />
                 <FormField control={form.control} name="status" render={({ field }) => (
-                  <FormItem><FormLabel>Profile Status</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl><SelectTrigger className="rounded-xl bg-background/50"><SelectValue /></SelectTrigger></FormControl>
+                  <FormItem>
+                    <FormLabel>Profile Status</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value ?? ""}>
+                      <FormControl><SelectTrigger className="rounded-xl bg-background/50"><SelectValue placeholder="Select Status" /></SelectTrigger></FormControl>
                       <SelectContent className="rounded-xl border-none m3-surface-high">
                         <SelectItem value="ACTIVE">Active</SelectItem>
                         <SelectItem value="ON_LEAVE">On Leave</SelectItem>
@@ -168,7 +305,8 @@ export function EditStaffProfileForm({ profile, onCancel, permissions }: EditSta
                         <SelectItem value="TERMINATED">Terminated</SelectItem>
                       </SelectContent>
                     </Select>
-                  <FormMessage /></FormItem>
+                    <FormMessage />
+                  </FormItem>
                 )} />
               </CardContent>
             </Card>

@@ -180,15 +180,19 @@ function ChatMessages({ chat, currentUserProfile, onConvertTask }: { chat: Chat,
 function AssetPicker({ onPick }: { onPick: (asset: ChatMessage['asset']) => void }) {
     const firestore = useFirestore();
     const { user } = useUser();
-    
-    const tasksQuery = useMemoFirebase(() => 
-        firestore ? query(collection(firestore, 'tasks'), where('assignedTo', '==', user?.uid), limit(10)) : null
+    const userProfileRef = useMemoFirebase(() =>
+        firestore && user?.uid ? doc(firestore, 'users', user.uid) : null
     , [firestore, user?.uid]);
+    const { data: userProfile } = useDoc<UserProfile>(userProfileRef);
+
+    const tasksQuery = useMemoFirebase(() => 
+        firestore && user?.uid && userProfile?.orgId ? query(collection(firestore, 'tasks'), where('orgId', '==', userProfile.orgId), where('assignedTo', '==', user?.uid), limit(10)) : null
+    , [firestore, user?.uid, userProfile?.orgId]);
     const { data: tasks } = useCollection<Task>(tasksQuery);
 
     const reqsQuery = useMemoFirebase(() => 
-        firestore ? query(collection(firestore, 'requisitions'), where('createdBy', '==', user?.uid), limit(10)) : null
-    , [firestore, user?.uid]);
+        firestore && user?.uid && userProfile?.orgId ? query(collection(firestore, 'requisitions'), where('orgId', '==', userProfile.orgId), where('createdBy', '==', user?.uid), limit(10)) : null
+    , [firestore, user?.uid, userProfile?.orgId]);
     const { data: reqs } = useCollection<Requisition>(reqsQuery);
 
     return (

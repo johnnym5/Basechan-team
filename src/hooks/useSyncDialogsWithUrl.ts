@@ -74,7 +74,7 @@ export function useSyncDialogsWithUrl() {
         const panelNames = [
             'profile', 'settings', 'chat', 'tasks', 'workbooks', 
             'requisitions', 'attendance', 'leave', 'reports', 
-            'accounting', 'library', 'superadmin'
+            'accounting', 'library', 'superadmin', 'staff-directory'
         ];
 
         panelNames.forEach(name => {

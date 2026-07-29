@@ -10,6 +10,7 @@ import {
   MessageSquare,
   Settings,
   User,
+  Users,
   Landmark,
   Library,
   MonitorDot,
@@ -18,6 +19,7 @@ import {
 export const mainNavItems = [
   { href: "/", icon: LayoutDashboard, label: "Dashboard" },
   { dialog: "profile", icon: User, label: "My Profile" },
+  { dialog: "staff-directory", icon: Users, label: "Staff", permission: 'canViewTeam' },
   { isSeparator: true },
   { dialog: "attendance", icon: CalendarCheck2, label: "Attendance", permission: 'canAccessAttendance' },
   { dialog: "leave", icon: CalendarPlus, label: "Leave", permission: 'canAccessLeave' },
@@ -30,5 +32,5 @@ export const mainNavItems = [
   { dialog: "reports", icon: BarChart, label: "Reports", permission: 'canAccessReports' },
   { isSeparator: true },
   { dialog: "chat", icon: MessageSquare, label: "Chat", permission: "canAccessChat"},
-  { dialog: "settings", icon: Settings, label: "Admin Console", permission: "canManageCompany"},
+  { href: "/settings", icon: Settings, label: "Admin Console", permission: "canManageCompany"},
 ];
