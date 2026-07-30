@@ -23,6 +23,8 @@ interface TasksPageContentProps {
   permissions: Permissions;
 }
 
+import { ModuleContainer } from "@/components/layout/shell/ModuleContainer";
+
 export function TasksPageContent({ initialPayload, currentUserProfile, permissions }: TasksPageContentProps) {
   const firestore = useFirestore();
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
@@ -62,64 +64,61 @@ export function TasksPageContent({ initialPayload, currentUserProfile, permissio
   }
 
   return (
-    <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col overflow-hidden">
-      <div className="flex-1 min-h-0 overflow-y-auto [scrollbar-gutter:stable] custom-scrollbar bg-background">
-          <div className="max-w-full mx-auto w-full min-h-full bg-background/30 p-4 md:p-8 lg:p-10 space-y-8">
-              <div className="flex flex-col gap-6">
-                <div className="flex items-start justify-between gap-4 flex-wrap">
-                  <div>
-                    <h1 className="text-4xl font-black font-headline tracking-tighter">Mission Control</h1>
-                    <p className="text-muted-foreground uppercase tracking-widest text-[10px] font-bold opacity-60">
-                      {permissions.canManageStaff ? "Team Tactical Oversight & Tasking" : "Active Personal Missions"}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-3">
-                      <TabsList className="bg-secondary/20 rounded-xl p-1 border border-white/5">
-                          <TabsTrigger value="board" className="rounded-lg px-4 font-black uppercase text-[10px] tracking-widest data-[state=active]:bg-background transition-all">Board</TabsTrigger>
-                          <TabsTrigger value="list" className="rounded-lg px-4 font-black uppercase text-[10px] tracking-widest data-[state=active]:bg-background transition-all">List</TabsTrigger>
-                      </TabsList>
-                      {permissions.canCreateTask && (
-                          <Button onClick={() => setIsAssignTaskOpen(true)} className="rounded-xl font-black uppercase text-[10px] tracking-widest h-10 px-6 shadow-xl shadow-primary/20 m3-interactive">
-                              <PlusCircle className="mr-2 h-4 w-4"/>
-                              New Task
-                          </Button>
-                      )}
-                  </div>
-                </div>
-
-                <div className="flex flex-col sm:flex-row items-center gap-4 m3-surface-low p-4 rounded-[2rem]">
-                    <div className="relative flex-1 w-full">
-                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                        <Input 
-                            placeholder="Identify tactical node..."
-                            className="pl-12 h-12 bg-background/50 border-white/5 rounded-2xl text-sm font-medium"
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                        />
-                    </div>
-                    <div className="flex items-center gap-3 w-full sm:w-auto">
-                        <div className="flex items-center gap-2 text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground shrink-0 opacity-60">
-                            <ListFilter className="h-3.5 w-3.5" />
-                            Sort:
-                        </div>
-                        <Select value={sortBy} onValueChange={setSortBy}>
-                            <SelectTrigger className="h-12 w-[200px] bg-background/50 border-white/5 rounded-2xl text-[10px] font-black uppercase tracking-widest">
-                                <SelectValue placeholder="Sort order" />
-                            </SelectTrigger>
-                            <SelectContent className="m3-surface-high border-none rounded-2xl">
-                                <SelectItem value="newest" className="text-[10px] font-black uppercase tracking-widest">Newest First</SelectItem>
-                                <SelectItem value="priority" className="text-[10px] font-black uppercase tracking-widest">Priority (H-L)</SelectItem>
-                                <SelectItem value="deadline" className="text-[10px] font-black uppercase tracking-widest">Deadline</SelectItem>
-                                <SelectItem value="user" className="text-[10px] font-black uppercase tracking-widest">Staff</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
-                </div>
+    <ModuleContainer
+        title="Mission Control"
+        subtitle={permissions.canManageStaff ? "Team Tactical Oversight & Tasking" : "Active Personal Missions"}
+        noScroll={true}
+        actions={
+            <div className="flex items-center gap-3">
+                <Tabs value={activeTab} onValueChange={setActiveTab}>
+                    <TabsList className="bg-secondary/20 rounded-xl p-1 border border-white/5">
+                        <TabsTrigger value="board" className="rounded-lg px-4 font-black uppercase text-[10px] tracking-widest data-[state=active]:bg-background transition-all">Board</TabsTrigger>
+                        <TabsTrigger value="list" className="rounded-lg px-4 font-black uppercase text-[10px] tracking-widest data-[state=active]:bg-background transition-all">List</TabsTrigger>
+                    </TabsList>
+                </Tabs>
+                {permissions.canCreateTask && (
+                    <Button onClick={() => setIsAssignTaskOpen(true)} className="rounded-xl font-black uppercase text-[10px] tracking-widest h-10 px-6 shadow-xl shadow-primary/20 m3-interactive">
+                        <PlusCircle className="mr-2 h-4 w-4 text-primary"/>
+                        New Task
+                    </Button>
+                )}
+            </div>
+        }
+    >
+      <div className="flex flex-col gap-8 h-full overflow-y-auto custom-scrollbar pr-2">
+          <div className="flex flex-col sm:flex-row items-center gap-4 border border-border/60 bg-muted/30 rounded-xl p-4 shadow-sm shrink-0">
+              <div className="relative flex-1 w-full">
+                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                      placeholder="Identify tactical node..."
+                      className="pl-12 h-12 bg-background/50 border-white/5 rounded-2xl text-sm font-medium"
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                  />
               </div>
+              <div className="flex items-center gap-3 w-full sm:w-auto">
+                  <div className="flex items-center gap-2 text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground shrink-0 opacity-60">
+                      <ListFilter className="h-3.5 w-3.5" />
+                      Sort:
+                  </div>
+                  <Select value={sortBy} onValueChange={setSortBy}>
+                      <SelectTrigger className="h-12 w-[200px] bg-background/50 border-white/5 rounded-2xl text-[10px] font-black uppercase tracking-widest">
+                          <SelectValue placeholder="Sort order" />
+                      </SelectTrigger>
+                      <SelectContent className="m3-surface-high border-none rounded-2xl">
+                          <SelectItem value="newest" className="text-[10px] font-black uppercase tracking-widest">Newest First</SelectItem>
+                          <SelectItem value="priority" className="text-[10px] font-black uppercase tracking-widest">Priority (H-L)</SelectItem>
+                          <SelectItem value="deadline" className="text-[10px] font-black uppercase tracking-widest">Deadline</SelectItem>
+                          <SelectItem value="user" className="text-[10px] font-black uppercase tracking-widest">Staff</SelectItem>
+                      </SelectContent>
+                  </Select>
+              </div>
+          </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-                  <div className="col-span-12 lg:col-span-8 xl:col-span-9 h-full">
-                      <div className="m3-surface-low rounded-[2.5rem] relative overflow-hidden min-h-[600px] h-full shadow-2xl border-none">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+              <div className="col-span-12 lg:col-span-8 xl:col-span-9 h-full">
+                  <div className="border border-border/60 bg-muted/30 rounded-xl p-4 shadow-sm relative overflow-hidden min-h-[600px] h-full">
+                    <Tabs value={activeTab} className="h-full">
                         <TabsContent value="board" className="m-0 h-full">
                             <TaskBoard 
                                 userProfile={currentUserProfile}
@@ -138,13 +137,13 @@ export function TasksPageContent({ initialPayload, currentUserProfile, permissio
                                 sortBy={sortBy}
                             />
                         </TabsContent>
-                      </div>
+                    </Tabs>
                   </div>
+              </div>
 
-                  <div className="col-span-12 lg:col-span-4 xl:col-span-3 flex flex-col gap-6">
-                      <PerformanceCard userProfile={currentUserProfile} />
-                      <DashboardRecentReports />
-                  </div>
+              <div className="col-span-12 lg:col-span-4 xl:col-span-3 flex flex-col gap-6">
+                  <PerformanceCard userProfile={currentUserProfile} />
+                  <DashboardRecentReports />
               </div>
           </div>
       </div>
@@ -168,6 +167,6 @@ export function TasksPageContent({ initialPayload, currentUserProfile, permissio
           permissions={permissions}
         />
       )}
-    </Tabs>
+    </ModuleContainer>
   );
 }

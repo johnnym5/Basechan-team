@@ -94,28 +94,28 @@ export function LeaveBalanceCard({ userProfile }: LeaveBalanceCardProps) {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>My Leave Balance</CardTitle>
-        <CardDescription>Your available days for {currentYear}.</CardDescription>
+    <Card className="border border-border/60 bg-muted/30 rounded-xl p-4 shadow-sm">
+      <CardHeader className="p-0 pb-4">
+        <CardTitle className="text-xl font-black font-headline tracking-tighter uppercase">My Leave Balance</CardTitle>
+        <CardDescription className="text-[10px] font-black uppercase tracking-widest opacity-60">Your available days for {currentYear}.</CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="p-0">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-            <div className="p-4 bg-secondary/50 rounded-lg">
-                <p className="text-3xl font-bold font-headline">{balances.annual}</p>
-                <p className="text-sm text-muted-foreground">Annual</p>
+            <div className="p-4 bg-secondary/30 border border-white/5 rounded-xl">
+                <p className="text-3xl font-black font-headline text-primary">{balances.annual}</p>
+                <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground opacity-60">Annual</p>
             </div>
-            <div className="p-4 bg-secondary/50 rounded-lg">
-                <p className="text-3xl font-bold font-headline">{balances.sick}</p>
-                <p className="text-sm text-muted-foreground">Sick</p>
+            <div className="p-4 bg-secondary/30 border border-white/5 rounded-xl">
+                <p className="text-3xl font-black font-headline text-emerald-500">{balances.sick}</p>
+                <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground opacity-60">Sick</p>
             </div>
-            <div className="p-4 bg-secondary/50 rounded-lg">
-                <p className="text-3xl font-bold font-headline">{balances.unpaid}</p>
-                <p className="text-sm text-muted-foreground">Unpaid</p>
+            <div className="p-4 bg-secondary/30 border border-white/5 rounded-xl">
+                <p className="text-3xl font-black font-headline text-rose-500">{balances.unpaid}</p>
+                <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground opacity-60">Unpaid</p>
             </div>
-             <div className="p-4 bg-secondary/50 rounded-lg">
-                <p className="text-3xl font-bold font-headline">{totalBalance}</p>
-                <p className="text-sm text-muted-foreground">Total Paid</p>
+             <div className="p-4 bg-primary/10 border border-primary/20 rounded-xl">
+                <p className="text-3xl font-black font-headline text-primary">{totalBalance}</p>
+                <p className="text-[10px] font-black uppercase tracking-widest text-primary opacity-60">Total Paid</p>
             </div>
         </div>
       </CardContent>

@@ -12,6 +12,7 @@ interface ModuleContainerProps {
   actions?: React.ReactNode;
   className?: string;
   contentClassName?: string;
+  noScroll?: boolean;
 }
 
 /**
@@ -25,13 +26,14 @@ export function ModuleContainer({
   subtitle,
   actions,
   className,
-  contentClassName
+  contentClassName,
+  noScroll = false
 }: ModuleContainerProps) {
   return (
     <div className={cn("flex flex-col h-full w-full overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-700", className)}>
       {/* Module Header */}
       {(header || title) && (
-        <header className="shrink-0 px-8 py-6 border-b border-white/5 flex items-center justify-between bg-white/[0.02]">
+        <header className="shrink-0 px-8 py-6 border-b border-white/5 flex items-center justify-between bg-white/[0.02] z-20">
           {header || (
             <>
               <div className="space-y-1">
@@ -52,11 +54,17 @@ export function ModuleContainer({
 
       {/* Module Body */}
       <main className="flex-1 min-h-0 relative">
-        <ScrollArea className="h-full">
-          <div className={cn("p-6 lg:p-8 space-y-8", contentClassName)}>
+        {noScroll ? (
+          <div className={cn("h-full w-full p-6 lg:p-8", contentClassName)}>
             {children}
           </div>
-        </ScrollArea>
+        ) : (
+          <ScrollArea className="h-full">
+            <div className={cn("p-6 lg:p-8 space-y-8", contentClassName)}>
+              {children}
+            </div>
+          </ScrollArea>
+        )}
       </main>
     </div>
   );

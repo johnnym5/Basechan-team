@@ -13,7 +13,7 @@ interface FinanceHubDialogProps {
 export function FinanceHubDialog({ open, onOpenChange, initialPayload, modal = false }: FinanceHubDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange} modal={modal}>
-      <DialogContent position={modal ? "center" : "left"} className="flex flex-col p-0 overflow-hidden">
+      <DialogContent position={modal ? "center" : "left"} className="flex flex-col p-0 overflow-hidden border-none apple-glass">
         <DialogHeader className="sr-only">
           <DialogTitle>Finance Command Center</DialogTitle>
           <DialogDescription>Integrated financial management hub.</DialogDescription>

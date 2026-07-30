@@ -13,7 +13,9 @@ export function useOrganizationSettings(orgId: string | undefined) {
     firestore && orgId ? doc(firestore, "organization_settings", orgId) : null
   , [firestore, orgId]);
 
-  const { data, isLoading, error } = useDoc<OrganizationSettings>(settingsRef);
+  const { data, isLoading, error: fetchError } = useDoc<OrganizationSettings>(settingsRef);
+
+  const error = fetchError || (data === undefined && !isLoading ? new Error("Organization configuration not found.") : null);
 
   const updateMutation = useMutation({
     mutationFn: async (newSettings: Partial<OrganizationSettings>) => {

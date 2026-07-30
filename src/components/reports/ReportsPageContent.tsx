@@ -20,6 +20,8 @@ import * as XLSX from 'xlsx';
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 
+import { ModuleContainer } from "@/components/layout/shell/ModuleContainer";
+
 export function ReportsPageContent({ initialPayload }: { initialPayload?: { tab?: string } }) {
   const { user: authUser } = useUser();
   const firestore = useFirestore();
@@ -123,7 +125,7 @@ export function ReportsPageContent({ initialPayload }: { initialPayload?: { tab?
   }
 
   if (isProfileLoading) {
-    return <div className="space-y-8 p-6"><Skeleton className="h-10 w-1/3" /><Skeleton className="h-[600px] w-full rounded-3xl" /></div>;
+    return <div className="space-y-8 p-10"><Skeleton className="h-10 w-1/3" /><Skeleton className="h-[600px] w-full rounded-3xl" /></div>;
   }
 
   if (!permissions.canAccessReports) {
@@ -137,49 +139,45 @@ export function ReportsPageContent({ initialPayload }: { initialPayload?: { tab?
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-start justify-between gap-4 flex-wrap">
-        <div>
-            <h1 className="text-3xl font-black font-headline tracking-tighter">Reports & Analytics</h1>
-            <p className="text-muted-foreground uppercase tracking-widest text-[10px] font-bold">
-                {permissions.canManageStaff ? "Team Performance & Activity Logs" : "Personal Task History & Achievements"}
-            </p>
-        </div>
-        {permissions.canManageStaff && (
-            <Button variant="outline" onClick={handleMasterExport} disabled={isExporting} className="rounded-xl border-primary/20 hover:bg-primary/10 hover:border-primary transition-all active:scale-95 group">
-                {isExporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileSpreadsheet className="mr-2 h-4 w-4 group-hover:rotate-12 transition-transform" />}
-                Export Data
-            </Button>
-        )}
-      </div>
-
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="bg-secondary/20 rounded-2xl p-1 mb-8">
-            <TabsTrigger value="performance" className="rounded-xl px-6 font-black uppercase text-[10px] tracking-widest data-[state=active]:bg-background data-[state=active]:shadow-lg">
-                <Trophy className="h-3 w-3 mr-2" /> My Dashboard
+    <ModuleContainer
+        title="Reports & Analytics"
+        subtitle={permissions.canManageStaff ? "Team Performance & Activity Logs" : "Personal Task History & Achievements"}
+        actions={
+            permissions.canManageStaff && (
+                <Button variant="outline" onClick={handleMasterExport} disabled={isExporting} className="rounded-xl border-primary/20 hover:bg-primary/10 hover:border-primary transition-all active:scale-95 group h-10 font-black uppercase text-[10px] tracking-widest shadow-xl shadow-primary/20">
+                    {isExporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileSpreadsheet className="mr-2 h-4 w-4 group-hover:rotate-12 transition-transform text-primary" />}
+                    Export Master Data
+                </Button>
+            )
+        }
+    >
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full flex flex-col min-h-0">
+        <TabsList className="bg-secondary/20 rounded-2xl p-1 mb-8 w-fit border border-white/5">
+            <TabsTrigger value="performance" className="rounded-xl px-6 font-black uppercase text-[10px] tracking-widest data-[state=active]:bg-background transition-all">
+                <Trophy className="h-3.5 w-3.5 mr-2 text-amber-500" /> My Dashboard
             </TabsTrigger>
             {permissions.canManageStaff && (
                 <>
-                    <TabsTrigger value="analytics" className="rounded-xl px-6 font-black uppercase text-[10px] tracking-widest data-[state=active]:bg-background data-[state=active]:shadow-lg">
-                        <BarChart3 className="h-3 w-3 mr-2" /> Team Leaderboard
+                    <TabsTrigger value="analytics" className="rounded-xl px-6 font-black uppercase text-[10px] tracking-widest data-[state=active]:bg-background transition-all">
+                        <BarChart3 className="h-3.5 w-3.5 mr-2 text-primary" /> Team Leaderboard
                     </TabsTrigger>
-                    <TabsTrigger value="team-reports" className="rounded-xl px-6 font-black uppercase text-[10px] tracking-widest data-[state=active]:bg-background data-[state=active]:shadow-lg">
-                        <UserCheck className="h-3 w-3 mr-2" /> Activity Logs
+                    <TabsTrigger value="team-reports" className="rounded-xl px-6 font-black uppercase text-[10px] tracking-widest data-[state=active]:bg-background transition-all">
+                        <UserCheck className="h-3.5 w-3.5 mr-2 text-emerald-500" /> Activity Logs
                     </TabsTrigger>
-                    <TabsTrigger value="team-health" className="rounded-xl px-6 font-black uppercase text-[10px] tracking-widest data-[state=active]:bg-background data-[state=active]:shadow-lg">
-                        <Heart className="h-3 w-3 mr-2" /> Team Health
+                    <TabsTrigger value="team-health" className="rounded-xl px-6 font-black uppercase text-[10px] tracking-widest data-[state=active]:bg-background transition-all">
+                        <Heart className="h-3.5 w-3.5 mr-2 text-rose-500" /> Team Health
                     </TabsTrigger>
                 </>
             )}
             {!permissions.canManageStaff && permissions.canSubmitReport && (
-                <TabsTrigger value="submit" className="rounded-xl px-6 font-black uppercase text-[10px] tracking-widest data-[state=active]:bg-background data-[state=active]:shadow-lg">
+                <TabsTrigger value="submit" className="rounded-xl px-6 font-black uppercase text-[10px] tracking-widest data-[state=active]:bg-background transition-all">
                     Submit Daily Report
                 </TabsTrigger>
             )}
         </TabsList>
 
-        <div className="mt-0">
-            <TabsContent value="performance" className="m-0 focus-visible:ring-0 outline-none">
+        <div className="flex-1 min-h-0">
+            <TabsContent value="performance" className="m-0 focus-visible:ring-0 outline-none animate-in fade-in duration-500">
                 {userProfile && <PerformanceDashboard userProfile={userProfile} />}
             </TabsContent>
 
@@ -205,6 +203,6 @@ export function ReportsPageContent({ initialPayload }: { initialPayload?: { tab?
             </TabsContent>
         </div>
       </Tabs>
-    </div>
+    </ModuleContainer>
   );
 }

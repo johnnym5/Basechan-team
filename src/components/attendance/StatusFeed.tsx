@@ -89,9 +89,9 @@ export function StatusFeed({ userProfile, permissions }: StatusFeedProps) {
   }, [contextUser, userProfile, permissions]);
 
   return (
-    <Card className="m3-surface-low border-none shadow-xl overflow-hidden rounded-[2.5rem] flex flex-col h-full">
-      <CardHeader className="bg-white/5 border-b border-white/5 pb-4 px-6 pt-6 shrink-0">
-          <CardTitle className="text-xl font-black font-headline tracking-tighter flex items-center gap-2 text-white">
+    <Card className="border border-border/60 bg-muted/30 rounded-xl p-4 shadow-sm flex flex-col h-full overflow-hidden">
+      <CardHeader className="p-0 pb-4 bg-white/5 border-b border-white/5 -mx-4 px-4 pt-4 mb-4">
+          <CardTitle className="text-xl font-black font-headline tracking-tighter flex items-center gap-2 text-white uppercase">
               <Radio className="h-5 w-5 text-primary animate-pulse" />
               Live Status
           </CardTitle>

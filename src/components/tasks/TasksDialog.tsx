@@ -17,7 +17,7 @@ interface TasksDialogProps {
 export function TasksDialog({ open, onOpenChange, initialPayload, userProfile, permissions, modal = false }: TasksDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange} modal={modal}>
-      <DialogContent position="left" className="flex flex-col p-0">
+      <DialogContent position={modal ? "center" : "left"} className="flex flex-col p-0 border-none apple-glass">
         <DialogHeader className="sr-only">
             <DialogTitle>Mission Control: Task Manager</DialogTitle>
             <DialogDescription>View and manage tactical missions and team tasks.</DialogDescription>

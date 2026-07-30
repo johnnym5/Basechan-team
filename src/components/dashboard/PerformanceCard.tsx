@@ -120,7 +120,7 @@ export function PerformanceCard({ userProfile }: PerformanceCardProps) {
     const activeConfig = reportConfig[activeReport];
 
     return (
-        <section className="apple-glass rounded-2xl p-4 md:p-5 h-full flex flex-col animate-slide-up-fade interactive-element">
+        <section className="border border-border/60 bg-muted/30 rounded-xl p-4 md:p-5 h-full flex flex-col animate-slide-up-fade interactive-element shadow-sm">
             <div className="flex items-center justify-between mb-4">
                 <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">My Performance Analytics</h3>
                 <div className="flex items-center gap-2">

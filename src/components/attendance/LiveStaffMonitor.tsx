@@ -15,7 +15,7 @@ import {
 import { format, differenceInSeconds } from 'date-fns';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
-import { Timer, Activity, Coffee, LogOut, Loader2, Monitor, Smartphone, MonitorPlay, Camera, History, BarChart2, MessageSquare, Siren, ClipboardList, Share2 } from 'lucide-react';
+import { Timer, Activity, Coffee, LogOut, Loader2, Monitor, Smartphone, MonitorPlay, Camera, History, BarChart2, MessageSquare, Siren, ClipboardList, Share2, ArrowLeft, ArrowRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useContextMenu } from '@/hooks/useContextMenu';
@@ -40,6 +40,8 @@ import {
 import { AttendanceHistory } from '@/components/attendance/AttendanceHistory';
 import { RequestAssistanceDialog } from '../tasks/RequestAssistanceDialog';
 import { ShareTaskDialog } from '../tasks/ShareTaskDialog';
+import { ModuleContainer } from "@/components/layout/shell/ModuleContainer";
+import { type CarouselApi } from "@/components/ui/carousel";
 
 interface LiveStaffMonitorProps {
     userProfile: UserProfile;
@@ -50,6 +52,9 @@ export function LiveStaffMonitor({ userProfile }: LiveStaffMonitorProps) {
     const { toast } = useToast();
     const [now, setNow] = useState(new Date());
     const [isProcessing, setIsProcessing] = useState<string | null>(null);
+    const [api, setApi] = useState<CarouselApi>();
+    const [canScrollPrev, setCanScrollPrev] = useState(false);
+    const [canScrollNext, setCanScrollNext] = useState(false);
 
     const { isOpen, anchorPoint, handleContextMenu, handleTouchStart, handleTouchEnd, closeMenu } = useContextMenu();
     const [contextUser, setContextUser] = useState<UserProfile | null>(null);
@@ -59,6 +64,23 @@ export function LiveStaffMonitor({ userProfile }: LiveStaffMonitorProps) {
     const [assistanceUser, setAssistanceUser] = useState<UserProfile | null>(null);
     const [shareTargetUser, setShareTargetUser] = useState<UserProfile | null>(null);
     const [selectedTaskToShare, setSelectedTaskToShare] = useState<Task | null>(null);
+
+    useEffect(() => {
+        if (!api) return;
+
+        const onSelect = () => {
+            setCanScrollPrev(api.canScrollPrev());
+            setCanScrollNext(api.canScrollNext());
+        };
+
+        onSelect();
+        api.on("select", onSelect);
+        api.on("reInit", onSelect);
+
+        return () => {
+            api.off("select", onSelect);
+        };
+    }, [api]);
 
     const adminTasksQuery = useMemoFirebase(() => {
         if (!firestore || !userProfile.id || !userProfile.orgId) return null;
@@ -215,177 +237,185 @@ export function LiveStaffMonitor({ userProfile }: LiveStaffMonitorProps) {
     if (isAttLoading || isUsersLoading) return <Skeleton className="h-96 w-full rounded-[2rem]" />;
 
     return (
-        <>
-            <Carousel opts={{ dragFree: true }} className="w-full relative">
-                <Card className="m3-surface-low border-none shadow-xl overflow-hidden rounded-[2.5rem]">
-                    <CardHeader className="bg-white/5 border-b border-white/5 pb-4 px-6 pt-6">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <CardTitle className="text-xl font-black font-headline tracking-tighter flex items-center gap-2">
-                                    <Activity className="h-5 w-5 text-emerald-500" />
-                                    Live Personnel Monitor
-                                </CardTitle>
-                                <CardDescription className="text-[9px] font-black uppercase tracking-widest opacity-60">Operations Performance & Oversight</CardDescription>
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <div className="hidden md:flex justify-end gap-2">
-                                    <CarouselPrevious className="static h-8 w-8 rounded-xl bg-white/5 hover:bg-white/10 border-white/5 text-white translate-y-0" />
-                                    <CarouselNext className="static h-8 w-8 rounded-xl bg-white/5 hover:bg-white/10 border-white/5 text-white translate-y-0" />
-                                </div>
-                                <div className="p-2 rounded-xl bg-primary/10 border border-primary/20">
-                                    <Timer className="h-5 w-5 text-primary animate-pulse" />
-                                </div>
-                            </div>
-                        </div>
-                    </CardHeader>
-                    <CardContent className="p-4 sm:p-6 relative">
-                        {monitoringData.length === 0 ? (
-                            <div className="h-40 flex flex-col items-center justify-center border border-dashed border-white/5 rounded-[2rem] bg-secondary/5">
+        <ModuleContainer
+            title="Live Personnel Monitor"
+            subtitle="Operations Performance & Oversight"
+            actions={
+                <div className="flex items-center gap-3">
+                    <div className="hidden md:flex justify-end gap-2">
+                        <Button
+                            variant="outline"
+                            size="icon"
+                            className="h-8 w-8 rounded-xl bg-white/5 hover:bg-white/10 border-white/5 text-white"
+                            onClick={() => api?.scrollPrev()}
+                            disabled={!canScrollPrev}
+                        >
+                            <ArrowLeft className="h-4 w-4" />
+                        </Button>
+                        <Button
+                            variant="outline"
+                            size="icon"
+                            className="h-8 w-8 rounded-xl bg-white/5 hover:bg-white/10 border-white/5 text-white"
+                            onClick={() => api?.scrollNext()}
+                            disabled={!canScrollNext}
+                        >
+                            <ArrowRight className="h-4 w-4" />
+                        </Button>
+                    </div>
+                    <div className="p-2 rounded-xl bg-primary/10 border border-primary/20">
+                        <Timer className="h-5 w-5 text-primary animate-pulse" />
+                    </div>
+                </div>
+            }
+        >
+            <Carousel setApi={setApi} opts={{ dragFree: true }} className="w-full relative">
+                <CarouselContent className="-ml-4">
+                    {monitoringData.length === 0 ? (
+                        <div className="pl-4 basis-full">
+                            <div className="h-40 flex flex-col items-center justify-center border border-dashed border-white/5 rounded-xl bg-secondary/5">
                                 <p className="text-muted-foreground uppercase font-black text-[9px] tracking-widest opacity-30">
                                     No personnel detected in current cycle
                                 </p>
                             </div>
-                        ) : (
-                            <CarouselContent className="-ml-4">
-                                {monitoringData.map((record) => (
-                                    <CarouselItem key={record.id} className="pl-4 basis-[90%] sm:basis-1/2 lg:basis-1/3 xl:basis-1/4">
-                                        <Card
-                                            className="m3-surface-low border border-white/5 shadow-xl hover:bg-white/10 transition-all duration-300 relative flex flex-col justify-between h-full select-none cursor-pointer group p-5 rounded-[2rem] m3-interactive"
-                                            onClick={(e) => handleRowClick(e, record)}
-                                            onContextMenu={(e) => {
-                                                if (record.profile) {
-                                                    setContextUser(record.profile);
-                                                    handleContextMenu(e);
-                                                }
-                                            }}
-                                            onTouchStart={(e) => {
-                                                if (record.profile) {
-                                                    setContextUser(record.profile);
-                                                    handleTouchStart(e);
-                                                }
-                                            }}
-                                            onTouchEnd={handleTouchEnd}
-                                        >
-                                            <div className="flex items-start justify-between">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="h-10 w-10 rounded-full bg-secondary border border-white/5 flex items-center justify-center font-black text-sm uppercase shadow-inner text-white">
-                                                        {record.userName.charAt(0)}
-                                                    </div>
-                                                    <div className="min-w-0">
-                                                        <h4 className="font-bold text-sm text-white truncate leading-none">{record.userName}</h4>
-                                                        <p className="text-[8px] font-black uppercase tracking-tighter text-muted-foreground mt-1.5">
-                                                            First In: {format(new Date(record.clockIn), 'p')}
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                                <div className="p-1.5 rounded-lg bg-white/5 border border-white/5">
-                                                    {record.profile?.deviceType === 'PC' ? (
-                                                        <Monitor className="h-3.5 w-3.5 text-primary opacity-80" />
-                                                    ) : (
-                                                        <Smartphone className="h-3.5 w-3.5 text-amber-500 opacity-80" />
-                                                    )}
-                                                </div>
+                        </div>
+                    ) : (
+                        monitoringData.map((record) => (
+                            <CarouselItem key={record.id} className="pl-4 basis-[90%] sm:basis-1/2 lg:basis-1/3 xl:basis-1/4">
+                                <Card
+                                    className="border border-border/60 bg-muted/30 rounded-xl p-5 shadow-sm hover:bg-white/5 transition-all duration-300 relative flex flex-col justify-between h-full select-none cursor-pointer group m3-interactive"
+                                    onClick={(e) => handleRowClick(e, record)}
+                                    onContextMenu={(e) => {
+                                        if (record.profile) {
+                                            setContextUser(record.profile);
+                                            handleContextMenu(e);
+                                        }
+                                    }}
+                                    onTouchStart={(e) => {
+                                        if (record.profile) {
+                                            setContextUser(record.profile);
+                                            handleTouchStart(e);
+                                        }
+                                    }}
+                                    onTouchEnd={handleTouchEnd}
+                                >
+                                    <div className="flex items-start justify-between">
+                                        <div className="flex items-center gap-3">
+                                            <div className="h-10 w-10 rounded-full bg-secondary border border-white/5 flex items-center justify-center font-black text-sm uppercase shadow-inner text-white">
+                                                {record.userName.charAt(0)}
                                             </div>
-
-                                            <div className="mt-4 flex items-center justify-between">
-                                                <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Status</span>
-                                                {record.clockOut ? (
-                                                    <Badge variant="outline" className="gap-1.5 text-[8px] font-black uppercase bg-muted/20 text-muted-foreground border-white/5">
-                                                        <LogOut className="h-2.5 w-2.5" /> Signed Out
-                                                    </Badge>
-                                                ) : record.onBreak ? (
-                                                    <Badge variant="outline" className="gap-1.5 text-[8px] font-black uppercase bg-amber-500/10 text-amber-500 border-amber-500/20 animate-pulse">
-                                                        <Coffee className="h-2.5 w-2.5" /> On Break
-                                                    </Badge>
-                                                ) : (
-                                                    <Badge variant="outline" className="gap-1.5 text-[8px] font-black uppercase bg-emerald-500/10 text-emerald-500 border-emerald-500/20">
-                                                        <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-ping" /> Active
-                                                    </Badge>
-                                                )}
+                                            <div className="min-w-0">
+                                                <h4 className="font-bold text-sm text-white truncate leading-none">{record.userName}</h4>
+                                                <p className="text-[8px] font-black uppercase tracking-tighter text-muted-foreground mt-1.5">
+                                                    First In: {format(new Date(record.clockIn), 'p')}
+                                                </p>
                                             </div>
+                                        </div>
+                                        <div className="p-1.5 rounded-lg bg-white/5 border border-white/5">
+                                            {record.profile?.deviceType === 'PC' ? (
+                                                <Monitor className="h-3.5 w-3.5 text-primary opacity-80" />
+                                            ) : (
+                                                <Smartphone className="h-3.5 w-3.5 text-amber-500 opacity-80" />
+                                            )}
+                                        </div>
+                                    </div>
 
-                                            <div className="grid grid-cols-2 gap-2 mt-4 font-mono">
-                                                <div className="p-2.5 rounded-xl bg-white/5 border border-white/5 text-center flex flex-col justify-center">
-                                                    <span className="text-emerald-400 text-xs font-bold leading-none mb-1">
-                                                        {formatDuration(record.workTime)}
-                                                    </span>
-                                                    <span className="text-[8px] font-black uppercase tracking-widest text-muted-foreground">Work Time</span>
-                                                </div>
-                                                <div className="p-2.5 rounded-xl bg-white/5 border border-white/5 text-center flex flex-col justify-center">
-                                                    <span className="text-amber-400 text-xs font-bold leading-none mb-1">
-                                                        {formatDuration(record.idleTime)}
-                                                    </span>
-                                                    <span className="text-[8px] font-black uppercase tracking-widest text-muted-foreground">Idle Time</span>
-                                                </div>
-                                            </div>
+                                    <div className="mt-4 flex items-center justify-between">
+                                        <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Status</span>
+                                        {record.clockOut ? (
+                                            <Badge variant="outline" className="gap-1.5 text-[8px] font-black uppercase bg-muted/20 text-muted-foreground border-white/5">
+                                                <LogOut className="h-2.5 w-2.5" /> Signed Out
+                                            </Badge>
+                                        ) : record.onBreak ? (
+                                            <Badge variant="outline" className="gap-1.5 text-[8px] font-black uppercase bg-amber-500/10 text-amber-500 border-amber-500/20 animate-pulse">
+                                                <Coffee className="h-2.5 w-2.5" /> On Break
+                                            </Badge>
+                                        ) : (
+                                            <Badge variant="outline" className="gap-1.5 text-[8px] font-black uppercase bg-emerald-500/10 text-emerald-500 border-emerald-500/20">
+                                                <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-ping" /> Active
+                                            </Badge>
+                                        )}
+                                    </div>
 
-                                            <div className="mt-4 pt-3 border-t border-white/5 flex items-center justify-between">
-                                                <div className="flex flex-col">
-                                                    <span className="text-[8px] font-black uppercase tracking-widest text-muted-foreground">Total Active</span>
-                                                    <span className="font-mono text-xs font-black text-white mt-0.5">
-                                                        {formatDuration(record.totalShiftTime)}
-                                                    </span>
-                                                </div>
+                                    <div className="grid grid-cols-2 gap-2 mt-4 font-mono">
+                                        <div className="p-2.5 rounded-xl bg-white/5 border border-white/5 text-center flex flex-col justify-center">
+                                            <span className="text-emerald-400 text-xs font-bold leading-none mb-1">
+                                                {formatDuration(record.workTime)}
+                                            </span>
+                                            <span className="text-[8px] font-black uppercase tracking-widest text-muted-foreground">Work Time</span>
+                                        </div>
+                                        <div className="p-2.5 rounded-xl bg-white/5 border border-white/5 text-center flex flex-col justify-center">
+                                            <span className="text-amber-400 text-xs font-bold leading-none mb-1">
+                                                {formatDuration(record.idleTime)}
+                                            </span>
+                                            <span className="text-[8px] font-black uppercase tracking-widest text-muted-foreground">Idle Time</span>
+                                        </div>
+                                    </div>
+
+                                    <div className="mt-4 pt-3 border-t border-white/5 flex items-center justify-between">
+                                        <div className="flex flex-col">
+                                            <span className="text-[8px] font-black uppercase tracking-widest text-muted-foreground">Total Active</span>
+                                            <span className="font-mono text-xs font-black text-white mt-0.5">
+                                                {formatDuration(record.totalShiftTime)}
+                                            </span>
+                                        </div>
+
+                                        {!record.clockOut && record.profile?.deviceType === 'PC' && record.status === 'APPROVED' && (
+                                            <div className="flex gap-1.5">
+                                                <TooltipProvider>
+                                                    <Tooltip>
+                                                        <TooltipTrigger asChild>
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="icon"
+                                                                className="h-8 w-8 rounded-lg hover:bg-emerald-500/10 hover:text-emerald-500 border border-transparent hover:border-emerald-500/10 transition-all duration-200"
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    handleAction(record.profile!, 'SCREEN_SHARE');
+                                                                }}
+                                                                disabled={isProcessing === record.userId}
+                                                            >
+                                                                {isProcessing === record.userId ? (
+                                                                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                                                ) : (
+                                                                    <MonitorPlay className="h-3.5 w-3.5" />
+                                                                )}
+                                                            </Button>
+                                                        </TooltipTrigger>
+                                                        <TooltipContent className="apple-glass-darker border-none text-[8px] font-black uppercase">Monitor Feed</TooltipContent>
+                                                    </Tooltip>
+                                                </TooltipProvider>
                                                 
-                                                {!record.clockOut && record.profile?.deviceType === 'PC' && record.status === 'APPROVED' && (
-                                                    <div className="flex gap-1.5">
-                                                        <TooltipProvider>
-                                                            <Tooltip>
-                                                                <TooltipTrigger asChild>
-                                                                    <Button
-                                                                        variant="ghost"
-                                                                        size="icon"
-                                                                        className="h-8 w-8 rounded-lg hover:bg-emerald-500/10 hover:text-emerald-500 border border-transparent hover:border-emerald-500/10 transition-all duration-200"
-                                                                        onClick={(e) => {
-                                                                            e.stopPropagation();
-                                                                            handleAction(record.profile!, 'SCREEN_SHARE');
-                                                                        }}
-                                                                        disabled={isProcessing === record.userId}
-                                                                    >
-                                                                        {isProcessing === record.userId ? (
-                                                                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                                                                        ) : (
-                                                                            <MonitorPlay className="h-3.5 w-3.5" />
-                                                                        )}
-                                                                    </Button>
-                                                                </TooltipTrigger>
-                                                                <TooltipContent className="apple-glass-darker border-none text-[8px] font-black uppercase">Monitor Feed</TooltipContent>
-                                                            </Tooltip>
-                                                        </TooltipProvider>
-                                                        
-                                                        <TooltipProvider>
-                                                            <Tooltip>
-                                                                <TooltipTrigger asChild>
-                                                                    <Button
-                                                                        variant="ghost"
-                                                                        size="icon"
-                                                                        className="h-8 w-8 rounded-lg hover:bg-primary/10 hover:text-primary border border-transparent hover:border-primary/10 transition-all duration-200"
-                                                                        onClick={(e) => {
-                                                                            e.stopPropagation();
-                                                                            handleAction(record.profile!, 'SCREENSHOT');
-                                                                        }}
-                                                                        disabled={isProcessing === record.userId}
-                                                                    >
-                                                                        {isProcessing === record.userId ? (
-                                                                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                                                                        ) : (
-                                                                            <Camera className="h-3.5 w-3.5" />
-                                                                        )}
-                                                                    </Button>
-                                                                </TooltipTrigger>
-                                                                <TooltipContent className="apple-glass-darker border-none text-[8px] font-black uppercase">Capture Frame</TooltipContent>
-                                                            </Tooltip>
-                                                        </TooltipProvider>
-                                                    </div>
-                                                )}
+                                                <TooltipProvider>
+                                                    <Tooltip>
+                                                        <TooltipTrigger asChild>
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="icon"
+                                                                className="h-8 w-8 rounded-lg hover:bg-primary/10 hover:text-primary border border-transparent hover:border-primary/10 transition-all duration-200"
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    handleAction(record.profile!, 'SCREENSHOT');
+                                                                }}
+                                                                disabled={isProcessing === record.userId}
+                                                            >
+                                                                {isProcessing === record.userId ? (
+                                                                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                                                ) : (
+                                                                    <Camera className="h-3.5 w-3.5" />
+                                                                )}
+                                                            </Button>
+                                                        </TooltipTrigger>
+                                                        <TooltipContent className="apple-glass-darker border-none text-[8px] font-black uppercase">Capture Frame</TooltipContent>
+                                                    </Tooltip>
+                                                </TooltipProvider>
                                             </div>
-                                        </Card>
-                                    </CarouselItem>
-                                ))}
-                            </CarouselContent>
-                        )}
-                    </CardContent>
-                </Card>
+                                        )}
+                                    </div>
+                                </Card>
+                            </CarouselItem>
+                        ))
+                    )}
+                </CarouselContent>
             </Carousel>
             <ContextMenu isOpen={isOpen} anchorPoint={anchorPoint} items={menuItems} onClose={closeMenu} />
 
@@ -486,7 +516,7 @@ export function LiveStaffMonitor({ userProfile }: LiveStaffMonitorProps) {
 
             {historyUser && (
                 <Dialog open={!!historyUser} onOpenChange={() => setHistoryUser(null)}>
-                    <DialogContent className="max-w-4xl">
+                    <DialogContent className="max-w-4xl border-none apple-glass">
                         <DialogHeader>
                             <DialogTitle>Attendance History for {historyUser.fullName}</DialogTitle>
                             <DialogDescription>Reviewing past clock-in/out records.</DialogDescription>
@@ -509,7 +539,7 @@ export function LiveStaffMonitor({ userProfile }: LiveStaffMonitorProps) {
 
             {shareTargetUser && (
                 <Dialog open={!!shareTargetUser} onOpenChange={() => setShareTargetUser(null)}>
-                    <DialogContent className="max-w-md apple-glass-darker border-white/10 bg-background/95 text-foreground">
+                    <DialogContent className="max-w-md border-none apple-glass text-foreground">
                         <DialogHeader>
                             <DialogTitle className="text-lg font-bold flex items-center gap-2">
                                 <Share2 className="h-5 w-5 text-primary" />
@@ -567,6 +597,6 @@ export function LiveStaffMonitor({ userProfile }: LiveStaffMonitorProps) {
                     currentUserProfile={userProfile}
                 />
             )}
-        </>
+        </ModuleContainer>
     );
 }

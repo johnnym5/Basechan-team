@@ -36,6 +36,7 @@ export function Employee360Profile({
   permissions,
   onBack
 }: Employee360ProfileProps) {
+  console.log("Fetching profile for ID:", userId);
   const firestore = useFirestore();
   const auth = useAuth();
   const { toast } = useToast();
@@ -48,8 +49,8 @@ export function Employee360Profile({
   const isOwnProfile = currentUserProfile?.id === userId;
   const isAdmin = permissions.canManageStaff;
 
-  if (isLoading) return <Skeleton className="h-[600px] w-full rounded-[2.5rem]" />;
-  if (!data?.profile) return <div className="p-20 text-center uppercase font-black opacity-20">Profile Not Found</div>;
+  if (isLoading) return <Skeleton className="h-[600px] w-full rounded-xl" />;
+  if (!data?.profile) return <div className="p-20 text-center uppercase font-black opacity-20">Profile Not Found (ID: {userId})</div>;
 
   const { profile, attendance, tasks } = data;
 
@@ -107,20 +108,20 @@ export function Employee360Profile({
   // PEER VIEW LOGIC: Standard staff viewing another member
   if (!isOwnProfile && !isAdmin) {
     return (
-      <div className="space-y-8">
+      <div className="space-y-8 h-full flex flex-col">
         {onBack && (
-          <Button variant="ghost" onClick={onBack} className="rounded-full gap-2 px-4 hover:bg-white/5">
+          <Button variant="ghost" onClick={onBack} className="rounded-xl gap-2 px-4 hover:bg-white/5 text-[10px] font-black uppercase tracking-widest shrink-0 self-start">
              <ChevronLeft className="h-4 w-4" /> Personnel Directory
           </Button>
         )}
-        <div className="bg-card/20 p-8 rounded-[2.5rem] border border-white/5 flex flex-col md:flex-row items-center gap-8">
-          <Avatar className="h-32 w-32 md:h-40 md:w-40 rounded-[2.5rem] border-4 border-white/5 shadow-2xl">
+        <div className="border border-border/60 bg-muted/30 rounded-xl p-8 shadow-sm flex flex-col md:flex-row items-center gap-8">
+          <Avatar className="h-32 w-32 md:h-40 md:w-40 rounded-xl border-4 border-white/5 shadow-2xl">
             <AvatarImage src={profile.avatarUrl || ''} />
             <AvatarFallback className="text-4xl font-black bg-secondary">{profile.fullName.charAt(0)}</AvatarFallback>
           </Avatar>
           <div className="text-center md:text-left space-y-4">
             <div>
-              <h1 className="text-4xl font-black font-headline tracking-tighter">{profile.fullName}</h1>
+              <h1 className="text-4xl font-black font-headline tracking-tighter uppercase">{profile.fullName}</h1>
               <p className="text-lg font-bold text-primary tracking-tight">{profile.jobTitle || 'Staff Member'}</p>
             </div>
             <div className="flex flex-wrap justify-center md:justify-start gap-2">
@@ -130,9 +131,11 @@ export function Employee360Profile({
             <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest opacity-60">{profile.email}</p>
           </div>
         </div>
-        <div className="p-10 text-center border border-dashed border-white/5 rounded-[2.5rem] bg-secondary/5 opacity-40">
-           <ShieldCheck className="h-10 w-10 mx-auto mb-4 text-primary" />
-           <p className="text-xs font-black uppercase tracking-[0.2em]">Detailed History Protected by Authority Protocol</p>
+        <div className="flex-1 flex items-center justify-center border border-dashed border-white/10 rounded-xl bg-secondary/5 opacity-40 p-10">
+           <div className="text-center">
+             <ShieldCheck className="h-10 w-10 mx-auto mb-4 text-primary" />
+             <p className="text-xs font-black uppercase tracking-[0.2em]">Detailed History Protected by Authority Protocol</p>
+           </div>
         </div>
       </div>
     );

@@ -85,7 +85,7 @@ export function StaffDirectoryTable({ orgId, onViewProfile }: StaffDirectoryTabl
 
   return (
     <div className="space-y-4 h-full flex flex-col">
-      <div className="flex flex-col md:flex-row gap-4 items-center justify-between bg-card/50 p-4 rounded-2xl border border-white/5 shadow-sm">
+      <div className="flex flex-col md:flex-row gap-4 items-center justify-between border border-border/60 bg-muted/30 rounded-xl p-4 shadow-sm">
         <div className="relative flex-1 w-full">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
@@ -123,7 +123,7 @@ export function StaffDirectoryTable({ orgId, onViewProfile }: StaffDirectoryTabl
         </div>
       </div>
 
-      <div className="flex-1 overflow-hidden border border-white/5 rounded-[2rem] bg-card/30 backdrop-blur-md shadow-xl">
+      <div className="flex-1 overflow-hidden border border-border/60 bg-muted/30 rounded-xl p-0 shadow-sm relative">
         <div className="h-full overflow-y-auto custom-scrollbar">
           <Table>
             <TableHeader className="bg-secondary/20 sticky top-0 z-10">

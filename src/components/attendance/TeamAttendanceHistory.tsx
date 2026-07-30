@@ -112,8 +112,8 @@ export function TeamAttendanceHistory({ userProfile }: TeamAttendanceHistoryProp
 
     return (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 h-full items-stretch">
-            <Card className="lg:col-span-4 xl:col-span-3 m3-surface-low border-none rounded-[2.5rem] overflow-hidden flex flex-col h-full shadow-xl">
-                <CardContent className="p-4 flex-1 flex flex-col justify-center items-center">
+            <Card className="lg:col-span-4 xl:col-span-3 border border-border/60 bg-muted/30 rounded-xl p-4 shadow-sm overflow-hidden flex flex-col h-full">
+                <CardContent className="p-0 flex-1 flex flex-col justify-center items-center">
                     <Calendar
                         mode="single"
                         selected={selectedDate}
@@ -126,11 +126,11 @@ export function TeamAttendanceHistory({ userProfile }: TeamAttendanceHistoryProp
                     />
                 </CardContent>
             </Card>
-            <Card className="lg:col-span-8 xl:col-span-9 m3-surface-low border-none rounded-[2.5rem] overflow-hidden flex flex-col h-full shadow-xl">
-                <CardHeader className="bg-white/5 border-b border-white/5 pb-4 px-6 pt-6 shrink-0">
+            <Card className="lg:col-span-8 xl:col-span-9 border border-border/60 bg-muted/30 rounded-xl p-4 shadow-sm overflow-hidden flex flex-col h-full">
+                <CardHeader className="bg-white/5 border-b border-white/5 pb-4 shrink-0">
                     <div className="flex justify-between items-center">
                         <div>
-                            <CardTitle className="text-xl font-black font-headline tracking-tighter">
+                            <CardTitle className="text-xl font-black font-headline tracking-tighter uppercase">
                                 Attendance for {selectedDate ? format(selectedDate, 'PPP') : '...'}
                             </CardTitle>
                             <CardDescription className="text-[9px] font-black uppercase tracking-widest opacity-60">Active and completed rosters for this date.</CardDescription>

@@ -32,7 +32,7 @@ export const TaskCard = memo(function TaskCard({ task, onSelect, permissions }: 
     return (
         <>
             <Card 
-                className="group bg-card/50 backdrop-blur-xl hover:bg-card hover:shadow-lg hover:-translate-y-1 transition-all cursor-pointer"
+                className="group border border-border/60 bg-muted/30 hover:bg-muted/50 rounded-xl shadow-sm transition-all cursor-pointer m3-interactive"
                 onClick={() => onSelect(task)}
                 onContextMenu={handleContextMenu}
                 onTouchStart={handleTouchStart}

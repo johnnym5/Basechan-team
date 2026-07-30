@@ -53,6 +53,7 @@ const rolePermissions: Record<UserRole, Partial<Permissions>> = {
   'HR_MANAGER': {
     canApproveHR: true,
     canManageStaff: true,
+    canManageCompany: true,
     canManageAnnouncements: true,
     canAccessLibrary: true,
     canManageLibrary: true,

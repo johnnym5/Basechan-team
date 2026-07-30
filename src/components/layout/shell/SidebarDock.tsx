@@ -116,10 +116,19 @@ export function SidebarDock({ isLoggedIn, isAuthLoading }: SidebarDockProps) {
 
                 if (groupItems.length === 0) return null;
 
+                const groupActive = groupItems.some((item: any) => {
+                    const isCurrentPanel = searchParams.get('panel') === item.dialog;
+                    const isCurrentPath = pathname === item.href;
+                    return isCurrentPath || isCurrentPanel;
+                });
+
                 return (
                     <div key={group.label} className="space-y-2">
                         {isExpanded && (
-                            <h4 className="px-4 text-[8px] font-black uppercase tracking-[0.25em] text-muted-foreground opacity-40 animate-in fade-in duration-700">
+                            <h4 className={cn(
+                                "px-4 text-[8px] font-black uppercase tracking-[0.25em] transition-colors duration-500",
+                                groupActive ? "text-primary opacity-80" : "text-muted-foreground opacity-40"
+                            )}>
                                 {group.label}
                             </h4>
                         )}
@@ -150,7 +159,7 @@ export function SidebarDock({ isLoggedIn, isAuthLoading }: SidebarDockProps) {
                                             </span>
                                         )}
                                         {isActive && !isExpanded && (
-                                            <div className="absolute right-0 w-1 h-6 bg-primary rounded-l-full shadow-[0_0_10px_rgba(202,179,72,0.5)]" />
+                                            <div className="absolute left-0 w-1 h-6 bg-primary rounded-r-full shadow-[0_0_10px_rgba(202,179,72,0.5)]" />
                                         )}
                                         {!isExpanded && (
                                             <div className="absolute left-full ml-6 px-3 py-2 bg-[#1a1a1a] text-white text-[9px] font-black uppercase tracking-widest rounded-xl opacity-0 group-hover:opacity-100 transition-all pointer-events-none whitespace-nowrap z-[200] shadow-2xl border border-white/5 translate-x-2 group-hover:translate-x-0">

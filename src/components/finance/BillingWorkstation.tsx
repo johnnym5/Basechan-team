@@ -95,12 +95,12 @@ export function BillingWorkstation({ userProfile, systemConfig }: BillingWorksta
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
                 {/* Editor Pane */}
                 <div className="lg:col-span-8 space-y-6">
-                    <Card className="apple-glass border-none shadow-xl">
-                        <CardHeader className="bg-white/5 border-b border-white/5">
-                            <CardTitle className="text-xl">Invoice Generator</CardTitle>
-                            <CardDescription>Construct custom receipts and billing documents for export.</CardDescription>
+                    <Card className="border border-border/60 bg-muted/30 rounded-xl p-4 shadow-sm">
+                        <CardHeader className="p-0 pb-4 bg-white/5 border-b border-white/5 -mx-4 px-4 pt-4 mb-4">
+                            <CardTitle className="text-xl font-black font-headline tracking-tighter uppercase">Invoice Generator</CardTitle>
+                            <CardDescription className="text-[10px] font-black uppercase tracking-widest opacity-60">Construct custom receipts and billing documents for export.</CardDescription>
                         </CardHeader>
-                        <CardContent className="p-8 space-y-8">
+                        <CardContent className="p-0 space-y-8">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div className="space-y-2">
                                     <Label className="text-[10px] font-black uppercase tracking-widest text-primary">Client Identity</Label>
@@ -185,7 +185,7 @@ export function BillingWorkstation({ userProfile, systemConfig }: BillingWorksta
 
                 {/* Actions Pane */}
                 <div className="lg:col-span-4 space-y-6">
-                    <section className="apple-glass rounded-[2rem] p-6 space-y-6">
+                    <section className="border border-border/60 bg-muted/30 rounded-xl p-6 space-y-6 shadow-sm">
                         <div className="flex items-center gap-3">
                             <div className="p-2 rounded-xl bg-primary/10 text-primary">
                                 <Download className="h-5 w-5" />
@@ -213,7 +213,7 @@ export function BillingWorkstation({ userProfile, systemConfig }: BillingWorksta
                         </div>
                     </section>
 
-                    <section className="p-6 rounded-[2rem] bg-primary/5 border border-primary/20 space-y-4">
+                    <section className="p-6 rounded-xl bg-primary/5 border border-primary/20 space-y-4">
                         <div className="flex items-center gap-2 text-primary">
                             <Settings2 className="h-4 w-4" />
                             <span className="text-[10px] font-black uppercase tracking-widest">Template Control</span>

@@ -129,8 +129,8 @@ export function WorkforceRoster({ userProfile, permissions }: WorkforceRosterPro
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
         <div className="lg:col-span-4 space-y-6">
-            <Card className="apple-glass border-none shadow-xl overflow-hidden">
-                <CardContent className="p-3">
+            <Card className="border border-border/60 bg-muted/30 rounded-xl p-4 shadow-sm overflow-hidden">
+                <CardContent className="p-0">
                     <Calendar
                         mode="single"
                         selected={selectedDate}
@@ -141,11 +141,11 @@ export function WorkforceRoster({ userProfile, permissions }: WorkforceRosterPro
             </Card>
             
             {permissions.canManageStaff && (
-                <Card className="apple-glass border-none shadow-lg">
-                    <CardHeader className="pb-3">
+                <Card className="border border-border/60 bg-muted/30 rounded-xl p-4 shadow-sm">
+                    <CardHeader className="p-0 pb-3">
                         <CardTitle className="text-sm font-black uppercase tracking-widest text-primary">Operational Planning</CardTitle>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="p-0">
                         <Button className="w-full h-12 rounded-xl font-bold shadow-lg" onClick={() => setIsAssignOpen(true)}>
                             <UserPlus className="mr-2 h-4 w-4" /> Assign Personnel
                         </Button>
@@ -155,10 +155,10 @@ export function WorkforceRoster({ userProfile, permissions }: WorkforceRosterPro
         </div>
 
         <div className="lg:col-span-8 space-y-6">
-            <Card className="apple-glass border-none shadow-xl h-full flex flex-col">
-                <CardHeader className="bg-white/5 border-b border-white/5 flex flex-row items-center justify-between">
+            <Card className="border border-border/60 bg-muted/30 rounded-xl p-4 shadow-sm h-full flex flex-col">
+                <CardHeader className="p-0 bg-white/5 border-b border-white/5 flex flex-row items-center justify-between pb-4">
                     <div>
-                        <CardTitle className="text-xl">Duty Roster</CardTitle>
+                        <CardTitle className="text-xl font-black font-headline tracking-tighter uppercase">Duty Roster</CardTitle>
                         <CardDescription className="text-xs uppercase tracking-widest font-bold opacity-60">
                             {selectedDate ? format(selectedDate, 'PPPP') : 'Select a date'}
                         </CardDescription>
@@ -167,7 +167,7 @@ export function WorkforceRoster({ userProfile, permissions }: WorkforceRosterPro
                         <Clock className="h-5 w-5 text-primary" />
                     </div>
                 </CardHeader>
-                <CardContent className="flex-1 pt-6">
+                <CardContent className="p-0 flex-1 pt-6">
                     <ScrollArea className="h-96">
                         {rostersForDay.length === 0 ? (
                             <div className="flex flex-col items-center justify-center py-20 opacity-30 text-center">

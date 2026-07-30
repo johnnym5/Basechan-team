@@ -29,6 +29,7 @@ import { useFileUpload } from '@/hooks/useFileUpload';
 import { Progress } from '@/components/ui/progress';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
+import { ModuleContainer } from "@/components/layout/shell/ModuleContainer";
 
 export function LibraryPageContent() {
     const { user: authUser } = useUser();
@@ -145,7 +146,7 @@ export function LibraryPageContent() {
 
     if (isProfileLoading || isItemsLoading) {
         return (
-            <div className="space-y-6">
+            <div className="space-y-6 p-10">
                 <div className="flex justify-between items-center">
                     <Skeleton className="h-10 w-64" />
                     <Skeleton className="h-10 w-32" />
@@ -158,17 +159,12 @@ export function LibraryPageContent() {
     }
 
     return (
-        <div className="space-y-6 pb-20">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                <div>
-                    <h1 className="text-3xl font-bold font-headline tracking-tight flex items-center gap-3">
-                        <BookOpen className="h-8 w-8 text-primary" />
-                        Knowledge Base
-                    </h1>
-                    <p className="text-muted-foreground">Standard Operating Procedures, policies, and onboarding resources.</p>
-                </div>
-                {permissions.canManageLibrary && (
-                    <div className="flex items-center gap-2">
+        <ModuleContainer
+            title="Knowledge Base"
+            subtitle="Standard Operating Procedures, policies, and onboarding resources."
+            actions={
+                permissions.canManageLibrary && (
+                    <div className="flex items-center gap-3">
                          <div className="relative">
                             <Input
                                 type="file"
@@ -177,165 +173,168 @@ export function LibraryPageContent() {
                                 onChange={handleFileUpload}
                                 disabled={isUploading}
                             />
-                            <Button asChild disabled={isUploading} variant="outline" className="rounded-xl">
+                            <Button asChild disabled={isUploading} variant="outline" className="rounded-xl h-10 font-black uppercase text-[10px] tracking-widest shadow-xl shadow-primary/20">
                                 <label htmlFor="library-upload" className="cursor-pointer">
-                                    {isUploading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Upload className="mr-2 h-4 w-4" />}
+                                    {isUploading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Upload className="mr-2 h-4 w-4 text-primary" />}
                                     Upload Document
                                 </label>
                             </Button>
                         </div>
-                        <Button onClick={() => setIsCreatingFolder(true)} disabled={isCreatingFolder} className="rounded-xl">
-                            <Plus className="mr-2 h-4 w-4" /> New Folder
+                        <Button onClick={() => setIsCreatingFolder(true)} disabled={isCreatingFolder} className="rounded-xl h-10 font-black uppercase text-[10px] tracking-widest shadow-xl shadow-primary/20">
+                            <Plus className="mr-2 h-4 w-4 text-primary" /> New Folder
                         </Button>
                     </div>
+                )
+            }
+        >
+            <div className="flex flex-col h-full gap-6">
+                {isUploading && (
+                    <div className="space-y-2 p-4 bg-primary/5 border border-primary/20 rounded-xl animate-in fade-in slide-in-from-top-2">
+                        <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest text-primary">
+                            <span>Uploading Resource...</span>
+                            <span>{Math.round(uploadProgress)}%</span>
+                        </div>
+                        <Progress value={uploadProgress} className="h-1.5" />
+                    </div>
                 )}
-            </div>
 
-            {isUploading && (
-                <div className="space-y-2 p-4 bg-primary/5 border border-primary/20 rounded-xl animate-in fade-in slide-in-from-top-2">
-                    <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest text-primary">
-                        <span>Uploading Resource...</span>
-                        <span>{Math.round(uploadProgress)}%</span>
-                    </div>
-                    <Progress value={uploadProgress} className="h-1.5" />
-                </div>
-            )}
-
-            <Card className="bg-card/50 backdrop-blur-xl border-white/5">
-                <CardHeader className="pb-4 border-b border-white/5">
-                    <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-                        <div className="flex items-center gap-2">
-                            {currentFolderId && (
-                                <Button variant="ghost" size="icon" className="rounded-lg" onClick={() => setCurrentFolderId(currentFolder?.parentFolderId || null)}>
-                                    <ArrowLeft className="h-4 w-4" />
-                                </Button>
-                            )}
-                            <div className="flex flex-col">
-                                <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Directory</span>
-                                <span className="font-bold text-lg leading-none">
-                                    {currentFolder ? currentFolder.name : 'Root Repository'}
-                                </span>
-                            </div>
-                        </div>
-                        <div className="relative w-full sm:max-w-xs">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                            <Input 
-                                placeholder="Search library..." 
-                                className="pl-10 h-10 rounded-full bg-background/50 border-white/5"
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                            />
-                        </div>
-                    </div>
-                </CardHeader>
-                <CardContent className="pt-6">
-                    {isCreatingFolder && (
-                        <div className="flex items-center gap-3 p-3 mb-6 border border-primary/20 rounded-xl bg-primary/5 animate-in zoom-in-95">
-                            <Folder className="h-6 w-6 text-primary" />
-                            <Input 
-                                placeholder="Enter folder name..." 
-                                autoFocus
-                                className="h-10 border-none bg-transparent focus-visible:ring-0"
-                                value={newFolderName}
-                                onChange={(e) => setNewFolderName(e.target.value)}
-                                onKeyDown={(e) => {
-                                    if (e.key === 'Enter') handleCreateFolder();
-                                    if (e.key === 'Escape') setIsCreatingFolder(false);
-                                }}
-                            />
-                            <div className="flex items-center gap-2">
-                                <Button size="sm" variant="ghost" className="h-8" onClick={() => setIsCreatingFolder(false)}>Cancel</Button>
-                                <Button size="sm" className="h-8 rounded-lg" onClick={handleCreateFolder}>Create</Button>
-                            </div>
-                        </div>
-                    )}
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                        {filteredItems.length === 0 && !isCreatingFolder && (
-                            <div className="col-span-full py-24 text-center text-muted-foreground">
-                                <div className="rounded-full bg-secondary/30 p-8 w-fit mx-auto mb-6">
-                                    <BookOpen className="h-12 w-12 opacity-20" />
+                <div className="flex-1 min-h-0 flex flex-col bg-muted/30 border border-border/60 rounded-[2rem] overflow-hidden shadow-inner">
+                    <div className="p-6 border-b border-white/5 bg-secondary/10 backdrop-blur-md">
+                        <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                            <div className="flex items-center gap-3">
+                                {currentFolderId && (
+                                    <Button variant="ghost" size="icon" className="rounded-xl h-10 w-10 hover:bg-white/5" onClick={() => setCurrentFolderId(currentFolder?.parentFolderId || null)}>
+                                        <ArrowLeft className="h-5 w-5" />
+                                    </Button>
+                                )}
+                                <div className="flex flex-col">
+                                    <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground opacity-60">Directory</span>
+                                    <span className="font-black text-xl tracking-tighter uppercase leading-none">
+                                        {currentFolder ? currentFolder.name : 'Root Repository'}
+                                    </span>
                                 </div>
-                                <p className="font-bold text-lg text-foreground">No resources found</p>
-                                <p className="text-sm max-w-xs mx-auto">This directory is currently empty. Use the buttons above to populate your knowledge base.</p>
+                            </div>
+                            <div className="relative w-full sm:max-w-xs">
+                                <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground opacity-50" />
+                                <Input
+                                    placeholder="Identify resource..."
+                                    className="pl-12 h-12 rounded-2xl bg-background/50 border-white/5 font-medium"
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="flex-1 overflow-y-auto custom-scrollbar p-6">
+                        {isCreatingFolder && (
+                            <div className="flex items-center gap-3 p-4 mb-8 border border-primary/20 rounded-[1.5rem] bg-primary/5 animate-in zoom-in-95">
+                                <Folder className="h-6 w-6 text-primary" />
+                                <Input
+                                    placeholder="Enter folder identifier..."
+                                    autoFocus
+                                    className="h-10 border-none bg-transparent focus-visible:ring-0 font-black uppercase text-xs tracking-widest"
+                                    value={newFolderName}
+                                    onChange={(e) => setNewFolderName(e.target.value)}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter') handleCreateFolder();
+                                        if (e.key === 'Escape') setIsCreatingFolder(false);
+                                    }}
+                                />
+                                <div className="flex items-center gap-2">
+                                    <Button size="sm" variant="ghost" className="h-10 rounded-xl px-4 font-black uppercase text-[10px] tracking-widest" onClick={() => setIsCreatingFolder(false)}>Abort</Button>
+                                    <Button size="sm" className="h-10 rounded-xl px-4 font-black uppercase text-[10px] tracking-widest" onClick={handleCreateFolder}>Deploy</Button>
+                                </div>
                             </div>
                         )}
-                        {filteredItems.map(item => (
-                            <div 
-                                key={item.id}
-                                className={cn(
-                                    "group relative flex flex-col p-5 rounded-2xl border border-white/5 bg-background/40 hover:bg-background/80 transition-all hover:shadow-2xl cursor-pointer overflow-hidden",
-                                    item.type === 'FOLDER' && "hover:border-primary/20"
-                                )}
-                                onClick={() => item.type === 'FOLDER' ? setCurrentFolderId(item.id) : null}
-                            >
-                                <div className="flex items-start justify-between mb-5">
-                                    {item.type === 'FOLDER' ? (
-                                        <div className="rounded-xl bg-primary/10 p-3 shadow-inner">
-                                            <Folder className="h-7 w-7 text-primary" />
-                                        </div>
-                                    ) : (
-                                        <div className="rounded-xl bg-secondary/50 p-3">
-                                            <FileText className="h-7 w-7 text-muted-foreground" />
-                                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                            {filteredItems.length === 0 && !isCreatingFolder && (
+                                <div className="col-span-full py-32 text-center text-muted-foreground">
+                                    <div className="rounded-full bg-secondary/30 p-10 w-fit mx-auto mb-6">
+                                        <BookOpen className="h-16 w-16 opacity-10" />
+                                    </div>
+                                    <p className="font-black uppercase text-xl tracking-tighter text-foreground mb-2">Zero Data Nodes Identified</p>
+                                    <p className="text-xs font-bold uppercase tracking-widest opacity-40 max-w-xs mx-auto">This directory is currently sterile. Populate knowledge base via uplink.</p>
+                                </div>
+                            )}
+                            {filteredItems.map(item => (
+                                <div
+                                    key={item.id}
+                                    className={cn(
+                                        "group relative flex flex-col p-6 rounded-[2rem] border border-white/5 bg-background/40 hover:bg-background/80 transition-all hover:shadow-3xl cursor-pointer overflow-hidden m3-interactive",
+                                        item.type === 'FOLDER' && "hover:border-primary/30"
                                     )}
-                                    <div className="flex items-center gap-1">
-                                        {item.type === 'FILE' && item.url && (
-                                            <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg" asChild onClick={(e) => e.stopPropagation()}>
-                                                <Link href={item.url} target="_blank" rel="noopener noreferrer">
-                                                    <Download className="h-4 w-4" />
-                                                </Link>
-                                            </Button>
+                                    onClick={() => item.type === 'FOLDER' ? setCurrentFolderId(item.id) : null}
+                                >
+                                    <div className="flex items-start justify-between mb-6">
+                                        {item.type === 'FOLDER' ? (
+                                            <div className="rounded-2xl bg-primary/10 p-4 shadow-inner">
+                                                <Folder className="h-8 w-8 text-primary" />
+                                            </div>
+                                        ) : (
+                                            <div className="rounded-2xl bg-secondary/50 p-4">
+                                                <FileText className="h-8 w-8 text-muted-foreground" />
+                                            </div>
                                         )}
-                                        {permissions.canManageLibrary && (
-                                            <DropdownMenu>
-                                                <DropdownMenuTrigger asChild>
-                                                    <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg" onClick={(e) => e.stopPropagation()}>
-                                                        <MoreVertical className="h-4 w-4" />
-                                                    </Button>
-                                                </DropdownMenuTrigger>
-                                                <DropdownMenuContent align="end" className="rounded-xl">
-                                                    <DropdownMenuItem className="text-destructive focus:bg-destructive/10 focus:text-destructive rounded-lg" onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        handleDeleteItem(item);
-                                                    }}>
-                                                        <Trash2 className="mr-2 h-4 w-4" /> Delete Item
-                                                    </DropdownMenuItem>
-                                                </DropdownMenuContent>
-                                            </DropdownMenu>
-                                        )}
-                                    </div>
-                                </div>
-                                <div className="space-y-1.5 flex-1">
-                                    <h4 className="font-bold text-sm truncate pr-4 text-gray-200 group-hover:text-white transition-colors" title={item.name}>
-                                        {item.name}
-                                    </h4>
-                                    <div className="flex items-center gap-3 text-[9px] font-bold text-muted-foreground uppercase tracking-widest">
-                                        <span className={cn(item.type === 'FOLDER' ? "text-primary/70" : "text-slate-500")}>
-                                            {item.type}
-                                        </span>
-                                        {item.size && (
-                                            <>
-                                                <span className="h-1 w-1 rounded-full bg-muted-foreground/30" />
-                                                <span>{(item.size / 1024 / 1024).toFixed(2)} MB</span>
-                                            </>
-                                        )}
-                                    </div>
-                                </div>
-                                <div className="mt-5 pt-4 border-t border-white/5 flex items-center justify-between text-[10px] text-muted-foreground">
-                                    <div className="flex items-center gap-1.5">
-                                        <div className="h-4 w-4 rounded-full bg-secondary flex items-center justify-center text-[8px] font-bold">
-                                            {item.creatorName.charAt(0)}
+                                        <div className="flex items-center gap-2">
+                                            {item.type === 'FILE' && item.url && (
+                                                <Button variant="ghost" size="icon" className="h-10 w-10 opacity-0 group-hover:opacity-100 transition-all rounded-xl hover:bg-primary/10" asChild onClick={(e) => e.stopPropagation()}>
+                                                    <Link href={item.url} target="_blank" rel="noopener noreferrer">
+                                                        <Download className="h-5 w-5 text-primary" />
+                                                    </Link>
+                                                </Button>
+                                            )}
+                                            {permissions.canManageLibrary && (
+                                                <DropdownMenu>
+                                                    <DropdownMenuTrigger asChild>
+                                                        <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl hover:bg-white/5" onClick={(e) => e.stopPropagation()}>
+                                                            <MoreVertical className="h-5 w-5" />
+                                                        </Button>
+                                                    </DropdownMenuTrigger>
+                                                    <DropdownMenuContent align="end" className="rounded-2xl m3-surface-high border-none">
+                                                        <DropdownMenuItem className="text-rose-500 focus:bg-rose-500/10 focus:text-rose-500 rounded-xl font-black uppercase text-[10px] tracking-widest p-3" onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleDeleteItem(item);
+                                                        }}>
+                                                            <Trash2 className="mr-3 h-4 w-4" /> Purge Asset
+                                                        </DropdownMenuItem>
+                                                    </DropdownMenuContent>
+                                                </DropdownMenu>
+                                            )}
                                         </div>
-                                        <span>{item.creatorName.split(' ')[0]}</span>
                                     </div>
-                                    <span>{new Date(item.createdAt).toLocaleDateString()}</span>
+                                    <div className="space-y-2 flex-1">
+                                        <h4 className="font-black text-sm tracking-tight truncate pr-4 text-gray-200 group-hover:text-white transition-colors" title={item.name}>
+                                            {item.name}
+                                        </h4>
+                                        <div className="flex items-center gap-3 text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground">
+                                            <span className={cn(item.type === 'FOLDER' ? "text-primary" : "opacity-40")}>
+                                                {item.type}
+                                            </span>
+                                            {item.size && (
+                                                <>
+                                                    <span className="h-1 w-1 rounded-full bg-muted-foreground/30" />
+                                                    <span className="opacity-40">{(item.size / 1024 / 1024).toFixed(2)} MB</span>
+                                                </>
+                                            )}
+                                        </div>
+                                    </div>
+                                    <div className="mt-6 pt-5 border-t border-white/5 flex items-center justify-between text-[10px] font-bold text-muted-foreground uppercase tracking-widest opacity-60">
+                                        <div className="flex items-center gap-2">
+                                            <div className="h-5 w-5 rounded-lg bg-secondary flex items-center justify-center text-[9px] font-black text-white">
+                                                {item.creatorName.charAt(0)}
+                                            </div>
+                                            <span className="truncate max-w-[80px]">{item.creatorName.split(' ')[0]}</span>
+                                        </div>
+                                        <span>{new Date(item.createdAt).toLocaleDateString()}</span>
+                                    </div>
                                 </div>
-                            </div>
-                        ))}
+                            ))}
+                        </div>
                     </div>
-                </CardContent>
-            </Card>
-        </div>
+                </div>
+            </div>
+        </ModuleContainer>
     );
 }

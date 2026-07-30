@@ -241,8 +241,12 @@ export function ChatDialog({ open, onOpenChange, currentUserProfile, permissions
   const typingTimeoutRef = useRef<NodeJS.Timeout>(null);
 
   const chatsQuery = useMemoFirebase(() => 
-    query(collection(firestore!, 'chats'), where('participants', 'array-contains', currentUserProfile.id))
-  , [firestore, currentUserProfile.id]);
+    query(
+        collection(firestore!, 'chats'),
+        where('orgId', '==', currentUserProfile.orgId),
+        where('participants', 'array-contains', currentUserProfile.id)
+    )
+  , [firestore, currentUserProfile.id, currentUserProfile.orgId]);
   const { data: chats, isLoading: isChatsLoading } = useCollection<Chat>(chatsQuery);
 
   const allUsersQuery = useMemoFirebase(() => 

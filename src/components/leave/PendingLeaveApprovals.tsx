@@ -60,20 +60,20 @@ export function PendingLeaveApprovals({ userProfile }: PendingLeaveApprovalsProp
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Pending Leave Approvals</CardTitle>
-        <CardDescription>Review and approve or reject leave requests from staff.</CardDescription>
+    <Card className="border border-border/60 bg-muted/30 rounded-xl p-4 shadow-sm">
+      <CardHeader className="p-0 pb-4">
+        <CardTitle className="text-xl font-black font-headline tracking-tighter uppercase">Pending Leave Approvals</CardTitle>
+        <CardDescription className="text-[10px] font-black uppercase tracking-widest opacity-60">Review and verify team time-off requests.</CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="p-0">
         <Table>
           <TableHeader>
-            <TableRow>
-              <TableHead>Staff Member</TableHead>
-              <TableHead>Type</TableHead>
-              <TableHead>Dates</TableHead>
-              <TableHead>Reason</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
+            <TableRow className="border-white/5">
+              <TableHead className="text-[10px] font-black uppercase tracking-widest">Staff Member</TableHead>
+              <TableHead className="text-[10px] font-black uppercase tracking-widest">Type</TableHead>
+              <TableHead className="text-[10px] font-black uppercase tracking-widest">Dates</TableHead>
+              <TableHead className="text-[10px] font-black uppercase tracking-widest">Reason</TableHead>
+              <TableHead className="text-right text-[10px] font-black uppercase tracking-widest">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

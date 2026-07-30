@@ -163,7 +163,7 @@ export function StaffProfileView({ userId, onBack, onViewProfile, currentUserPro
     <div className="flex flex-col h-full gap-8">
       {/* Celebratory Banner */}
       {(isBirthday || isWorkAnniversary) && (
-        <div className="bg-gradient-to-r from-amber-500 to-primary text-white p-4 rounded-3xl flex items-center justify-between shadow-xl animate-in slide-in-from-top duration-1000">
+        <div className="bg-gradient-to-r from-amber-500 to-primary text-white p-4 rounded-xl flex items-center justify-between shadow-sm animate-in slide-in-from-top duration-1000">
            <div className="flex items-center gap-4">
               <div className="h-12 w-12 rounded-full bg-white/20 flex items-center justify-center text-2xl">
                  {isBirthday ? '🎂' : '🎊'}
@@ -182,7 +182,7 @@ export function StaffProfileView({ userId, onBack, onViewProfile, currentUserPro
       )}
 
       {/* Header / Summary */}
-      <div className="flex flex-col md:flex-row items-center md:items-start gap-8 bg-card/20 p-8 rounded-[2.5rem] border border-white/5 relative overflow-hidden">
+      <div className="flex flex-col md:flex-row items-center md:items-start gap-8 border border-border/60 bg-muted/30 rounded-xl p-8 shadow-sm relative overflow-hidden">
          {onBack && (
           <Button variant="ghost" size="icon" onClick={onBack} className="absolute top-4 left-4 rounded-full z-10">
             <ChevronLeft className="h-5 w-5" />
@@ -190,7 +190,7 @@ export function StaffProfileView({ userId, onBack, onViewProfile, currentUserPro
         )}
 
         <div className="relative">
-          <Avatar className="h-32 w-32 md:h-40 md:w-40 border-4 border-white/5 shadow-2xl rounded-[2.5rem]">
+          <Avatar className="h-32 w-32 md:h-40 md:w-40 border-4 border-white/5 shadow-2xl rounded-xl">
             <AvatarImage src={profile.avatarUrl || ''} />
             <AvatarFallback className="bg-secondary text-white text-4xl font-black">{profile.fullName.charAt(0)}</AvatarFallback>
           </Avatar>
@@ -282,19 +282,19 @@ export function StaffProfileView({ userId, onBack, onViewProfile, currentUserPro
         <div className="flex-1 overflow-y-auto custom-scrollbar pr-2">
           <TabsContent value="overview" className="mt-0 focus-visible:outline-none space-y-6">
             {profile.bio && (
-              <Card className="m3-surface-low border-none rounded-[2rem] shadow-xl overflow-hidden relative">
+              <Card className="border border-border/60 bg-muted/30 rounded-xl p-4 shadow-sm overflow-hidden relative">
                 <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none"><Quote className="h-20 w-20" /></div>
-                <CardHeader className="pb-2"><CardTitle className="text-sm uppercase tracking-widest opacity-50 flex items-center gap-2">About {profile.preferredName || profile.fullName.split(' ')[0]}</CardTitle></CardHeader>
-                <CardContent className="pt-4">
+                <CardHeader className="p-0 pb-2"><CardTitle className="text-[10px] font-black uppercase tracking-widest opacity-50 flex items-center gap-2">About {profile.preferredName || profile.fullName.split(' ')[0]}</CardTitle></CardHeader>
+                <CardContent className="p-0 pt-2">
                   <p className="text-sm font-medium leading-relaxed italic opacity-80 whitespace-pre-wrap">"{profile.bio}"</p>
                 </CardContent>
               </Card>
             )}
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Card className="m3-surface-low border-none rounded-[2rem] shadow-xl">
-                <CardHeader className="pb-2"><CardTitle className="text-sm uppercase tracking-widest opacity-50 flex items-center gap-2"><User className="h-4 w-4" /> Personal Details</CardTitle></CardHeader>
-                <CardContent className="space-y-4 pt-4">
+              <Card className="border border-border/60 bg-muted/30 rounded-xl p-4 shadow-sm">
+                <CardHeader className="p-0 pb-2"><CardTitle className="text-[10px] font-black uppercase tracking-widest opacity-50 flex items-center gap-2"><User className="h-4 w-4" /> Personal Details</CardTitle></CardHeader>
+                <CardContent className="space-y-4 p-0 pt-2">
                   <div className="grid grid-cols-2 gap-4">
                     <div><p className="text-[10px] font-black uppercase opacity-40">Date of Birth</p><p className="font-bold text-sm">{profile.dateOfBirth ? format(new Date(profile.dateOfBirth), 'MMMM d, yyyy') : '—'}</p></div>
                     <div><p className="text-[10px] font-black uppercase opacity-40">Employee ID</p><p className="font-mono text-sm">{profile.employeeId || '—'}</p></div>
@@ -303,9 +303,9 @@ export function StaffProfileView({ userId, onBack, onViewProfile, currentUserPro
                 </CardContent>
               </Card>
 
-              <Card className="m3-surface-low border-none rounded-[2rem] shadow-xl">
-                <CardHeader className="pb-2"><CardTitle className="text-sm uppercase tracking-widest opacity-50 flex items-center gap-2"><Trophy className="h-4 w-4 text-amber-500" /> Expertise & Skills</CardTitle></CardHeader>
-                <CardContent className="space-y-4 pt-4">
+              <Card className="border border-border/60 bg-muted/30 rounded-xl p-4 shadow-sm">
+                <CardHeader className="p-0 pb-2"><CardTitle className="text-[10px] font-black uppercase tracking-widest opacity-50 flex items-center gap-2"><Trophy className="h-4 w-4 text-amber-500" /> Expertise & Skills</CardTitle></CardHeader>
+                <CardContent className="space-y-4 p-0 pt-2">
                   <div className="flex flex-wrap gap-2">
                     {profile.skills && profile.skills.length > 0 ? (
                       profile.skills.map(skill => (
@@ -334,9 +334,9 @@ export function StaffProfileView({ userId, onBack, onViewProfile, currentUserPro
                 </CardContent>
               </Card>
 
-              <Card className="m3-surface-low border-none rounded-[2rem] shadow-xl">
-                <CardHeader className="pb-2"><CardTitle className="text-sm uppercase tracking-widest opacity-50 flex items-center gap-2"><AlertCircle className="h-4 w-4 text-amber-500" /> Emergency Contact</CardTitle></CardHeader>
-                <CardContent className="space-y-4 pt-4">
+              <Card className="border border-border/60 bg-muted/30 rounded-xl p-4 shadow-sm">
+                <CardHeader className="p-0 pb-2"><CardTitle className="text-[10px] font-black uppercase tracking-widest opacity-50 flex items-center gap-2"><AlertCircle className="h-4 w-4 text-amber-500" /> Emergency Contact</CardTitle></CardHeader>
+                <CardContent className="space-y-4 p-0 pt-2">
                   {profile.emergencyContact ? (
                     <>
                       <div><p className="text-[10px] font-black uppercase opacity-40">Contact Name</p><p className="font-bold text-sm">{profile.emergencyContact.name}</p></div>
@@ -646,8 +646,8 @@ export function StaffProfileView({ userId, onBack, onViewProfile, currentUserPro
           </TabsContent>
 
           <TabsContent value="employment" className="mt-0 focus-visible:outline-none">
-            <Card className="m3-surface-low border-none rounded-[2rem] shadow-xl overflow-hidden">
-               <CardHeader className="bg-white/5 border-b border-white/5"><CardTitle className="text-sm uppercase tracking-widest opacity-50 flex items-center gap-2"><Briefcase className="h-4 w-4 text-primary" /> Corporate Records</CardTitle></CardHeader>
+            <Card className="border border-border/60 bg-muted/30 rounded-xl p-0 shadow-sm overflow-hidden">
+               <CardHeader className="p-0 bg-white/5 border-b border-white/5 px-8 py-4"><CardTitle className="text-[10px] font-black uppercase tracking-widest opacity-50 flex items-center gap-2"><Briefcase className="h-4 w-4 text-primary" /> Corporate Records</CardTitle></CardHeader>
                <CardContent className="p-0">
                   <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-white/5">
                     <div className="p-8 space-y-6">

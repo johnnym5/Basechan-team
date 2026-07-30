@@ -17,6 +17,8 @@ import { NotificationSettingsForm } from '@/components/settings/forms/Notificati
 import { WorkflowSettingsForm } from '@/components/settings/forms/WorkflowSettingsForm';
 import { DataExportCard } from '@/components/settings/forms/DataExportCard';
 
+import { ModuleContainer } from "@/components/layout/shell/ModuleContainer";
+
 export default function AdminSettingsPage() {
   const { user: authUser } = useUser();
   const firestore = useFirestore();
@@ -36,8 +38,10 @@ export default function AdminSettingsPage() {
     );
   }
 
-  // RBAC Check
-  if (!permissions.canManageCompany) {
+  // RBAC Check: Ensure only Administrators can access this route
+  const isAdmin = userProfile?.role === 'ORG_ADMIN' || userProfile?.role === 'MANAGING_DIRECTOR' || userProfile?.role === 'HR_MANAGER' || permissions.canManageCompany;
+
+  if (!isProfileLoading && !isAdmin) {
     return (
       <div className="flex flex-col items-center justify-center h-full text-center p-6">
         <div className="p-4 rounded-full bg-destructive/10 mb-4">
@@ -45,7 +49,7 @@ export default function AdminSettingsPage() {
         </div>
         <h1 className="text-2xl font-black font-headline uppercase tracking-tighter">Access Forbidden</h1>
         <p className="text-muted-foreground mt-2 max-w-md uppercase text-[10px] font-bold tracking-widest opacity-60">
-          This secure infrastructure node requires ORG_ADMIN clearance. Your current interaction tier is restricted.
+          This secure infrastructure node requires Administrator clearance. Your current interaction tier is restricted.
         </p>
       </div>
     );
@@ -79,7 +83,7 @@ export default function AdminSettingsPage() {
   };
 
   return (
-    <div className="flex h-screen w-full bg-background overflow-hidden animate-in fade-in duration-500">
+    <div className="flex h-full w-full overflow-hidden animate-in fade-in duration-500">
       {/* Vertical Sidebar */}
       <aside className="w-80 h-full border-r border-white/5 bg-white/5 backdrop-blur-xl shrink-0">
         <SettingsSidebar
@@ -90,15 +94,17 @@ export default function AdminSettingsPage() {
 
       {/* Main Content Area */}
       <main className="flex-1 h-full flex flex-col min-w-0">
-        <header className="h-20 border-b border-white/5 flex items-center px-10 shrink-0">
-          <div className="flex items-center gap-4">
-            <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.5)]" />
-            <span className="text-[10px] font-black uppercase tracking-[0.3em] opacity-40">Operational Status: Optimized</span>
-          </div>
-        </header>
-
-        <ScrollArea className="flex-1">
-          <div className="max-w-5xl mx-auto p-10 pb-32">
+        <ModuleContainer
+            title="Admin Console"
+            subtitle="Enterprise Configuration"
+            actions={
+                <div className="flex items-center gap-4">
+                    <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.5)]" />
+                    <span className="text-[10px] font-black uppercase tracking-[0.3em] opacity-40">Operational Status: Optimized</span>
+                </div>
+            }
+            contentClassName="p-10 pb-32 max-w-5xl mx-auto"
+        >
             <Suspense fallback={
               <div className="space-y-8">
                 <Skeleton className="h-12 w-1/3 rounded-2xl" />
@@ -107,8 +113,7 @@ export default function AdminSettingsPage() {
             }>
               {renderContent()}
             </Suspense>
-          </div>
-        </ScrollArea>
+        </ModuleContainer>
       </main>
     </div>
   );

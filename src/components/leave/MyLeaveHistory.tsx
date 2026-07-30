@@ -35,20 +35,20 @@ export function MyLeaveHistory({ userProfile }: MyLeaveHistoryProps) {
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>My Leave History</CardTitle>
-        <CardDescription>A log of your recent leave requests.</CardDescription>
+    <Card className="border border-border/60 bg-muted/30 rounded-xl p-4 shadow-sm">
+      <CardHeader className="p-0 pb-4">
+        <CardTitle className="text-xl font-black font-headline tracking-tighter uppercase">My Leave History</CardTitle>
+        <CardDescription className="text-[10px] font-black uppercase tracking-widest opacity-60">A log of your recent leave requests.</CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="p-0">
         <Table>
           <TableHeader>
-            <TableRow>
-              <TableHead>Type</TableHead>
-              <TableHead>Start Date</TableHead>
-              <TableHead>End Date</TableHead>
-              <TableHead>Reason</TableHead>
-              <TableHead className="text-right">Status</TableHead>
+            <TableRow className="border-white/5">
+              <TableHead className="text-[10px] font-black uppercase tracking-widest">Type</TableHead>
+              <TableHead className="text-[10px] font-black uppercase tracking-widest">Start Date</TableHead>
+              <TableHead className="text-[10px] font-black uppercase tracking-widest">End Date</TableHead>
+              <TableHead className="text-[10px] font-black uppercase tracking-widest">Reason</TableHead>
+              <TableHead className="text-right text-[10px] font-black uppercase tracking-widest">Status</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

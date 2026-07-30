@@ -73,7 +73,7 @@ export function UnifiedStaffDirectory({ orgId, currentUserProfile, canManageStaf
   return (
     <div className="space-y-6 h-full flex flex-col">
       {/* Search & Global Filter Shell */}
-      <div className="flex flex-col md:flex-row gap-4 items-center justify-between m3-surface-low p-5 rounded-[2.5rem]">
+      <div className="flex flex-col md:flex-row gap-4 items-center justify-between border border-border/60 bg-muted/30 rounded-xl p-4 shadow-sm">
         <div className="relative flex-1 w-full">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground opacity-50" />
           <Input
@@ -86,14 +86,14 @@ export function UnifiedStaffDirectory({ orgId, currentUserProfile, canManageStaf
 
         <div className="flex gap-3 w-full md:w-auto">
           {canManageStaff && (
-              <Button onClick={() => setIsInviteOpen(true)} className="rounded-2xl h-12 px-6 font-black uppercase text-[10px] tracking-widest shadow-xl shadow-primary/20 m3-interactive">
+              <Button onClick={() => setIsInviteOpen(true)} className="rounded-xl h-12 px-6 font-black uppercase text-[10px] tracking-widest shadow-xl shadow-primary/20 m3-interactive">
                   <PlusCircle className="mr-2 h-4 w-4" />
                   Add Unit
               </Button>
           )}
 
           <Select value={roleFilter} onValueChange={setRoleFilter}>
-            <SelectTrigger className="w-[150px] rounded-2xl bg-background/50 border-white/5 h-12 text-[10px] font-black uppercase tracking-widest">
+            <SelectTrigger className="w-[150px] rounded-xl bg-background/50 border-white/5 h-12 text-[10px] font-black uppercase tracking-widest">
               <SelectValue placeholder="System Role" />
             </SelectTrigger>
             <SelectContent className="rounded-2xl m3-surface-high border-none">
@@ -106,7 +106,7 @@ export function UnifiedStaffDirectory({ orgId, currentUserProfile, canManageStaf
           </Select>
 
           <Select value={deptFilter} onValueChange={setDepartmentFilter}>
-            <SelectTrigger className="w-[180px] rounded-2xl bg-background/50 border-white/5 h-12 text-[10px] font-black uppercase tracking-widest">
+            <SelectTrigger className="w-[180px] rounded-xl bg-background/50 border-white/5 h-12 text-[10px] font-black uppercase tracking-widest">
               <SelectValue placeholder="Sector/Dept" />
             </SelectTrigger>
             <SelectContent className="rounded-2xl m3-surface-high border-none">
@@ -120,8 +120,8 @@ export function UnifiedStaffDirectory({ orgId, currentUserProfile, canManageStaf
       </div>
 
       {/* Main Directory Table */}
-      <div className="flex-1 overflow-hidden border border-white/5 rounded-[2.5rem] bg-card/30 backdrop-blur-xl shadow-2xl">
-        <div className="h-full overflow-y-auto custom-scrollbar pr-0.5">
+      <div className="flex-1 overflow-hidden border border-border/60 bg-muted/30 rounded-xl p-0 shadow-sm relative">
+        <div className="h-full overflow-y-auto custom-scrollbar">
           <Table>
             <TableHeader className="bg-secondary/20 sticky top-0 z-20 backdrop-blur-md">
               <TableRow className="border-white/5 hover:bg-transparent h-14">

@@ -78,10 +78,10 @@ export function PendingApprovals({ userProfile }: PendingApprovalsProps) {
   };
 
   return (
-    <Card className="apple-glass border-none shadow-xl">
-      <CardHeader>
-        <CardTitle>Pending Clock-In Approvals</CardTitle>
-        <CardDescription>Review and approve or reject clock-in requests from staff.</CardDescription>
+    <Card className="border border-border/60 bg-muted/30 rounded-xl p-4 shadow-sm">
+      <CardHeader className="pb-4">
+        <CardTitle className="text-xl font-black font-headline tracking-tighter uppercase">Pending Clock-In Approvals</CardTitle>
+        <CardDescription className="text-[10px] font-black uppercase tracking-widest opacity-60">Review and verify operational node activations.</CardDescription>
       </CardHeader>
       <CardContent>
         <Table>

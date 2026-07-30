@@ -35,8 +35,8 @@ export function AttendanceHistory({ userProfile }: AttendanceHistoryProps) {
   const { data: records, isLoading } = useCollection<Attendance>(attendanceQuery);
 
   return (
-    <Card className="m3-surface-low border-none shadow-xl overflow-hidden rounded-[2.5rem] flex flex-col h-full">
-      <CardHeader className="bg-white/5 border-b border-white/5 pb-4 px-6 pt-6 shrink-0">
+    <Card className="border border-border/60 bg-muted/30 rounded-xl p-4 shadow-sm flex flex-col h-full overflow-hidden">
+      <CardHeader className="bg-white/5 border-b border-white/5 pb-4 shrink-0">
         <div className="flex items-center justify-between">
           <div>
             <CardTitle className="text-xl font-black font-headline tracking-tighter flex items-center gap-2">

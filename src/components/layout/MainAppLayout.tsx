@@ -32,6 +32,9 @@ const GlobalDialogs = dynamic(() => import('@/components/layout/GlobalDialogs').
   loading: () => null
 });
 
+import { AppShellContainer } from './shell/AppShellContainer';
+import { SidebarDock } from './shell/SidebarDock';
+
 export function MainAppLayout({ children }: { children: React.ReactNode }) {
   const { user, isUserLoading } = useUser();
   const auth = useAuth();
@@ -273,9 +276,7 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
   if (!mounted) return <div className="min-h-screen bg-background flex items-center justify-center"><div className="animate-pulse w-12 h-12 rounded-full bg-primary/20" /></div>;
 
   return (
-    <div className="h-screen w-full bg-background flex justify-center p-0 md:p-4 lg:p-6 transition-all duration-500 overflow-hidden relative">
-      <div className="flex w-full max-w-[1920px] bg-card/10 md:rounded-[3rem] md:border border-white/5 shadow-2xl overflow-hidden relative h-full flex-row">
-        
+    <AppShellContainer>
         {isLiveActive && (
             <div className="fixed top-0 left-0 right-0 z-[2000] bg-emerald-600 text-white py-2 px-4 flex items-center justify-center gap-4 shadow-2xl animate-in slide-in-from-top duration-500">
                 <div className="flex items-center gap-2">
@@ -285,38 +286,27 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
             </div>
         )}
 
-        <div className="sticky left-0 h-full z-[1000] hidden md:flex flex-col shrink-0 m3-surface-high w-[5.5rem] lg:w-[7.5rem] group hover:w-64 transition-all duration-500 ease-spring pointer-events-auto border-r border-white/5">
+        {/* Sidebar Frame Case */}
+        <SidebarDock isLoggedIn={!!user} isAuthLoading={isUserLoading} />
+
+        {/* Main Content Viewport Container */}
+        <div className="flex-1 flex flex-col min-w-0 h-full bg-black/20">
           <AppHeader
               userProfile={stableProfile}
               onMenuClick={() => {}}
               isLoggedIn={!!user}
               attendanceRecord={attendanceRecord}
               systemConfig={config || null}
-              isVertical
+              isVertical={false}
           />
-          <div className="flex-1 overflow-y-auto custom-scrollbar px-3 py-6">
-              <PanelSwitcher isVertical />
-          </div>
-          {user && (
-              <div className="p-4 border-t border-white/5 mt-auto opacity-0 group-hover:opacity-100 transition-all duration-500">
-                  <Button variant="ghost" className="w-full justify-start text-destructive hover:bg-destructive/10 h-12 rounded-[1.25rem] px-4" onClick={handleLogout}>
-                      <LogOut className="mr-3 h-5 w-5" />
-                      <span className="font-black text-[10px] uppercase tracking-[0.2em]">Sign Out</span>
-                  </Button>
+          <main className="flex-1 min-h-0 overflow-hidden relative w-full h-full flex flex-col">
+              <div className="w-full mx-auto max-w-full min-h-0 flex-1 animate-in fade-in duration-700 flex flex-col overflow-hidden px-6 pb-6 lg:px-8 lg:pb-8">
+                  <div className="flex-1 min-h-0 w-full rounded-[2rem] border border-white/5 bg-card/40 backdrop-blur-xl overflow-hidden shadow-inner relative">
+                      {children}
+                  </div>
               </div>
-          )}
+          </main>
         </div>
-        
-        <main className="flex-1 min-h-0 overflow-hidden relative w-full h-full flex flex-col">
-            <div className="w-full mx-auto max-w-full min-h-0 flex-1 bg-background/30 animate-in fade-in duration-700 flex flex-col overflow-hidden">
-                <div className="flex-1 min-h-0 w-full overflow-y-auto custom-scrollbar scroll-smooth">
-                    <div className="p-4 md:p-8 lg:p-10">
-                        {children}
-                    </div>
-                </div>
-            </div>
-        </main>
-      </div>
 
       {user && stableProfile && (
         <>
@@ -328,6 +318,6 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
             </Suspense>
         </>
       )}
-    </div>
+    </AppShellContainer>
   );
 }

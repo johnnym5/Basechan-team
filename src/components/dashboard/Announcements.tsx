@@ -49,7 +49,7 @@ export function Announcements() {
 
     return (
         <>
-            <section className="apple-glass rounded-2xl p-5 animate-slide-up-fade interactive-element">
+            <section className="border border-border/60 bg-muted/30 rounded-xl p-4 shadow-sm animate-slide-up-fade interactive-element">
                 <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-4">Recent Updates</h3>
                 <div className="space-y-4">
                     {isLoading ? (

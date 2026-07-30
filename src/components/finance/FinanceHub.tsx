@@ -20,6 +20,8 @@ interface FinanceHubProps {
     initialPayload?: { reqId?: string; tab?: string };
 }
 
+import { ModuleContainer } from "@/components/layout/shell/ModuleContainer";
+
 export function FinanceHub({ initialPayload }: FinanceHubProps) {
     const { user: authUser } = useUser();
     const firestore = useFirestore();
@@ -43,57 +45,49 @@ export function FinanceHub({ initialPayload }: FinanceHubProps) {
     }
 
     return (
-        <div className="h-full flex flex-col overflow-hidden bg-background">
-            {/* Mission Header */}
-            <div className="p-8 pb-4 flex items-center justify-between flex-shrink-0 pr-16 md:pr-32">
-                <div>
-                    <h1 className="text-3xl font-black font-headline tracking-tighter uppercase">Finance Command</h1>
-                    <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground opacity-60">Integrated Fiscal Operations & Ledger Control</p>
+        <ModuleContainer
+            title="Finance Command"
+            subtitle="Integrated Fiscal Operations & Ledger Control"
+            noScroll={true}
+            actions={
+                <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+                    <Landmark className="h-5 w-5" />
                 </div>
-                <div className="flex items-center gap-3">
-                    <div className="p-3 rounded-2xl bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
-                        <Landmark className="h-6 w-6" />
-                    </div>
-                </div>
-            </div>
-
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
-                <div className="px-8 flex-shrink-0">
-                    <TabsList className="bg-secondary/20 rounded-2xl p-1 w-fit">
-                        <TabsTrigger value="procurement" className="rounded-xl px-6 font-black uppercase text-[10px] tracking-widest data-[state=active]:bg-background">
-                            <ReceiptText className="h-3 w-3 mr-2" /> Procurement
+            }
+        >
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0 h-full">
+                <div className="flex-shrink-0 mb-8">
+                    <TabsList className="bg-secondary/20 rounded-2xl p-1 w-fit border border-white/5">
+                        <TabsTrigger value="procurement" className="rounded-xl px-6 font-black uppercase text-[10px] tracking-widest data-[state=active]:bg-background transition-all">
+                            <ReceiptText className="h-3.5 w-3.5 mr-2" /> Procurement
                         </TabsTrigger>
                         {permissions.canManageAccounting && (
-                            <TabsTrigger value="ledger" className="rounded-xl px-6 font-black uppercase text-[10px] tracking-widest data-[state=active]:bg-background">
-                                <FileSpreadsheet className="h-3 w-3 mr-2" /> General Ledger
+                            <TabsTrigger value="ledger" className="rounded-xl px-6 font-black uppercase text-[10px] tracking-widest data-[state=active]:bg-background transition-all">
+                                <FileSpreadsheet className="h-3.5 w-3.5 mr-2" /> General Ledger
                             </TabsTrigger>
                         )}
-                        <TabsTrigger value="billing" className="rounded-xl px-6 font-black uppercase text-[10px] tracking-widest data-[state=active]:bg-background">
-                            <BarChart3 className="h-3 w-3 mr-2" /> Billing & Invoices
+                        <TabsTrigger value="billing" className="rounded-xl px-6 font-black uppercase text-[10px] tracking-widest data-[state=active]:bg-background transition-all">
+                            <BarChart3 className="h-3.5 w-3.5 mr-2" /> Billing & Invoices
                         </TabsTrigger>
                     </TabsList>
                 </div>
 
-                <div className="flex-1 mt-6 overflow-hidden">
-                    <ScrollArea className="h-full [scrollbar-gutter:stable] custom-scrollbar">
-                        <div className="px-8 pb-32">
-                            <TabsContent value="procurement" className="m-0 focus-visible:ring-0 outline-none animate-in fade-in duration-500">
-                                <RequisitionsPageContent initialPayload={initialPayload?.reqId ? { reqId: initialPayload.reqId } : undefined} />
-                            </TabsContent>
-                            
-                            {permissions.canManageAccounting && (
-                                <TabsContent value="ledger" className="m-0 focus-visible:ring-0 outline-none animate-in fade-in duration-500">
-                                    <AccountingPageContent />
-                                </TabsContent>
-                            )}
+                <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar">
+                    <TabsContent value="procurement" className="m-0 focus-visible:ring-0 outline-none animate-in fade-in duration-500 h-full">
+                        <RequisitionsPageContent initialPayload={initialPayload?.reqId ? { reqId: initialPayload.reqId } : undefined} />
+                    </TabsContent>
 
-                            <TabsContent value="billing" className="m-0 focus-visible:ring-0 outline-none animate-in fade-in duration-500">
-                                <BillingWorkstation userProfile={userProfile!} systemConfig={systemConfig!} />
-                            </TabsContent>
-                        </div>
-                    </ScrollArea>
+                    {permissions.canManageAccounting && (
+                        <TabsContent value="ledger" className="m-0 focus-visible:ring-0 outline-none animate-in fade-in duration-500 h-full">
+                            <AccountingPageContent />
+                        </TabsContent>
+                    )}
+
+                    <TabsContent value="billing" className="m-0 focus-visible:ring-0 outline-none animate-in fade-in duration-500 h-full">
+                        <BillingWorkstation userProfile={userProfile!} systemConfig={systemConfig!} />
+                    </TabsContent>
                 </div>
             </Tabs>
-        </div>
+        </ModuleContainer>
     );
 }

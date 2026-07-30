@@ -170,18 +170,65 @@ export default function AppHeader({
   }
 
   return (
-    <header className={cn("flex flex-col shrink-0 bg-transparent transition-all", className)}>
-        <div className="h-14 md:h-16 flex items-center justify-between px-4 md:px-6">
-            <Logo />
-            <div className="flex items-center space-x-3">
-                {isLoggedIn && (
-                    <>
-                        <ThemeToggle />
-                        <UserNav userProfile={userProfile} />
-                    </>
-                )}
+    <header className={cn("shrink-0 h-20 flex items-center justify-between px-10 border-b border-white/5 bg-white/[0.02] backdrop-blur-md transition-all", className)}>
+        <div className="flex flex-col">
+            <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-primary opacity-50 mb-1">{greeting}</h3>
+            <p className="text-xs font-black uppercase tracking-[0.1em] text-muted-foreground flex items-center gap-2">
+                <Clock className="h-3 w-3" />
+                {currentTime} <span className="opacity-30">—</span> Operational Command
+            </p>
+        </div>
+
+        <div className="flex items-center gap-6">
+            <div className="flex items-center gap-2">
+                <Popover open={isNotificationsOpen} onOpenChange={setIsNotificationsOpen}>
+                    <PopoverTrigger asChild>
+                        <button className="relative text-muted-foreground hover:text-primary transition-all p-2.5 rounded-2xl bg-white/5 hover:bg-primary/10 group/btn m3-interactive">
+                            <Bell className={cn("w-5 h-5", unreadCount > 0 && "text-primary")} />
+                            {unreadCount > 0 && (
+                                <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[8px] font-black text-white ring-2 ring-background shadow-lg">
+                                    {unreadCount}
+                                </span>
+                            )}
+                        </button>
+                    </PopoverTrigger>
+                    <PopoverContent align="end" className="w-[85vw] sm:w-80 p-0 m3-surface-high border-none shadow-3xl rounded-[2rem] overflow-hidden">
+                        <div className="p-4 border-b border-white/5 bg-secondary/20 flex items-center justify-between">
+                            <h3 className="font-black text-[10px] uppercase tracking-[0.2em] opacity-80">System Alerts</h3>
+                            <span className="text-[8px] font-black uppercase text-primary px-2 py-0.5 rounded-full bg-primary/10">{unreadCount} New</span>
+                        </div>
+                        <ScrollArea className="h-96">
+                            {notifications?.length === 0 ? (
+                                <div className="p-16 text-center text-[10px] text-muted-foreground uppercase font-black opacity-20 tracking-tighter">No Active Intel</div>
+                            ) : notifications?.map(n => (
+                                <div key={n.id} className={cn("p-4 border-b border-white/5 transition-all cursor-pointer hover:bg-primary/5", n.isRead ? "opacity-50" : "bg-primary/10")} onClick={() => handleNotificationClick(n)}>
+                                    <p className="font-black text-xs leading-tight tracking-tight">{n.title}</p>
+                                    <p className="text-[10px] text-muted-foreground mt-2 line-clamp-2 leading-relaxed font-medium">{n.description}</p>
+                                    <div className="mt-2 text-[8px] font-black uppercase tracking-widest text-primary/60">{format(new Date(n.createdAt), 'MMM d, HH:mm')}</div>
+                                </div>
+                            ))}
+                        </ScrollArea>
+                    </PopoverContent>
+                </Popover>
+
+                <button
+                    onClick={handleOpenIntelligence}
+                    className="relative text-muted-foreground hover:text-amber-500 transition-all p-2.5 rounded-2xl bg-white/5 hover:bg-amber-500/10 group/btn m3-interactive"
+                    title="Daily Updates"
+                >
+                    <Sparkles className="w-5 h-5" />
+                </button>
+            </div>
+
+            <div className="h-10 w-px bg-white/5" />
+
+            <div className="flex items-center gap-4">
+                <ThemeToggle />
+                {isLoggedIn && <UserNav userProfile={userProfile} />}
             </div>
         </div>
     </header>
   );
 }
+
+import { Clock } from "lucide-react";

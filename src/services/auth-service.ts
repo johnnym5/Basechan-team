@@ -147,7 +147,7 @@ export const authService = {
         if (user.customPermissions.canAccessAllWorkbooks) permissionSet.add(PERMISSIONS.WORKBOOK_ACCESS_ALL);
         if (user.customPermissions.canManageAccounting) permissionSet.add(PERMISSIONS.FINANCE_MANAGE_ACCOUNTS);
         if (user.customPermissions.canViewAudit) permissionSet.add(PERMISSIONS.ADMIN_VIEW_AUDIT);
-        // ... extend as needed
+        if (user.role === 'HR_MANAGER' || user.role === 'ORG_ADMIN') permissionSet.add(PERMISSIONS.ADMIN_MANAGE_COMPANY);
     }
 
     const flatPermissions = Array.from(permissionSet);

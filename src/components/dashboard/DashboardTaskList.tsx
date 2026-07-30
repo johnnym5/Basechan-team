@@ -48,7 +48,7 @@ export function DashboardTaskList({ userProfile, permissions }: DashboardTaskLis
     const tasks = allTasks?.filter(t => t.status !== 'ARCHIVED').slice(0, 10);
 
   return (
-    <section className="apple-glass rounded-2xl p-5 h-full animate-slide-up-fade overflow-hidden flex flex-col" style={{ animationDelay: '100ms' }}>
+    <section className="border border-border/60 bg-muted/30 rounded-xl p-5 h-full animate-slide-up-fade overflow-hidden flex flex-col shadow-sm" style={{ animationDelay: '100ms' }}>
         <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-4">Active Tasks</h3>
         <div className="overflow-x-auto flex-1">
             <table className="w-full text-left border-collapse">

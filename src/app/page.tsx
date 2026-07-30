@@ -24,6 +24,8 @@ import { DashboardQuickActions } from '@/components/dashboard/DashboardQuickActi
 import { DashboardRecentReports } from '@/components/dashboard/DashboardRecentReports';
 import { useEffect, useState } from 'react';
 
+import { ModuleContainer } from "@/components/layout/shell/ModuleContainer";
+
 export default function DashboardPage() {
     const { user: authUser, isUserLoading: isAuthLoading } = useUser();
     const firestore = useFirestore();
@@ -83,26 +85,22 @@ export default function DashboardPage() {
     }
 
     return (
-        <div className="space-y-4 md:space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-1000">
-            <div className="md:hidden space-y-1 px-1">
-                <h1 className="text-4xl font-black font-headline tracking-tighter">Good {greeting},</h1>
-                <p className="text-lg font-bold text-muted-foreground">{userProfile?.fullName.split(' ')[0]}</p>
-            </div>
-
-            {isSuperAdmin && (
-                <div className="grid grid-cols-1 gap-4">
-                    <Card className="apple-glass border-primary/20 bg-primary/5 rounded-[1.5rem] overflow-hidden">
-                        <CardHeader className="flex-row items-center justify-between py-2 px-6">
-                            <CardTitle className="text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
-                                <Shield className="h-3 w-3 text-primary" /> Admin Panel
-                            </CardTitle>
-                            <Button size="sm" onClick={() => uiEmitter.emit('open-superadmin-dialog')} className="rounded-full h-6 px-3 text-[8px] font-black uppercase">Launch</Button>
-                        </CardHeader>
-                    </Card>
-                </div>
-            )}
-
-            <div className="grid grid-cols-12 gap-4 md:gap-6 w-full h-full">
+        <ModuleContainer
+            title={`Good ${greeting},`}
+            subtitle={userProfile?.fullName || 'Staff Member'}
+            actions={
+                isSuperAdmin && (
+                    <Button
+                        size="sm"
+                        onClick={() => uiEmitter.emit('open-superadmin-dialog')}
+                        className="rounded-full h-10 px-6 text-[10px] font-black uppercase tracking-widest shadow-xl shadow-primary/20"
+                    >
+                        <Shield className="mr-2 h-4 w-4" /> Launch Admin Panel
+                    </Button>
+                )
+            }
+        >
+            <div className="grid grid-cols-12 gap-6 w-full h-full">
                 <section className="col-span-12 md:col-span-6 lg:col-span-5 xl:col-span-4 interactive-element flex flex-col h-full w-full">
                     <ClockControl userProfile={userProfile || null} permissions={permissions} systemConfig={systemConfig} />
                 </section>
@@ -116,7 +114,7 @@ export default function DashboardPage() {
                 </section>
 
                 <div className="col-span-12 lg:col-span-4 xl:col-span-3 flex flex-col h-full w-full">
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 gap-4 md:gap-6 h-full w-full">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 gap-6 h-full w-full">
                         <DashboardQuickActions />
                         <DashboardLiveDisplays userProfile={userProfile || null} />
                         <DashboardRecentReports />
@@ -127,6 +125,6 @@ export default function DashboardPage() {
                     </div>
                 </div>
             </div>
-        </div>
+        </ModuleContainer>
     );
 }

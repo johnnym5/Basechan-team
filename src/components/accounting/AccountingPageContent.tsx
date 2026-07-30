@@ -28,33 +28,28 @@ export function AccountingPageContent() {
   }
 
   return (
-    <div className="space-y-8 flex flex-col h-full overflow-hidden">
-      <div className="flex-shrink-0">
-        <h1 className="text-3xl font-bold font-headline tracking-tight">Accounting Module</h1>
-        <p className="text-muted-foreground">Manage your organization's Chart of Accounts, ledgers, and financial statements.</p>
-      </div>
-      
+    <div className="flex flex-col h-full gap-8">
       {userProfile && (
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
-            <TabsList className="grid grid-cols-3 w-full max-w-xl flex-shrink-0">
-                <TabsTrigger value="coa">Chart of Accounts</TabsTrigger>
-                <TabsTrigger value="journal">General Ledger</TabsTrigger>
-                <TabsTrigger value="statements">Financial Statements</TabsTrigger>
+            <TabsList className="bg-secondary/20 rounded-2xl p-1 w-fit border border-white/5 flex-shrink-0">
+                <TabsTrigger value="coa" className="rounded-xl px-6 font-black uppercase text-[10px] tracking-widest data-[state=active]:bg-background transition-all">COA</TabsTrigger>
+                <TabsTrigger value="journal" className="rounded-xl px-6 font-black uppercase text-[10px] tracking-widest data-[state=active]:bg-background transition-all">Journal</TabsTrigger>
+                <TabsTrigger value="statements" className="rounded-xl px-6 font-black uppercase text-[10px] tracking-widest data-[state=active]:bg-background transition-all">Statements</TabsTrigger>
             </TabsList>
             
-            <ScrollArea className="flex-1 mt-6 rounded-md border bg-card/30">
-                <TabsContent value="coa" className="m-0 p-4">
+            <div className="flex-1 min-h-0 mt-8">
+                <TabsContent value="coa" className="m-0 focus-visible:ring-0 outline-none animate-in fade-in duration-500">
                     <ChartOfAccounts userProfile={userProfile} permissions={permissions} />
                 </TabsContent>
                 
-                <TabsContent value="journal" className="m-0 p-4">
+                <TabsContent value="journal" className="m-0 focus-visible:ring-0 outline-none animate-in fade-in duration-500">
                     <JournalEntries userProfile={userProfile} permissions={permissions} />
                 </TabsContent>
 
-                <TabsContent value="statements" className="m-0 p-4">
+                <TabsContent value="statements" className="m-0 focus-visible:ring-0 outline-none animate-in fade-in duration-500">
                     <FinancialStatements userProfile={userProfile} />
                 </TabsContent>
-            </ScrollArea>
+            </div>
         </Tabs>
       )}
     </div>

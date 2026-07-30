@@ -13,7 +13,7 @@ interface AttendanceDialogProps {
 export function AttendanceDialog({ open, onOpenChange, modal = false }: AttendanceDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange} modal={modal}>
-      <DialogContent position={modal ? "center" : "left"} className="flex flex-col p-0 overflow-hidden">
+      <DialogContent position={modal ? "center" : "left"} className="flex flex-col p-0 overflow-hidden border-none apple-glass">
         <DialogHeader className="sr-only">
             <DialogTitle>Attendance Center</DialogTitle>
             <DialogDescription>Manage your work hours and see who's currently online.</DialogDescription>

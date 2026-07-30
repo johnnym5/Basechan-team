@@ -36,11 +36,11 @@ export function DashboardQuickActions() {
     ].filter(a => a.permission);
 
     return (
-        <Card className="apple-glass border-none shadow-xl overflow-hidden">
-            <CardHeader className="py-3 px-5">
+        <Card className="border border-border/60 bg-muted/30 rounded-xl p-4 shadow-sm overflow-hidden">
+            <CardHeader className="p-0 pb-3">
                 <CardTitle className="text-[8px] font-black uppercase tracking-[0.25em] text-primary opacity-70">Quick Actions</CardTitle>
             </CardHeader>
-            <CardContent className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 p-4 pt-0">
+            <CardContent className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 p-0">
                 {actions.map(({ label, icon: Icon, action }) => (
                     <Button 
                         key={label} 

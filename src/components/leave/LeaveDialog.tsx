@@ -14,7 +14,7 @@ export function LeaveDialog({ open, onOpenChange, modal = false }: LeaveDialogPr
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange} modal={modal}>
-      <DialogContent position={modal ? "center" : "left"} className="flex flex-col p-0">
+      <DialogContent position={modal ? "center" : "left"} className="flex flex-col p-0 border-none apple-glass">
         <DialogHeader className="sr-only">
           <DialogTitle>Leave Management</DialogTitle>
           <DialogDescription>Request time off and manage your leave balance.</DialogDescription>

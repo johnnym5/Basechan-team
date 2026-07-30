@@ -141,43 +141,49 @@ export function RequisitionsPageContent({ initialPayload }: { initialPayload?: {
   const currencySymbol = systemConfig?.currency_symbol || '$';
 
   return (
-    <div className="space-y-6 flex flex-col h-full overflow-hidden">
-       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 flex-shrink-0">
-            <div>
-                <h1 className="text-3xl font-black font-headline tracking-tighter">Procurement Terminal</h1>
-                <p className="text-muted-foreground uppercase tracking-widest text-[10px] font-bold">Manage financial requests and external vendors.</p>
+    <div className="flex flex-col h-full gap-6">
+       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 flex-shrink-0 border border-border/60 bg-muted/30 rounded-2xl p-6 shadow-sm">
+            <div className="flex items-center gap-4">
+                 <div className="p-3 rounded-2xl bg-primary/10 text-primary border border-primary/20">
+                    <ReceiptText className="h-6 w-6" />
+                 </div>
+                 <div>
+                    <h1 className="text-xl font-black font-headline tracking-tighter uppercase">Procurement Terminal</h1>
+                    <p className="text-muted-foreground uppercase tracking-widest text-[10px] font-bold opacity-60">Operations Supply & Capital Requisitions</p>
+                </div>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-6">
                  {permissions.canApproveHR && (
-                     <div className="flex items-center gap-3 mr-4">
+                     <div className="flex items-center gap-6">
                         <div className="flex flex-col items-end">
-                            <span className="text-[8px] font-black uppercase tracking-widest text-amber-500">Pending Liability</span>
-                            <span className="text-sm font-black font-mono">{currencySymbol}{fiscalStats.pending.toLocaleString()}</span>
+                            <span className="text-[8px] font-black uppercase tracking-widest text-amber-500 opacity-60">Pending Liability</span>
+                            <span className="text-sm font-black font-mono tracking-tighter">{currencySymbol}{fiscalStats.pending.toLocaleString()}</span>
                         </div>
                         <div className="w-px h-8 bg-white/10" />
                         <div className="flex flex-col items-end">
-                            <span className="text-[8px] font-black uppercase tracking-widest text-emerald-500">Approved Impact</span>
-                            <span className="text-sm font-black font-mono">{currencySymbol}{fiscalStats.approved.toLocaleString()}</span>
+                            <span className="text-[8px] font-black uppercase tracking-widest text-emerald-500 opacity-60">Approved Impact</span>
+                            <span className="text-sm font-black font-mono tracking-tighter">{currencySymbol}{fiscalStats.approved.toLocaleString()}</span>
                         </div>
                      </div>
                  )}
                 {permissions.canCreateRequisition && (
-                    <Button onClick={() => setIsNewRequestOpen(true)} className="rounded-xl h-11 px-6 font-black uppercase tracking-widest shadow-xl shadow-primary/20">
-                        <PlusCircle className="mr-2 h-4 w-4"/>
+                    <Button onClick={() => setIsNewRequestOpen(true)} className="rounded-xl h-11 px-6 font-black uppercase text-[10px] tracking-widest shadow-xl shadow-primary/20 m3-interactive">
+                        <PlusCircle className="mr-2 h-4 w-4 text-primary"/>
                         New Request
                     </Button>
                 )}
             </div>
         </div>
+
       {isProfileLoading ? (
-        <Skeleton className="flex-1 w-full" />
+        <Skeleton className="flex-1 w-full rounded-3xl" />
       ) : (
         <div className="flex-1 flex flex-col min-h-0">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
                 <ScrollArea className="w-full pb-2 whitespace-nowrap flex-shrink-0">
-                    <TabsList className="bg-secondary/20 rounded-2xl p-1">
+                    <TabsList className="bg-secondary/20 rounded-2xl p-1 border border-white/5">
                         {visibleTabs.map(tab => (
-                            <TabsTrigger key={tab} value={tab} className="rounded-xl px-6 font-black uppercase text-[10px] tracking-widest data-[state=active]:bg-background">
+                            <TabsTrigger key={tab} value={tab} className="rounded-xl px-6 font-black uppercase text-[10px] tracking-widest data-[state=active]:bg-background transition-all">
                                 {tab}
                             </TabsTrigger>
                         ))}
@@ -185,10 +191,10 @@ export function RequisitionsPageContent({ initialPayload }: { initialPayload?: {
                     <ScrollBar orientation="horizontal" />
                 </ScrollArea>
                 
-                <div className="flex-1 mt-4 overflow-hidden border border-white/5 rounded-3xl bg-background/20 backdrop-blur-sm">
-                    <ScrollArea className="h-full p-6">
+                <div className="flex-1 mt-6 border border-border/60 bg-muted/30 rounded-[2rem] overflow-hidden shadow-inner flex flex-col">
+                    <div className="flex-1 overflow-y-auto custom-scrollbar p-6">
                         {visibleTabs.map(tab => (
-                            <TabsContent key={tab} value={tab} className="m-0 focus-visible:ring-0 outline-none">
+                            <TabsContent key={tab} value={tab} className="m-0 focus-visible:ring-0 outline-none animate-in fade-in duration-500">
                                 {tab === 'Vendors' ? (
                                     <VendorsTab userProfile={userProfile!} permissions={permissions} />
                                 ) : tab === 'Purchase Orders' ? (
@@ -204,7 +210,7 @@ export function RequisitionsPageContent({ initialPayload }: { initialPayload?: {
                                 )}
                             </TabsContent>
                         ))}
-                    </ScrollArea>
+                    </div>
                 </div>
             </Tabs>
 

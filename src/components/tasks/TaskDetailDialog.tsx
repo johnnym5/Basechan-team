@@ -210,13 +210,13 @@ export function TaskDetailDialog({ task: initialTask, isOpen, onOpenChange, curr
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-4xl h-[90vh] w-full flex flex-col">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-4xl h-[90vh] w-full flex flex-col border-none apple-glass">
+        <DialogHeader className="p-8 pb-4 border-b border-white/5">
           <div className="flex items-start justify-between">
-             <DialogTitle className='max-w-md flex items-center gap-2'>
+             <DialogTitle className='max-w-md flex items-center gap-2 font-black font-headline tracking-tighter uppercase text-2xl'>
                 <span>{task.serialNo}: {task.title}</span>
                 {task.type === 'ASSISTANCE_REQUEST' && (
-                    <Badge variant="secondary" className="gap-1.5 text-xs">
+                    <Badge variant="secondary" className="gap-1.5 text-[8px] font-black uppercase bg-primary/20 text-primary border-none">
                         <LifeBuoy className="h-3 w-3" /> Assistance Request
                     </Badge>
                 )}
@@ -224,37 +224,38 @@ export function TaskDetailDialog({ task: initialTask, isOpen, onOpenChange, curr
              <TaskPriorityBadge priority={task.priority} />
           </div>
            <DialogDescription asChild>
-             <div className="flex items-center gap-4 pt-1 text-sm text-muted-foreground">
-                <Badge variant="secondary" className="uppercase text-[9px] font-black tracking-widest">{task.status.replace('_', ' ')}</Badge>
-                <span className="font-bold text-[10px] uppercase tracking-tighter">
-                Assigned to {task.assignedToName}
+             <div className="flex items-center gap-4 pt-1">
+                <Badge variant="outline" className="uppercase text-[8px] font-black tracking-[0.2em] border-white/10 opacity-60 px-3">{task.status.replace('_', ' ')}</Badge>
+                <span className="font-bold text-[9px] uppercase tracking-widest text-muted-foreground opacity-40">
+                    Assigned to {task.assignedToName}
                 </span>
              </div>
            </DialogDescription>
         </DialogHeader>
 
-        <div className="grid md:grid-cols-3 gap-6 py-4 flex-1 overflow-y-auto">
-          <div className="md:col-span-2 space-y-6 flex flex-col">
-            <div className="space-y-2">
-              <h4 className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+        <div className="grid md:grid-cols-3 gap-8 p-8 flex-1 overflow-y-auto custom-scrollbar">
+          <div className="md:col-span-2 space-y-8 flex flex-col">
+            <div className="space-y-3">
+              <h4 className="flex items-center gap-2 text-[9px] font-black uppercase tracking-[0.25em] text-primary opacity-60">
                 <Info className="h-3 w-3" /> Task Context
               </h4>
-              <p className="text-foreground text-sm leading-relaxed">{task.description || "No description provided."}</p>
+              <p className="text-foreground text-sm leading-relaxed font-medium bg-white/[0.03] p-5 rounded-2xl border border-white/5 shadow-inner">{task.description || "No description provided."}</p>
             </div>
             
-            <div className="space-y-2">
-                <h4 className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+            <div className="space-y-3">
+                <h4 className="flex items-center gap-2 text-[9px] font-black uppercase tracking-[0.25em] text-primary opacity-60">
                     <CheckSquare className="h-3 w-3" /> Checkpoints
                 </h4>
-                <div className="space-y-2 rounded-2xl border border-white/5 bg-secondary/5 p-4">
+                <div className="space-y-2 rounded-2xl border border-border/60 bg-muted/30 p-5 shadow-sm">
                     {subTasks.map(st => (
-                        <div key={st.id} className="flex items-center gap-3">
+                        <div key={st.id} className="flex items-center gap-4 py-1">
                             <Checkbox 
                                 id={`subtask-${st.id}`} 
                                 checked={st.completed}
                                 onCheckedChange={() => handleSubTaskToggle(st.id)}
+                                className="h-5 w-5 rounded-md"
                             />
-                            <label htmlFor={`subtask-${st.id}`} className={cn("text-xs font-medium flex-1 cursor-pointer", st.completed ? 'line-through text-muted-foreground opacity-50' : 'text-foreground')}>
+                            <label htmlFor={`subtask-${st.id}`} className={cn("text-xs font-bold flex-1 cursor-pointer transition-all", st.completed ? 'line-through text-muted-foreground opacity-40' : 'text-foreground')}>
                                 {st.text}
                             </label>
                         </div>
@@ -266,20 +267,20 @@ export function TaskDetailDialog({ task: initialTask, isOpen, onOpenChange, curr
                             value={newSubTask}
                             onChange={(e) => setNewSubTask(e.target.value)}
                             onKeyDown={(e) => { if (e.key === 'Enter') handleAddSubTask(e) }}
-                            className="h-9 rounded-xl bg-background/40 border-none text-xs"
+                            className="h-11 rounded-xl bg-background/40 border-white/5 text-xs font-bold px-4"
                         />
-                        <Button size="icon" variant="ghost" onClick={handleAddSubTask} className="rounded-xl">
-                            <Plus className="h-4 w-4" />
+                        <Button size="icon" variant="ghost" onClick={handleAddSubTask} className="rounded-xl h-11 w-11 hover:bg-primary/10">
+                            <Plus className="h-4 w-4 text-primary" />
                         </Button>
                     </div>
                 </div>
             </div>
 
-            <div className="space-y-2 flex-1 flex flex-col min-h-0">
-              <h4 className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+            <div className="space-y-3 flex-1 flex flex-col min-h-0">
+              <h4 className="flex items-center gap-2 text-[9px] font-black uppercase tracking-[0.25em] text-primary opacity-60">
                 <History className="h-3 w-3" /> Activity Feed
               </h4>
-              <div className="flex-1 rounded-2xl border border-white/5 bg-card/30 p-4">
+              <div className="flex-1 rounded-2xl border border-border/60 bg-muted/30 p-5 shadow-sm min-h-[300px]">
                   <ActivityFeed
                     activity={task.activity}
                     currentUserProfile={currentUserProfile}
@@ -289,73 +290,85 @@ export function TaskDetailDialog({ task: initialTask, isOpen, onOpenChange, curr
               </div>
             </div>
           </div>
-          <div className="md:col-span-1 space-y-4 rounded-[2rem] border border-white/5 bg-secondary/20 p-5 h-fit">
-            <h4 className="text-[10px] font-black uppercase tracking-widest text-primary mb-4 opacity-70">Task Summary</h4>
-            <div className="space-y-4 text-xs">
-              <div className="flex items-center justify-between">
-                <span className="flex items-center gap-2 text-muted-foreground font-bold uppercase text-[9px]">
-                  <User className="h-3 w-3" /> Assignee
-                </span>
-                <span className="font-bold text-foreground">{task.assignedToName}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="flex items-center gap-2 text-muted-foreground font-bold uppercase text-[9px]">
-                  <Calendar className="h-3 w-3" /> Deadline
-                </span>
-                <span className="font-mono font-bold text-foreground">
-                  {task.dueDate ? format(new Date(task.dueDate), 'PPP') : 'OPEN'}
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="flex items-center gap-2 text-muted-foreground font-bold uppercase text-[9px]">
-                  <Hourglass className="h-3 w-3" /> Estimated
-                </span>
-                <span className="font-mono font-bold text-foreground">
-                  {task.estimatedHours ? `${task.estimatedHours}h` : 'N/A'}
-                </span>
-              </div>
-              {task.actualHours != null && (
-                 <div className="flex items-center justify-between">
-                    <span className="flex items-center gap-2 text-muted-foreground font-bold uppercase text-[9px]">
-                        <Check className="h-3 w-3" /> Actual Time
-                    </span>
-                    <span className="font-mono font-bold text-emerald-500">{task.actualHours}h</span>
-                </div>
-              )}
-               {task.workbookId && (
-                 <div className="flex items-center justify-between pt-2 border-t border-white/5">
-                    <span className="flex items-center gap-2 text-muted-foreground font-bold uppercase text-[9px]">
-                      <BookOpenCheck className="h-3 w-3" /> Linked Data
-                    </span>
-                    <Button
-                        variant="link"
-                        className="h-auto p-0 text-[10px] font-black uppercase text-primary hover:underline truncate max-w-[100px]"
-                        onClick={() => {
-                            uiEmitter.emit('open-workbooks-dialog', { workbookId: task.workbookId!, sheetId: task.sheetId });
-                            onOpenChange(false);
-                        }}
-                    >
-                        View Node
-                    </Button>
-                  </div>
-               )}
+          <div className="md:col-span-1 space-y-6">
+            <div className="border border-border/60 bg-muted/30 rounded-xl p-6 shadow-sm">
+                <h4 className="text-[9px] font-black uppercase tracking-[0.25em] text-primary mb-6 opacity-60">Task Summary</h4>
+                <div className="space-y-5 text-xs">
                 <div className="flex items-center justify-between">
-                  <span className="flex items-center gap-2 text-muted-foreground font-bold uppercase text-[9px]">
-                    <Paperclip className="h-3 w-3" /> Evidence
-                  </span>
-                  {task.attachmentUrl ? (
-                      <Link href={task.attachmentUrl} target="_blank" rel="noopener noreferrer" className='text-[10px] font-black uppercase text-primary hover:underline truncate max-w-[150px]' title={task.attachmentName || 'View File'}>
-                          {task.attachmentName || 'Download'}
-                      </Link>
-                  ) : (
-                      <span className="font-bold text-muted-foreground opacity-30 uppercase text-[9px]">None</span>
-                  )}
+                    <span className="flex items-center gap-2 text-muted-foreground font-black uppercase text-[9px] opacity-60">
+                    <User className="h-3 w-3" /> Assignee
+                    </span>
+                    <span className="font-black text-foreground uppercase tracking-tight">{task.assignedToName}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                    <span className="flex items-center gap-2 text-muted-foreground font-black uppercase text-[9px] opacity-60">
+                    <Calendar className="h-3 w-3" /> Deadline
+                    </span>
+                    <span className="font-mono font-black text-foreground">
+                    {task.dueDate ? format(new Date(task.dueDate), 'MMM d, yyyy') : 'OPEN'}
+                    </span>
+                </div>
+                <div className="flex items-center justify-between">
+                    <span className="flex items-center gap-2 text-muted-foreground font-black uppercase text-[9px] opacity-60">
+                    <Hourglass className="h-3 w-3" /> Estimated
+                    </span>
+                    <span className="font-mono font-black text-foreground">
+                    {task.estimatedHours ? `${task.estimatedHours}h` : 'N/A'}
+                    </span>
+                </div>
+                {task.actualHours != null && (
+                    <div className="flex items-center justify-between">
+                        <span className="flex items-center gap-2 text-muted-foreground font-black uppercase text-[9px] opacity-60">
+                            <Check className="h-3 w-3" /> Actual Time
+                        </span>
+                        <span className="font-mono font-black text-emerald-500">{task.actualHours}h</span>
+                    </div>
+                )}
+                {task.workbookId && (
+                    <div className="flex items-center justify-between pt-3 border-t border-white/5">
+                        <span className="flex items-center gap-2 text-muted-foreground font-black uppercase text-[9px] opacity-60">
+                        <BookOpenCheck className="h-3 w-3" /> Linked Data
+                        </span>
+                        <Button
+                            variant="link"
+                            className="h-auto p-0 text-[10px] font-black uppercase text-primary hover:underline truncate max-w-[120px]"
+                            onClick={() => {
+                                uiEmitter.emit('open-workbooks-dialog', { workbookId: task.workbookId!, sheetId: task.sheetId });
+                                onOpenChange(false);
+                            }}
+                        >
+                            View Node
+                        </Button>
+                    </div>
+                )}
+                    <div className="flex items-center justify-between">
+                    <span className="flex items-center gap-2 text-muted-foreground font-black uppercase text-[9px] opacity-60">
+                        <Paperclip className="h-3 w-3" /> Evidence
+                    </span>
+                    {task.attachmentUrl ? (
+                        <Link href={task.attachmentUrl} target="_blank" rel="noopener noreferrer" className='text-[10px] font-black uppercase text-primary hover:underline truncate max-w-[150px]' title={task.attachmentName || 'View File'}>
+                            {task.attachmentName || 'Download'}
+                        </Link>
+                    ) : (
+                        <span className="font-black text-muted-foreground opacity-30 uppercase text-[9px]">None</span>
+                    )}
+                    </div>
                 </div>
             </div>
+
+            <section className="p-6 rounded-xl bg-primary/5 border border-primary/20 space-y-4">
+                <div className="flex items-center gap-2 text-primary">
+                    <Info className="h-4 w-4" />
+                    <span className="text-[10px] font-black uppercase tracking-widest">Protocol Node</span>
+                </div>
+                <p className="text-[10px] leading-relaxed text-muted-foreground uppercase font-bold italic">
+                    Task status and activity logs are monitored for performance analytics and mission fulfillment tracking.
+                </p>
+            </section>
           </div>
         </div>
 
-        <DialogFooter className="sm:justify-between flex-shrink-0 pt-4 border-t border-white/5">
+        <DialogFooter className="sm:justify-between flex-shrink-0 p-6 pt-4 border-t border-white/5 bg-white/[0.01]">
              <div className='flex justify-start w-full items-center'>
                 <div className='flex gap-2'>
                     {permissions.canManageStaff && (

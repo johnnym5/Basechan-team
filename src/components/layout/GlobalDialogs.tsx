@@ -28,7 +28,6 @@ const SuperAdminDialog = dynamic(() => import('@/components/superadmin/SuperAdmi
 const NotificationsDialog = dynamic(() => import('@/components/layout/NotificationsDialog').then(m => m.NotificationsDialog), { ssr: false });
 const CreateChannelDialog = dynamic(() => import('@/components/chat/CreateChannelDialog').then(m => m.CreateChannelDialog), { ssr: false });
 const LiveMonitorDialog = dynamic(() => import('@/components/superadmin/LiveMonitorDialog').then(m => m.LiveMonitorDialog), { ssr: false });
-const StaffDirectoryDialog = dynamic(() => import('@/components/profile/staff/StaffDirectoryDialog').then(m => m.StaffDirectoryDialog), { ssr: false });
 
 interface GlobalDialogsProps {
   userProfile: UserProfile | null;
@@ -93,9 +92,6 @@ export function GlobalDialogs({ userProfile, permissions, onAnyDialogOpenChange 
   const [isLiveMonitorOpen, setIsLiveMonitorOpen] = useState(false);
   const [liveMonitorPayload, setLiveMonitorPayload] = useState<{ targetUserId: string; targetUserName: string } | null>(null);
 
-  const [isStaffDirectoryOpen, setIsStaffDirectoryOpen] = useState(false);
-  const [isStaffDirectoryModal, setIsStaffDirectoryModal] = useState(false);
-
   const closeAllDialogs = useCallback(() => {
     setIsWorkbookOpen(false);
     setIsFinanceOpen(false);
@@ -118,7 +114,6 @@ export function GlobalDialogs({ userProfile, permissions, onAnyDialogOpenChange 
     setIsNotificationsOpen(false);
     setIsCreateChannelOpen(false);
     setIsLiveMonitorOpen(false);
-    setIsStaffDirectoryOpen(false);
   }, []);
 
   useEffect(() => {
@@ -128,7 +123,7 @@ export function GlobalDialogs({ userProfile, permissions, onAnyDialogOpenChange 
         isAssignTaskOpen || isNewRequisitionOpen || isRequestLeaveOpen || 
         isNewWorkbookOpen || isProfileOpen || isSettingsOpen || isChatOpen || 
         isInviteOpen || isNewAnnouncementOpen || isSuperAdminOpen || isNotificationsOpen ||
-        isCreateChannelOpen || isLiveMonitorOpen || isStaffDirectoryOpen;
+        isCreateChannelOpen || isLiveMonitorOpen;
     onAnyDialogOpenChange(isOpen);
   }, [
     isWorkbookOpen, isFinanceOpen, isTasksOpen, isAttendanceOpen, 
@@ -136,14 +131,13 @@ export function GlobalDialogs({ userProfile, permissions, onAnyDialogOpenChange 
     isAssignTaskOpen, isNewRequisitionOpen, isRequestLeaveOpen, 
     isNewWorkbookOpen, isProfileOpen, isSettingsOpen, isChatOpen, 
     isInviteOpen, isNewAnnouncementOpen, isSuperAdminOpen, isNotificationsOpen,
-    isCreateChannelOpen, isLiveMonitorOpen, isStaffDirectoryOpen,
+    isCreateChannelOpen, isLiveMonitorOpen,
     onAnyDialogOpenChange
   ]);
 
   useEffect(() => {
     const openProfile = (p?: any) => { setIsProfileModal(!!p?.modal); setIsProfileOpen(true); };
     const openSettings = (p?: any) => { setIsSettingsModal(!!p?.modal); setIsSettingsOpen(true); };
-    const openStaffDirectory = (p?: any) => { setIsStaffDirectoryModal(!!p?.modal); setIsStaffDirectoryOpen(true); };
     const openChat = (payload?: any) => {
       if (payload) setInitialChatPayload(payload);
       setIsChatModal(!!payload?.modal);
@@ -215,7 +209,6 @@ export function GlobalDialogs({ userProfile, permissions, onAnyDialogOpenChange 
     uiEmitter.on('open-notifications-dialog', openNotifications);
     uiEmitter.on('open-create-channel-dialog', openCreateChannel);
     uiEmitter.on('open-live-monitor-dialog', openLiveMonitor);
-    uiEmitter.on('open-staff-directory-dialog' as any, openStaffDirectory);
     uiEmitter.on('close-all-dialogs', closeAllDialogs);
     
     return () => {
@@ -240,7 +233,6 @@ export function GlobalDialogs({ userProfile, permissions, onAnyDialogOpenChange 
       uiEmitter.off('open-notifications-dialog', openNotifications);
       uiEmitter.off('open-create-channel-dialog', openCreateChannel);
       uiEmitter.off('open-live-monitor-dialog', openLiveMonitor);
-      uiEmitter.off('open-staff-directory-dialog' as any, openStaffDirectory);
       uiEmitter.off('close-all-dialogs', closeAllDialogs);
     };
   }, [closeAllDialogs]);
@@ -359,16 +351,6 @@ export function GlobalDialogs({ userProfile, permissions, onAnyDialogOpenChange 
             targetUserId={liveMonitorPayload.targetUserId}
             targetUserName={liveMonitorPayload.targetUserName}
           />
-      )}
-
-      {isStaffDirectoryOpen && userProfile && (
-        <StaffDirectoryDialog
-          open={isStaffDirectoryOpen}
-          onOpenChange={setIsStaffDirectoryOpen}
-          currentUserProfile={userProfile}
-          permissions={permissions}
-          modal={isStaffDirectoryModal}
-        />
       )}
     </>
   );

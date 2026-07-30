@@ -124,14 +124,14 @@ export function TeamLeaveCalendar({ userProfile }: TeamLeaveCalendarProps) {
   }
 
   return (
-    <Card className="apple-glass border-none overflow-hidden">
-      <CardHeader>
-        <CardTitle className="text-2xl font-bold tracking-tight">Availability Calendar</CardTitle>
-        <CardDescription>
-          Red indicates <span className="text-destructive font-bold">Occupied Dates</span>. Amber indicates <span className="text-amber-600 font-bold">Public Holidays</span>.
+    <Card className="border border-border/60 bg-muted/30 rounded-xl p-4 shadow-sm overflow-hidden">
+      <CardHeader className="p-0 pb-4">
+        <CardTitle className="text-xl font-black font-headline tracking-tighter uppercase">Availability Calendar</CardTitle>
+        <CardDescription className="text-[10px] font-black uppercase tracking-widest opacity-60">
+          Red: <span className="text-rose-500">Occupied</span>. Amber: <span className="text-amber-500">Public Holidays</span>.
         </CardDescription>
       </CardHeader>
-      <CardContent className="pb-8">
+      <CardContent className="p-0 pb-4">
         <Calendar
           showOutsideDays
           month={month}
