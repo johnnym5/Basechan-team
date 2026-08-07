@@ -23,7 +23,7 @@ export const staffProfileSchema = z.object({
   employeeId: z.string().min(1, "Employee ID is required."),
   jobTitle: z.string().min(1, "Job title is required."),
   departmentName: z.string().min(1, "Department is required."),
-  role: z.enum(["ORG_ADMIN", "MANAGING_DIRECTOR", "HR_MANAGER", "FINANCE_MANAGER", "STAFF"]),
+  role: z.enum(["SUPERADMIN", "ORG_ADMIN", "MANAGING_DIRECTOR", "HR_MANAGER", "FINANCE_MANAGER", "STAFF"]),
   employmentType: z.enum(["FULL_TIME", "PART_TIME", "CONTRACT", "INTERN"]),
   managerId: z.string().optional(), // Reference to another user ID
   joinDate: z.string().optional(), // ISO string

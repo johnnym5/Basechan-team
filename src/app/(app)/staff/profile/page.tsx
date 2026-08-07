@@ -8,6 +8,8 @@ import { usePermissions } from "@/hooks/usePermissions";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Employee360Profile } from "@/components/profile/staff/Employee360Profile";
 
+import { ModuleContainer } from "@/components/layout/shell/ModuleContainer";
+
 export default function StaffProfilePage() {
     const searchParams = useSearchParams();
     const router = useRouter();
@@ -30,14 +32,20 @@ export default function StaffProfilePage() {
     if (!currentUserProfile || !userId) return null;
 
     return (
-        <div className="flex-1 min-h-0 relative w-full h-full flex flex-col overflow-y-auto custom-scrollbar pr-2">
-            <Employee360Profile
-                userId={userId}
-                orgId={currentUserProfile.orgId}
-                currentUserProfile={currentUserProfile}
-                permissions={permissions}
-                onBack={() => router.push('/staff')}
-            />
-        </div>
+        <ModuleContainer
+            title="Personnel Profile"
+            subtitle="Detailed Staff Overview & Credentials"
+            noScroll={true}
+        >
+            <div className="flex-1 min-h-0 relative w-full h-full flex flex-col overflow-y-auto custom-scrollbar pr-2">
+                <Employee360Profile
+                    userId={userId}
+                    orgId={currentUserProfile.orgId}
+                    currentUserProfile={currentUserProfile}
+                    permissions={permissions}
+                    onBack={() => router.push('/staff')}
+                />
+            </div>
+        </ModuleContainer>
     );
 }

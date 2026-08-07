@@ -277,6 +277,7 @@ export function StaffProfileView({ userId, onBack, onViewProfile, currentUserPro
           )}
           <TabsTrigger value="employment" className="rounded-xl px-6 font-black uppercase text-[10px] tracking-widest data-[state=active]:bg-primary data-[state=active]:text-white transition-all">Employment</TabsTrigger>
           <TabsTrigger value="documents" className="rounded-xl px-6 font-black uppercase text-[10px] tracking-widest data-[state=active]:bg-primary data-[state=active]:text-white transition-all">Documents</TabsTrigger>
+          <TabsTrigger value="permissions" className="rounded-xl px-6 font-black uppercase text-[10px] tracking-widest data-[state=active]:bg-primary data-[state=active]:text-white transition-all">Permissions</TabsTrigger>
         </TabsList>
 
         <div className="flex-1 overflow-y-auto custom-scrollbar pr-2">
@@ -810,6 +811,40 @@ export function StaffProfileView({ userId, onBack, onViewProfile, currentUserPro
                   )}
                 </div>
             </div>
+          </TabsContent>
+          <TabsContent value="permissions" className="mt-0 focus-visible:outline-none space-y-6">
+            <Card className="border border-border/60 bg-muted/30 rounded-xl p-6 shadow-sm">
+                <CardHeader className="p-0 pb-4">
+                    <CardTitle className="text-sm font-black uppercase tracking-widest opacity-50 flex items-center gap-2">
+                        <ShieldCheck className="h-4 w-4 text-primary" />
+                        System Clearance & Authorization
+                    </CardTitle>
+                </CardHeader>
+                <CardContent className="p-0 space-y-6">
+                    <div>
+                        <p className="text-[10px] font-black uppercase tracking-widest opacity-40 mb-2">Assigned Role</p>
+                        <Badge className="rounded-lg px-4 py-1.5 font-black uppercase text-xs bg-primary text-white shadow-lg shadow-primary/20">
+                            {profile.role.replace('_', ' ')}
+                        </Badge>
+                    </div>
+
+                    <div className="pt-6 border-t border-white/5">
+                        <p className="text-[10px] font-black uppercase tracking-widest opacity-40 mb-4">Resolved Capabilities</p>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                            {profile.resolvedPermissions && profile.resolvedPermissions.length > 0 ? (
+                                profile.resolvedPermissions.sort().map((perm) => (
+                                    <div key={perm} className="flex items-center gap-2 p-3 rounded-xl bg-white/5 border border-white/5">
+                                        <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+                                        <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-tight">{perm.replace(/:/g, ' ')}</span>
+                                    </div>
+                                ))
+                            ) : (
+                                <p className="text-xs font-bold opacity-30 italic">No explicit capabilities resolved</p>
+                            )}
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
           </TabsContent>
         </div>
       </Tabs>

@@ -85,21 +85,7 @@ export default function DashboardPage() {
     }
 
     return (
-        <ModuleContainer
-            title={`Good ${greeting},`}
-            subtitle={userProfile?.fullName || 'Staff Member'}
-            actions={
-                isSuperAdmin && (
-                    <Button
-                        size="sm"
-                        onClick={() => uiEmitter.emit('open-superadmin-dialog')}
-                        className="rounded-full h-10 px-6 text-[10px] font-black uppercase tracking-widest shadow-xl shadow-primary/20"
-                    >
-                        <Shield className="mr-2 h-4 w-4" /> Launch Admin Panel
-                    </Button>
-                )
-            }
-        >
+        <ModuleContainer contentClassName="pt-4 lg:pt-6">
             <div className="grid grid-cols-12 gap-6 w-full h-full">
                 <section className="col-span-12 md:col-span-6 lg:col-span-5 xl:col-span-4 interactive-element flex flex-col h-full w-full">
                     <ClockControl userProfile={userProfile || null} permissions={permissions} systemConfig={systemConfig} />

@@ -51,13 +51,13 @@ export default function AppHeader({
   useEffect(() => {
     const updateGreeting = () => {
       const hour = new Date().getHours();
-      let timeGreeting = 'Morning';
-      if (hour >= 12 && hour < 17) timeGreeting = 'Afternoon';
-      else if (hour >= 17 && hour < 22) timeGreeting = 'Evening';
-      else if (hour >= 22 || hour < 5) timeGreeting = 'Night';
+      let timeGreeting = 'MORNING';
+      if (hour >= 12 && hour < 17) timeGreeting = 'AFTERNOON';
+      else if (hour >= 17 && hour < 22) timeGreeting = 'EVENING';
+      else if (hour >= 22 || hour < 5) timeGreeting = 'NIGHT';
       
       const rawName = userProfile?.fullName || user?.displayName || 'User';
-      const firstName = rawName.split(' ')[0];
+      const firstName = rawName.split(' ')[0].toUpperCase();
       setGreeting(`${timeGreeting}, ${firstName}`);
     };
     updateGreeting();
@@ -74,11 +74,16 @@ export default function AppHeader({
   , [firestore, user, userProfile?.orgId]);
   
   const announcementsQuery = useMemoFirebase(() => 
-    firestore && userProfile ? query(collection(firestore, 'announcements'), where('orgId', '==', userProfile.orgId), orderBy('createdAt', 'desc'), limit(5)) : null
+    firestore && userProfile ? query(collection(firestore, 'announcements'), where('orgId', '==', userProfile.orgId), orderBy('createdAt', 'desc'), limit(1)) : null
   , [firestore, userProfile]);
 
   const { data: notifications } = useCollection<Notification>(notificationsQuery);
   const { data: announcements } = useCollection<Announcement>(announcementsQuery);
+
+  const latestAnnouncement = announcements?.[0];
+  const tickerText = latestAnnouncement
+    ? `LATEST BROADCAST: ${latestAnnouncement.title.toUpperCase()} — ${latestAnnouncement.content.toUpperCase()}`
+    : "LATEST BROADCAST: PLEASE ENSURE ALL END-OF-DAY REPORTS ARE SUBMITTED BY 17:00.";
 
   const unreadNotifications = notifications?.filter(n => !n.isRead) || [];
   const unreadCount = unreadNotifications.length;
@@ -177,6 +182,17 @@ export default function AppHeader({
                 <Clock className="h-3 w-3" />
                 {currentTime} <span className="opacity-30">—</span> Operational Command
             </p>
+        </div>
+
+        {/* Scrolling Intelligence Ticker */}
+        <div className="flex-1 max-w-2xl mx-12 overflow-hidden relative hidden lg:block">
+            <div className="absolute inset-y-0 left-0 w-12 bg-gradient-to-r from-[#0a0a0a] to-transparent z-10" />
+            <div className="absolute inset-y-0 right-0 w-12 bg-gradient-to-l from-[#0a0a0a] to-transparent z-10" />
+            <div className="whitespace-nowrap animate-marquee py-1">
+                <span className="text-[10px] font-black uppercase tracking-[0.25em] text-muted-foreground/40">
+                    {tickerText} &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {tickerText}
+                </span>
+            </div>
         </div>
 
         <div className="flex items-center gap-6">

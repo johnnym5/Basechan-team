@@ -2,7 +2,7 @@
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { UserProfile, Chat, ChatMessage, Task, Requisition } from '@/lib/types';
-import { useCollection, useFirestore, useMemoFirebase, deleteDocumentNonBlocking, useDatabase, useUser, updateDocumentNonBlocking } from '@/firebase';
+import { useCollection, useFirestore, useMemoFirebase, deleteDocumentNonBlocking, useDatabase, useUser, updateDocumentNonBlocking, useDoc } from '@/firebase';
 import { collection, query, where, orderBy, doc, limit } from 'firebase/firestore';
 import { ref, onValue, off } from 'firebase/database';
 import { ScrollArea } from '@/components/ui/scroll-area';

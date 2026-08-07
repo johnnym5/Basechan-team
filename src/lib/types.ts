@@ -2,7 +2,7 @@
 import { PREDEFINED_ROLES } from './roles-and-departments';
 
 export type UserPosition = (typeof PREDEFINED_ROLES)[number];
-export type UserRole = "ORG_ADMIN" | "MANAGING_DIRECTOR" | "HR_MANAGER" | "FINANCE_MANAGER" | "STAFF";
+export type UserRole = "SUPERADMIN" | "ORG_ADMIN" | "MANAGING_DIRECTOR" | "HR_MANAGER" | "FINANCE_MANAGER" | "STAFF";
 export type UserStatus = "ONLINE" | "OFFLINE" | "ON_LEAVE" | "ACTIVE" | "SUSPENDED" | "TERMINATED";
 export type EmploymentType = "FULL_TIME" | "PART_TIME" | "CONTRACT" | "INTERN";
 export type ModuleOverrideState = "default" | "restricted" | "unlocked";
@@ -142,6 +142,13 @@ export interface UserProfile {
   skills?: string[];
   languages?: string[];
 
+  adminNotes?: string;
+
+  leaveEntitlements?: {
+    ANNUAL: number;
+    SICK: number;
+  };
+
   lastSeen?: string;
   activeSessionId?: string | null;
   deviceType?: 'MOBILE' | 'PC' | null;
@@ -204,6 +211,7 @@ export interface Attendance {
         end?: string;
     }[];
     totalBreak?: number;
+    lateReason?: string | null;
 }
 
 export type ShiftType = "MORNING" | "AFTERNOON" | "NIGHT" | "ON_CALL";
@@ -493,6 +501,24 @@ export interface Permissions {
   canViewAudit: boolean;
   canManageDisplays: boolean;
   canBypassGeofence: boolean;
+  canShareScreen: boolean;
+  canSendNotifications: boolean;
+  canShareLocation: boolean;
+  canAllowAudio: boolean;
+  canModifyFiles: boolean;
+  canReadFiles: boolean;
+  canCreateRequisition: boolean;
+  canSendChatMessage: boolean;
+  canAccessAttendance: boolean;
+  canAccessLeave: boolean;
+  canRequestLeave: boolean;
+  canAccessTasks: boolean;
+  canCreateTask: boolean;
+  canAccessWorkbooks: boolean;
+  canCreateWorkbook: boolean;
+  canAccessDisplays: boolean;
+  canAccessReports: boolean;
+  canSubmitReport: boolean;
 }
 
 export type LeaveType = "ANNUAL" | "SICK" | "UNPAID" | "MATERNITY" | "PATERNITY";

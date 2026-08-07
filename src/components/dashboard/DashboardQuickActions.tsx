@@ -29,7 +29,7 @@ export function DashboardQuickActions() {
         { label: "Invite Staff", icon: UserPlus, action: () => uiEmitter.emit('open-invite-user-dialog'), permission: permissions.canManageStaff },
         { label: "Add Task", icon: ListTodo, action: () => uiEmitter.emit('open-assign-task-dialog'), permission: true },
         { label: "New Request", icon: FileText, action: () => uiEmitter.emit('open-new-requisition-dialog'), permission: permissions.canAccessRequisitions },
-        { label: "Request Leave", icon: CalendarPlus, action: () => uiEmitter.emit('open-request-leave-dialog'), permission: true },
+        { label: "Request Leave", icon: CalendarPlus, action: () => uiEmitter.emit('open-request-leave-dialog'), permission: permissions.canRequestLeave },
         { label: "Workbook", icon: BookOpenCheck, action: () => uiEmitter.emit('open-new-workbook-dialog'), permission: true },
         { label: "Message", icon: MessageSquare, action: () => uiEmitter.emit('open-chat-dialog'), permission: permissions.canAccessChat },
         { label: "Announce", icon: Megaphone, action: () => uiEmitter.emit('open-new-announcement-dialog'), permission: permissions.canManageAnnouncements },

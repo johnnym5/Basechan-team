@@ -19,6 +19,7 @@ import {
 export const mainNavItems = [
   { href: "/", icon: LayoutDashboard, label: "Dashboard" },
   { dialog: "profile", icon: User, label: "My Profile" },
+  { dialog: "leave", icon: CalendarPlus, label: "Leave", permission: 'canAccessLeave' },
   { href: "/staff", icon: Users, label: "Staff", permission: 'canViewTeam' },
   { isSeparator: true },
   { href: "/tasks", icon: ListTodo, label: "Tasks", permission: 'canAccessTasks' },

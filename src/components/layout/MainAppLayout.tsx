@@ -11,6 +11,7 @@ import { useSystemConfig } from '@/hooks/useSystemConfig';
 import AppHeader from '@/components/layout/AppHeader';
 import { PanelSwitcher } from '@/components/layout/PanelSwitcher';
 import { usePermissions } from '@/hooks/usePermissions';
+import { useImpersonation } from '@/context/ImpersonationProvider';
 import { format } from 'date-fns';
 import { useIdleTimer } from '@/hooks/useIdleTimer';
 import { useSyncDialogsWithUrl } from '@/hooks/useSyncDialogsWithUrl';
@@ -33,7 +34,7 @@ const GlobalDialogs = dynamic(() => import('@/components/layout/GlobalDialogs').
 });
 
 import { AppShellContainer } from './shell/AppShellContainer';
-import { SidebarDock } from './shell/SidebarDock';
+import { AppNavFAB } from './shell/AppNavFAB';
 
 export function MainAppLayout({ children }: { children: React.ReactNode }) {
   const { user, isUserLoading } = useUser();
@@ -53,41 +54,81 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
 
   useSyncDialogsWithUrl();
 
+  const { isImpersonating, impersonatedUserId } = useImpersonation();
+
+  const handleLogout = async () => {
+    if (auth && user?.uid) {
+        try {
+            const userRef = doc(firestore!, 'users', user.uid);
+            await updateDoc(userRef, { activeSessionId: null, status: 'OFFLINE' });
+            handleTerminateLiveStream();
+            localStorage.removeItem('basechan-active-session');
+            await signOut(auth);
+            window.location.href = '/';
+        } catch (error) {
+            console.error("Logout failed:", error);
+        }
+    }
+  };
+
+  // Listen for Service Worker messages
+  useEffect(() => {
+    if (!('serviceWorker' in navigator)) return;
+
+    const handleMessage = (event: MessageEvent) => {
+        if (event.data?.type === 'TRIGGER_ACTION') {
+            const action = event.data.action;
+            if (action === 'trigger-clock-in') {
+                uiEmitter.emit('open-attendance-dialog');
+            } else if (action === 'trigger-signout') {
+                handleLogout();
+            }
+        }
+    };
+
+    navigator.serviceWorker.addEventListener('message', handleMessage);
+    return () => navigator.serviceWorker.removeEventListener('message', handleMessage);
+  }, [handleLogout]);
+
   useEffect(() => {
     setToday(format(new Date(), 'yyyy-MM-dd'));
     setMounted(true);
   }, []);
 
-  const userProfileRef = useMemoFirebase(() => 
-    firestore && user?.uid ? doc(firestore, 'users', user.uid) : null
-  , [firestore, user?.uid]);
+  const userProfileRef = useMemoFirebase(() => {
+    if (!firestore || !user?.uid) return null;
+    const targetId = (isImpersonating && impersonatedUserId) ? impersonatedUserId : user.uid;
+    return doc(firestore, 'users', targetId);
+  }, [firestore, user?.uid, isImpersonating, impersonatedUserId]);
   const { data: userProfile } = useDoc<UserProfile>(userProfileRef);
   
   const stableProfile = useMemo(() => {
     if (!user) return null;
+    const targetId = (isImpersonating && impersonatedUserId) ? impersonatedUserId : user.uid;
     return {
-        id: user.uid,
+        id: targetId,
         orgId: userProfile?.orgId || 'basechan-international',
-        email: user.email || '',
+        email: userProfile?.email || user.email || '',
         fullName: userProfile?.fullName || user.displayName || 'Staff Member',
         role: userProfile?.role || 'STAFF',
         position: userProfile?.position || 'Staff',
         joinedDate: userProfile?.joinedDate || new Date().toISOString(),
         ...userProfile
     } as UserProfile;
-  }, [user, userProfile]);
+  }, [user, userProfile, isImpersonating, impersonatedUserId]);
 
   // ATTENDANCE-STREAM SYNCHRONIZATION
   const attendanceQuery = useMemoFirebase(() => {
     if (!user?.uid || !firestore || !today || !userProfile?.orgId) return null;
+    const targetId = (isImpersonating && impersonatedUserId) ? impersonatedUserId : user.uid;
     return query(
         collection(firestore, 'attendance'), 
         where('orgId', '==', userProfile.orgId),
-        where('userId', '==', user.uid), 
+        where('userId', '==', targetId),
         where('date', '==', today), 
         limit(1)
     );
-  }, [user?.uid, firestore, today, userProfile?.orgId]);
+  }, [user?.uid, firestore, today, userProfile?.orgId, isImpersonating, impersonatedUserId]);
   const { data: attendanceData } = useCollection<Attendance>(attendanceQuery);
   const attendanceRecord = attendanceData?.[0] || null;
 
@@ -252,21 +293,6 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
     }
   }, [config, mounted]);
 
-  const handleLogout = async () => {
-    if (auth && user?.uid) {
-        try {
-            const userRef = doc(firestore!, 'users', user.uid);
-            await updateDoc(userRef, { activeSessionId: null, status: 'OFFLINE' });
-            handleTerminateLiveStream();
-            localStorage.removeItem('basechan-active-session');
-            await signOut(auth);
-            window.location.href = '/';
-        } catch (error) {
-            console.error("Logout failed:", error);
-        }
-    }
-  };
-
   useEffect(() => {
       return () => {
           handleTerminateLiveStream();
@@ -286,8 +312,8 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
             </div>
         )}
 
-        {/* Sidebar Frame Case */}
-        <SidebarDock isLoggedIn={!!user} isAuthLoading={isUserLoading} />
+        {/* Global Navigation FAB */}
+        <AppNavFAB />
 
         {/* Main Content Viewport Container */}
         <div className="flex-1 flex flex-col min-w-0 h-full bg-black/20">
@@ -310,7 +336,6 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
 
       {user && stableProfile && (
         <>
-            <BottomNavBar />
             <DebriefModal userProfile={stableProfile} />
             <PulseCheckDialog userProfile={stableProfile} />
             <Suspense fallback={null}>

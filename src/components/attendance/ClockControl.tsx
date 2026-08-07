@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Button } from '../ui/button';
-import { format, differenceInSeconds, isAfter } from 'date-fns';
+import { format, differenceInSeconds, isAfter, parse } from 'date-fns';
 import { Clock, Loader2, Building, Briefcase, LogOut, Coffee, Play, MapPin, AlertTriangle, Hourglass, MonitorPlay } from 'lucide-react';
 import type { UserProfile, Attendance, SystemConfig, AttendanceLocation } from '@/lib/types';
 import type { Permissions } from '@/hooks/usePermissions';
@@ -14,6 +14,16 @@ import { Progress } from '../ui/progress';
 import { attendanceService } from '@/services/attendance-service';
 import { uiEmitter } from '@/lib/ui-emitter';
 import { webRTCService } from '@/services/webrtc-service';
+import { useMediaQuery } from '@/hooks/use-media-query';
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogDescription,
+    DialogFooter
+} from "@/components/ui/dialog";
+import { Textarea } from "../ui/textarea";
 
 interface ClockControlProps {
     userProfile: UserProfile | null;
@@ -34,6 +44,12 @@ export function ClockControl({ userProfile, permissions, systemConfig, className
     const [location, setLocation] = useState<AttendanceLocation>('OFFICE');
     const [today, setToday] = useState('');
     const [distanceFromOffice, setDistanceFromOffice] = useState<number | null>(null);
+    const [lateReason, setLateReason] = useState('');
+    const [showLateDialog, setShowLateDialog] = useState(false);
+
+    const isMobile = useMediaQuery("(max-width: 768px)");
+    const isAdmin = permissions.canManageStaff;
+    const isRestricted = isMobile && !isAdmin;
 
     useEffect(() => { setToday(format(new Date(), 'yyyy-MM-dd')); }, []);
 
@@ -123,8 +139,16 @@ export function ClockControl({ userProfile, permissions, systemConfig, className
         return () => clearInterval(timer);
     }, [isClockedIn, attendanceRecord, systemConfig]);
 
-    const handleClockIn = async () => {
+    const handleClockIn = async (reason?: string) => {
         if (!userProfile || !firestore) return;
+
+        const now = new Date();
+        const threshold = parse('09:15', 'HH:mm', now);
+
+        if (isAfter(now, threshold) && !reason) {
+            setShowLateDialog(true);
+            return;
+        }
 
         const isExempt = permissions.canBypassGeofence;
         const isOutOfRange = location === 'OFFICE' && systemConfig?.office_coordinates && distanceFromOffice !== null && distanceFromOffice > 200;
@@ -184,8 +208,10 @@ export function ClockControl({ userProfile, permissions, systemConfig, className
                 }
             }
 
-            await attendanceService.clockIn(firestore, userProfile, location, today, systemConfig);
+            await attendanceService.clockIn(firestore, userProfile, location, today, systemConfig, reason);
             toast({ title: 'Shift Started', description: screenShareActive ? "Workstation linked to Mission Control." : "Clock-in successful (No video oversight)." });
+            setShowLateDialog(false);
+            setLateReason('');
         } catch (error: any) {
             console.error("Clock In Error:", error);
             toast({ variant: "destructive", title: "Clock-In Failed", description: error.message || "An unknown error occurred during clock-in." });
@@ -217,6 +243,7 @@ export function ClockControl({ userProfile, permissions, systemConfig, className
     if (isLoading) return <div className="border border-border/60 bg-muted/30 rounded-xl h-64 flex items-center justify-center shadow-sm"><Loader2 className="animate-spin" /></div>;
 
     return (
+        <>
         <section className={cn("border border-border/60 bg-muted/30 rounded-xl p-8 flex flex-col items-center justify-center text-center shadow-sm relative overflow-hidden h-full min-h-[350px]", className)}>
             {isOnBreak && <div className="absolute top-0 left-0 w-full h-1.5 bg-amber-500 animate-pulse" />}
             <div className="mb-6 flex items-center gap-2 text-muted-foreground uppercase tracking-[0.3em] text-[10px] font-black opacity-60">
@@ -253,11 +280,11 @@ export function ClockControl({ userProfile, permissions, systemConfig, className
                             variant={isOnBreak ? 'default' : 'outline'}
                             className={cn("h-16 rounded-[1.5rem] text-[10px] font-black uppercase tracking-widest transition-all", isOnBreak ? "bg-amber-600 hover:bg-amber-700" : "border-amber-500/30 text-amber-500 hover:bg-amber-500/10")}
                             onClick={handleToggleBreak}
-                            disabled={isSubmitting}
+                            disabled={isSubmitting || isRestricted}
                         >
                             {isSubmitting ? <Loader2 className="animate-spin" /> : (isOnBreak ? <><Play className="mr-2 h-5 w-5" /> Resume</> : <><Coffee className="mr-2 h-5 w-5" /> Take Break</>)}
                         </Button>
-                        <Button className="h-16 bg-rose-600/10 hover:bg-rose-600 text-rose-500 hover:text-white border border-rose-600/20 rounded-[1.5rem] text-[10px] font-black uppercase tracking-widest transition-all" onClick={handleClockOut} disabled={isSubmitting}>
+                        <Button className="h-16 bg-rose-600/10 hover:bg-rose-600 text-rose-500 hover:text-white border border-rose-600/20 rounded-[1.5rem] text-[10px] font-black uppercase tracking-widest transition-all" onClick={handleClockOut} disabled={isSubmitting || isRestricted}>
                             {isSubmitting ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <><LogOut className="mr-2 h-5 w-5" /> End Shift</>}
                         </Button>
                     </div>
@@ -265,12 +292,17 @@ export function ClockControl({ userProfile, permissions, systemConfig, className
                     <div className="w-full space-y-3">
                         <Button 
                             className="w-full h-20 bg-primary hover:bg-primary/90 text-primary-foreground rounded-[2rem] text-xl font-black uppercase tracking-[0.1em] shadow-2xl shadow-primary/30 m3-interactive"
-                            onClick={handleClockIn} 
-                            disabled={isSubmitting || !permissions?.canClockIn}
+                            onClick={() => handleClockIn()}
+                            disabled={isSubmitting || !permissions?.canClockIn || isRestricted}
                         >
                             {isSubmitting ? <Loader2 className="animate-spin" /> : <><MonitorPlay className="mr-2 h-6 w-6" /> Start Working</>}
                         </Button>
-                        {!permissions?.canClockIn && (
+                        {isRestricted && (
+                            <p className="text-center text-[10px] text-amber-500 font-bold uppercase tracking-wider bg-amber-500/10 p-2 rounded-xl border border-amber-500/20">
+                                Please use your workstation system to clock in.
+                            </p>
+                        )}
+                        {!permissions?.canClockIn && !isRestricted && (
                             <p className="text-center text-[10px] text-rose-500 font-bold uppercase tracking-wider bg-rose-500/10 p-2 rounded-xl border border-rose-500/20">
                                 Attendance clock-in is restricted by administrator.
                             </p>
@@ -280,14 +312,43 @@ export function ClockControl({ userProfile, permissions, systemConfig, className
             </div>
 
             <div className="flex items-center justify-center space-x-8 pt-6 border-t border-white/5 w-full">
-                <div onClick={() => !isClockedIn && setLocation('OFFICE')} className={cn("flex items-center gap-2 cursor-pointer transition-all", location === 'OFFICE' ? "text-primary" : "text-muted-foreground opacity-50")}>
+                <div onClick={() => !isClockedIn && !isRestricted && setLocation('OFFICE')} className={cn("flex items-center gap-2 cursor-pointer transition-all", location === 'OFFICE' ? "text-primary" : "text-muted-foreground opacity-50")}>
                     <Building className="w-5 h-5" /><span className="text-[10px] font-black uppercase tracking-widest">Office</span>
                 </div>
                 <div className="h-5 w-px bg-white/10" />
-                <div onClick={() => !isClockedIn && setLocation('REMOTE')} className={cn("flex items-center gap-2 cursor-pointer transition-all", location === 'REMOTE' ? "text-primary" : "text-muted-foreground opacity-50")}>
+                <div onClick={() => !isClockedIn && !isRestricted && setLocation('REMOTE')} className={cn("flex items-center gap-2 cursor-pointer transition-all", location === 'REMOTE' ? "text-primary" : "text-muted-foreground opacity-50")}>
                     <Briefcase className="w-5 h-5" /><span className="text-[10px] font-black uppercase tracking-widest">Remote</span>
                 </div>
             </div>
         </section>
+
+        <Dialog open={showLateDialog} onOpenChange={setShowLateDialog}>
+            <DialogContent className="apple-glass border-none sm:max-w-md">
+                <DialogHeader>
+                    <DialogTitle className="text-xl font-black uppercase tracking-tighter">Late Authorization Required</DialogTitle>
+                    <DialogDescription className="text-xs font-bold uppercase tracking-widest opacity-60">
+                        Operational window (09:15) has expired. Please provide a brief explanation for late entry.
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="py-4">
+                    <Textarea
+                        placeholder="State your reason for late arrival..."
+                        className="bg-black/20 border-white/5 rounded-2xl min-h-[100px] text-sm focus-visible:ring-primary/20"
+                        value={lateReason}
+                        onChange={(e) => setLateReason(e.target.value)}
+                    />
+                </div>
+                <DialogFooter>
+                    <Button
+                        onClick={() => handleClockIn(lateReason || "No reason provided.")}
+                        disabled={isSubmitting || !lateReason.trim()}
+                        className="w-full h-12 rounded-xl font-black uppercase tracking-widest"
+                    >
+                        {isSubmitting ? <Loader2 className="animate-spin" /> : "Submit & Start Shift"}
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+        </>
     );
 }

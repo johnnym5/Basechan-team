@@ -136,7 +136,13 @@ export function UserAccessEditor({ userProfile }: { userProfile: UserProfile }) 
     { name: "canManageAnnouncements", label: "Broadcasting", desc: "Permission to post organization-wide updates." },
     { name: "canViewAudit", label: "Infrastructure Audit", desc: "Review system interaction telemetry logs." },
     { name: "canManageDisplays", label: "Live Displays Admin", desc: "Direct node configuration rights." },
-    { name: "canManageLibrary", label: "Library Master", desc: "Direct content modification rights." }
+    { name: "canManageLibrary", label: "Library Master", desc: "Direct content modification rights." },
+    { name: "canShareScreen", label: "WebRTC Screen Share", desc: "Capability to initiate screen broadcasting." },
+    { name: "canSendNotifications", label: "Push Notifications", desc: "Authorized to dispatch system-wide alerts." },
+    { name: "canShareLocation", label: "Geolocation Beacon", desc: "Permission to transmit unit coordinates." },
+    { name: "canAllowAudio", label: "Audio Handshake", desc: "Access to microphone for secure channels." },
+    { name: "canReadFiles", label: "Secure File Read", desc: "Clearance to access protected archives." },
+    { name: "canModifyFiles", label: "Secure File Mutate", desc: "Clearance to edit or delete archives." }
   ];
 
   const modulePermissionItems = [

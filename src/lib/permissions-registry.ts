@@ -43,13 +43,27 @@ export const PERMISSIONS = {
   ADMIN_VIEW_AUDIT: 'admin:view-audit',
   ADMIN_MANAGE_DISPLAYS: 'admin:manage-displays',
 
-  // --- Communication ---
+  // --- Real-time & Media ---
+  WEBRTC_SHARE_SCREEN: 'webrtc:share-screen',
+  WEBRTC_ALLOW_AUDIO: 'webrtc:allow-audio',
+
+  // --- Communication & Signals ---
   CHAT_ACCESS: 'chat:access',
   CHAT_SEND_MESSAGE: 'chat:send-message',
+  NOTIFICATIONS_SEND: 'notifications:send',
+  LOCATION_SHARE: 'location:share',
+
+  // --- File Management ---
+  FILES_READ: 'files:read',
+  FILES_MODIFY: 'files:modify',
 
   // --- Reporting ---
   REPORT_ACCESS: 'report:access',
   REPORT_SUBMIT: 'report:submit',
+
+  // --- Leave Management ---
+  LEAVE_ACCESS: 'leave:access',
+  LEAVE_REQUEST: 'leave:request',
 
   // --- Self-Service ---
   PROFILE_EDIT_OWN: 'profile:edit-own',
@@ -71,6 +85,8 @@ export const DUTIES = {
     PERMISSIONS.REPORT_SUBMIT,
     PERMISSIONS.LIBRARY_ACCESS,
     PERMISSIONS.LIBRARY_VIEW_FILES,
+    PERMISSIONS.LEAVE_ACCESS,
+    PERMISSIONS.LEAVE_REQUEST,
   ],
   HR_OPERATIONS: [
     PERMISSIONS.ATTENDANCE_APPROVE_HR,

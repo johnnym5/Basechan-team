@@ -288,6 +288,7 @@ export function EditStaffProfileForm({ profile, onCancel, permissions }: EditSta
                         <SelectItem value="FINANCE_MANAGER">Finance Manager</SelectItem>
                         <SelectItem value="MANAGING_DIRECTOR">Managing Director</SelectItem>
                         <SelectItem value="ORG_ADMIN">Org Admin</SelectItem>
+                        <SelectItem value="SUPERADMIN">Super Admin</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />

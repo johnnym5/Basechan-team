@@ -18,7 +18,7 @@ export const attendanceService = {
    * Initiates a new work session.
    * Performs a deep scan to prevent duplicate records for the same operational cycle.
    */
-  async clockIn(db: Firestore, user: UserProfile, location: AttendanceLocation, today: string, systemConfig: SystemConfig | null) {
+  async clockIn(db: Firestore, user: UserProfile, location: AttendanceLocation, today: string, systemConfig: SystemConfig | null, lateReason?: string) {
     if (!user?.id) throw new Error("Personnel identity verification failed. Command aborted.");
 
     const deterministicId = `${user.id}_${today}`;
@@ -66,7 +66,8 @@ export const attendanceService = {
                 breaks: arrayUnion({ start: data.clockOut, end: nowIso }),
                 totalBreak: increment(gapSeconds),
                 location,
-                status: 'APPROVED'
+                status: 'APPROVED',
+                lateReason: lateReason || data.lateReason || null
             });
             
             const userRef = doc(db, 'users', user.id);
@@ -78,7 +79,7 @@ export const attendanceService = {
     }
 
     // 2. NEW SESSION INITIALIZATION
-    const newRecord: Omit<Attendance, 'id'> = {
+    const newRecord: any = {
       userId: user.id,
       userName: user.fullName,
       orgId: user.orgId,
@@ -91,6 +92,7 @@ export const attendanceService = {
       totalBreak: 0,
       onBreak: false,
       breaks: [],
+      lateReason: lateReason || null
     };
     
     await setDoc(docRef, newRecord);

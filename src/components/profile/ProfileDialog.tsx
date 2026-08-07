@@ -34,7 +34,15 @@ import { Badge } from "../ui/badge";
 import { ActivityHeatmap } from "../shared/ActivityHeatmap";
 import { useSuperAdmin } from "@/hooks/useSuperAdmin";
 import { useImpersonation } from "@/context/ImpersonationProvider";
+import { usePermissions } from "@/hooks/usePermissions";
 import { Switch } from "../ui/switch";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { AttendancePageContent } from "../attendance/AttendancePageContent";
+import { LeavePageContent } from "../leave/LeavePageContent";
+import { ReportsPageContent } from "../reports/ReportsPageContent";
+import { User, Fingerprint, CalendarDays, BarChart3 } from "lucide-react";
+
+import { StaffProfileView } from "./staff/StaffProfileView";
 
 const formSchema = z.object({
   fullName: z.string().min(1, { message: "Full name is required." }),
@@ -59,6 +67,7 @@ export function ProfileDialog({ open, onOpenChange, userProfile, modal }: Profil
   const { user } = useUser();
   const { isSuperAdmin } = useSuperAdmin();
   const { isImpersonating, setIsImpersonating } = useImpersonation();
+  const permissions = usePermissions(userProfile);
   const { isUploading, uploadProgress, uploadFile } = useFileUpload();
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
@@ -229,191 +238,69 @@ export function ProfileDialog({ open, onOpenChange, userProfile, modal }: Profil
         <Progress value={uploadProgress} className={isUploading ? "w-full rounded-none h-1 flex-shrink-0" : "hidden"} />
 
         <ModuleContainer
-            title="My Profile"
-            subtitle="Security & Activity History"
+            title="Staff Hub"
+            subtitle="Personnel Overview, Attendance, and Leave Management"
+            noScroll={true}
         >
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 pb-20">
-                <div className="lg:col-span-4 space-y-6">
-                    <section className="apple-glass rounded-[2rem] p-6 flex flex-col items-center text-center interactive-element">
-                        <div className="relative mb-6 group">
-                            <Avatar className="w-28 h-28 border-4 border-primary/20 shadow-2xl transition-transform group-hover:scale-105 duration-500">
-                                <AvatarImage src={avatarPreview || userProfile.avatarUrl || user?.photoURL || ''} alt={userProfile.fullName} />
-                                <AvatarFallback className="text-3xl font-black bg-secondary">{userProfile.fullName.split(' ').map(n=>n[0]).join('')}</AvatarFallback>
-                            </Avatar>
-                            <label htmlFor="avatar-upload" className="absolute -bottom-1 -right-1 bg-primary text-primary-foreground rounded-full p-2.5 cursor-pointer hover:bg-primary/90 transition-all shadow-xl active:scale-90 border-4 border-background">
-                                <Pencil className="h-4 w-4" />
-                                <Input id="avatar-upload" type="file" className="hidden" accept="image/*" onChange={handleFileChange} />
-                            </label>
-                        </div>
-                        <h2 className="text-xl font-black font-headline tracking-tight">{userProfile.fullName}</h2>
-                        <p className="text-[10px] font-bold text-primary uppercase tracking-[0.2em] mt-1">{userProfile.position}</p>
-                    </section>
-
-                    <section className="apple-glass rounded-[2rem] p-6">
-                        <div className="flex items-center gap-2 mb-6">
-                            <div className="p-1.5 rounded-lg bg-primary/10 text-primary">
-                                <Lock className="h-3.5 w-3.5" />
-                            </div>
-                            <h3 className="text-xs font-black uppercase tracking-widest">Update Information</h3>
-                        </div>
-                        <Form {...form}>
-                            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
-                                <FormField control={form.control} name="fullName" render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel className="text-[9px] font-black uppercase tracking-widest opacity-50">Full Name</FormLabel>
-                                        <FormControl><Input {...field} value={field.value ?? ""} className="rounded-xl h-11 bg-background/50 border-white/5 text-sm" /></FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}/>
-                                <FormField control={form.control} name="phoneNumber" render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel className="text-[9px] font-black uppercase tracking-widest opacity-50">Phone Number</FormLabel>
-                                        <FormControl><Input type="tel" {...field} value={field.value ?? ""} className="rounded-xl h-11 bg-background/50 border-white/5 text-sm" /></FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}/>
-                                <Button type="submit" className="w-full h-12 rounded-2xl font-black uppercase tracking-widest shadow-lg shadow-primary/20 text-[10px] interactive-element" disabled={isBusy}>
-                                    {isBusy ? <Loader2 className="mr-2 h-3 w-3 animate-spin" /> : "Save Changes"}
-                                </Button>
-                            </form>
-                        </Form>
-                    </section>
-
-                    {isSuperAdmin && (
-                        <section className="apple-glass rounded-[2rem] p-6 border-amber-500/20 bg-amber-500/5 animate-in fade-in zoom-in-95 duration-500">
-                            <div className="flex items-center gap-3 mb-6">
-                                <div className="p-2 rounded-xl bg-amber-500/10 text-amber-500">
-                                    <Sparkles className="h-4 w-4" />
-                                </div>
-                                <div>
-                                    <h3 className="text-xs font-black uppercase tracking-widest leading-none text-amber-500">Master Key</h3>
-                                    <p className="text-[8px] font-bold text-amber-600/60 uppercase tracking-tighter mt-1">Infrastructure Override</p>
-                                </div>
-                            </div>
-                            <div className="flex items-center justify-between p-4 rounded-2xl bg-black/20 border border-white/5">
-                                <div className="space-y-0.5">
-                                    <p className="text-[10px] font-black uppercase tracking-widest">Operational Mode</p>
-                                    <p className="text-[8px] font-bold text-muted-foreground uppercase">{isImpersonating ? 'Act as Staff' : 'System Root'}</p>
-                                </div>
-                                <Switch
-                                    checked={!isImpersonating}
-                                    onCheckedChange={(checked) => setIsImpersonating(!checked)}
-                                    className="data-[state=checked]:bg-amber-500"
-                                />
-                            </div>
-                            <p className="mt-4 text-[7px] leading-relaxed text-amber-700 uppercase font-bold text-center px-4">
-                                Toggling the Master Key allows you to transition between standard operational duties and absolute system control.
-                            </p>
-                        </section>
-                    )}
+            <Tabs defaultValue="profile" className="flex-1 flex flex-col min-h-0 h-full">
+                <div className="px-8 py-4 border-b border-white/5 bg-white/[0.02] shrink-0">
+                    <TabsList className="bg-secondary/20 rounded-2xl p-1 border border-white/5 w-fit">
+                        <TabsTrigger value="profile" className="rounded-xl px-6 font-black uppercase text-[10px] tracking-widest gap-2 data-[state=active]:bg-background transition-all">
+                            <User className="h-3.5 w-3.5" /> Profile
+                        </TabsTrigger>
+                        <TabsTrigger value="attendance" className="rounded-xl px-6 font-black uppercase text-[10px] tracking-widest gap-2 data-[state=active]:bg-background transition-all">
+                            <Fingerprint className="h-3.5 w-3.5" /> Attendance
+                        </TabsTrigger>
+                        <TabsTrigger value="leave" className="rounded-xl px-6 font-black uppercase text-[10px] tracking-widest gap-2 data-[state=active]:bg-background transition-all">
+                            <CalendarDays className="h-3.5 w-3.5" /> Leave
+                        </TabsTrigger>
+                        <TabsTrigger value="reports" className="rounded-xl px-6 font-black uppercase text-[10px] tracking-widest gap-2 data-[state=active]:bg-background transition-all">
+                            <BarChart3 className="h-3.5 w-3.5" /> Reports
+                        </TabsTrigger>
+                    </TabsList>
                 </div>
 
-                <div className="lg:col-span-8 space-y-6">
-                    <section className="apple-glass rounded-[2rem] p-6 shadow-inner">
-                        <div className="flex items-center justify-between mb-8">
-                            <div className="flex items-center gap-2">
-                                <Activity className="h-4 w-4 text-emerald-500" />
-                                <h3 className="text-xs font-black uppercase tracking-widest">Work Consistency</h3>
+                <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar p-0">
+                    <TabsContent value="profile" className="m-0 focus-visible:ring-0 outline-none animate-in fade-in duration-500">
+                        <div className="p-6 m-4 md:m-6 border border-white/10 rounded-2xl bg-[#121212]/80 backdrop-blur-sm overflow-hidden shadow-lg">
+                            <StaffProfileView
+                                userId={userProfile.id}
+                                currentUserProfile={userProfile}
+                                permissions={permissions}
+                            />
+
+                            {/* Read-Only Admin Notes for Staff */}
+                            <div className="mt-8 pt-8 border-t border-white/5">
+                                <div className="flex items-center gap-2 mb-4 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground opacity-40">
+                                    <Info className="h-3.5 w-3.5" />
+                                    Internal Administrative Records
+                                </div>
+                                <div className="p-6 rounded-2xl bg-secondary/10 border border-white/5 italic text-sm text-muted-foreground">
+                                    {userProfile.adminNotes || "No administrative annotations recorded for this unit."}
+                                </div>
                             </div>
                         </div>
-                        <ActivityHeatmap userId={userProfile.id} orgId={userProfile.orgId} />
-                    </section>
+                    </TabsContent>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <section className={cn("apple-glass rounded-[2rem] p-6 interactive-element transition-all", notifStatus === 'denied' && "ring-1 ring-destructive/20 bg-destructive/5")}>
-                            <div className="flex items-center gap-3 mb-6">
-                                <div className={cn("p-2 rounded-xl", notifStatus === 'denied' ? "bg-destructive/10" : "bg-amber-500/10")}>
-                                    <Bell className={cn("h-4 w-4", notifStatus === 'denied' ? "text-destructive" : "text-amber-500")} />
-                                </div>
-                                <div>
-                                    <h3 className="text-xs font-black uppercase tracking-widest leading-none">Notifications</h3>
-                                    <p className="text-[8px] font-bold text-muted-foreground uppercase tracking-tighter mt-1">Browser Alerts</p>
-                                </div>
-                            </div>
-                            <div className="flex flex-col gap-4">
-                                <div className="flex items-center justify-between">
-                                    <span className="text-[10px] font-bold text-muted-foreground uppercase">Status</span>
-                                    {getStatusBadge(notifStatus)}
-                                </div>
-                                {notifStatus !== 'granted' && notifStatus !== 'unsupported' && (
-                                    <Button size="sm" variant="ghost" className="w-full h-10 rounded-xl text-[9px] font-black uppercase bg-primary/10 text-primary hover:bg-primary hover:text-white transition-all" onClick={() => handleRequestPermission('notifications')}>
-                                        {notifStatus === 'denied' ? 'Settings Required' : 'Enable Notifications'}
-                                    </Button>
-                                )}
-                            </div>
-                        </section>
+                    <TabsContent value="attendance" className="m-0 focus-visible:ring-0 outline-none animate-in fade-in duration-500">
+                        <div className="p-6 m-4 md:m-6 border border-white/10 rounded-2xl bg-[#121212]/80 backdrop-blur-sm overflow-hidden shadow-lg">
+                            <AttendancePageContent noWrapper={true} />
+                        </div>
+                    </TabsContent>
 
-                        <section className={cn("apple-glass rounded-[2rem] p-6 interactive-element transition-all", locationStatus === 'denied' && "ring-1 ring-destructive/20 bg-destructive/5")}>
-                            <div className="flex items-center gap-3 mb-6">
-                                <div className={cn("p-2 rounded-xl", locationStatus === 'denied' ? "bg-destructive/10" : "bg-primary/10")}>
-                                    <MapPin className={cn("h-4 w-4", locationStatus === 'denied' ? "text-destructive" : "text-primary")} />
-                                </div>
-                                <div>
-                                    <h3 className="text-xs font-black uppercase tracking-widest leading-none">Location</h3>
-                                    <p className="text-[8px] font-bold text-muted-foreground uppercase tracking-tighter mt-1">Geofence Compliance</p>
-                                </div>
-                            </div>
-                            <div className="flex flex-col gap-4">
-                                <div className="flex items-center justify-between">
-                                    <span className="text-[10px] font-bold text-muted-foreground uppercase">Status</span>
-                                    {getStatusBadge(locationStatus)}
-                                </div>
-                                {locationStatus !== 'granted' && locationStatus !== 'unsupported' && (
-                                    <Button size="sm" variant="ghost" className="w-full h-10 rounded-xl text-[9px] font-black uppercase bg-primary/10 text-primary hover:bg-primary hover:text-white transition-all" onClick={() => handleRequestPermission('location')}>
-                                        {locationStatus === 'denied' ? 'Settings Required' : 'Enable Location'}
-                                    </Button>
-                                )}
-                            </div>
-                        </section>
+                    <TabsContent value="leave" className="m-0 focus-visible:ring-0 outline-none animate-in fade-in duration-500">
+                        <div className="p-6 m-4 md:m-6 border border-white/10 rounded-2xl bg-[#121212]/80 backdrop-blur-sm overflow-hidden shadow-lg">
+                            <LeavePageContent />
+                        </div>
+                    </TabsContent>
 
-                        <section className={cn("apple-glass rounded-[2rem] p-6 interactive-element transition-all", idleStatus === 'denied' && "ring-1 ring-destructive/20 bg-destructive/5")}>
-                            <div className="flex items-center gap-3 mb-6">
-                                <div className={cn("p-2 rounded-xl", idleStatus === 'denied' ? "bg-destructive/10" : "bg-emerald-500/10")}>
-                                    <MonitorDot className={cn("h-4 w-4", idleStatus === 'denied' ? "text-destructive" : "text-emerald-500")} />
-                                </div>
-                                <div>
-                                    <h3 className="text-xs font-black uppercase tracking-widest leading-none">Presence</h3>
-                                    <p className="text-[8px] font-bold text-muted-foreground uppercase tracking-tighter mt-1">System-Wide Idle</p>
-                                </div>
-                            </div>
-                            <div className="flex flex-col gap-4">
-                                <div className="flex items-center justify-between">
-                                    <span className="text-[10px] font-bold text-muted-foreground uppercase">Status</span>
-                                    {getStatusBadge(idleStatus)}
-                                </div>
-                                {idleStatus !== 'granted' && idleStatus !== 'unsupported' && (
-                                    <Button size="sm" variant="ghost" className="w-full h-10 rounded-xl text-[9px] font-black uppercase bg-primary/10 text-primary hover:bg-primary hover:text-white transition-all" onClick={() => handleRequestPermission('idle')}>
-                                        {idleStatus === 'denied' ? 'Settings Required' : 'Enable Detection'}
-                                    </Button>
-                                )}
-                            </div>
-                        </section>
-
-                        <section className={cn("apple-glass rounded-[2rem] p-6 interactive-element transition-all", fsStatus === 'denied' && "ring-1 ring-destructive/20 bg-destructive/5")}>
-                            <div className="flex items-center gap-3 mb-6">
-                                <div className={cn("p-2 rounded-xl", fsStatus === 'denied' ? "bg-destructive/10" : "bg-blue-500/10")}>
-                                    <FileCode className={cn("h-4 w-4", fsStatus === 'denied' ? "text-destructive" : "text-blue-500")} />
-                                </div>
-                                <div>
-                                    <h3 className="text-xs font-black uppercase tracking-widest leading-none">Data Node</h3>
-                                    <p className="text-[8px] font-bold text-muted-foreground uppercase tracking-tighter mt-1">File System Access</p>
-                                </div>
-                            </div>
-                            <div className="flex flex-col gap-4">
-                                <div className="flex items-center justify-between">
-                                    <span className="text-[10px] font-bold text-muted-foreground uppercase">Status</span>
-                                    {getStatusBadge(fsStatus)}
-                                </div>
-                                {fsStatus !== 'granted' && fsStatus !== 'unsupported' && (
-                                    <Button size="sm" variant="ghost" className="w-full h-10 rounded-xl text-[9px] font-black uppercase bg-primary/10 text-primary hover:bg-primary hover:text-white transition-all" onClick={() => handleRequestPermission('fs')}>
-                                        {fsStatus === 'denied' ? 'Reset Required' : 'Authorize Files'}
-                                    </Button>
-                                )}
-                            </div>
-                        </section>
-                    </div>
+                    <TabsContent value="reports" className="m-0 focus-visible:ring-0 outline-none animate-in fade-in duration-500">
+                        <div className="p-6 m-4 md:m-6 border border-white/10 rounded-2xl bg-[#121212]/80 backdrop-blur-sm overflow-hidden shadow-lg">
+                            <ReportsPageContent />
+                        </div>
+                    </TabsContent>
                 </div>
-            </div>
+            </Tabs>
         </ModuleContainer>
       </DialogContent>
     </Dialog>

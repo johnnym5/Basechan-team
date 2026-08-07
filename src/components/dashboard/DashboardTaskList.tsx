@@ -48,10 +48,10 @@ export function DashboardTaskList({ userProfile, permissions }: DashboardTaskLis
     const tasks = allTasks?.filter(t => t.status !== 'ARCHIVED').slice(0, 10);
 
   return (
-    <section className="border border-border/60 bg-muted/30 rounded-xl p-5 h-full animate-slide-up-fade overflow-hidden flex flex-col shadow-sm" style={{ animationDelay: '100ms' }}>
+    <section className="border border-border/60 bg-muted/30 rounded-xl p-4 md:p-6 h-full animate-slide-up-fade overflow-hidden flex flex-col shadow-sm" style={{ animationDelay: '100ms' }}>
         <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-4">Active Tasks</h3>
-        <div className="overflow-x-auto flex-1">
-            <table className="w-full text-left border-collapse">
+        <div className="overflow-x-auto w-full flex-1 custom-scrollbar">
+            <table className="w-full text-left border-collapse min-w-[500px]">
                 <thead>
                     <tr className="text-muted-foreground text-[8px] uppercase tracking-[0.2em] border-b border-white/5">
                         <th className="pb-3 font-black">Priority</th>

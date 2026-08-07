@@ -26,7 +26,7 @@ self.addEventListener('notificationclick', (event) => {
       if (client) {
         client.focus();
         if (action === 'clock-in') {
-          client.postMessage({ type: 'TRIGGER_ACTION', action: 'open-attendance' });
+          client.postMessage({ type: 'TRIGGER_ACTION', action: 'trigger-clock-in' });
         } else if (action === 'sign-out') {
           client.postMessage({ type: 'TRIGGER_ACTION', action: 'trigger-signout' });
         }

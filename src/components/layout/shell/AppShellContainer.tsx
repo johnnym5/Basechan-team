@@ -18,7 +18,7 @@ export function AppShellContainer({ children, className }: AppShellContainerProp
       {/* Docked App Shell Case */}
       <div
         className={cn(
-          "w-full max-w-[1800px] h-[95vh] flex flex-row rounded-[2.5rem] border border-white/10 bg-card/20 backdrop-blur-3xl shadow-[0_32px_64px_-16px_rgba(0,0,0,0.5)] overflow-hidden relative transition-all duration-700 ease-apple-ease animate-in fade-in zoom-in-95",
+          "w-full max-w-[1800px] h-[95vh] flex flex-col rounded-[2.5rem] border border-white/10 bg-card/20 backdrop-blur-3xl shadow-[0_32px_64px_-16px_rgba(0,0,0,0.5)] overflow-hidden relative transition-all duration-700 ease-apple-ease animate-in fade-in zoom-in-95",
           className
         )}
       >

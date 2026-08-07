@@ -58,16 +58,6 @@ export function LeavePageContent({ noWrapper = false }: { noWrapper?: boolean })
     );
   }
 
-  if (!isLoading && !permissions.canAccessLeave) {
-    return (
-         <div className="flex flex-col items-center justify-center h-full text-center p-8">
-            <ShieldAlert className="w-16 h-16 text-destructive mb-4" />
-            <h1 className="text-2xl font-bold font-headline">Access Denied</h1>
-            <p className="text-muted-foreground mt-2">The leave management module is currently disabled for your account or organization.</p>
-          </div>
-    );
-  }
-
   const content = (
       <div className="flex flex-col h-full gap-6">
         <div className="flex items-center justify-between shrink-0">

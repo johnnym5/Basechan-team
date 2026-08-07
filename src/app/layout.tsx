@@ -5,6 +5,7 @@ import { Toaster } from '@/components/ui/toaster';
 import { FirebaseClientProvider } from '@/firebase';
 import { ThemeProvider } from '@/components/ThemeProvider';
 import { ImpersonationProvider } from '@/context/ImpersonationProvider';
+import { SuperAdminModeProvider } from '@/context/SuperAdminModeProvider';
 import { MainAppLayout } from '@/components/layout/MainAppLayout';
 import { Suspense } from 'react';
 import { CloseToDashboardButton } from '@/components/layout/CloseToDashboardButton';
@@ -61,13 +62,15 @@ export default function RootLayout({
           <FirebaseClientProvider>
             <QueryClientProvider>
               <ImpersonationProvider>
-                <Suspense fallback={<div className="min-h-screen bg-background" />}>
-                  <MainAppLayout>
-                    {children}
-                  </MainAppLayout>
-                </Suspense>
-                <Toaster />
-                <CloseToDashboardButton />
+                <SuperAdminModeProvider>
+                  <Suspense fallback={<div className="min-h-screen bg-background" />}>
+                    <MainAppLayout>
+                      {children}
+                    </MainAppLayout>
+                  </Suspense>
+                  <Toaster />
+                  <CloseToDashboardButton />
+                </SuperAdminModeProvider>
               </ImpersonationProvider>
             </QueryClientProvider>
           </FirebaseClientProvider>

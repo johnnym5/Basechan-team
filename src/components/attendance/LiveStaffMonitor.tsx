@@ -43,6 +43,8 @@ import { ShareTaskDialog } from '../tasks/ShareTaskDialog';
 import { ModuleContainer } from "@/components/layout/shell/ModuleContainer";
 import { type CarouselApi } from "@/components/ui/carousel";
 
+import { usePermissions } from '@/hooks/usePermissions';
+
 interface LiveStaffMonitorProps {
     userProfile: UserProfile;
 }
@@ -50,6 +52,7 @@ interface LiveStaffMonitorProps {
 export function LiveStaffMonitor({ userProfile }: LiveStaffMonitorProps) {
     const firestore = useFirestore();
     const { toast } = useToast();
+    const permissions = usePermissions(userProfile);
     const [now, setNow] = useState(new Date());
     const [isProcessing, setIsProcessing] = useState<string | null>(null);
     const [api, setApi] = useState<CarouselApi>();
@@ -234,6 +237,8 @@ export function LiveStaffMonitor({ userProfile }: LiveStaffMonitorProps) {
         }).sort((a, b) => (b.clockOut ? 0 : 1) - (a.clockOut ? 0 : 1));
     }, [records, now, orgUsers]);
 
+    const isAdmin = permissions.canManageStaff;
+
     if (isAttLoading || isUsersLoading) return <Skeleton className="h-96 w-full rounded-[2rem]" />;
 
     return (
@@ -282,7 +287,7 @@ export function LiveStaffMonitor({ userProfile }: LiveStaffMonitorProps) {
                         monitoringData.map((record) => (
                             <CarouselItem key={record.id} className="pl-4 basis-[90%] sm:basis-1/2 lg:basis-1/3 xl:basis-1/4">
                                 <Card
-                                    className="border border-border/60 bg-muted/30 rounded-xl p-5 shadow-sm hover:bg-white/5 transition-all duration-300 relative flex flex-col justify-between h-full select-none cursor-pointer group m3-interactive"
+                                    className="border border-border/60 bg-muted/30 rounded-xl p-6 shadow-sm hover:bg-white/5 transition-all duration-300 relative flex flex-col justify-between h-full select-none cursor-pointer group m3-interactive"
                                     onClick={(e) => handleRowClick(e, record)}
                                     onContextMenu={(e) => {
                                         if (record.profile) {
@@ -300,63 +305,69 @@ export function LiveStaffMonitor({ userProfile }: LiveStaffMonitorProps) {
                                 >
                                     <div className="flex items-start justify-between">
                                         <div className="flex items-center gap-3">
-                                            <div className="h-10 w-10 rounded-full bg-secondary border border-white/5 flex items-center justify-center font-black text-sm uppercase shadow-inner text-white">
+                                            <div className="h-10 w-10 rounded-full bg-secondary border border-white/5 flex items-center justify-center font-black text-sm uppercase shadow-inner text-white shrink-0">
                                                 {record.userName.charAt(0)}
                                             </div>
                                             <div className="min-w-0">
-                                                <h4 className="font-bold text-sm text-white truncate leading-none">{record.userName}</h4>
-                                                <p className="text-[8px] font-black uppercase tracking-tighter text-muted-foreground mt-1.5">
-                                                    First In: {format(new Date(record.clockIn), 'p')}
-                                                </p>
+                                                <div className="flex items-center gap-2">
+                                                    <h4 className="font-bold text-sm text-white truncate leading-none">{record.userName}</h4>
+                                                    {record.clockOut ? (
+                                                        <Badge variant="outline" className="h-5 px-1.5 text-[7px] font-black uppercase bg-muted/20 text-muted-foreground border-white/5">
+                                                            Out
+                                                        </Badge>
+                                                    ) : record.onBreak ? (
+                                                        <Badge variant="outline" className="h-5 px-1.5 text-[7px] font-black uppercase bg-amber-500/10 text-amber-500 border-amber-500/20 animate-pulse">
+                                                            Break
+                                                        </Badge>
+                                                    ) : (
+                                                        <Badge variant="outline" className="h-5 px-1.5 text-[7px] font-black uppercase bg-emerald-500/10 text-emerald-500 border-emerald-500/20">
+                                                            Active
+                                                        </Badge>
+                                                    )}
+                                                </div>
                                             </div>
                                         </div>
-                                        <div className="p-1.5 rounded-lg bg-white/5 border border-white/5">
-                                            {record.profile?.deviceType === 'PC' ? (
-                                                <Monitor className="h-3.5 w-3.5 text-primary opacity-80" />
-                                            ) : (
-                                                <Smartphone className="h-3.5 w-3.5 text-amber-500 opacity-80" />
-                                            )}
-                                        </div>
+                                        <p className="text-[9px] font-bold uppercase tracking-tight text-muted-foreground opacity-40">
+                                            {format(new Date(record.clockIn), 'p')}
+                                        </p>
                                     </div>
 
-                                    <div className="mt-4 flex items-center justify-between">
-                                        <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Status</span>
-                                        {record.clockOut ? (
-                                            <Badge variant="outline" className="gap-1.5 text-[8px] font-black uppercase bg-muted/20 text-muted-foreground border-white/5">
-                                                <LogOut className="h-2.5 w-2.5" /> Signed Out
-                                            </Badge>
-                                        ) : record.onBreak ? (
-                                            <Badge variant="outline" className="gap-1.5 text-[8px] font-black uppercase bg-amber-500/10 text-amber-500 border-amber-500/20 animate-pulse">
-                                                <Coffee className="h-2.5 w-2.5" /> On Break
-                                            </Badge>
-                                        ) : (
-                                            <Badge variant="outline" className="gap-1.5 text-[8px] font-black uppercase bg-emerald-500/10 text-emerald-500 border-emerald-500/20">
-                                                <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-ping" /> Active
-                                            </Badge>
-                                        )}
-                                    </div>
-
-                                    <div className="grid grid-cols-2 gap-2 mt-4 font-mono">
-                                        <div className="p-2.5 rounded-xl bg-white/5 border border-white/5 text-center flex flex-col justify-center">
-                                            <span className="text-emerald-400 text-xs font-bold leading-none mb-1">
+                                    <div className={cn("grid gap-4 mt-8", isAdmin ? "grid-cols-3" : "grid-cols-2")}>
+                                        <div className="flex flex-col items-center">
+                                            <span className="text-[10px] font-medium text-muted-foreground uppercase mb-1 tracking-wider">Work</span>
+                                            <span className="text-lg font-bold text-emerald-400 leading-none">
                                                 {formatDuration(record.workTime)}
                                             </span>
-                                            <span className="text-[8px] font-black uppercase tracking-widest text-muted-foreground">Work Time</span>
                                         </div>
-                                        <div className="p-2.5 rounded-xl bg-white/5 border border-white/5 text-center flex flex-col justify-center">
-                                            <span className="text-amber-400 text-xs font-bold leading-none mb-1">
-                                                {formatDuration(record.idleTime)}
+                                        {isAdmin && (
+                                            <div className="flex flex-col items-center">
+                                                <span className="text-[10px] font-medium text-muted-foreground uppercase mb-1 tracking-wider">Idle</span>
+                                                <span className="text-lg font-bold text-amber-400 leading-none">
+                                                    {formatDuration(record.idleTime)}
+                                                </span>
+                                            </div>
+                                        )}
+                                        <div className="flex flex-col items-center">
+                                            <span className="text-[10px] font-medium text-muted-foreground uppercase mb-1 tracking-wider">Total</span>
+                                            <span className="text-lg font-bold text-white leading-none">
+                                                {formatDuration(record.totalShiftTime)}
                                             </span>
-                                            <span className="text-[8px] font-black uppercase tracking-widest text-muted-foreground">Idle Time</span>
                                         </div>
                                     </div>
 
-                                    <div className="mt-4 pt-3 border-t border-white/5 flex items-center justify-between">
-                                        <div className="flex flex-col">
-                                            <span className="text-[8px] font-black uppercase tracking-widest text-muted-foreground">Total Active</span>
-                                            <span className="font-mono text-xs font-black text-white mt-0.5">
-                                                {formatDuration(record.totalShiftTime)}
-                                            </span>
+                                    <div className="mt-8 pt-4 border-t border-white/5 flex items-center justify-between">
+                                        <div className="flex items-center gap-2">
+                                            {record.profile?.deviceType === 'PC' ? (
+                                                <div className="flex items-center gap-1.5 text-muted-foreground opacity-40">
+                                                    <Monitor className="h-3.5 w-3.5" />
+                                                    <span className="text-[8px] font-black uppercase">Workstation</span>
+                                                </div>
+                                            ) : (
+                                                <div className="flex items-center gap-1.5 text-amber-500/50">
+                                                    <Smartphone className="h-3.5 w-3.5" />
+                                                    <span className="text-[8px] font-black uppercase">Mobile</span>
+                                                </div>
+                                            )}
                                         </div>
 
                                         {!record.clockOut && record.profile?.deviceType === 'PC' && record.status === 'APPROVED' && (
@@ -458,15 +469,17 @@ export function LiveStaffMonitor({ userProfile }: LiveStaffMonitorProps) {
                                             <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
                                             <p className="font-bold text-xs text-white truncate">{user.fullName}</p>
                                         </div>
-                                        <div className="grid grid-cols-2 gap-2 text-[9px] font-black uppercase tracking-wider text-muted-foreground mt-1.5 font-mono">
+                                        <div className={cn("grid gap-2 text-[9px] font-black uppercase tracking-wider text-muted-foreground mt-1.5 font-mono", isAdmin ? "grid-cols-2" : "grid-cols-1")}>
                                             <div className="p-1 rounded bg-white/5 text-center">
                                                 <span className="block text-emerald-400 text-[10px] font-black leading-none mb-1">{formatDuration(record.workTime)}</span>
                                                 Work
                                             </div>
-                                            <div className="p-1 rounded bg-white/5 text-center">
-                                                <span className="block text-amber-400 text-[10px] font-black leading-none mb-1">{formatDuration(record.idleTime)}</span>
-                                                Idle
-                                            </div>
+                                            {isAdmin && (
+                                                <div className="p-1 rounded bg-white/5 text-center">
+                                                    <span className="block text-amber-400 text-[10px] font-black leading-none mb-1">{formatDuration(record.idleTime)}</span>
+                                                    Idle
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                     <div className="p-1 space-y-0.5">

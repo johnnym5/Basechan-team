@@ -142,153 +142,153 @@ export function Employee360Profile({
   }
 
   return (
-    <div className="flex flex-col h-full gap-6">
-      <div className="flex items-center justify-between gap-4">
-        {onBack && (
-          <Button variant="ghost" onClick={onBack} className="rounded-xl gap-2 px-4 hover:bg-white/5 text-[10px] font-black uppercase tracking-widest">
-             <ChevronLeft className="h-4 w-4" /> Back to Directory
-          </Button>
-        )}
-        <div className="flex-1">
-           <h1 className="text-2xl font-black font-headline tracking-tight uppercase">Operational 360: {profile.fullName.split(' ')[0]}</h1>
-        </div>
-      </div>
-
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
-        <TabsList className="bg-secondary/10 rounded-2xl p-1.5 border border-white/5 w-fit self-center md:self-start mb-6 shrink-0">
-          <TabsTrigger value="profile" className="rounded-xl px-6 font-black uppercase text-[10px] tracking-widest gap-2 data-[state=active]:bg-primary transition-all">
-            <User className="h-3.5 w-3.5" /> Identity
-          </TabsTrigger>
-          <TabsTrigger value="history" className="rounded-xl px-6 font-black uppercase text-[10px] tracking-widest gap-2 data-[state=active]:bg-primary transition-all">
-            <History className="h-3.5 w-3.5" /> Activity History
-          </TabsTrigger>
-          {isAdmin && (
-            <TabsTrigger value="access" className="rounded-xl px-6 font-black uppercase text-[10px] tracking-widest gap-2 data-[state=active]:bg-primary transition-all">
-              <ShieldCheck className="h-3.5 w-3.5" /> Authorization
-            </TabsTrigger>
+    <div className="flex flex-col h-full gap-6 w-full">
+      <div className="flex items-center justify-between gap-4 shrink-0">
+          {onBack && (
+            <Button variant="ghost" onClick={onBack} className="rounded-xl gap-2 px-4 hover:bg-white/5 text-[10px] font-black uppercase tracking-widest">
+               <ChevronLeft className="h-4 w-4" /> Back to Directory
+            </Button>
           )}
-        </TabsList>
+          <div className="flex-1">
+             <h1 className="text-2xl font-black font-headline tracking-tight uppercase">Operational 360: {profile.fullName.split(' ')[0]}</h1>
+          </div>
+        </div>
 
-        <div className="flex-1 overflow-y-auto custom-scrollbar pr-2">
-          <TabsContent value="profile" className="mt-0 focus-visible:outline-none">
-            <StaffProfileView
-              userId={userId}
-              currentUserProfile={currentUserProfile}
-              permissions={permissions}
-            />
-          </TabsContent>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
+          <TabsList className="bg-secondary/10 rounded-2xl p-1.5 border border-white/5 w-fit self-center md:self-start mb-6 shrink-0">
+            <TabsTrigger value="profile" className="rounded-xl px-6 font-black uppercase text-[10px] tracking-widest gap-2 data-[state=active]:bg-primary transition-all">
+              <User className="h-3.5 w-3.5" /> Identity
+            </TabsTrigger>
+            <TabsTrigger value="history" className="rounded-xl px-6 font-black uppercase text-[10px] tracking-widest gap-2 data-[state=active]:bg-primary transition-all">
+              <History className="h-3.5 w-3.5" /> Activity History
+            </TabsTrigger>
+            {isAdmin && (
+              <TabsTrigger value="access" className="rounded-xl px-6 font-black uppercase text-[10px] tracking-widest gap-2 data-[state=active]:bg-primary transition-all">
+                <ShieldCheck className="h-3.5 w-3.5" /> Authorization
+              </TabsTrigger>
+            )}
+          </TabsList>
 
-          <TabsContent value="history" className="mt-0 focus-visible:outline-none max-w-4xl mx-auto w-full">
-            <div className="space-y-8 py-4">
-               <div>
-                  <h3 className="text-xl font-black font-headline tracking-tighter uppercase mb-1">Operational Timeline</h3>
-                  <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest opacity-60">Consolidated Tasks & Attendance Records</p>
-               </div>
-               <ActivityTimeline attendance={attendance} tasks={tasks} />
-            </div>
-          </TabsContent>
+          <div className="flex-1 overflow-y-auto custom-scrollbar pr-2">
+            <TabsContent value="profile" className="mt-0 focus-visible:outline-none">
+              <StaffProfileView
+                userId={userId}
+                currentUserProfile={currentUserProfile}
+                permissions={permissions}
+              />
+            </TabsContent>
 
-          {isAdmin && (
-            <TabsContent value="access" className="mt-0 focus-visible:outline-none">
+            <TabsContent value="history" className="mt-0 focus-visible:outline-none max-w-4xl mx-auto w-full">
               <div className="space-y-8 py-4">
                  <div>
-                    <h3 className="text-xl font-black font-headline tracking-tighter uppercase mb-1">Authorization Matrix</h3>
-                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest opacity-60">Capability Overrides & Functional Clearance</p>
+                    <h3 className="text-xl font-black font-headline tracking-tighter uppercase mb-1">Operational Timeline</h3>
+                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest opacity-60">Consolidated Tasks & Attendance Records</p>
                  </div>
-                 <UserAccessEditor userProfile={profile} />
+                 <ActivityTimeline attendance={attendance} tasks={tasks} />
               </div>
+            </TabsContent>
 
-              <div className="space-y-6 py-10 border-t border-white/5">
-                  <div>
-                    <h3 className="text-xl font-black font-headline tracking-tighter uppercase mb-1 text-rose-500">Infrastructure Oversight</h3>
-                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest opacity-60">Remote Commands & Lifecycle Management</p>
-                  </div>
+            {isAdmin && (
+              <TabsContent value="access" className="mt-0 focus-visible:outline-none">
+                <div className="space-y-8 py-4">
+                   <div>
+                      <h3 className="text-xl font-black font-headline tracking-tighter uppercase mb-1">Authorization Matrix</h3>
+                      <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest opacity-60">Capability Overrides & Functional Clearance</p>
+                   </div>
+                   <UserAccessEditor userProfile={profile} />
+                </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                      {/* PC Only Commands */}
-                      {profile.deviceType === 'PC' && profile.status === 'ONLINE' && (
-                        <>
-                          <Button
-                            variant="outline"
-                            className="h-20 rounded-[1.5rem] bg-emerald-500/5 border-emerald-500/20 hover:bg-emerald-500/10 text-emerald-500 font-black uppercase text-[10px] tracking-widest flex flex-col gap-2"
-                            onClick={() => handleRemoteCommand('SCREEN_SHARE')}
-                            disabled={!!isProcessing}
-                          >
-                            {isProcessing === 'SCREEN_SHARE' ? <Loader2 className="h-5 w-5 animate-spin" /> : <MonitorPlay className="h-5 w-5" />}
-                            Live Feed
-                          </Button>
-                          <Button
-                            variant="outline"
-                            className="h-20 rounded-[1.5rem] bg-primary/5 border-primary/20 hover:bg-primary/10 text-primary font-black uppercase text-[10px] tracking-widest flex flex-col gap-2"
-                            onClick={() => handleRemoteCommand('SCREENSHOT')}
-                            disabled={!!isProcessing}
-                          >
-                            {isProcessing === 'SCREENSHOT' ? <Loader2 className="h-5 w-5 animate-spin" /> : <Camera className="h-5 w-5" />}
-                            Capture
-                          </Button>
-                        </>
-                      )}
+                <div className="space-y-6 py-10 border-t border-white/5">
+                    <div>
+                      <h3 className="text-xl font-black font-headline tracking-tighter uppercase mb-1 text-rose-500">Infrastructure Oversight</h3>
+                      <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest opacity-60">Remote Commands & Lifecycle Management</p>
+                    </div>
 
-                      <Button
-                        variant="outline"
-                        className="h-20 rounded-[1.5rem] bg-amber-500/5 border-amber-500/20 hover:bg-amber-500/10 text-amber-500 font-black uppercase text-[10px] tracking-widest flex flex-col gap-2"
-                        onClick={handlePasswordReset}
-                        disabled={!!isProcessing}
-                      >
-                        {isProcessing === 'RESET' ? <Loader2 className="h-5 w-5 animate-spin" /> : <KeyRound className="h-5 w-5" />}
-                        Reset Access
-                      </Button>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                        {/* PC Only Commands */}
+                        {profile.deviceType === 'PC' && profile.status === 'ONLINE' && (
+                          <>
+                            <Button
+                              variant="outline"
+                              className="h-20 rounded-[1.5rem] bg-emerald-500/5 border-emerald-500/20 hover:bg-emerald-500/10 text-emerald-500 font-black uppercase text-[10px] tracking-widest flex flex-col gap-2"
+                              onClick={() => handleRemoteCommand('SCREEN_SHARE')}
+                              disabled={!!isProcessing}
+                            >
+                              {isProcessing === 'SCREEN_SHARE' ? <Loader2 className="h-5 w-5 animate-spin" /> : <MonitorPlay className="h-5 w-5" />}
+                              Live Feed
+                            </Button>
+                            <Button
+                              variant="outline"
+                              className="h-20 rounded-[1.5rem] bg-primary/5 border-primary/20 hover:bg-primary/10 text-primary font-black uppercase text-[10px] tracking-widest flex flex-col gap-2"
+                              onClick={() => handleRemoteCommand('SCREENSHOT')}
+                              disabled={!!isProcessing}
+                            >
+                              {isProcessing === 'SCREENSHOT' ? <Loader2 className="h-5 w-5 animate-spin" /> : <Camera className="h-5 w-5" />}
+                              Capture
+                            </Button>
+                          </>
+                        )}
 
-                      {profile.id !== currentUserProfile.id && (
                         <Button
                           variant="outline"
-                          className="h-20 rounded-[1.5rem] bg-rose-500/5 border-rose-500/20 hover:bg-rose-500/10 text-rose-500 font-black uppercase text-[10px] tracking-widest flex flex-col gap-2"
-                          onClick={() => handleRemoteCommand('FORCE_LOGOUT')}
+                          className="h-20 rounded-[1.5rem] bg-amber-500/5 border-amber-500/20 hover:bg-amber-500/10 text-amber-500 font-black uppercase text-[10px] tracking-widest flex flex-col gap-2"
+                          onClick={handlePasswordReset}
                           disabled={!!isProcessing}
                         >
-                          {isProcessing === 'FORCE_LOGOUT' ? <Loader2 className="h-5 w-5 animate-spin" /> : <LogOut className="h-5 w-5" />}
-                          Sign Out
+                          {isProcessing === 'RESET' ? <Loader2 className="h-5 w-5 animate-spin" /> : <KeyRound className="h-5 w-5" />}
+                          Reset Access
                         </Button>
-                      )}
-                  </div>
 
-                  {/* Danger Zone */}
-                  {!isOwnProfile && profile.role !== 'ORG_ADMIN' && (
-                    <div className="pt-6">
-                       <Button
-                        variant="destructive"
-                        className="w-full h-14 rounded-2xl font-black uppercase tracking-[0.2em] shadow-xl shadow-destructive/20 active:scale-95 transition-all"
-                        onClick={() => setShowDeleteDialog(true)}
-                       >
-                         <Trash2 className="mr-2 h-5 w-5" /> Decommission Unit
-                       </Button>
+                        {profile.id !== currentUserProfile.id && (
+                          <Button
+                            variant="outline"
+                            className="h-20 rounded-[1.5rem] bg-rose-500/5 border-rose-500/20 hover:bg-rose-500/10 text-rose-500 font-black uppercase text-[10px] tracking-widest flex flex-col gap-2"
+                            onClick={() => handleRemoteCommand('FORCE_LOGOUT')}
+                            disabled={!!isProcessing}
+                          >
+                            {isProcessing === 'FORCE_LOGOUT' ? <Loader2 className="h-5 w-5 animate-spin" /> : <LogOut className="h-5 w-5" />}
+                            Sign Out
+                          </Button>
+                        )}
                     </div>
-                  )}
-              </div>
 
-              <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-                  <AlertDialogContent className="m3-surface-high border-none rounded-[2.5rem] p-10 shadow-3xl">
-                      <AlertDialogHeader className="space-y-4 text-center">
-                          <div className="mx-auto p-5 rounded-full bg-rose-500/10 w-fit text-rose-500">
-                              <AlertTriangle className="h-10 w-10" />
-                          </div>
-                          <AlertDialogTitle className="text-3xl font-black font-headline tracking-tighter uppercase">Purge Protocol</AlertDialogTitle>
-                          <AlertDialogDescription className="text-sm font-bold uppercase tracking-widest opacity-60">
-                              Warning: This will permanently remove {profile.fullName} from the organizational matrix. This interaction is final and irreversible.
-                          </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter className="flex-col sm:flex-col gap-4 mt-8">
-                          <AlertDialogAction onClick={handleDeleteUser} disabled={isDeleting} className="h-16 bg-rose-600 hover:bg-rose-700 text-white rounded-2xl font-black uppercase tracking-[0.2em] shadow-2xl shadow-rose-500/40">
-                              {isDeleting ? <Loader2 className="animate-spin mr-2 h-5 w-5" /> : "Confirm Purge"}
-                          </AlertDialogAction>
-                          <AlertDialogCancel className="h-10 border-none font-black uppercase text-[10px] tracking-widest opacity-40 hover:opacity-100 hover:bg-transparent transition-all">Abort Protocol</AlertDialogCancel>
-                      </AlertDialogFooter>
-                  </AlertDialogContent>
-              </AlertDialog>
-            </TabsContent>
-          )}
-        </div>
-      </Tabs>
-    </div>
+                    {/* Danger Zone */}
+                    {!isOwnProfile && profile.role !== 'ORG_ADMIN' && (
+                      <div className="pt-6">
+                         <Button
+                          variant="destructive"
+                          className="w-full h-14 rounded-2xl font-black uppercase tracking-[0.2em] shadow-xl shadow-destructive/20 active:scale-95 transition-all"
+                          onClick={() => setShowDeleteDialog(true)}
+                         >
+                           <Trash2 className="mr-2 h-5 w-5" /> Decommission Unit
+                         </Button>
+                      </div>
+                    )}
+                </div>
+
+                <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+                    <AlertDialogContent className="m3-surface-high border-none rounded-[2.5rem] p-10 shadow-3xl">
+                        <AlertDialogHeader className="space-y-4 text-center">
+                            <div className="mx-auto p-5 rounded-full bg-rose-500/10 w-fit text-rose-500">
+                                <AlertTriangle className="h-10 w-10" />
+                            </div>
+                            <AlertDialogTitle className="text-3xl font-black font-headline tracking-tighter uppercase">Purge Protocol</AlertDialogTitle>
+                            <AlertDialogDescription className="text-sm font-bold uppercase tracking-widest opacity-60">
+                                Warning: This will permanently remove {profile.fullName} from the organizational matrix. This interaction is final and irreversible.
+                            </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter className="flex-col sm:flex-col gap-4 mt-8">
+                            <AlertDialogAction onClick={handleDeleteUser} disabled={isDeleting} className="h-16 bg-rose-600 hover:bg-rose-700 text-white rounded-2xl font-black uppercase tracking-[0.2em] shadow-2xl shadow-rose-500/40">
+                                {isDeleting ? <Loader2 className="animate-spin mr-2 h-5 w-5" /> : "Confirm Purge"}
+                            </AlertDialogAction>
+                            <AlertDialogCancel className="h-10 border-none font-black uppercase text-[10px] tracking-widest opacity-40 hover:opacity-100 hover:bg-transparent transition-all">Abort Protocol</AlertDialogCancel>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
+              </TabsContent>
+            )}
+          </div>
+        </Tabs>
+      </div>
   );
 }

@@ -67,8 +67,8 @@ export function DashboardLiveDisplays({ userProfile }: DashboardLiveDisplaysProp
     }
 
     return (
-        <section className="border border-border/60 bg-muted/30 rounded-xl p-4 shadow-sm animate-in fade-in slide-in-from-bottom-2 duration-500 interactive-element">
-            <div className="flex items-center justify-between mb-3">
+        <section className="border border-border/60 bg-muted/30 rounded-xl p-4 md:p-6 shadow-sm animate-in fade-in slide-in-from-bottom-2 duration-500 interactive-element">
+            <div className="flex items-center justify-between mb-4">
                 <h3 className="text-xs font-bold font-headline flex items-center gap-2 uppercase tracking-tight">
                     <Globe className="h-3.5 w-3.5 text-primary" />
                     Live Displays

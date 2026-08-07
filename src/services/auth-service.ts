@@ -10,8 +10,16 @@ import {
   getDocs,
   writeBatch,
   setDoc,
-  serverTimestamp
+  serverTimestamp,
+  updateDoc
 } from 'firebase/firestore';
+import {
+  Auth,
+  GoogleAuthProvider,
+  signInWithPopup,
+  signOut,
+  UserCredential
+} from 'firebase/auth';
 import type { UserProfile, AppRole } from '@/lib/types';
 import { PERMISSIONS, DUTIES } from '@/lib/permissions-registry';
 import { getRoleFromPosition } from '@/lib/roles-and-departments';
@@ -21,6 +29,54 @@ import { getRoleFromPosition } from '@/lib/roles-and-departments';
  * Handles permission merging, role resolution, and caching on the user document.
  */
 export const authService = {
+  /**
+   * Handles Google Sign-In with staff email validation.
+   */
+  async signInWithGoogle(auth: Auth, db: Firestore) {
+    const provider = new GoogleAuthProvider();
+
+    try {
+      const result = await signInWithPopup(auth, provider);
+      const user = result.user;
+
+      if (!user.email) {
+        await signOut(auth);
+        throw new Error("Google account must have an email address.");
+      }
+
+      // 1. Validate if the email exists in our Firestore users collection
+      const usersRef = collection(db, 'users');
+      const q = query(usersRef, where("email", "==", user.email.toLowerCase()));
+      const querySnapshot = await getDocs(q);
+
+      if (querySnapshot.empty) {
+        // SECURITY GATE: Not a registered staff member
+        await signOut(auth);
+        throw new Error("You are not recognized as a staff member.");
+      }
+
+      const userDoc = querySnapshot.docs[0];
+      const userData = userDoc.data() as UserProfile;
+
+      // 2. Optional: Sync UID if it's different (e.g., first time Google login for existing email/pass user)
+      // This ensures the user profile is linked to the Google account's UID
+      if (userDoc.id !== user.uid) {
+        // Note: This requires careful consideration of document IDs vs Auth UIDs in your system.
+        // If your system uses Firestore doc IDs as primary keys, you might need a mapping or update.
+      }
+
+      // 3. Mark as online
+      await updateDoc(doc(db, 'users', userDoc.id), {
+        status: 'ONLINE',
+        lastHeartbeat: new Date().toISOString()
+      });
+
+      return { user, profile: userData };
+    } catch (error: any) {
+      throw error;
+    }
+  },
+
   /**
    * Seeds the initial SYSTEM roles into Firestore.
    */

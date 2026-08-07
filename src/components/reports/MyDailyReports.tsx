@@ -14,10 +14,11 @@ import {
 } from '@/components/ui/accordion';
 import { Skeleton } from '../ui/skeleton';
 import type { DailyReport, UserProfile } from '@/lib/types';
-import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { useFirestore, useCollection, useMemoFirebase, useUser } from '@/firebase';
 import { collection, query, where, orderBy, limit } from 'firebase/firestore';
+import { useState } from 'react';
 import { format, formatDistanceToNow } from 'date-fns';
-import { CheckCircle2, ListTodo, ArrowRight } from 'lucide-react';
+import { CheckCircle2, ListTodo, ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
 import { uiEmitter } from '@/lib/ui-emitter';
 import { Button } from '../ui/button';
 
@@ -25,22 +26,32 @@ interface MyDailyReportsProps {
   userProfile: UserProfile;
 }
 
+const ITEMS_PER_PAGE = 5;
+
 export function MyDailyReports({ userProfile }: MyDailyReportsProps) {
   const firestore = useFirestore();
+  const { user: authUser } = useUser();
+  const [currentPage, setCurrentPage] = useState(1);
 
   const reportsQuery = useMemoFirebase(
     () =>
-      firestore && userProfile?.orgId ? query(
+      firestore && userProfile?.orgId && authUser ? query(
         collection(firestore, 'daily_reports'),
         where('orgId', '==', userProfile.orgId),
-        where('userId', '==', userProfile.id),
+        where('userId', '==', authUser.uid),
         orderBy('createdAt', 'desc'),
-        limit(10)
+        limit(50)
       ) : null,
-    [firestore, userProfile?.id, userProfile?.orgId]
+    [firestore, userProfile?.id, userProfile?.orgId, authUser]
   );
 
   const { data: reports, isLoading } = useCollection<DailyReport>(reportsQuery);
+
+  const totalPages = Math.ceil((reports?.length || 0) / ITEMS_PER_PAGE);
+  const paginatedReports = reports?.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
 
   const handleJumpToTask = (taskId: string) => {
       uiEmitter.emit('open-tasks-dialog', { taskId });
@@ -65,7 +76,7 @@ export function MyDailyReports({ userProfile }: MyDailyReportsProps) {
           </p>
         )}
         <Accordion type="single" collapsible className="w-full space-y-2">
-          {reports?.map((report) => (
+          {paginatedReports?.map((report) => (
             <AccordionItem value={report.id} key={report.id} className="border-none bg-secondary/10 rounded-2xl overflow-hidden">
               <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-secondary/20 transition-all text-left">
                 <div className="flex justify-between w-full pr-4 items-center">
@@ -113,6 +124,35 @@ export function MyDailyReports({ userProfile }: MyDailyReportsProps) {
             </AccordionItem>
           ))}
         </Accordion>
+
+        {/* Pagination Controls */}
+        {totalPages > 1 && (
+            <div className="mt-6 flex items-center justify-between border-t border-white/5 pt-4">
+                <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground opacity-40">
+                    Page {currentPage} of {totalPages}
+                </p>
+                <div className="flex gap-2">
+                    <Button
+                        variant="outline"
+                        size="icon"
+                        className="h-8 w-8 rounded-xl bg-white/5 border-white/5 hover:bg-white/10"
+                        onClick={() => setCurrentPage((p: number) => Math.max(1, p - 1))}
+                        disabled={currentPage === 1}
+                    >
+                        <ChevronLeft className="h-4 w-4" />
+                    </Button>
+                    <Button
+                        variant="outline"
+                        size="icon"
+                        className="h-8 w-8 rounded-xl bg-white/5 border-white/5 hover:bg-white/10"
+                        onClick={() => setCurrentPage((p: number) => Math.min(totalPages, p + 1))}
+                        disabled={currentPage === totalPages}
+                    >
+                        <ChevronRight className="h-4 w-4" />
+                    </Button>
+                </div>
+            </div>
+        )}
       </CardContent>
     </Card>
   );

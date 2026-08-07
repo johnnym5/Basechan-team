@@ -21,17 +21,24 @@ export function useShiftReminders(
         const interval = setInterval(() => {
             const now = new Date();
 
-            // 1. MORNING REMINDER (10 mins before start)
+            // 1. MORNING REMINDER (Starts at 08:45 AM)
             if (systemConfig.work_hours?.start && !attendance) {
                 const startTime = parse(systemConfig.work_hours.start, 'HH:mm', now);
-                const reminderTime = addMinutes(startTime, -10);
+                const reminderStartTime = parse('08:45', 'HH:mm', now);
+                const reminderEndTime = parse('09:15', 'HH:mm', now);
                 
-                if (isAfter(now, reminderTime) && isBefore(now, startTime)) {
+                if (isAfter(now, reminderStartTime) && isBefore(now, reminderEndTime)) {
+                    const isAdmin = user.role === 'ORG_ADMIN' || user.role === 'MANAGING_DIRECTOR';
+                    const actions = isAdmin ? [
+                        { action: 'clock-in', title: 'Clock In Now' },
+                        { action: 'dismiss', title: 'Dismiss' }
+                    ] : [];
+
                     triggerNotification(
-                        'Shift Impending',
-                        `Good morning ${user.fullName.split(' ')[0]}, shift starts in 10 minutes. Ready to clock in?`,
+                        'Operational Readiness Required',
+                        `Unit ${user.fullName.split(' ')[0]}, system check indicates you are not yet active. Please initiate shift protocol.`,
                         'morning-reminder',
-                        [{ action: 'clock-in', title: 'Clock In' }]
+                        actions
                     );
                 }
             }

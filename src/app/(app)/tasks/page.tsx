@@ -7,6 +7,8 @@ import type { UserProfile } from "@/lib/types";
 import { usePermissions } from "@/hooks/usePermissions";
 import { Skeleton } from "@/components/ui/skeleton";
 
+import { ModuleContainer } from "@/components/layout/shell/ModuleContainer";
+
 export default function TasksPage() {
     const { user: authUser } = useUser();
     const firestore = useFirestore();
@@ -25,5 +27,9 @@ export default function TasksPage() {
         );
     }
 
-    return <TasksPageContent currentUserProfile={userProfile || null} permissions={permissions} />;
+    return (
+        <ModuleContainer noScroll={true} className="border-none bg-transparent shadow-none">
+            <TasksPageContent currentUserProfile={userProfile || null} permissions={permissions} />
+        </ModuleContainer>
+    );
 }

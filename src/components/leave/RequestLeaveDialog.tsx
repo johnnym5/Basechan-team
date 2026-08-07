@@ -19,8 +19,12 @@ import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import { Calendar } from "../ui/calendar";
 import { format, isSameDay, eachDayOfInterval, isWithinInterval } from "date-fns";
 import { isHoliday } from "@/lib/holidays";
+import { usePermissions } from "@/hooks/usePermissions";
+import { useOrganizationStaff } from "@/hooks/useStaff";
+import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 
 const formSchema = z.object({
+  targetUserId: z.string().optional(),
   leaveType: z.enum(["ANNUAL", "SICK", "UNPAID", "MATERNITY", "PATERNITY"], { required_error: "Leave type is required."}),
   startDate: z.date({ required_error: "Start date is required."}),
   endDate: z.date({ required_error: "End date is required."}),
@@ -44,6 +48,10 @@ export function RequestLeaveDialog({ open, onOpenChange, userProfile }: RequestL
   const [isLoading, setIsLoading] = useState(false);
   const firestore = useFirestore();
   const { toast } = useToast();
+  const permissions = usePermissions(userProfile);
+  const isAdmin = permissions.canManageStaff;
+
+  const { data: staffList } = useOrganizationStaff(userProfile?.orgId || '');
 
   const approvedLeavesQuery = useMemoFirebase(() => {
     if (!firestore || !userProfile) return null;
@@ -73,6 +81,9 @@ export function RequestLeaveDialog({ open, onOpenChange, userProfile }: RequestL
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
+    defaultValues: {
+        targetUserId: userProfile?.id || '',
+    }
   });
 
   const handleDialogClose = () => {
@@ -100,10 +111,14 @@ export function RequestLeaveDialog({ open, onOpenChange, userProfile }: RequestL
     setIsLoading(true);
 
     try {
+        const targetUser = isAdmin && values.targetUserId
+            ? staffList?.find(s => s.id === values.targetUserId) || userProfile
+            : userProfile;
+
         const newLeaveRequest: Omit<LeaveRequest, 'id'> = {
             orgId: userProfile.orgId,
-            userId: userProfile.id,
-            userName: userProfile.fullName,
+            userId: targetUser.id,
+            userName: targetUser.fullName,
             leaveType: values.leaveType,
             startDate: values.startDate.toISOString(),
             endDate: values.endDate.toISOString(),
@@ -114,7 +129,7 @@ export function RequestLeaveDialog({ open, onOpenChange, userProfile }: RequestL
 
         await addDocumentNonBlocking(collection(firestore, 'leave_requests'), newLeaveRequest);
 
-        toast({ title: "Leave Request Submitted", description: "Your request has been sent for approval." });
+        toast({ title: "Leave Request Submitted", description: isAdmin ? `Leave applied for ${targetUser.fullName}.` : "Your request has been sent for approval." });
 
         handleDialogClose();
     } catch (error: any) {
@@ -132,11 +147,43 @@ export function RequestLeaveDialog({ open, onOpenChange, userProfile }: RequestL
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold tracking-tight">Request Time Off</DialogTitle>
           <DialogDescription>
-            Dates can only be occupied by one staff member at a time to ensure operational coverage.
+            {isAdmin ? "Apply for leave on behalf of a staff member." : "Dates can only be occupied by one staff member at a time to ensure operational coverage."}
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
+                 {isAdmin && (
+                    <FormField
+                        control={form.control}
+                        name="targetUserId"
+                        render={({ field }) => (
+                        <FormItem>
+                            <FormLabel className="text-[10px] font-black uppercase tracking-widest opacity-50">Select Target Unit</FormLabel>
+                            <Select onValueChange={field.onChange} value={field.value}>
+                                <FormControl>
+                                    <SelectTrigger className="rounded-xl h-12 bg-white/5 border-white/10">
+                                        <SelectValue placeholder="Identify Personnel" />
+                                    </SelectTrigger>
+                                </FormControl>
+                                <SelectContent className="apple-glass-darker border-none rounded-2xl">
+                                    {staffList?.map(s => (
+                                        <SelectItem key={s.id} value={s.id} className="p-3">
+                                            <div className="flex items-center gap-3">
+                                                <Avatar className="h-6 w-6">
+                                                    <AvatarFallback className="text-[8px]">{s.fullName.charAt(0)}</AvatarFallback>
+                                                </Avatar>
+                                                <span className="text-xs font-bold">{s.fullName}</span>
+                                            </div>
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                            <FormMessage />
+                        </FormItem>
+                        )}
+                    />
+                 )}
+
                  <FormField
                     control={form.control}
                     name="leaveType"
@@ -242,7 +289,7 @@ export function RequestLeaveDialog({ open, onOpenChange, userProfile }: RequestL
                 />
                 <Button type="submit" className="w-full h-12 text-base rounded-xl font-bold interactive-element" disabled={isLoading}>
                     {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Confirm Request
+                    {isAdmin ? "Authorize Leave Request" : "Confirm Request"}
                 </Button>
             </form>
         </Form>

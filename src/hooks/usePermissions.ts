@@ -1,6 +1,6 @@
 
 'use client';
-import type { UserProfile, UserRole } from '@/lib/types';
+import type { UserProfile, UserRole, Permissions } from '@/lib/types';
 import { useSuperAdmin } from './useSuperAdmin';
 import { useSystemConfig } from './useSystemConfig';
 import { useMemo } from 'react';
@@ -8,43 +8,10 @@ import { useImpersonation } from '@/context/ImpersonationProvider';
 import { getRoleFromPosition } from '@/lib/roles-and-departments';
 import { PERMISSIONS } from '@/lib/permissions-registry';
 
-export interface Permissions {
-  canApproveHR: boolean;
-  canApproveFinance: boolean;
-  canApproveMD: boolean;
-  canDisburse: boolean;
-  canManageStaff: boolean;
-  canManageCompany: boolean;
-  canClockIn: boolean;
-  canEditOwnProfile: boolean;
-  canAccessRequisitions: boolean;
-  canAccessChat: boolean;
-  canAccessAllTasks: boolean;
-  canAccessAllWorkbooks: boolean;
-  canManageAnnouncements: boolean;
-  canViewTeam: boolean;
-  canManageAccounting: boolean;
-  canAccessLibrary: boolean;
-  canManageLibrary: boolean;
-  canViewFiles: boolean;
-  canViewAudit: boolean;
-  canManageDisplays: boolean;
-  canBypassGeofence: boolean;
-  canCreateRequisition: boolean;
-  canSendChatMessage: boolean;
-  canAccessAttendance: boolean;
-  canAccessLeave: boolean;
-  canRequestLeave: boolean;
-  canAccessTasks: boolean;
-  canCreateTask: boolean;
-  canAccessWorkbooks: boolean;
-  canCreateWorkbook: boolean;
-  canAccessDisplays: boolean;
-  canAccessReports: boolean;
-  canSubmitReport: boolean;
-}
-
 const rolePermissions: Record<UserRole, Partial<Permissions>> = {
+  'SUPERADMIN': {
+    canBypassGeofence: true,
+  },
   'STAFF': {
       canAccessLibrary: true,
       canViewFiles: true,
@@ -120,6 +87,12 @@ const defaultPermissions: Permissions = {
   canViewAudit: false,
   canManageDisplays: false,
   canBypassGeofence: false,
+  canShareScreen: false,
+  canSendNotifications: false,
+  canShareLocation: false,
+  canAllowAudio: false,
+  canModifyFiles: false,
+  canReadFiles: false,
   canCreateRequisition: false,
   canSendChatMessage: false,
   canAccessAttendance: false,
@@ -137,7 +110,7 @@ const defaultPermissions: Permissions = {
 export function usePermissions(userProfile: UserProfile | null): Permissions {
   const { isSuperAdmin } = useSuperAdmin();
   const { config: systemConfig } = useSystemConfig(userProfile?.orgId);
-  const { isImpersonating } = useImpersonation();
+  const { isImpersonating, impersonatedUserId } = useImpersonation();
 
   const permissions = useMemo(() => {
     // 1. Super Admin absolute clearance (Master Key)
@@ -192,12 +165,12 @@ export function usePermissions(userProfile: UserProfile | null): Permissions {
     }
 
     // Impersonation mode for testing restricted UI
-    if (isSuperAdmin && isImpersonating) {
+    if (isSuperAdmin && isImpersonating && !impersonatedUserId) {
         effectiveRole = 'STAFF';
     }
 
     const rolePerms = rolePermissions[effectiveRole] || {};
-    const customPerms = (isSuperAdmin && isImpersonating) ? {} : (userProfile.customPermissions || {});
+    const customPerms = (isSuperAdmin && isImpersonating && !impersonatedUserId) ? {} : (userProfile.customPermissions || {});
 
     // NEW: Dynamic Permission Resolution
     const resolved = userProfile.resolvedPermissions || [];
@@ -230,6 +203,9 @@ export function usePermissions(userProfile: UserProfile | null): Permissions {
 
     const isStaffUser = effectiveRole === 'STAFF';
 
+    perms.canAccessDisplays = displaysMode !== 'hidden' || !isStaffUser;
+    perms.canManageDisplays = has(PERMISSIONS.ADMIN_MANAGE_DISPLAYS);
+
     perms.canApproveHR = has(PERMISSIONS.ATTENDANCE_APPROVE_HR) || has(PERMISSIONS.REQUISITION_APPROVE_HR) || !!rolePerms.canApproveHR;
     perms.canApproveFinance = has(PERMISSIONS.REQUISITION_APPROVE_FINANCE) || !!rolePerms.canApproveFinance;
     perms.canApproveMD = has(PERMISSIONS.REQUISITION_APPROVE_MD) || !!rolePerms.canApproveMD;
@@ -255,16 +231,26 @@ export function usePermissions(userProfile: UserProfile | null): Permissions {
     perms.canCreateWorkbook = has(PERMISSIONS.WORKBOOK_CREATE);
     perms.canAccessAllWorkbooks = has(PERMISSIONS.WORKBOOK_ACCESS_ALL) || !!rolePerms.canManageStaff;
 
-    perms.canAccessLibrary = has(PERMISSIONS.LIBRARY_ACCESS);
-    perms.canManageLibrary = has(PERMISSIONS.LIBRARY_MANAGE);
-    perms.canViewFiles = has(PERMISSIONS.LIBRARY_VIEW_FILES);
+    perms.canAccessLibrary = has(PERMISSIONS.LIBRARY_ACCESS) || libraryMode !== 'hidden' || !isStaffUser;
+    perms.canManageLibrary = has(PERMISSIONS.LIBRARY_MANAGE) || libraryMode === 'admin' || !isStaffUser;
+    perms.canViewFiles = has(PERMISSIONS.LIBRARY_VIEW_FILES) || libraryMode !== 'hidden' || !isStaffUser;
 
-    perms.canViewAudit = has(PERMISSIONS.ADMIN_VIEW_AUDIT);
-    perms.canManageDisplays = has(PERMISSIONS.ADMIN_MANAGE_DISPLAYS);
+    perms.canAccessLeave = has(PERMISSIONS.LEAVE_ACCESS) || leaveMode !== 'hidden' || !isStaffUser;
+    perms.canRequestLeave = has(PERMISSIONS.LEAVE_REQUEST) || leaveMode === 'staff' || !isStaffUser;
+
+    perms.canAccessReports = has(PERMISSIONS.REPORT_ACCESS) || has(PERMISSIONS.FINANCE_VIEW_REPORTS) || reportsMode !== 'hidden' || !isStaffUser;
+    perms.canSubmitReport = has(PERMISSIONS.REPORT_SUBMIT) || reportsMode === 'staff' || !isStaffUser;
+
+    perms.canViewAudit = has(PERMISSIONS.ADMIN_VIEW_AUDIT) || (customPerms as any)?.canViewAudit;
+    perms.canManageDisplays = has(PERMISSIONS.ADMIN_MANAGE_DISPLAYS) || (customPerms as any)?.canManageDisplays;
     perms.canBypassGeofence = has(PERMISSIONS.ATTENDANCE_BYPASS_GEOFENCE);
 
-    perms.canAccessReports = has(PERMISSIONS.REPORT_ACCESS) || has(PERMISSIONS.FINANCE_VIEW_REPORTS);
-    perms.canSubmitReport = has(PERMISSIONS.REPORT_SUBMIT);
+    perms.canShareScreen = has(PERMISSIONS.WEBRTC_SHARE_SCREEN) || (customPerms as any)?.canShareScreen;
+    perms.canSendNotifications = has(PERMISSIONS.NOTIFICATIONS_SEND) || (customPerms as any)?.canSendNotifications;
+    perms.canShareLocation = has(PERMISSIONS.LOCATION_SHARE) || (customPerms as any)?.canShareLocation;
+    perms.canAllowAudio = has(PERMISSIONS.WEBRTC_ALLOW_AUDIO) || (customPerms as any)?.canAllowAudio;
+    perms.canModifyFiles = has(PERMISSIONS.FILES_MODIFY) || (customPerms as any)?.canModifyFiles;
+    perms.canReadFiles = has(PERMISSIONS.FILES_READ) || (customPerms as any)?.canReadFiles;
 
     perms.canViewTeam = perms.canManageStaff || has(PERMISSIONS.ATTENDANCE_VIEW_TEAM);
     

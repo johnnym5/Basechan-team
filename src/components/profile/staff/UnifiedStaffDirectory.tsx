@@ -18,7 +18,7 @@ import {
   SelectValue
 } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { Search, MoreHorizontal, Eye, Filter, ShieldCheck, Users, PlusCircle } from 'lucide-react';
+import { Search, MoreHorizontal, Eye, Filter, ShieldCheck, Users, PlusCircle, FileText } from 'lucide-react';
 import { useOrganizationStaff } from '@/hooks/useStaff';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -32,6 +32,7 @@ import {
 import { cn } from '@/lib/utils';
 import type { UserProfile } from '@/lib/types';
 import { InviteUserDialog } from '@/components/settings/InviteUserDialog';
+import { StaffQuickViewSheet } from './StaffQuickViewSheet';
 
 interface UnifiedStaffDirectoryProps {
   orgId: string;
@@ -46,6 +47,8 @@ export function UnifiedStaffDirectory({ orgId, currentUserProfile, canManageStaf
   const [roleFilter, setRoleFilter] = useState<string>('ALL');
   const [deptFilter, setDepartmentFilter] = useState<string>('ALL');
   const [isInviteOpen, setIsInviteOpen] = useState(false);
+  const [selectedStaffId, setSelectedStaffId] = useState<string | null>(null);
+  const [isQuickViewOpen, setIsQuickViewOpen] = useState(false);
 
   const filteredStaff = useMemo(() => {
     if (!staff) return [];
@@ -128,6 +131,7 @@ export function UnifiedStaffDirectory({ orgId, currentUserProfile, canManageStaf
                 <TableHead className="font-black uppercase text-[10px] tracking-[0.2em] pl-8">Personnel Asset</TableHead>
                 <TableHead className="font-black uppercase text-[10px] tracking-[0.2em]">Sector / Designation</TableHead>
                 <TableHead className="font-black uppercase text-[10px] tracking-[0.2em]">Live Status</TableHead>
+                <TableHead className="font-black uppercase text-[10px] tracking-[0.2em]">Daily Intelligence</TableHead>
                 <TableHead className="w-[100px] pr-8 text-right"></TableHead>
               </TableRow>
             </TableHeader>
@@ -150,7 +154,10 @@ export function UnifiedStaffDirectory({ orgId, currentUserProfile, canManageStaf
                     <TableRow
                       key={person.id}
                       className="border-white/5 hover:bg-primary/5 transition-all cursor-pointer group h-20"
-                      onClick={() => onViewEmployee360(person.id)}
+                      onClick={() => {
+                        setSelectedStaffId(person.id);
+                        setIsQuickViewOpen(true);
+                      }}
                     >
                       <TableCell className="pl-8">
                         <div className="flex items-center gap-4">
@@ -183,6 +190,21 @@ export function UnifiedStaffDirectory({ orgId, currentUserProfile, canManageStaf
                            {person.status || 'OFFLINE'}
                          </Badge>
                       </TableCell>
+                      <TableCell>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="rounded-xl h-9 px-4 gap-2 border border-white/5 bg-white/5 hover:bg-primary/10 hover:text-primary transition-all text-[9px] font-black uppercase tracking-widest"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedStaffId(person.id);
+                                setIsQuickViewOpen(true);
+                                // Optional: logic to jump straight to report tab if we add tabs to QuickView
+                            }}
+                          >
+                             <FileText className="h-3.5 w-3.5" /> Reports
+                          </Button>
+                      </TableCell>
                       <TableCell className="pr-8 text-right">
                          <Button variant="ghost" size="icon" className="h-10 w-10 rounded-2xl hover:bg-primary/10 transition-all opacity-0 group-hover:opacity-100">
                             <Eye className="h-5 w-5 text-primary" />
@@ -204,6 +226,17 @@ export function UnifiedStaffDirectory({ orgId, currentUserProfile, canManageStaf
               if (!open) refetch();
           }}
           currentUserProfile={currentUserProfile}
+      />
+
+      <StaffQuickViewSheet
+        isOpen={isQuickViewOpen}
+        onClose={() => {
+          setIsQuickViewOpen(false);
+          setSelectedStaffId(null);
+        }}
+        userId={selectedStaffId}
+        orgId={orgId}
+        onViewFullProfile={onViewEmployee360}
       />
     </div>
   );

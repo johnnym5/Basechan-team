@@ -24,6 +24,7 @@ type AppEvents = {
   'open-notifications-dialog': { modal?: boolean } | void;
   'open-create-channel-dialog': { modal?: boolean } | void;
   'open-live-monitor-dialog': { targetUserId: string; targetUserName: string; modal?: boolean } | void;
+  'open-database-explorer-dialog': { modal?: boolean } | void;
   'close-all-dialogs': void;
   'open-pulse-check': void;
   'set-active-stream': { stream: MediaStream | null };

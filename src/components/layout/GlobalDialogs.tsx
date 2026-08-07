@@ -28,6 +28,7 @@ const SuperAdminDialog = dynamic(() => import('@/components/superadmin/SuperAdmi
 const NotificationsDialog = dynamic(() => import('@/components/layout/NotificationsDialog').then(m => m.NotificationsDialog), { ssr: false });
 const CreateChannelDialog = dynamic(() => import('@/components/chat/CreateChannelDialog').then(m => m.CreateChannelDialog), { ssr: false });
 const LiveMonitorDialog = dynamic(() => import('@/components/superadmin/LiveMonitorDialog').then(m => m.LiveMonitorDialog), { ssr: false });
+const DatabaseExplorerDialog = dynamic(() => import('@/components/superadmin/DatabaseExplorerDialog').then(m => m.DatabaseExplorerDialog), { ssr: false });
 
 interface GlobalDialogsProps {
   userProfile: UserProfile | null;
@@ -91,6 +92,7 @@ export function GlobalDialogs({ userProfile, permissions, onAnyDialogOpenChange 
   const [isCreateChannelOpen, setIsCreateChannelOpen] = useState(false);
   const [isLiveMonitorOpen, setIsLiveMonitorOpen] = useState(false);
   const [liveMonitorPayload, setLiveMonitorPayload] = useState<{ targetUserId: string; targetUserName: string } | null>(null);
+  const [isDatabaseExplorerOpen, setIsDatabaseExplorerOpen] = useState(false);
 
   const closeAllDialogs = useCallback(() => {
     setIsWorkbookOpen(false);
@@ -114,6 +116,7 @@ export function GlobalDialogs({ userProfile, permissions, onAnyDialogOpenChange 
     setIsNotificationsOpen(false);
     setIsCreateChannelOpen(false);
     setIsLiveMonitorOpen(false);
+    setIsDatabaseExplorerOpen(false);
   }, []);
 
   useEffect(() => {
@@ -123,7 +126,7 @@ export function GlobalDialogs({ userProfile, permissions, onAnyDialogOpenChange 
         isAssignTaskOpen || isNewRequisitionOpen || isRequestLeaveOpen || 
         isNewWorkbookOpen || isProfileOpen || isSettingsOpen || isChatOpen || 
         isInviteOpen || isNewAnnouncementOpen || isSuperAdminOpen || isNotificationsOpen ||
-        isCreateChannelOpen || isLiveMonitorOpen;
+        isCreateChannelOpen || isLiveMonitorOpen || isDatabaseExplorerOpen;
     onAnyDialogOpenChange(isOpen);
   }, [
     isWorkbookOpen, isFinanceOpen, isTasksOpen, isAttendanceOpen, 
@@ -131,7 +134,7 @@ export function GlobalDialogs({ userProfile, permissions, onAnyDialogOpenChange 
     isAssignTaskOpen, isNewRequisitionOpen, isRequestLeaveOpen, 
     isNewWorkbookOpen, isProfileOpen, isSettingsOpen, isChatOpen, 
     isInviteOpen, isNewAnnouncementOpen, isSuperAdminOpen, isNotificationsOpen,
-    isCreateChannelOpen, isLiveMonitorOpen,
+    isCreateChannelOpen, isLiveMonitorOpen, isDatabaseExplorerOpen,
     onAnyDialogOpenChange
   ]);
 
@@ -187,6 +190,7 @@ export function GlobalDialogs({ userProfile, permissions, onAnyDialogOpenChange 
         setLiveMonitorPayload(payload);
         setIsLiveMonitorOpen(true);
     };
+    const openDatabaseExplorer = () => setIsDatabaseExplorerOpen(true);
 
     uiEmitter.on('open-profile-dialog', openProfile);
     uiEmitter.on('open-settings-dialog', openSettings);
@@ -209,6 +213,7 @@ export function GlobalDialogs({ userProfile, permissions, onAnyDialogOpenChange 
     uiEmitter.on('open-notifications-dialog', openNotifications);
     uiEmitter.on('open-create-channel-dialog', openCreateChannel);
     uiEmitter.on('open-live-monitor-dialog', openLiveMonitor);
+    uiEmitter.on('open-database-explorer-dialog', openDatabaseExplorer);
     uiEmitter.on('close-all-dialogs', closeAllDialogs);
     
     return () => {
@@ -233,6 +238,7 @@ export function GlobalDialogs({ userProfile, permissions, onAnyDialogOpenChange 
       uiEmitter.off('open-notifications-dialog', openNotifications);
       uiEmitter.off('open-create-channel-dialog', openCreateChannel);
       uiEmitter.off('open-live-monitor-dialog', openLiveMonitor);
+      uiEmitter.off('open-database-explorer-dialog', openDatabaseExplorer);
       uiEmitter.off('close-all-dialogs', closeAllDialogs);
     };
   }, [closeAllDialogs]);
@@ -351,6 +357,9 @@ export function GlobalDialogs({ userProfile, permissions, onAnyDialogOpenChange 
             targetUserId={liveMonitorPayload.targetUserId}
             targetUserName={liveMonitorPayload.targetUserName}
           />
+      )}
+      {isDatabaseExplorerOpen && (
+          <DatabaseExplorerDialog open={isDatabaseExplorerOpen} onOpenChange={setIsDatabaseExplorerOpen} />
       )}
     </>
   );
