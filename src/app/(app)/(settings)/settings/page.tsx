@@ -16,12 +16,15 @@ import { SecuritySettingsForm } from '@/components/settings/forms/SecuritySettin
 import { NotificationSettingsForm } from '@/components/settings/forms/NotificationSettingsForm';
 import { WorkflowSettingsForm } from '@/components/settings/forms/WorkflowSettingsForm';
 import { DataExportCard } from '@/components/settings/forms/DataExportCard';
+import { MasterConsolePane } from '@/components/settings/MasterConsolePane';
+import { useSuperAdmin } from '@/hooks/useSuperAdmin';
 
 import { ModuleContainer } from "@/components/layout/shell/ModuleContainer";
 
 export default function AdminSettingsPage() {
   const { user: authUser } = useUser();
   const firestore = useFirestore();
+  const { isSuperAdmin } = useSuperAdmin();
   const [activeSection, setActiveSection] = useState<SettingsSection>('general');
 
   const userProfileRef = useMemoFirebase(() =>
@@ -39,7 +42,7 @@ export default function AdminSettingsPage() {
   }
 
   // RBAC Check: Ensure only Administrators can access this route
-  const isAdmin = userProfile?.role === 'ORG_ADMIN' || userProfile?.role === 'MANAGING_DIRECTOR' || userProfile?.role === 'HR_MANAGER' || permissions.canManageCompany;
+  const isAdmin = userProfile?.role === 'ORG_ADMIN' || userProfile?.role === 'MANAGING_DIRECTOR' || userProfile?.role === 'HR_MANAGER' || permissions.canManageCompany || isSuperAdmin;
 
   if (!isProfileLoading && !isAdmin) {
     return (
@@ -72,6 +75,8 @@ export default function AdminSettingsPage() {
             <DataExportCard orgId={userProfile?.orgId} />
           </div>
         );
+      case 'master-console':
+        return <MasterConsolePane />;
       default:
         return (
           <div className="flex flex-col items-center justify-center h-full opacity-30 grayscale py-20">

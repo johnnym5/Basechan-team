@@ -8,8 +8,10 @@ import {
   GitBranch,
   Share2,
   Database,
-  ChevronRight
+  ChevronRight,
+  Terminal
 } from "lucide-react";
+import { useSuperAdmin } from "@/hooks/useSuperAdmin";
 
 export type SettingsSection =
   | 'general'
@@ -17,7 +19,8 @@ export type SettingsSection =
   | 'notifications'
   | 'workflows'
   | 'integrations'
-  | 'data';
+  | 'data'
+  | 'master-console';
 
 interface SettingsSidebarProps {
   activeSection: SettingsSection;
@@ -31,9 +34,12 @@ const navItems = [
   { id: 'workflows', label: 'Workflows', icon: GitBranch, desc: 'Approvals & delegations' },
   { id: 'integrations', label: 'Integrations', icon: Share2, desc: 'Third-party connections' },
   { id: 'data', label: 'Data & Compliance', icon: Database, desc: 'Retention & exports' },
+  { id: 'master-console', label: 'Master Console', icon: Terminal, desc: 'Super Admin infrastructure tools', superAdminOnly: true },
 ] as const;
 
 export function SettingsSidebar({ activeSection, onSectionChange }: SettingsSidebarProps) {
+  const { isSuperAdmin } = useSuperAdmin();
+
   return (
     <div className="w-full flex flex-col h-full">
       <div className="px-6 py-8">
@@ -43,6 +49,8 @@ export function SettingsSidebar({ activeSection, onSectionChange }: SettingsSide
 
       <nav className="flex-1 px-4 space-y-1.5 overflow-y-auto custom-scrollbar">
         {navItems.map((item) => {
+          if (item.superAdminOnly && !isSuperAdmin) return null;
+
           const isActive = activeSection === item.id;
           const Icon = item.icon;
 

@@ -25,11 +25,11 @@ import {
 } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
-import { AddDashboardDialog } from './AddDashboardDialog';
+import { AddDashboardDialog } from './dashboards/AddDashboardDialog';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 
-export function WebDashboardPageContent({ initialPayload }: { initialPayload?: { displayId?: string } }) {
+export function LiveDisplays({ initialPayload }: { initialPayload?: { displayId?: string } }) {
     const { user: authUser } = useUser();
     const firestore = useFirestore();
     const { toast } = useToast();
