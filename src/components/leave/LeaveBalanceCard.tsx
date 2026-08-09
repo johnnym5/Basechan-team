@@ -4,8 +4,9 @@ import { Skeleton } from "../ui/skeleton";
 import type { UserProfile, LeaveRequest } from "@/lib/types";
 import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
 import { collection, query, where } from "firebase/firestore";
-import { differenceInBusinessDays, startOfYear, endOfYear } from 'date-fns';
+import { startOfYear, endOfYear } from 'date-fns';
 import { useMemo, useState } from 'react';
+import { calculateWorkingDays } from "@/lib/holidays";
 import { usePermissions } from "@/hooks/usePermissions";
 import { Button } from "../ui/button";
 import { Settings2, Plus, Minus, Loader2 } from "lucide-react";
@@ -73,13 +74,19 @@ export function LeaveBalanceCard({ userProfile }: LeaveBalanceCardProps) {
             const startDate = new Date(req.startDate);
             const endDate = new Date(req.endDate);
 
+            // If we have totalDays stored, use it (migration support)
+            if (req.totalDays) {
+                used[req.leaveType] += req.totalDays;
+                return;
+            }
+
             // Only count days within the current year for requests that span years
             const relevantStartDate = startDate < yearStart ? yearStart : startDate;
             const relevantEndDate = endDate > yearEnd ? yearEnd : endDate;
             
             if (relevantEndDate < relevantStartDate) return;
 
-            const days = differenceInBusinessDays(relevantEndDate, relevantStartDate) + 1;
+            const days = calculateWorkingDays(relevantStartDate, relevantEndDate);
             
             if (used[req.leaveType] !== undefined) {
                 used[req.leaveType] += days;

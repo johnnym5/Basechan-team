@@ -13,6 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TeamAttendanceHistory } from "@/components/attendance/TeamAttendanceHistory";
 import { WorkforceRoster } from "@/components/attendance/WorkforceRoster";
 import { LiveStaffMonitor } from "@/components/attendance/LiveStaffMonitor";
+import { StaffAttendanceAnalytics } from "@/components/attendance/StaffAttendanceAnalytics";
 import { useState, useEffect, useMemo } from "react";
 import { Calendar } from "@/components/ui/calendar";
 import {
@@ -26,8 +27,15 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { formatDuration } from "@/lib/formatters";
 import { format, isSameDay } from "date-fns";
 import { StaffQuickViewSheet } from "@/components/profile/staff/StaffQuickViewSheet";
-import { FileText, CalendarDays, Users } from "lucide-react";
+import { FileText, CalendarDays, Users, BarChart3 } from "lucide-react";
 import { Card } from "@/components/ui/card";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue
+} from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 
 import { ModuleContainer } from "@/components/layout/shell/ModuleContainer";
@@ -75,6 +83,15 @@ export function AttendancePageContent({ noWrapper = false }: { noWrapper?: boole
   const { data: pendingRecords } = useCollection<Attendance>(pendingQuery);
   const pendingCount = pendingRecords?.length || 0;
 
+  const usersQuery = useMemoFirebase(() => {
+    if (!firestore || !userProfile?.orgId) return null;
+    return query(
+      collection(firestore, 'users'),
+      where('orgId', '==', userProfile.orgId)
+    );
+  }, [firestore, userProfile?.orgId]);
+  const { data: users } = useCollection<UserProfile>(usersQuery);
+
   const isLoading = isProfileLoading || isConfigLoading;
 
   const storageKey = 'attendance-view-tab';
@@ -121,6 +138,10 @@ export function AttendancePageContent({ noWrapper = false }: { noWrapper?: boole
           )}
 
           <TabsTrigger value="live-view" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-0 pb-3 text-[10px] font-black uppercase tracking-[0.2em] opacity-50 data-[state=active]:opacity-100 transition-all">Live Roster</TabsTrigger>
+
+          {permissions.canApproveHR && (
+            <TabsTrigger value="analytics" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-0 pb-3 text-[10px] font-black uppercase tracking-[0.2em] opacity-50 data-[state=active]:opacity-100 transition-all">Historical Analytics</TabsTrigger>
+          )}
         </TabsList>
 
         <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar">
@@ -262,6 +283,43 @@ export function AttendancePageContent({ noWrapper = false }: { noWrapper?: boole
           {permissions.canApproveHR && userProfile && (
             <TabsContent value="approvals" className="mt-0 focus-visible:outline-none h-full">
               <PendingApprovals userProfile={userProfile} />
+            </TabsContent>
+          )}
+
+          {permissions.canApproveHR && (
+            <TabsContent value="analytics" className="mt-0 focus-visible:outline-none h-full flex flex-col p-4 md:p-6 bg-card/20 rounded-[2.5rem] border border-white/5 space-y-8">
+                <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                    <div className="space-y-1">
+                        <h2 className="text-2xl font-black font-headline tracking-tighter uppercase flex items-center gap-3">
+                            <BarChart3 className="h-6 w-6 text-primary" /> Historical Analytics
+                        </h2>
+                        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest opacity-60">Deep Dive Personnel Performance Telemetry</p>
+                    </div>
+
+                    <div className="w-full md:w-64">
+                        <Select value={selectedStaffId || ""} onValueChange={setSelectedStaffId}>
+                            <SelectTrigger className="rounded-xl border-white/10 bg-background/50 backdrop-blur-md">
+                                <SelectValue placeholder="Select Staff Member" />
+                            </SelectTrigger>
+                            <SelectContent className="rounded-xl border-white/10 bg-background/90 backdrop-blur-xl">
+                                {users?.map(u => (
+                                    <SelectItem key={u.id} value={u.id} className="text-xs font-bold">{u.fullName}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                </div>
+
+                <div className="flex-1 min-h-0">
+                    {selectedStaffId ? (
+                        <StaffAttendanceAnalytics staffId={selectedStaffId} />
+                    ) : (
+                        <div className="h-64 flex flex-col items-center justify-center border border-dashed border-white/10 rounded-[2.5rem] bg-secondary/5">
+                            <Users className="h-12 w-12 mb-4 opacity-20" />
+                            <p className="text-muted-foreground uppercase font-black text-[10px] tracking-[0.3em] opacity-30">Select a staff member to initialize analytics</p>
+                        </div>
+                    )}
+                </div>
             </TabsContent>
           )}
         </div>

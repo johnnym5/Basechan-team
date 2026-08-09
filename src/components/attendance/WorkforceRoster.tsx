@@ -3,8 +3,7 @@
 import { useState, useMemo } from 'react';
 import { useFirestore, useCollection, useMemoFirebase, addDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase';
 import { collection, query, where, orderBy, doc } from 'firebase/firestore';
-import type { Roster, UserProfile, ShiftType, LeaveRequest } from '@/lib/types';
-import type { Permissions } from '@/hooks/usePermissions';
+import type { Roster, UserProfile, ShiftType, LeaveRequest, Permissions } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Calendar } from '@/components/ui/calendar';
 import { Button } from '@/components/ui/button';

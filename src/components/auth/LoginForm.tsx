@@ -20,7 +20,7 @@ import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth, useFirestore, errorEmitter } from "@/firebase";
 import { signInWithEmailAndPassword } from "firebase/auth";
-import { query, collection, where, getDocs, doc, updateDoc, getDoc } from "firebase/firestore";
+import { query, collection, where, getDocs, doc, updateDoc, getDoc, setDoc, deleteDoc, writeBatch } from "firebase/firestore";
 import type { UserProfile } from "@/lib/types";
 import { sanitizeInput } from "@/lib/utils";
 import { ORG_ID } from "@/lib/config";
@@ -213,14 +213,56 @@ export function LoginForm() {
           }
       }
       
-      // 4. Register Session & Node Info
-      const userRef = doc(firestore, 'users', userCredential.user.uid);
-      await updateDoc(userRef, {
-          activeSessionId: sessionId,
-          deviceType: deviceType,
-          lastHeartbeat: new Date().toISOString(),
-          status: 'ONLINE'
-      });
+      // 4. Register Session & Node Info & Sync Profile UID
+      const authUid = userCredential.user.uid;
+
+      // If the profile document ID in Firestore is not the same as the Auth UID, migrate it
+      if (userData.id !== authUid) {
+          console.log(`[AUTH] Profile UID mismatch. Migrating document from ${userData.id} to ${authUid}`);
+          try {
+              const batch = writeBatch(firestore);
+              const newRef = doc(firestore, 'users', authUid);
+              const oldRef = doc(firestore, 'users', userData.id);
+
+              // Copy data to new location
+              batch.set(newRef, {
+                  ...userData,
+                  id: authUid,
+                  activeSessionId: sessionId,
+                  deviceType: deviceType,
+                  lastHeartbeat: new Date().toISOString(),
+                  status: 'ONLINE'
+              });
+
+              // Delete old location
+              batch.delete(oldRef);
+
+              await batch.commit();
+              console.log("[AUTH] Profile migration successful.");
+          } catch (migrateError) {
+              console.error("[AUTH] Profile migration failed:", migrateError);
+              // Fallback: try to at least update the auth UID document if copy fails
+              await setDoc(doc(firestore, 'users', authUid), {
+                  ...userData,
+                  id: authUid,
+                  activeSessionId: sessionId,
+                  deviceType: deviceType,
+                  lastHeartbeat: new Date().toISOString(),
+                  status: 'ONLINE'
+              }, { merge: true });
+          }
+      } else {
+          const userRef = doc(firestore, 'users', authUid);
+          await updateDoc(userRef, {
+              activeSessionId: sessionId,
+              deviceType: deviceType,
+              lastHeartbeat: new Date().toISOString(),
+              status: 'ONLINE'
+          });
+      }
+
+      // 5. Force Refresh Privilege Matrix
+      await authService.syncUserPermissions(firestore, authUid);
 
       // Store sessionId locally for verification
       localStorage.setItem('basechan-active-session', sessionId);

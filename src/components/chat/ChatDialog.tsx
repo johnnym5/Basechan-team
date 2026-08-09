@@ -1,7 +1,7 @@
 "use client";
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { UserProfile, Chat, ChatMessage, Task, Requisition } from '@/lib/types';
+import { UserProfile, Chat, ChatMessage, Task, Requisition, Permissions } from '@/lib/types';
 import { useCollection, useFirestore, useMemoFirebase, deleteDocumentNonBlocking, useDatabase, useUser, updateDocumentNonBlocking, useDoc } from '@/firebase';
 import { collection, query, where, orderBy, doc, limit } from 'firebase/firestore';
 import { ref, onValue, off } from 'firebase/database';
@@ -14,7 +14,6 @@ import { Send, Loader2, PlusCircle, Hash, MessageSquare, MoreVertical, Trash2, C
 import { Skeleton } from '../ui/skeleton';
 import { cn, sanitizeInput } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
-import { type Permissions } from '@/hooks/usePermissions';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '../ui/dropdown-menu';
 import { AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from '../ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';

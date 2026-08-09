@@ -15,6 +15,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useUser, useAuth, useFirestore } from "@/firebase";
+import { useRouter } from "next/navigation";
 import { LogOut, User as UserIcon, Settings, Eye, Shield } from "lucide-react";
 import { signOut } from "firebase/auth";
 import { doc, updateDoc } from "firebase/firestore";
@@ -29,6 +30,7 @@ import { useSuperAdminMode } from "@/context/SuperAdminModeProvider";
 
 export function UserNav({ userProfile }: { userProfile: UserProfile | null }) {
   const { user } = useUser();
+  const router = useRouter();
   const auth = useAuth();
   const { isImpersonating, setIsImpersonating } = useImpersonation();
   const { isSuperAdmin } = useSuperAdmin();
@@ -83,7 +85,7 @@ export function UserNav({ userProfile }: { userProfile: UserProfile | null }) {
         </DropdownMenuLabel>
         <DropdownMenuSeparator className="bg-white/5" />
         
-        <DropdownMenuItem className="p-3 cursor-pointer group" onSelect={() => uiEmitter.emit('open-profile-dialog')}>
+        <DropdownMenuItem className="p-3 cursor-pointer group" onSelect={() => router.push('/staff/profile')}>
           <UserIcon className="mr-3 h-4 w-4 text-primary transition-transform group-hover:scale-110" />
           <span className="font-bold text-xs uppercase tracking-widest">My Identity</span>
         </DropdownMenuItem>

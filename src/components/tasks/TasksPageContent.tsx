@@ -2,8 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useDoc, useMemoFirebase, useFirestore } from '@/firebase';
 import { doc } from 'firebase/firestore';
-import type { Task, UserProfile } from '@/lib/types';
-import type { Permissions } from '@/hooks/usePermissions';
+import type { Task, UserProfile, Permissions } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { TaskDetailDialog } from '@/components/tasks/TaskDetailDialog';
 import { TaskBoard } from '@/components/tasks/TaskBoard';
@@ -14,8 +13,6 @@ import { AssignTaskDialog } from '@/components/tasks/AssignTaskDialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '../ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
-import { PerformanceCard } from '../dashboard/PerformanceCard';
-import { DashboardRecentReports } from '../dashboard/DashboardRecentReports';
 
 interface TasksPageContentProps {
   initialPayload?: { taskId?: string };
@@ -115,35 +112,28 @@ export function TasksPageContent({ initialPayload, currentUserProfile, permissio
               </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-              <div className="col-span-12 lg:col-span-8 xl:col-span-9 h-full">
-                  <div className="border border-border/60 bg-muted/30 rounded-xl p-4 shadow-sm relative overflow-hidden min-h-[600px] h-full">
-                    <Tabs value={activeTab} className="h-full">
-                        <TabsContent value="board" className="m-0 h-full">
-                            <TaskBoard 
-                                userProfile={currentUserProfile}
-                                permissions={permissions}
-                                onTaskSelect={setSelectedTask}
-                                searchTerm={searchTerm}
-                                sortBy={sortBy}
-                            />
-                        </TabsContent>
-                        <TabsContent value="list" className="m-0 h-full">
-                            <TaskList
-                                userProfile={currentUserProfile}
-                                permissions={permissions}
-                                onTaskSelect={setSelectedTask}
-                                searchTerm={searchTerm}
-                                sortBy={sortBy}
-                            />
-                        </TabsContent>
-                    </Tabs>
-                  </div>
-              </div>
-
-              <div className="col-span-12 lg:col-span-4 xl:col-span-3 flex flex-col gap-6">
-                  <PerformanceCard userProfile={currentUserProfile} />
-                  <DashboardRecentReports />
+          <div className="flex-1 min-h-0">
+              <div className="border border-border/60 bg-muted/30 rounded-xl p-4 shadow-sm relative overflow-hidden h-full">
+                <Tabs value={activeTab} className="h-full">
+                    <TabsContent value="board" className="m-0 h-full">
+                        <TaskBoard
+                            userProfile={currentUserProfile}
+                            permissions={permissions}
+                            onTaskSelect={setSelectedTask}
+                            searchTerm={searchTerm}
+                            sortBy={sortBy}
+                        />
+                    </TabsContent>
+                    <TabsContent value="list" className="m-0 h-full">
+                        <TaskList
+                            userProfile={currentUserProfile}
+                            permissions={permissions}
+                            onTaskSelect={setSelectedTask}
+                            searchTerm={searchTerm}
+                            sortBy={sortBy}
+                        />
+                    </TabsContent>
+                </Tabs>
               </div>
           </div>
       </div>

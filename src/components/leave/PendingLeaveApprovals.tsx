@@ -72,6 +72,7 @@ export function PendingLeaveApprovals({ userProfile }: PendingLeaveApprovalsProp
               <TableHead className="text-[10px] font-black uppercase tracking-widest">Staff Member</TableHead>
               <TableHead className="text-[10px] font-black uppercase tracking-widest">Type</TableHead>
               <TableHead className="text-[10px] font-black uppercase tracking-widest">Dates</TableHead>
+              <TableHead className="text-[10px] font-black uppercase tracking-widest text-center">Days</TableHead>
               <TableHead className="text-[10px] font-black uppercase tracking-widest">Reason</TableHead>
               <TableHead className="text-right text-[10px] font-black uppercase tracking-widest">Actions</TableHead>
             </TableRow>
@@ -93,8 +94,9 @@ export function PendingLeaveApprovals({ userProfile }: PendingLeaveApprovalsProp
               <TableRow key={record.id}>
                 <TableCell className="font-medium">{record.userName}</TableCell>
                 <TableCell><Badge variant="secondary" className="capitalize">{record.leaveType.toLowerCase()}</Badge></TableCell>
-                <TableCell>{format(new Date(record.startDate), 'PP')} - {format(new Date(record.endDate), 'PP')}</TableCell>
-                <TableCell className="max-w-xs truncate">{record.reason}</TableCell>
+                <TableCell className="text-xs">{format(new Date(record.startDate), 'PP')} - {format(new Date(record.endDate), 'PP')}</TableCell>
+                <TableCell className="text-center font-black text-primary">{record.totalDays}</TableCell>
+                <TableCell className="max-w-xs truncate text-xs italic opacity-60">"{record.reason}"</TableCell>
                 <TableCell className="text-right space-x-2">
                     <Button variant="ghost" size="icon" className="text-destructive/80 hover:text-destructive" onClick={() => handleDecision(record, 'REJECTED')}>
                         <X className="h-4 w-4" />

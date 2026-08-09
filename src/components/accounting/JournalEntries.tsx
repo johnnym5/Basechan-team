@@ -2,8 +2,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "../ui/skeleton";
-import type { JournalEntry, UserProfile } from "@/lib/types";
-import type { Permissions } from "@/hooks/usePermissions";
+import type { JournalEntry, UserProfile, Permissions } from "@/lib/types";
 import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
 import { collection, query, where, orderBy, limit } from "firebase/firestore";
 import { Button } from "../ui/button";

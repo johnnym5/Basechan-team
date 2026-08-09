@@ -35,7 +35,7 @@ export function NotificationsDialog({ open, onOpenChange, userProfile }: { open:
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent position="left" className="flex flex-col p-0 overflow-hidden">
+            <DialogContent position="left" className="flex flex-col p-0 overflow-hidden z-[100]">
                 <DialogHeader className="p-8 pb-4 border-b border-white/5 flex-shrink-0">
                     <div className="flex items-center gap-3">
                         <div className="p-3 rounded-2xl bg-primary/10 text-primary">

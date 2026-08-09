@@ -24,7 +24,14 @@ export function SuperAdminModeProvider({ children }: { children: ReactNode }) {
   const { data: userProfile } = useDoc<UserProfile>(userProfileRef);
 
   const canEnableMode = useMemo(() => {
-    return user?.email === superAdminEmail && userProfile?.role === 'SUPERADMIN';
+    const isEmailMatch = user?.email === superAdminEmail;
+    const isRoleMatch = userProfile?.role === 'SUPERADMIN';
+
+    if (user && userProfile) {
+        console.log(`[DEBUG] Super Admin Eligibility Check: Email Match=${isEmailMatch} (${user.email}), Role Match=${isRoleMatch} (${userProfile.role})`);
+    }
+
+    return isEmailMatch && isRoleMatch;
   }, [user, userProfile, superAdminEmail]);
 
   const [isSuperAdminModeActive, setIsSuperAdminModeActiveState] = useState(false);

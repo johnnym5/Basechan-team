@@ -35,6 +35,7 @@ const GlobalDialogs = dynamic(() => import('@/components/layout/GlobalDialogs').
 
 import { AppShellContainer } from './shell/AppShellContainer';
 import { AppNavFAB } from './shell/AppNavFAB';
+import { GlobalCommandPalette } from './GlobalCommandPalette';
 
 export function MainAppLayout({ children }: { children: React.ReactNode }) {
   const { user, isUserLoading } = useUser();
@@ -316,7 +317,7 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
         <AppNavFAB />
 
         {/* Main Content Viewport Container */}
-        <div className="flex-1 flex flex-col min-w-0 h-full bg-black/20">
+        <div className="flex-1 flex flex-col min-w-0 h-full bg-secondary/10">
           <AppHeader
               userProfile={stableProfile}
               onMenuClick={() => {}}
@@ -327,7 +328,7 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
           />
           <main className="flex-1 min-h-0 overflow-hidden relative w-full h-full flex flex-col">
               <div className="w-full mx-auto max-w-full min-h-0 flex-1 animate-in fade-in duration-700 flex flex-col overflow-hidden px-6 pb-6 lg:px-8 lg:pb-8">
-                  <div className="flex-1 min-h-0 w-full rounded-[2rem] border border-white/5 bg-card/40 backdrop-blur-xl overflow-hidden shadow-inner relative">
+                  <div className="flex-1 min-h-0 w-full rounded-[2rem] border border-border/50 bg-card/40 backdrop-blur-xl overflow-hidden shadow-inner relative">
                       {children}
                   </div>
               </div>
@@ -336,6 +337,7 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
 
       {user && stableProfile && (
         <>
+            <GlobalCommandPalette />
             <DebriefModal userProfile={stableProfile} />
             <PulseCheckDialog userProfile={stableProfile} />
             <Suspense fallback={null}>

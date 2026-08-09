@@ -1,7 +1,6 @@
 'use client';
 
 type AppEvents = {
-  'open-profile-dialog': { modal?: boolean } | void;
   'open-settings-dialog': { modal?: boolean } | void;
   'open-chat-dialog': { initialUserId?: string; chatId?: string; modal?: boolean } | void;
   'open-tasks-dialog': { taskId?: string; modal?: boolean } | void;
@@ -19,7 +18,6 @@ type AppEvents = {
   'open-superadmin-dialog': { modal?: boolean } | void;
   'open-accounting-dialog': { modal?: boolean } | void;
   'open-library-dialog': { modal?: boolean } | void;
-  'open-displays-dialog': { displayId?: string; modal?: boolean } | void;
   'open-assistant-dialog': { modal?: boolean } | void;
   'open-notifications-dialog': { modal?: boolean } | void;
   'open-create-channel-dialog': { modal?: boolean } | void;

@@ -78,7 +78,7 @@ export function BottomNavBar() {
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-[450] md:hidden">
       {/* Tab Bar Background */}
-      <div className="absolute inset-0 bg-background/80 backdrop-blur-2xl border-t border-white/10 shadow-[0_-8px_32px_0_rgba(0,0,0,0.1)]" />
+      <div className="absolute inset-0 bg-background/80 backdrop-blur-2xl border-t border-border/50 shadow-[0_-8px_32px_0_rgba(0,0,0,0.1)]" />
       
       <div className="relative h-20 max-w-lg mx-auto flex items-center justify-between px-2 pb-safe">
         {/* Assistant */}
@@ -103,7 +103,7 @@ export function BottomNavBar() {
         <div className="relative -top-6 px-2">
             <Sheet open={isMenuOpen} onOpenChange={setIsMenuOpen}>
                 <SheetTrigger asChild>
-                    <button className="size-16 rounded-full bg-primary flex items-center justify-center text-white shadow-2xl shadow-primary/40 ring-4 ring-background transition-all active:scale-90">
+                    <button className="size-16 rounded-full bg-primary flex items-center justify-center text-primary-foreground shadow-2xl shadow-primary/40 ring-4 ring-background transition-all active:scale-90">
                         <LayoutGrid className={cn("h-8 w-8 transition-transform duration-500", isMenuOpen && "rotate-90")} />
                     </button>
                 </SheetTrigger>
@@ -112,14 +112,14 @@ export function BottomNavBar() {
                     
                     <div className="flex flex-col h-full pt-10">
                         <SheetHeader className="px-8 pb-6 text-left shrink-0">
-                            <SheetTitle className="text-3xl font-black font-headline tracking-tighter">Main Menu</SheetTitle>
+                            <SheetTitle className="text-3xl font-black font-headline tracking-tighter text-foreground">Main Menu</SheetTitle>
                             <SheetDescription className="text-[10px] font-black uppercase tracking-[0.2em] opacity-50">Select a section</SheetDescription>
                         </SheetHeader>
                         
                         <ScrollArea className="flex-1 px-6">
                             <div className="grid grid-cols-3 gap-4 pb-4">
                                 {mainNavItems.map((item, idx) => {
-                                    if ('isSeparator' in item) return <div key={idx} className="col-span-3 h-px bg-white/5 my-2" />;
+                                    if ('isSeparator' in item) return <div key={idx} className="col-span-3 h-px bg-border my-2" />;
                                     if ('permission' in item && !permissions[item.permission as keyof typeof permissions]) return null;
 
                                     const ActiveIcon = item.icon;
@@ -132,11 +132,11 @@ export function BottomNavBar() {
                                             className={cn(
                                                 "flex flex-col items-center gap-3 p-4 rounded-3xl border transition-all active:scale-95 group",
                                                 isItemActive 
-                                                    ? "bg-primary border-primary text-white shadow-xl shadow-primary/20" 
-                                                    : "bg-background/40 border-white/5 text-muted-foreground hover:bg-white/5"
+                                                    ? "bg-primary border-primary text-primary-foreground shadow-xl shadow-primary/20"
+                                                    : "bg-background/40 border-border text-muted-foreground hover:bg-muted"
                                             )}
                                         >
-                                            <ActiveIcon className={cn("h-6 w-6 transition-transform group-hover:scale-110", isItemActive ? "text-white" : "text-primary")} />
+                                            <ActiveIcon className={cn("h-6 w-6 transition-transform group-hover:scale-110", isItemActive ? "text-primary-foreground" : "text-primary")} />
                                             <span className="text-[9px] font-black uppercase tracking-tight text-center leading-tight">
                                                 {item.label}
                                             </span>
@@ -146,7 +146,7 @@ export function BottomNavBar() {
                             </div>
                         </ScrollArea>
                         
-                        <div className="p-6 shrink-0 border-t border-white/5 bg-background/50">
+                        <div className="p-6 shrink-0 border-t border-border bg-background/50">
                             <Button 
                                 variant="ghost" 
                                 onClick={handleLogout}

@@ -9,7 +9,8 @@ import {
   FormField,
   FormItem,
   FormLabel,
-  FormMessage
+  FormMessage,
+  FormDescription
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -21,20 +22,26 @@ import {
   SelectValue
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useUpdateStaffProfile } from '@/hooks/useStaff';
 import { Loader2, Save, X } from 'lucide-react';
-import type { UserProfile } from '@/lib/types';
-import type { Permissions } from '@/hooks/usePermissions';
+import type { UserProfile, Permissions } from '@/lib/types';
 import { cn } from '@/lib/utils';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 
 interface EditStaffProfileFormProps {
   profile: UserProfile;
-  onCancel: () => void;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
   permissions: Permissions;
 }
 
-export function EditStaffProfileForm({ profile, onCancel, permissions }: EditStaffProfileFormProps) {
+export function EditStaffProfileForm({ profile, open, onOpenChange, permissions }: EditStaffProfileFormProps) {
   const updateMutation = useUpdateStaffProfile();
 
   const form = useForm<StaffProfileFormValues>({
@@ -79,251 +86,272 @@ export function EditStaffProfileForm({ profile, onCancel, permissions }: EditSta
       userId: profile.id,
       data: { ...values, fullName },
     });
-    onCancel();
+    onOpenChange(false);
   };
 
   const isHR = permissions.canManageStaff;
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2 space-y-6">
-            <Card className="m3-surface-low border-none rounded-[2rem] shadow-xl">
-              <CardHeader><CardTitle className="text-sm uppercase tracking-widest opacity-50">Identity & Bio</CardTitle></CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField control={form.control} name="preferredName" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Preferred Name</FormLabel>
-                      <FormControl><Input {...field} value={field.value ?? ""} placeholder="How should we call you?" className="rounded-xl bg-background/50" /></FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )} />
-                  <FormField control={form.control} name="pronouns" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Pronouns</FormLabel>
-                      <FormControl><Input {...field} value={field.value ?? ""} placeholder="e.g. He/Him, They/Them" className="rounded-xl bg-background/50" /></FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )} />
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-4xl p-0 gap-0 overflow-hidden bg-card border-border shadow-2xl sm:rounded-xl">
+
+        {/* 1. FIXED HEADER */}
+        <DialogHeader className="px-6 py-4 border-b border-border bg-card shrink-0">
+          <DialogTitle className="text-xl font-black font-headline tracking-tighter uppercase">Modify Staff Profile</DialogTitle>
+          <DialogDescription className="text-xs font-bold uppercase tracking-widest opacity-60">
+            Update personnel identity, contact details, and credentials.
+          </DialogDescription>
+        </DialogHeader>
+
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col min-h-0">
+
+            {/* 2. SCROLLABLE BODY */}
+            <div className="overflow-y-auto max-h-[65vh] p-6 space-y-8 scroll-smooth custom-scrollbar">
+
+              {/* SECTION: Identity & Bio */}
+              <div className="space-y-6">
+                <div className="flex items-center gap-2">
+                    <div className="h-4 w-1 bg-primary rounded-full" />
+                    <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Identity & Mission Bio</h3>
                 </div>
-                <FormField control={form.control} name="bio" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Professional Bio</FormLabel>
-                    <FormControl><Textarea {...field} value={field.value ?? ""} placeholder="Tell us about yourself..." className="rounded-xl bg-background/50 min-h-[100px]" /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )} />
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                   <FormField control={form.control} name="location" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Work Location</FormLabel>
-                      <FormControl><Input {...field} value={field.value ?? ""} placeholder="e.g. Remote - Lagos, Office" className="rounded-xl bg-background/50" /></FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )} />
-                  <FormField control={form.control} name="timezone" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Timezone</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value ?? ""}>
-                        <FormControl><SelectTrigger className="rounded-xl bg-background/50"><SelectValue placeholder="Select Timezone" /></SelectTrigger></FormControl>
-                        <SelectContent className="rounded-xl border-none m3-surface-high max-h-[300px]">
-                          {Intl.supportedValuesOf('timeZone').map(tz => (
-                            <SelectItem key={tz} value={tz}>{tz.replace(/_/g, ' ')}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )} />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <FormField control={form.control} name="preferredName" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-[10px] font-black uppercase tracking-widest opacity-50">Preferred Name</FormLabel>
+                        <FormControl><Input {...field} value={field.value ?? ""} placeholder="Callsign" className="rounded-xl bg-background/50 h-11" /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                    <FormField control={form.control} name="pronouns" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-[10px] font-black uppercase tracking-widest opacity-50">Pronouns</FormLabel>
+                        <FormControl><Input {...field} value={field.value ?? ""} placeholder="e.g. He/Him" className="rounded-xl bg-background/50 h-11" /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                    <FormField control={form.control} name="bio" render={({ field }) => (
+                      <FormItem className="md:col-span-2">
+                        <FormLabel className="text-[10px] font-black uppercase tracking-widest opacity-50">Professional Bio</FormLabel>
+                        <FormControl><Textarea {...field} value={field.value ?? ""} placeholder="Describe operational expertise..." className="rounded-xl bg-background/50 min-h-[100px] resize-none" /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                    <FormField control={form.control} name="location" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-[10px] font-black uppercase tracking-widest opacity-50">Work Location</FormLabel>
+                        <FormControl><Input {...field} value={field.value ?? ""} placeholder="e.g. Remote" className="rounded-xl bg-background/50 h-11" /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                    <FormField control={form.control} name="timezone" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-[10px] font-black uppercase tracking-widest opacity-50">Timezone</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value ?? ""}>
+                          <FormControl><SelectTrigger className="rounded-xl bg-background/50 h-11 font-medium"><SelectValue placeholder="Select Timezone" /></SelectTrigger></FormControl>
+                          <SelectContent className="rounded-xl border-none m3-surface-high max-h-[300px]">
+                            {Intl.supportedValuesOf('timeZone').map(tz => (
+                              <SelectItem key={tz} value={tz} className="text-xs font-bold uppercase">{tz.replace(/_/g, ' ')}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                    <FormField control={form.control} name="skills" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-[10px] font-black uppercase tracking-widest opacity-50">Expertise Tags</FormLabel>
+                        <FormControl><Input placeholder="React, Python, etc." value={field.value?.join(', ') || ''} onChange={(e) => field.onChange(e.target.value.split(',').map(s => s.trim()).filter(Boolean))} className="rounded-xl bg-background/50 h-11" /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                    <FormField control={form.control} name="languages" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-[10px] font-black uppercase tracking-widest opacity-50">Languages</FormLabel>
+                        <FormControl><Input placeholder="English, French, etc." value={field.value?.join(', ') || ''} onChange={(e) => field.onChange(e.target.value.split(',').map(s => s.trim()).filter(Boolean))} className="rounded-xl bg-background/50 h-11" /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
                 </div>
-              </CardContent>
-            </Card>
+              </div>
 
-            <Card className="m3-surface-low border-none rounded-[2rem] shadow-xl">
-              <CardHeader><CardTitle className="text-sm uppercase tracking-widest opacity-50">Skills & Languages</CardTitle></CardHeader>
-              <CardContent className="space-y-4">
-                <FormField control={form.control} name="skills" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Expertise Tags (Comma separated)</FormLabel>
-                    <FormControl><Input placeholder="e.g. React, Project Management, Sales" value={field.value?.join(', ') || ''} onChange={(e) => field.onChange(e.target.value.split(',').map(s => s.trim()).filter(Boolean))} className="rounded-xl bg-background/50" /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )} />
-                <FormField control={form.control} name="languages" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Languages Spoken (Comma separated)</FormLabel>
-                    <FormControl><Input placeholder="e.g. English, Hausa, French" value={field.value?.join(', ') || ''} onChange={(e) => field.onChange(e.target.value.split(',').map(s => s.trim()).filter(Boolean))} className="rounded-xl bg-background/50" /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )} />
-              </CardContent>
-            </Card>
+              {/* SECTION: Personal Information */}
+              <div className="space-y-6">
+                <div className="flex items-center gap-2">
+                    <div className="h-4 w-1 bg-emerald-500 rounded-full" />
+                    <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Personal Information</h3>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <FormField control={form.control} name="firstName" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-[10px] font-black uppercase tracking-widest opacity-50">First Name</FormLabel>
+                        <FormControl><Input {...field} value={field.value ?? ""} className="rounded-xl bg-background/50 h-11" /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                    <FormField control={form.control} name="lastName" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-[10px] font-black uppercase tracking-widest opacity-50">Last Name</FormLabel>
+                        <FormControl><Input {...field} value={field.value ?? ""} className="rounded-xl bg-background/50 h-11" /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                    <FormField control={form.control} name="phoneNumber" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-[10px] font-black uppercase tracking-widest opacity-50">Phone Number</FormLabel>
+                        <FormControl><Input {...field} value={field.value ?? ""} className="rounded-xl bg-background/50 h-11" /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                    <FormField control={form.control} name="dateOfBirth" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-[10px] font-black uppercase tracking-widest opacity-50">Date of Birth</FormLabel>
+                        <FormControl><Input type="date" {...field} value={field.value ?? ""} className="rounded-xl bg-background/50 h-11" /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                    <FormField control={form.control} name="address" render={({ field }) => (
+                      <FormItem className="md:col-span-2">
+                        <FormLabel className="text-[10px] font-black uppercase tracking-widest opacity-50">Residential Address</FormLabel>
+                        <FormControl><Input {...field} value={field.value ?? ""} className="rounded-xl bg-background/50 h-11" /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                </div>
+              </div>
 
-            <Card className="m3-surface-low border-none rounded-[2rem] shadow-xl">
-              <CardHeader><CardTitle className="text-sm uppercase tracking-widest opacity-50">Personal Information</CardTitle></CardHeader>
-              <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField control={form.control} name="firstName" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>First Name</FormLabel>
-                    <FormControl><Input {...field} value={field.value ?? ""} className="rounded-xl bg-background/50" /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )} />
-                <FormField control={form.control} name="lastName" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Last Name</FormLabel>
-                    <FormControl><Input {...field} value={field.value ?? ""} className="rounded-xl bg-background/50" /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )} />
-                <FormField control={form.control} name="email" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Corporate Email</FormLabel>
-                    <FormControl><Input {...field} value={field.value ?? ""} disabled={!isHR} className="rounded-xl bg-background/50" /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )} />
-                <FormField control={form.control} name="phoneNumber" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Phone Number</FormLabel>
-                    <FormControl><Input {...field} value={field.value ?? ""} className="rounded-xl bg-background/50" /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )} />
-                <FormField control={form.control} name="dateOfBirth" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Date of Birth</FormLabel>
-                    <FormControl><Input type="date" {...field} value={field.value ?? ""} className="rounded-xl bg-background/50" /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )} />
-                <FormField control={form.control} name="address" render={({ field }) => (
-                  <FormItem className="md:col-span-2">
-                    <FormLabel>Residential Address</FormLabel>
-                    <FormControl><Input {...field} value={field.value ?? ""} className="rounded-xl bg-background/50" /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )} />
-              </CardContent>
-            </Card>
+              {/* SECTION: Emergency Contact */}
+              <div className="space-y-6">
+                <div className="flex items-center gap-2">
+                    <div className="h-4 w-1 bg-amber-500 rounded-full" />
+                    <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Emergency Contact</h3>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <FormField control={form.control} name="emergencyContact.name" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-[10px] font-black uppercase tracking-widest opacity-50">Contact Name</FormLabel>
+                        <FormControl><Input {...field} value={field.value ?? ""} className="rounded-xl bg-background/50 h-11" /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                    <FormField control={form.control} name="emergencyContact.relationship" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-[10px] font-black uppercase tracking-widest opacity-50">Relationship</FormLabel>
+                        <FormControl><Input {...field} value={field.value ?? ""} className="rounded-xl bg-background/50 h-11" /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                    <FormField control={form.control} name="emergencyContact.phone" render={({ field }) => (
+                      <FormItem className="md:col-span-2">
+                        <FormLabel className="text-[10px] font-black uppercase tracking-widest opacity-50">Emergency Phone</FormLabel>
+                        <FormControl><Input {...field} value={field.value ?? ""} className="rounded-xl bg-background/50 h-11" /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                </div>
+              </div>
 
-            <Card className="m3-surface-low border-none rounded-[2rem] shadow-xl">
-              <CardHeader><CardTitle className="text-sm uppercase tracking-widest opacity-50">Emergency Contact</CardTitle></CardHeader>
-              <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <FormField control={form.control} name="emergencyContact.name" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Contact Name</FormLabel>
-                    <FormControl><Input {...field} value={field.value ?? ""} className="rounded-xl bg-background/50" /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )} />
-                <FormField control={form.control} name="emergencyContact.relationship" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Relationship</FormLabel>
-                    <FormControl><Input {...field} value={field.value ?? ""} className="rounded-xl bg-background/50" /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )} />
-                <FormField control={form.control} name="emergencyContact.phone" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Phone</FormLabel>
-                    <FormControl><Input {...field} value={field.value ?? ""} className="rounded-xl bg-background/50" /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )} />
-              </CardContent>
-            </Card>
-          </div>
+              {/* SECTION: Employment */}
+              <div className={cn("space-y-6", !isHR && "opacity-60")}>
+                <div className="flex items-center gap-2">
+                    <div className="h-4 w-1 bg-rose-500 rounded-full" />
+                    <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Employment & Clearance</h3>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <FormField control={form.control} name="email" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-[10px] font-black uppercase tracking-widest opacity-50">Corporate Email</FormLabel>
+                        <FormControl><Input {...field} value={field.value ?? ""} readOnly className="rounded-xl bg-muted h-11 font-bold cursor-not-allowed" /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                    <FormField control={form.control} name="employeeId" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-[10px] font-black uppercase tracking-widest opacity-50">Employee ID</FormLabel>
+                        <FormControl><Input {...field} value={field.value ?? ""} readOnly className="rounded-xl bg-muted h-11 font-mono cursor-not-allowed" /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                    <FormField control={form.control} name="jobTitle" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-[10px] font-black uppercase tracking-widest opacity-50">Job Title</FormLabel>
+                        <FormControl><Input {...field} value={field.value ?? ""} disabled={!isHR} className="rounded-xl bg-background/50 h-11" /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                    <FormField control={form.control} name="departmentName" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-[10px] font-black uppercase tracking-widest opacity-50">Department</FormLabel>
+                        <FormControl><Input {...field} value={field.value ?? ""} readOnly className="rounded-xl bg-muted h-11 cursor-not-allowed font-bold" /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                    <FormField control={form.control} name="employmentType" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-[10px] font-black uppercase tracking-widest opacity-50">Employment Type</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value ?? ""} disabled={!isHR}>
+                          <FormControl><SelectTrigger className="rounded-xl bg-background/50 h-11 font-medium"><SelectValue placeholder="Select Type" /></SelectTrigger></FormControl>
+                          <SelectContent className="rounded-xl border-none m3-surface-high">
+                            <SelectItem value="FULL_TIME" className="text-xs font-bold uppercase">Full Time</SelectItem>
+                            <SelectItem value="PART_TIME" className="text-xs font-bold uppercase">Part Time</SelectItem>
+                            <SelectItem value="CONTRACT" className="text-xs font-bold uppercase">Contract</SelectItem>
+                            <SelectItem value="INTERN" className="text-xs font-bold uppercase">Intern</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                    <FormField control={form.control} name="role" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-[10px] font-black uppercase tracking-widest opacity-50">System Role</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value ?? ""} disabled={!isHR}>
+                          <FormControl><SelectTrigger className="rounded-xl bg-background/50 h-11 font-medium"><SelectValue placeholder="Select Role" /></SelectTrigger></FormControl>
+                          <SelectContent className="rounded-xl border-none m3-surface-high">
+                            <SelectItem value="STAFF" className="text-xs font-bold uppercase">Staff</SelectItem>
+                            <SelectItem value="HR_MANAGER" className="text-xs font-bold uppercase">HR Manager</SelectItem>
+                            <SelectItem value="FINANCE_MANAGER" className="text-xs font-bold uppercase">Finance Manager</SelectItem>
+                            <SelectItem value="MANAGING_DIRECTOR" className="text-xs font-bold uppercase">Managing Director</SelectItem>
+                            <SelectItem value="ORG_ADMIN" className="text-xs font-bold uppercase">Org Admin</SelectItem>
+                            <SelectItem value="SUPERADMIN" className="text-xs font-bold uppercase">Super Admin</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                    <FormField control={form.control} name="status" render={({ field }) => (
+                      <FormItem className="md:col-span-2">
+                        <FormLabel className="text-[10px] font-black uppercase tracking-widest opacity-50">Profile Status</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value ?? ""} disabled={!isHR}>
+                          <FormControl><SelectTrigger className="rounded-xl bg-background/50 h-11 font-medium"><SelectValue placeholder="Select Status" /></SelectTrigger></FormControl>
+                          <SelectContent className="rounded-xl border-none m3-surface-high">
+                            <SelectItem value="ACTIVE" className="text-xs font-bold uppercase">Active</SelectItem>
+                            <SelectItem value="ON_LEAVE" className="text-xs font-bold uppercase">On Leave</SelectItem>
+                            <SelectItem value="SUSPENDED" className="text-xs font-bold uppercase">Suspended</SelectItem>
+                            <SelectItem value="TERMINATED" className="text-xs font-bold uppercase text-rose-500">Terminated</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                </div>
+              </div>
 
-          <div className="space-y-6">
-            <Card className={cn("m3-surface-low border-none rounded-[2rem] shadow-xl overflow-hidden", !isHR && "opacity-60 grayscale pointer-events-none")}>
-              <CardHeader className="bg-primary/5 border-b border-primary/10"><CardTitle className="text-sm uppercase tracking-widest text-primary">Employment (HR ONLY)</CardTitle></CardHeader>
-              <CardContent className="space-y-4 pt-6">
-                <FormField control={form.control} name="employeeId" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Employee ID</FormLabel>
-                    <FormControl><Input {...field} value={field.value ?? ""} className="rounded-xl bg-background/50 font-mono" /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )} />
-                <FormField control={form.control} name="jobTitle" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Job Title</FormLabel>
-                    <FormControl><Input {...field} value={field.value ?? ""} className="rounded-xl bg-background/50" /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )} />
-                <FormField control={form.control} name="departmentName" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Department</FormLabel>
-                    <FormControl><Input {...field} value={field.value ?? ""} className="rounded-xl bg-background/50" /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )} />
-                <FormField control={form.control} name="employmentType" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Employment Type</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value ?? ""}>
-                      <FormControl><SelectTrigger className="rounded-xl bg-background/50"><SelectValue placeholder="Select Type" /></SelectTrigger></FormControl>
-                      <SelectContent className="rounded-xl border-none m3-surface-high">
-                        <SelectItem value="FULL_TIME">Full Time</SelectItem>
-                        <SelectItem value="PART_TIME">Part Time</SelectItem>
-                        <SelectItem value="CONTRACT">Contract</SelectItem>
-                        <SelectItem value="INTERN">Intern</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )} />
-                <FormField control={form.control} name="role" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>System Role</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value ?? ""}>
-                      <FormControl><SelectTrigger className="rounded-xl bg-background/50"><SelectValue placeholder="Select Role" /></SelectTrigger></FormControl>
-                      <SelectContent className="rounded-xl border-none m3-surface-high">
-                        <SelectItem value="STAFF">Staff</SelectItem>
-                        <SelectItem value="HR_MANAGER">HR Manager</SelectItem>
-                        <SelectItem value="FINANCE_MANAGER">Finance Manager</SelectItem>
-                        <SelectItem value="MANAGING_DIRECTOR">Managing Director</SelectItem>
-                        <SelectItem value="ORG_ADMIN">Org Admin</SelectItem>
-                        <SelectItem value="SUPERADMIN">Super Admin</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )} />
-                <FormField control={form.control} name="status" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Profile Status</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value ?? ""}>
-                      <FormControl><SelectTrigger className="rounded-xl bg-background/50"><SelectValue placeholder="Select Status" /></SelectTrigger></FormControl>
-                      <SelectContent className="rounded-xl border-none m3-surface-high">
-                        <SelectItem value="ACTIVE">Active</SelectItem>
-                        <SelectItem value="ON_LEAVE">On Leave</SelectItem>
-                        <SelectItem value="SUSPENDED">Suspended</SelectItem>
-                        <SelectItem value="TERMINATED">Terminated</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )} />
-              </CardContent>
-            </Card>
+            </div>
 
-            <div className="flex gap-4">
-              <Button type="button" variant="outline" onClick={onCancel} className="flex-1 rounded-2xl h-14 font-black uppercase text-[10px] tracking-widest border-white/10 hover:bg-white/5">
-                <X className="mr-2 h-4 w-4" /> Discard
+            {/* 3. FIXED ACTION FOOTER */}
+            <div className="flex justify-end items-center gap-4 border-t border-border bg-muted/30 px-6 py-4 shrink-0">
+              <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className="rounded-xl h-11 px-6 font-black uppercase text-[10px] tracking-widest border-white/10 hover:bg-white/5">
+                <X className="mr-2 h-4 w-4" /> Discard Changes
               </Button>
-              <Button type="submit" disabled={updateMutation.isPending} className="flex-[2] rounded-2xl h-14 font-black uppercase text-[10px] tracking-widest shadow-xl shadow-primary/20 m3-interactive">
+              <Button type="submit" disabled={updateMutation.isPending} className="rounded-xl h-11 px-8 font-black uppercase text-[10px] tracking-widest shadow-xl shadow-primary/20 m3-interactive bg-primary text-primary-foreground">
                 {updateMutation.isPending ? <Loader2 className="animate-spin mr-2 h-4 w-4" /> : <Save className="mr-2 h-4 w-4" />}
-                Save Profile
+                Authorize Update
               </Button>
             </div>
-          </div>
-        </div>
-      </form>
-    </Form>
+
+          </form>
+        </Form>
+      </DialogContent>
+    </Dialog>
   );
 }

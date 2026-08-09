@@ -188,6 +188,11 @@ export type AttendanceStatus = "PENDING" | "APPROVED" | "REJECTED";
 export type AttendanceLocation = "OFFICE" | "REMOTE";
 export type AttendanceRemark = 'EARLY' | 'LATE' | 'OVERTIME' | 'UNDERTIME';
 
+export interface AttendanceSession {
+    clockIn: string;
+    clockOut?: string;
+}
+
 export interface Attendance {
     id: string;
     userId: string;
@@ -212,6 +217,7 @@ export interface Attendance {
     }[];
     totalBreak?: number;
     lateReason?: string | null;
+    sessions?: AttendanceSession[];
 }
 
 export type ShiftType = "MORNING" | "AFTERNOON" | "NIGHT" | "ON_CALL";
@@ -532,6 +538,7 @@ export interface LeaveRequest {
   leaveType: LeaveType;
   startDate: string;
   endDate: string;
+  totalDays: number;
   reason: string;
   status: LeaveStatus;
   approvedBy?: string;
@@ -545,12 +552,18 @@ export interface DailyReport {
   userId: string;
   userName: string;
   reportDate: string;
-  content: string;
+  accomplishments: string;
+  blockers: string;
+  nextFocus: string;
+  pulse: 'GREAT' | 'PRODUCTIVE' | 'AVERAGE' | 'STRUGGLING';
+  content: string; // Legacy field or consolidated view
   completedTasks?: {
     taskId: string;
     title: string;
+    notes?: string;
   }[];
   createdAt: string;
+  isReviewed?: boolean;
 }
 
 export interface ErrorLog {

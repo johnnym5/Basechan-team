@@ -7,6 +7,7 @@ import type { UserProfile } from "@/lib/types";
 import { usePermissions } from "@/hooks/usePermissions";
 import { Skeleton } from "@/components/ui/skeleton";
 import { UnifiedStaffDirectory } from "@/components/profile/staff/UnifiedStaffDirectory";
+import { Users } from "lucide-react";
 
 export default function StaffDirectoryPage() {
     const router = useRouter();
@@ -26,7 +27,7 @@ export default function StaffDirectoryPage() {
     if (!userProfile) return null;
 
     return (
-        <div className="flex-1 min-h-0 relative w-full h-full flex flex-col overflow-y-auto custom-scrollbar pr-2">
+        <div className="h-full relative flex flex-col overflow-y-auto custom-scrollbar pr-2">
             <UnifiedStaffDirectory
                 orgId={userProfile.orgId}
                 currentUserProfile={userProfile}

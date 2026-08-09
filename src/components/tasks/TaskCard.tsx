@@ -1,8 +1,7 @@
 'use client';
 
 import React, { memo } from 'react';
-import type { Task, UserProfile } from '@/lib/types';
-import type { Permissions } from '@/hooks/usePermissions';
+import type { Task, UserProfile, Permissions } from '@/lib/types';
 import { Card, CardContent } from '../ui/card';
 import { cn } from '@/lib/utils';
 import { Badge } from '../ui/badge';
@@ -10,6 +9,8 @@ import { useContextMenu } from '@/hooks/useContextMenu';
 import { ContextMenu, type ContextMenuItem } from '../shared/ContextMenu';
 import { TaskPriorityBadge } from './TaskPriorityBadge';
 import { Pencil, Trash2, Eye } from 'lucide-react';
+import { useDraggable } from "@dnd-kit/core";
+import { CSS } from "@dnd-kit/utilities";
 
 interface TaskCardProps {
     task: Task;
@@ -19,6 +20,17 @@ interface TaskCardProps {
 }
 
 export const TaskCard = memo(function TaskCard({ task, onSelect, permissions }: TaskCardProps) {
+    const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+        id: task.id,
+        data: { currentStatus: task.status }
+    });
+
+    const style = {
+        transform: CSS.Translate.toString(transform),
+        opacity: isDragging ? 0.5 : 1,
+        zIndex: isDragging ? 50 : 1,
+    };
+
     const { isOpen, anchorPoint, handleContextMenu, handleTouchStart, handleTouchEnd, closeMenu } = useContextMenu();
 
     const menuItems: ContextMenuItem[] = [
@@ -32,7 +44,14 @@ export const TaskCard = memo(function TaskCard({ task, onSelect, permissions }: 
     return (
         <>
             <Card 
-                className="group border border-border/60 bg-muted/30 hover:bg-muted/50 rounded-xl shadow-sm transition-all cursor-pointer m3-interactive"
+                ref={setNodeRef}
+                style={style}
+                {...listeners}
+                {...attributes}
+                className={cn(
+                    "group border border-border/60 bg-muted/30 hover:bg-muted/50 rounded-xl shadow-sm transition-all cursor-grab active:cursor-grabbing m3-interactive",
+                    isDragging && "shadow-xl border-primary/50"
+                )}
                 onClick={() => onSelect(task)}
                 onContextMenu={handleContextMenu}
                 onTouchStart={handleTouchStart}

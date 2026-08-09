@@ -251,7 +251,7 @@ export function LiveStaffMonitor({ userProfile }: LiveStaffMonitorProps) {
                         <Button
                             variant="outline"
                             size="icon"
-                            className="h-8 w-8 rounded-xl bg-white/5 hover:bg-white/10 border-white/5 text-white"
+                            className="h-8 w-8 rounded-xl bg-muted hover:bg-muted/50 border-border text-foreground"
                             onClick={() => api?.scrollPrev()}
                             disabled={!canScrollPrev}
                         >
@@ -260,7 +260,7 @@ export function LiveStaffMonitor({ userProfile }: LiveStaffMonitorProps) {
                         <Button
                             variant="outline"
                             size="icon"
-                            className="h-8 w-8 rounded-xl bg-white/5 hover:bg-white/10 border-white/5 text-white"
+                            className="h-8 w-8 rounded-xl bg-muted hover:bg-muted/50 border-border text-foreground"
                             onClick={() => api?.scrollNext()}
                             disabled={!canScrollNext}
                         >
@@ -277,7 +277,7 @@ export function LiveStaffMonitor({ userProfile }: LiveStaffMonitorProps) {
                 <CarouselContent className="-ml-4">
                     {monitoringData.length === 0 ? (
                         <div className="pl-4 basis-full">
-                            <div className="h-40 flex flex-col items-center justify-center border border-dashed border-white/5 rounded-xl bg-secondary/5">
+                            <div className="h-40 flex flex-col items-center justify-center border border-dashed border-border rounded-xl bg-muted/50">
                                 <p className="text-muted-foreground uppercase font-black text-[9px] tracking-widest opacity-30">
                                     No personnel detected in current cycle
                                 </p>
@@ -287,7 +287,7 @@ export function LiveStaffMonitor({ userProfile }: LiveStaffMonitorProps) {
                         monitoringData.map((record) => (
                             <CarouselItem key={record.id} className="pl-4 basis-[90%] sm:basis-1/2 lg:basis-1/3 xl:basis-1/4">
                                 <Card
-                                    className="border border-border/60 bg-muted/30 rounded-xl p-6 shadow-sm hover:bg-white/5 transition-all duration-300 relative flex flex-col justify-between h-full select-none cursor-pointer group m3-interactive"
+                                    className="border border-border/50 bg-card rounded-xl p-6 shadow-sm hover:bg-secondary/20 transition-all duration-300 relative flex flex-col justify-between h-full select-none cursor-pointer group m3-interactive"
                                     onClick={(e) => handleRowClick(e, record)}
                                     onContextMenu={(e) => {
                                         if (record.profile) {
@@ -305,14 +305,14 @@ export function LiveStaffMonitor({ userProfile }: LiveStaffMonitorProps) {
                                 >
                                     <div className="flex items-start justify-between">
                                         <div className="flex items-center gap-3">
-                                            <div className="h-10 w-10 rounded-full bg-secondary border border-white/5 flex items-center justify-center font-black text-sm uppercase shadow-inner text-white shrink-0">
+                                            <div className="h-10 w-10 rounded-full bg-secondary border border-border/50 flex items-center justify-center font-black text-sm uppercase shadow-inner text-foreground shrink-0">
                                                 {record.userName.charAt(0)}
                                             </div>
                                             <div className="min-w-0">
                                                 <div className="flex items-center gap-2">
-                                                    <h4 className="font-bold text-sm text-white truncate leading-none">{record.userName}</h4>
+                                                    <h4 className="font-bold text-sm text-foreground truncate leading-none">{record.userName}</h4>
                                                     {record.clockOut ? (
-                                                        <Badge variant="outline" className="h-5 px-1.5 text-[7px] font-black uppercase bg-muted/20 text-muted-foreground border-white/5">
+                                                        <Badge variant="outline" className="h-5 px-1.5 text-[7px] font-black uppercase bg-muted/20 text-muted-foreground border-border/50">
                                                             Out
                                                         </Badge>
                                                     ) : record.onBreak ? (
@@ -349,13 +349,13 @@ export function LiveStaffMonitor({ userProfile }: LiveStaffMonitorProps) {
                                         )}
                                         <div className="flex flex-col items-center">
                                             <span className="text-[10px] font-medium text-muted-foreground uppercase mb-1 tracking-wider">Total</span>
-                                            <span className="text-lg font-bold text-white leading-none">
+                                            <span className="text-lg font-bold text-foreground leading-none">
                                                 {formatDuration(record.totalShiftTime)}
                                             </span>
                                         </div>
                                     </div>
 
-                                    <div className="mt-8 pt-4 border-t border-white/5 flex items-center justify-between">
+                                    <div className="mt-8 pt-4 border-t border-border/50 flex items-center justify-between">
                                         <div className="flex items-center gap-2">
                                             {record.profile?.deviceType === 'PC' ? (
                                                 <div className="flex items-center gap-1.5 text-muted-foreground opacity-40">

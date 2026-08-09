@@ -112,7 +112,7 @@ export default function AppHeader({
 
     if (isVertical) {
       return (
-          <div className="flex flex-col items-center gap-6 py-6 border-b border-white/5">
+          <div className="flex flex-col items-center gap-6 py-6 border-b border-border">
               <div className="w-full px-4 overflow-hidden min-h-[3rem] flex flex-col justify-center items-center">
                   <Image src="/logo.png" alt="Basechan International" width={140} height={40} className="w-full h-auto object-contain opacity-90 brightness-110" />
               </div>
@@ -133,7 +133,7 @@ export default function AppHeader({
                               {broadcastCount}
                           </span>
                       )}
-                      <div className="absolute left-full ml-4 px-3 py-1.5 bg-amber-500 text-white text-[9px] font-black uppercase tracking-widest rounded-lg opacity-0 group-hover/btn:opacity-100 transition-opacity whitespace-nowrap z-50 shadow-2xl">
+                      <div className="absolute left-full ml-4 px-3 py-1.5 bg-amber-500 text-primary-foreground text-[9px] font-black uppercase tracking-widest rounded-lg opacity-0 group-hover/btn:opacity-100 transition-opacity whitespace-nowrap z-50 shadow-2xl">
                           Intelligence
                       </div>
                   </button>
@@ -143,25 +143,25 @@ export default function AppHeader({
                           <button className="relative text-muted-foreground hover:text-primary transition-all p-2 rounded-2xl hover:bg-primary/10 group/btn m3-interactive">
                               <Bell className={cn("w-6 h-6", unreadCount > 0 && "text-primary")} />
                               {unreadCount > 0 && (
-                                  <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[8px] font-black text-white ring-2 ring-background shadow-sm">
+                                  <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[8px] font-black text-destructive-foreground ring-2 ring-background shadow-sm">
                                       {unreadCount}
                                   </span>
                               )}
-                              <div className="absolute left-full ml-4 px-3 py-1.5 bg-destructive text-white text-[9px] font-black uppercase tracking-widest rounded-lg opacity-0 group-hover/btn:opacity-100 transition-opacity whitespace-nowrap z-50 shadow-2xl">
+                              <div className="absolute left-full ml-4 px-3 py-1.5 bg-destructive text-destructive-foreground text-[9px] font-black uppercase tracking-widest rounded-lg opacity-0 group-hover/btn:opacity-100 transition-opacity whitespace-nowrap z-50 shadow-2xl">
                                   Alerts
                               </div>
                           </button>
                       </PopoverTrigger>
-                      <PopoverContent align="start" side="right" className="w-[85vw] sm:w-80 p-0 m3-surface-high border-none shadow-3xl ml-4 rounded-[2rem] overflow-hidden">
-                            <div className="p-4 border-b border-white/5 bg-secondary/20 flex items-center justify-between">
+                      <PopoverContent align="start" side="right" className="w-[85vw] sm:w-80 p-0 m3-surface-high border-none shadow-3xl ml-4 rounded-[2rem] overflow-hidden z-[100]">
+                            <div className="p-4 border-b border-border bg-secondary/20 flex items-center justify-between">
                                 <h3 className="font-black text-[10px] uppercase tracking-[0.2em] opacity-80">Notifications</h3>
                             </div>
                             <ScrollArea className="h-96">
                                 {notifications?.length === 0 ? (
                                     <div className="p-16 text-center text-[10px] text-muted-foreground uppercase font-black opacity-20 tracking-tighter">No Active Intel</div>
                                 ) : notifications?.map(n => (
-                                    <div key={n.id} className={cn("p-4 border-b border-white/5 transition-all cursor-pointer hover:bg-primary/5", n.isRead ? "opacity-50" : "bg-primary/10")} onClick={() => handleNotificationClick(n)}>
-                                        <p className="font-black text-xs leading-tight tracking-tight">{n.title}</p>
+                                    <div key={n.id} className={cn("p-4 border-b border-border transition-all cursor-pointer hover:bg-primary/5", n.isRead ? "opacity-50" : "bg-primary/10")} onClick={() => handleNotificationClick(n)}>
+                                        <p className="font-black text-xs leading-tight tracking-tight text-foreground">{n.title}</p>
                                         <p className="text-[10px] text-muted-foreground mt-2 line-clamp-2 leading-relaxed font-medium">{n.description}</p>
                                         <div className="mt-2 text-[8px] font-black uppercase tracking-widest text-primary/60">{format(new Date(n.createdAt), 'MMM d, HH:mm')}</div>
                                     </div>
@@ -175,7 +175,7 @@ export default function AppHeader({
   }
 
   return (
-    <header className={cn("shrink-0 h-20 flex items-center justify-between px-10 border-b border-white/5 bg-white/[0.02] backdrop-blur-md transition-all", className)}>
+    <header className={cn("shrink-0 h-20 flex items-center justify-between px-10 border-b border-border bg-background/80 backdrop-blur-md transition-all relative z-50", className)}>
         <div className="flex flex-col">
             <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-primary opacity-50 mb-1">{greeting}</h3>
             <p className="text-xs font-black uppercase tracking-[0.1em] text-muted-foreground flex items-center gap-2">
@@ -186,8 +186,8 @@ export default function AppHeader({
 
         {/* Scrolling Intelligence Ticker */}
         <div className="flex-1 max-w-2xl mx-12 overflow-hidden relative hidden lg:block">
-            <div className="absolute inset-y-0 left-0 w-12 bg-gradient-to-r from-[#0a0a0a] to-transparent z-10" />
-            <div className="absolute inset-y-0 right-0 w-12 bg-gradient-to-l from-[#0a0a0a] to-transparent z-10" />
+            <div className="absolute inset-y-0 left-0 w-12 bg-gradient-to-r from-background to-transparent z-10" />
+            <div className="absolute inset-y-0 right-0 w-12 bg-gradient-to-l from-background to-transparent z-10" />
             <div className="whitespace-nowrap animate-marquee py-1">
                 <span className="text-[10px] font-black uppercase tracking-[0.25em] text-muted-foreground/40">
                     {tickerText} &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {tickerText}
@@ -199,26 +199,26 @@ export default function AppHeader({
             <div className="flex items-center gap-2">
                 <Popover open={isNotificationsOpen} onOpenChange={setIsNotificationsOpen}>
                     <PopoverTrigger asChild>
-                        <button className="relative text-muted-foreground hover:text-primary transition-all p-2.5 rounded-2xl bg-white/5 hover:bg-primary/10 group/btn m3-interactive">
+                        <button className="relative text-muted-foreground hover:text-primary transition-all p-2.5 rounded-2xl bg-muted hover:bg-primary/10 group/btn m3-interactive">
                             <Bell className={cn("w-5 h-5", unreadCount > 0 && "text-primary")} />
                             {unreadCount > 0 && (
-                                <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[8px] font-black text-white ring-2 ring-background shadow-lg">
+                                <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[8px] font-black text-destructive-foreground ring-2 ring-background shadow-lg">
                                     {unreadCount}
                                 </span>
                             )}
                         </button>
                     </PopoverTrigger>
-                    <PopoverContent align="end" className="w-[85vw] sm:w-80 p-0 m3-surface-high border-none shadow-3xl rounded-[2rem] overflow-hidden">
-                        <div className="p-4 border-b border-white/5 bg-secondary/20 flex items-center justify-between">
-                            <h3 className="font-black text-[10px] uppercase tracking-[0.2em] opacity-80">System Alerts</h3>
+                    <PopoverContent align="end" className="w-[85vw] sm:w-80 p-0 m3-surface-high border-none shadow-3xl rounded-[2rem] overflow-hidden z-[100]">
+                        <div className="p-4 border-b border-border bg-secondary flex items-center justify-between">
+                            <h3 className="font-black text-[10px] uppercase tracking-[0.2em] opacity-80 text-foreground">System Alerts</h3>
                             <span className="text-[8px] font-black uppercase text-primary px-2 py-0.5 rounded-full bg-primary/10">{unreadCount} New</span>
                         </div>
                         <ScrollArea className="h-96">
                             {notifications?.length === 0 ? (
                                 <div className="p-16 text-center text-[10px] text-muted-foreground uppercase font-black opacity-20 tracking-tighter">No Active Intel</div>
                             ) : notifications?.map(n => (
-                                <div key={n.id} className={cn("p-4 border-b border-white/5 transition-all cursor-pointer hover:bg-primary/5", n.isRead ? "opacity-50" : "bg-primary/10")} onClick={() => handleNotificationClick(n)}>
-                                    <p className="font-black text-xs leading-tight tracking-tight">{n.title}</p>
+                                <div key={n.id} className={cn("p-4 border-b border-border transition-all cursor-pointer hover:bg-primary/5", n.isRead ? "opacity-50" : "bg-primary/10")} onClick={() => handleNotificationClick(n)}>
+                                    <p className="font-black text-xs leading-tight tracking-tight text-foreground">{n.title}</p>
                                     <p className="text-[10px] text-muted-foreground mt-2 line-clamp-2 leading-relaxed font-medium">{n.description}</p>
                                     <div className="mt-2 text-[8px] font-black uppercase tracking-widest text-primary/60">{format(new Date(n.createdAt), 'MMM d, HH:mm')}</div>
                                 </div>
@@ -229,14 +229,14 @@ export default function AppHeader({
 
                 <button
                     onClick={handleOpenIntelligence}
-                    className="relative text-muted-foreground hover:text-amber-500 transition-all p-2.5 rounded-2xl bg-white/5 hover:bg-amber-500/10 group/btn m3-interactive"
+                    className="relative text-muted-foreground hover:text-amber-500 transition-all p-2.5 rounded-2xl bg-muted hover:bg-amber-500/10 group/btn m3-interactive"
                     title="Daily Updates"
                 >
                     <Sparkles className="w-5 h-5" />
                 </button>
             </div>
 
-            <div className="h-10 w-px bg-white/5" />
+            <div className="h-10 w-px bg-border" />
 
             <div className="flex items-center gap-4">
                 <ThemeToggle />

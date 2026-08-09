@@ -1,8 +1,7 @@
 'use client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "../ui/scroll-area";
-import type { UserProfile } from "@/lib/types";
-import type { Permissions } from "@/hooks/usePermissions";
+import type { UserProfile, Permissions } from "@/lib/types";
 import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
 import { collection, query, where, doc, updateDoc } from "firebase/firestore";
 import { Skeleton } from "../ui/skeleton";

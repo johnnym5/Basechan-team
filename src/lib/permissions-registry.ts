@@ -71,6 +71,48 @@ export const PERMISSIONS = {
 
 export type PermissionKey = typeof PERMISSIONS[keyof typeof PERMISSIONS];
 
+/** Human-readable labels for permission badges, editors, and audit surfaces. */
+export const PERMISSION_LABELS: Record<PermissionKey, string> = {
+  [PERMISSIONS.ATTENDANCE_CLOCK_IN]: 'Attendance Clock In',
+  [PERMISSIONS.ATTENDANCE_BYPASS_GEOFENCE]: 'Bypass Geofence',
+  [PERMISSIONS.ATTENDANCE_APPROVE_HR]: 'Approve Attendance (HR)',
+  [PERMISSIONS.ATTENDANCE_VIEW_TEAM]: 'View Team Attendance',
+  [PERMISSIONS.ATTENDANCE_MANAGE_ROSTER]: 'Manage Attendance Roster',
+  [PERMISSIONS.REQUISITION_CREATE]: 'Create Requisitions',
+  [PERMISSIONS.REQUISITION_APPROVE_HR]: 'Approve Requisitions (HR)',
+  [PERMISSIONS.REQUISITION_APPROVE_FINANCE]: 'Approve Requisitions (Finance)',
+  [PERMISSIONS.REQUISITION_APPROVE_MD]: 'Approve Requisitions (Managing Director)',
+  [PERMISSIONS.REQUISITION_DISBURSE]: 'Disburse Requisitions',
+  [PERMISSIONS.FINANCE_MANAGE_ACCOUNTS]: 'Manage Finance Accounts',
+  [PERMISSIONS.FINANCE_VIEW_REPORTS]: 'View Finance Reports',
+  [PERMISSIONS.TASK_CREATE]: 'Create Tasks',
+  [PERMISSIONS.TASK_ACCESS_ALL]: 'Access All Tasks',
+  [PERMISSIONS.TASK_MANAGE_STAFF]: 'Manage Staff Tasks',
+  [PERMISSIONS.WORKBOOK_CREATE]: 'Create Workbooks',
+  [PERMISSIONS.WORKBOOK_ACCESS_ALL]: 'Access All Workbooks',
+  [PERMISSIONS.LIBRARY_ACCESS]: 'Access Library',
+  [PERMISSIONS.LIBRARY_MANAGE]: 'Manage Library',
+  [PERMISSIONS.LIBRARY_VIEW_FILES]: 'View Library Files',
+  [PERMISSIONS.ADMIN_MANAGE_COMPANY]: 'Manage Company',
+  [PERMISSIONS.ADMIN_MANAGE_STAFF]: 'Manage Staff',
+  [PERMISSIONS.ADMIN_MANAGE_ANNOUNCEMENTS]: 'Manage Announcements',
+  [PERMISSIONS.ADMIN_VIEW_AUDIT]: 'View Audit Log',
+  [PERMISSIONS.ADMIN_MANAGE_DISPLAYS]: 'Manage Live Displays',
+  [PERMISSIONS.WEBRTC_SHARE_SCREEN]: 'Share Screen',
+  [PERMISSIONS.WEBRTC_ALLOW_AUDIO]: 'Allow Audio',
+  [PERMISSIONS.CHAT_ACCESS]: 'Access Chat',
+  [PERMISSIONS.CHAT_SEND_MESSAGE]: 'Send Chat Messages',
+  [PERMISSIONS.NOTIFICATIONS_SEND]: 'Send Notifications',
+  [PERMISSIONS.LOCATION_SHARE]: 'Share Location',
+  [PERMISSIONS.FILES_READ]: 'Read Files',
+  [PERMISSIONS.FILES_MODIFY]: 'Modify Files',
+  [PERMISSIONS.REPORT_ACCESS]: 'Access Reports',
+  [PERMISSIONS.REPORT_SUBMIT]: 'Submit Reports',
+  [PERMISSIONS.LEAVE_ACCESS]: 'Access Leave Management',
+  [PERMISSIONS.LEAVE_REQUEST]: 'Request Leave',
+  [PERMISSIONS.PROFILE_EDIT_OWN]: 'Edit Own Profile',
+};
+
 /**
  * DUTIES: Logical groups of permissions for easier Role composition.
  */

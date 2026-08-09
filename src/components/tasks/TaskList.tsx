@@ -1,8 +1,7 @@
 'use client';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query, where, Query } from 'firebase/firestore';
-import type { Task, UserProfile, TaskPriority } from '@/lib/types';
-import type { Permissions } from '@/hooks/usePermissions';
+import type { Task, UserProfile, TaskPriority, Permissions } from '@/lib/types';
 import { TaskCard } from './TaskCard';
 import { useSuperAdmin } from '@/hooks/useSuperAdmin';
 import { useMemo } from 'react';

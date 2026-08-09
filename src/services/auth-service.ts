@@ -57,19 +57,30 @@ export const authService = {
 
       const userDoc = querySnapshot.docs[0];
       const userData = userDoc.data() as UserProfile;
+      const authUid = user.uid;
 
-      // 2. Optional: Sync UID if it's different (e.g., first time Google login for existing email/pass user)
-      // This ensures the user profile is linked to the Google account's UID
-      if (userDoc.id !== user.uid) {
-        // Note: This requires careful consideration of document IDs vs Auth UIDs in your system.
-        // If your system uses Firestore doc IDs as primary keys, you might need a mapping or update.
+      // 2. Sync UID if it's different (e.g., first time Google login for existing email/pass user)
+      if (userDoc.id !== authUid) {
+          console.log(`[AUTH] Syncing Google Auth UID with Profile. Migrating from ${userDoc.id} to ${authUid}`);
+          const batch = writeBatch(db);
+          batch.set(doc(db, 'users', authUid), {
+              ...userData,
+              id: authUid,
+              status: 'ONLINE',
+              lastHeartbeat: new Date().toISOString()
+          });
+          batch.delete(doc(db, 'users', userDoc.id));
+          await batch.commit();
+      } else {
+          // 3. Mark as online
+          await updateDoc(doc(db, 'users', authUid), {
+            status: 'ONLINE',
+            lastHeartbeat: new Date().toISOString()
+          });
       }
 
-      // 3. Mark as online
-      await updateDoc(doc(db, 'users', userDoc.id), {
-        status: 'ONLINE',
-        lastHeartbeat: new Date().toISOString()
-      });
+      // 4. Force Refresh Privilege Matrix
+      await authService.syncUserPermissions(db, authUid);
 
       return { user, profile: userData };
     } catch (error: any) {

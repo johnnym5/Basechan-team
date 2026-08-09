@@ -8,8 +8,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import type { Task, UserProfile, ActivityEntry, SubTask, TaskStatus, Notification } from '@/lib/types';
-import type { Permissions } from '@/hooks/usePermissions';
+import type { Task, UserProfile, ActivityEntry, SubTask, TaskStatus, Notification, Permissions } from '@/lib/types';
 import { format, differenceInHours } from 'date-fns';
 import { Calendar, CheckSquare, History, Info, BookOpenCheck, User, Plus, Trash2, Share2, Pencil, Check, Loader2, Hourglass, LifeBuoy, Paperclip } from 'lucide-react';
 import { TaskPriorityBadge } from './TaskPriorityBadge';

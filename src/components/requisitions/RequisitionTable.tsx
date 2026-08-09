@@ -1,8 +1,7 @@
 'use client';
 import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
 import { collection, query, where, orderBy, Query, DocumentData } from "firebase/firestore";
-import type { Requisition, UserProfile } from "@/lib/types";
-import type { Permissions } from "@/hooks/usePermissions";
+import type { Requisition, UserProfile, Permissions } from "@/lib/types";
 import { Skeleton } from '../ui/skeleton';
 import { Inbox, Search } from 'lucide-react';
 import { RequisitionCard } from './RequisitionCard';

@@ -83,14 +83,14 @@ export function SidebarDock({ isLoggedIn, isAuthLoading }: SidebarDockProps) {
     }
   };
 
-  if (!mounted) return <aside className="w-20 bg-black/20 border-r border-white/10" />;
+  if (!mounted) return <aside className="w-20 bg-secondary/20 border-r border-border/50" />;
 
   return (
     <aside
         onMouseEnter={() => setIsExpanded(true)}
         onMouseLeave={() => setIsExpanded(false)}
         className={cn(
-            "h-full flex flex-col border-r border-white/5 bg-[#0d0d0d] transition-all duration-500 ease-spring relative z-[100]",
+            "h-full flex flex-col border-r border-border/50 bg-card transition-all duration-500 ease-spring relative z-[100]",
             isExpanded ? "w-72 shadow-2xl" : "w-[72px]"
         )}
     >
@@ -98,11 +98,11 @@ export function SidebarDock({ isLoggedIn, isAuthLoading }: SidebarDockProps) {
       <div className={cn("p-6 flex items-center transition-all duration-300", isExpanded ? "justify-start" : "justify-center")}>
         <div className="flex items-center gap-4">
             <div className="p-2.5 rounded-2xl bg-primary shadow-lg shadow-primary/20">
-                <BookCopy className="h-6 w-6 text-black shrink-0" />
+                <BookCopy className="h-6 w-6 text-primary-foreground shrink-0" />
             </div>
             {isExpanded && (
                 <div className="animate-in fade-in slide-in-from-left-4 duration-500">
-                    <h1 className="text-xl font-black font-headline tracking-tighter text-white uppercase">Basechan</h1>
+                    <h1 className="text-xl font-black font-headline tracking-tighter text-foreground uppercase">Basechan</h1>
                     <p className="text-[8px] font-black uppercase tracking-[0.3em] text-primary opacity-70">Staff Portal</p>
                 </div>
             )}
@@ -148,8 +148,8 @@ export function SidebarDock({ isLoggedIn, isAuthLoading }: SidebarDockProps) {
                                             "w-full flex items-center rounded-2xl transition-all duration-300 h-12 group relative",
                                             isExpanded ? "px-4" : "justify-center",
                                             isActive
-                                                ? "bg-primary text-black shadow-lg shadow-primary/10"
-                                                : "text-muted-foreground hover:bg-white/5 hover:text-white"
+                                                ? "bg-primary text-primary-foreground shadow-lg shadow-primary/10"
+                                                : "text-muted-foreground hover:bg-muted hover:text-foreground"
                                         )}
                                     >
                                         <item.icon className={cn("w-5 h-5 transition-all", !isExpanded && "group-hover:scale-110")} />
@@ -162,7 +162,7 @@ export function SidebarDock({ isLoggedIn, isAuthLoading }: SidebarDockProps) {
                                             <div className="absolute left-0 w-1 h-6 bg-primary rounded-r-full shadow-[0_0_10px_rgba(202,179,72,0.5)]" />
                                         )}
                                         {!isExpanded && (
-                                            <div className="absolute left-full ml-6 px-3 py-2 bg-[#1a1a1a] text-white text-[9px] font-black uppercase tracking-widest rounded-xl opacity-0 group-hover:opacity-100 transition-all pointer-events-none whitespace-nowrap z-[200] shadow-2xl border border-white/5 translate-x-2 group-hover:translate-x-0">
+                                            <div className="absolute left-full ml-6 px-3 py-2 bg-popover text-popover-foreground text-[9px] font-black uppercase tracking-widest rounded-xl opacity-0 group-hover:opacity-100 transition-all pointer-events-none whitespace-nowrap z-[200] shadow-2xl border border-border/50 translate-x-2 group-hover:translate-x-0">
                                                 {item.label}
                                             </div>
                                         )}
@@ -177,29 +177,29 @@ export function SidebarDock({ isLoggedIn, isAuthLoading }: SidebarDockProps) {
       </ScrollArea>
 
       {/* User Footer */}
-      <div className={cn("p-4 border-t border-white/5 transition-all duration-300", !isExpanded && "flex flex-col items-center")}>
+      <div className={cn("p-4 border-t border-border/50 transition-all duration-300", !isExpanded && "flex flex-col items-center")}>
         {isAuthLoading ? (
             <Skeleton className="h-10 w-10 rounded-full" />
         ) : isLoggedIn ? (
             <div className="flex flex-col gap-4 w-full">
-                <div className={cn("flex items-center gap-3 p-2 rounded-2xl transition-all duration-300", isExpanded && "hover:bg-white/5", !isExpanded && "justify-center")}>
+                <div className={cn("flex items-center gap-3 p-2 rounded-2xl transition-all duration-300", isExpanded && "hover:bg-muted", !isExpanded && "justify-center")}>
                     {isProfileLoading ? (
                       <Skeleton className="h-10 w-10 rounded-full" />
                     ) : userProfile ? (
                       <Avatar
-                        className="h-10 w-10 rounded-2xl border border-white/10 hover:border-primary transition-all cursor-pointer shadow-lg"
+                        className="h-10 w-10 rounded-2xl border border-border/50 hover:border-primary transition-all cursor-pointer shadow-lg"
                         onClick={() => handleNavClick({ dialog: 'profile' })}
                       >
                           <AvatarFallback className="text-[10px] font-black bg-secondary">{userProfile?.fullName?.split(' ').map(n => n[0]).join('')}</AvatarFallback>
                       </Avatar>
                     ) : (
-                        <div className="h-10 w-10 rounded-2xl bg-white/5 flex items-center justify-center text-muted-foreground">
+                        <div className="h-10 w-10 rounded-2xl bg-muted flex items-center justify-center text-muted-foreground">
                              <User className="h-5 w-5" />
                         </div>
                     )}
                     {isExpanded && userProfile && (
                         <div className="flex-1 truncate animate-in fade-in slide-in-from-left-2 duration-300">
-                            <p className="text-[10px] font-black uppercase tracking-tight text-white truncate">{userProfile?.fullName}</p>
+                            <p className="text-[10px] font-black uppercase tracking-tight text-foreground truncate">{userProfile?.fullName}</p>
                             <p className="text-[8px] font-bold text-muted-foreground uppercase tracking-[0.2em] truncate mt-0.5">{userProfile?.position}</p>
                         </div>
                     )}

@@ -3,7 +3,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useUser, useDoc, useMemoFirebase, useFirestore, useCollection } from '@/firebase';
 import { doc, collection, query, where, getDocs, writeBatch } from 'firebase/firestore';
-import type { UserProfile, Workbook, Sheet } from '@/lib/types';
+import type { UserProfile, Workbook, Sheet, Permissions } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { ShieldAlert, BookCopy, MoreHorizontal, Edit, Trash2, Share2, Search, PlusCircle, ArrowRight, Loader2 } from 'lucide-react';
@@ -28,7 +28,7 @@ import { NewWorkbookDialog } from './NewWorkbookDialog';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Progress } from '@/components/ui/progress';
-import { usePermissions, type Permissions } from '@/hooks/usePermissions';
+import { usePermissions } from '@/hooks/usePermissions';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 

@@ -137,6 +137,12 @@ export function usePermissions(userProfile: UserProfile | null): Permissions {
           canViewAudit: true,
           canManageDisplays: true,
           canBypassGeofence: true,
+          canShareScreen: true,
+          canSendNotifications: true,
+          canShareLocation: true,
+          canAllowAudio: true,
+          canModifyFiles: true,
+          canReadFiles: true,
           canCreateRequisition: true,
           canSendChatMessage: true,
           canAccessAttendance: true,
@@ -220,16 +226,16 @@ export function usePermissions(userProfile: UserProfile | null): Permissions {
     perms.canAccessChat = has(PERMISSIONS.CHAT_ACCESS) || chatMode !== 'hidden' || !isStaffUser;
     perms.canSendChatMessage = has(PERMISSIONS.CHAT_SEND_MESSAGE) || chatMode === 'staff' || !isStaffUser;
 
-    perms.canAccessAttendance = has(PERMISSIONS.ATTENDANCE_CLOCK_IN) || !!perms.canApproveHR || has(PERMISSIONS.ATTENDANCE_VIEW_TEAM);
-    perms.canClockIn = has(PERMISSIONS.ATTENDANCE_CLOCK_IN);
+    perms.canAccessAttendance = has(PERMISSIONS.ATTENDANCE_CLOCK_IN) || !!perms.canApproveHR || has(PERMISSIONS.ATTENDANCE_VIEW_TEAM) || attendanceMode !== 'hidden' || !isStaffUser;
+    perms.canClockIn = has(PERMISSIONS.ATTENDANCE_CLOCK_IN) || attendanceMode === 'staff' || !isStaffUser;
 
-    perms.canAccessTasks = has(PERMISSIONS.TASK_CREATE) || has(PERMISSIONS.TASK_ACCESS_ALL);
-    perms.canCreateTask = has(PERMISSIONS.TASK_CREATE);
-    perms.canAccessAllTasks = has(PERMISSIONS.TASK_ACCESS_ALL) || !!rolePerms.canManageStaff;
+    perms.canAccessTasks = has(PERMISSIONS.TASK_CREATE) || has(PERMISSIONS.TASK_ACCESS_ALL) || tasksMode !== 'hidden' || !isStaffUser;
+    perms.canCreateTask = has(PERMISSIONS.TASK_CREATE) || tasksMode === 'staff' || !isStaffUser;
+    perms.canAccessAllTasks = has(PERMISSIONS.TASK_ACCESS_ALL) || !!rolePerms.canManageStaff || tasksMode === 'admin' || !isStaffUser;
 
-    perms.canAccessWorkbooks = has(PERMISSIONS.WORKBOOK_CREATE) || has(PERMISSIONS.WORKBOOK_ACCESS_ALL);
-    perms.canCreateWorkbook = has(PERMISSIONS.WORKBOOK_CREATE);
-    perms.canAccessAllWorkbooks = has(PERMISSIONS.WORKBOOK_ACCESS_ALL) || !!rolePerms.canManageStaff;
+    perms.canAccessWorkbooks = has(PERMISSIONS.WORKBOOK_CREATE) || has(PERMISSIONS.WORKBOOK_ACCESS_ALL) || workbooksMode !== 'hidden' || !isStaffUser;
+    perms.canCreateWorkbook = has(PERMISSIONS.WORKBOOK_CREATE) || workbooksMode === 'staff' || !isStaffUser;
+    perms.canAccessAllWorkbooks = has(PERMISSIONS.WORKBOOK_ACCESS_ALL) || !!rolePerms.canManageStaff || workbooksMode === 'admin' || !isStaffUser;
 
     perms.canAccessLibrary = has(PERMISSIONS.LIBRARY_ACCESS) || libraryMode !== 'hidden' || !isStaffUser;
     perms.canManageLibrary = has(PERMISSIONS.LIBRARY_MANAGE) || libraryMode === 'admin' || !isStaffUser;

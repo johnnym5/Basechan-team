@@ -35,6 +35,7 @@ export function useEmployee360(userId: string | undefined, orgId: string | undef
       }
 
       // 1. Identity & Permissions (Base Profile)
+      console.log(`[DEBUG] Fetching profile from collection: 'users', ID: ${userId}`);
       const profileRef = doc(firestore, 'users', userId);
 
       // 2. Operational Feeds (Recent Activity)
@@ -54,18 +55,29 @@ export function useEmployee360(userId: string | undefined, orgId: string | undef
         limit(15)
       );
 
-      // Perform all fetches simultaneously for optimal performance
-      const [profileSnap, attendanceSnap, tasksSnap] = await Promise.all([
-        getDoc(profileRef),
-        getDocs(attendanceQuery),
-        getDocs(tasksQuery)
-      ]);
+      try {
+        // Perform all fetches simultaneously for optimal performance
+        const [profileSnap, attendanceSnap, tasksSnap] = await Promise.all([
+            getDoc(profileRef),
+            getDocs(attendanceQuery),
+            getDocs(tasksQuery)
+        ]);
 
-      return {
-        profile: profileSnap.exists() ? { id: profileSnap.id, ...profileSnap.data() } as UserProfile : null,
-        attendance: attendanceSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Attendance)),
-        tasks: tasksSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Task)),
-      };
+        if (!profileSnap.exists()) {
+            console.warn(`[DEBUG] DOCUMENT DOES NOT EXIST in 'users' collection for ID: ${userId}`);
+        } else {
+            console.log(`[DEBUG] Successfully retrieved profile for: ${userId}`);
+        }
+
+        return {
+            profile: profileSnap.exists() ? { id: profileSnap.id, ...profileSnap.data() } as UserProfile : null,
+            attendance: attendanceSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Attendance)),
+            tasks: tasksSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Task)),
+        };
+      } catch (error: any) {
+        console.error(`[DEBUG] Firestore fetch failed for user ${userId}:`, error.code, error.message);
+        throw error;
+      }
     },
     enabled: !!firestore && !!userId && !!orgId,
     staleTime: 1000 * 60 * 2, // 2 minutes stale time

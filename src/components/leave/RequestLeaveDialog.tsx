@@ -17,8 +17,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { sanitizeInput, cn } from "@/lib/utils";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import { Calendar } from "../ui/calendar";
-import { format, isSameDay, eachDayOfInterval, isWithinInterval } from "date-fns";
-import { isHoliday } from "@/lib/holidays";
+import { format, isSameDay, eachDayOfInterval, isWithinInterval, addDays } from "date-fns";
+import { isHoliday, calculateWorkingDays } from "@/lib/holidays";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useOrganizationStaff } from "@/hooks/useStaff";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
@@ -86,6 +86,14 @@ export function RequestLeaveDialog({ open, onOpenChange, userProfile }: RequestL
     }
   });
 
+  const startDate = form.watch('startDate');
+  const endDate = form.watch('endDate');
+
+  const requestedDays = useMemo(() => {
+    if (!startDate || !endDate) return 0;
+    return calculateWorkingDays(startDate, endDate);
+  }, [startDate, endDate]);
+
   const handleDialogClose = () => {
     form.reset();
     onOpenChange(false);
@@ -122,6 +130,7 @@ export function RequestLeaveDialog({ open, onOpenChange, userProfile }: RequestL
             leaveType: values.leaveType,
             startDate: values.startDate.toISOString(),
             endDate: values.endDate.toISOString(),
+            totalDays: requestedDays,
             reason: sanitizeInput(values.reason),
             status: 'PENDING',
             createdAt: new Date().toISOString(),
@@ -273,7 +282,14 @@ export function RequestLeaveDialog({ open, onOpenChange, userProfile }: RequestL
 
                 <div className="p-3 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-[10px] text-amber-600 flex gap-3">
                     <ShieldAlert className="h-4 w-4 shrink-0 mt-0.5" />
-                    <p className="leading-relaxed">Occupied dates and public holidays are disabled. Our policy requires unique leave assignments to maintain service continuity.</p>
+                    <div className="space-y-1">
+                        <p className="leading-relaxed">Occupied dates and public holidays are disabled. Our policy requires unique leave assignments to maintain service continuity.</p>
+                        {requestedDays > 0 && (
+                            <p className="font-black uppercase tracking-widest text-[11px]">
+                                Calculated Duration: <span className="text-foreground">{requestedDays} Working Day{requestedDays !== 1 ? 's' : ''}</span>
+                            </p>
+                        )}
+                    </div>
                 </div>
 
                  <FormField

@@ -3,8 +3,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import dynamic from 'next/dynamic';
 import { uiEmitter } from '@/lib/ui-emitter';
-import type { UserProfile } from '@/lib/types';
-import type { Permissions } from '@/hooks/usePermissions';
+import type { UserProfile, Permissions } from '@/lib/types';
+import { useSuperAdminMode } from '@/context/SuperAdminModeProvider';
 
 // Dynamically import heavy dialog components
 const WorkbookDialog = dynamic(() => import('@/components/workbook/WorkbookDialog').then(m => m.WorkbookDialog), { ssr: false });
@@ -14,12 +14,10 @@ const AttendanceDialog = dynamic(() => import('@/components/attendance/Attendanc
 const LeaveDialog = dynamic(() => import('@/components/leave/LeaveDialog').then(m => m.LeaveDialog), { ssr: false });
 const ReportsDialog = dynamic(() => import('@/components/reports/ReportsDialog').then(m => m.ReportsDialog), { ssr: false });
 const LibraryDialog = dynamic(() => import('@/components/library/LibraryDialog').then(m => m.LibraryDialog), { ssr: false });
-const DisplaysDialog = dynamic(() => import('@/components/dashboards/WebDashboardDialog').then(m => m.WebDashboardDialog), { ssr: false });
 const AssignTaskDialog = dynamic(() => import('@/components/tasks/AssignTaskDialog').then(m => m.AssignTaskDialog), { ssr: false });
 const NewRequisitionDialog = dynamic(() => import('@/components/requisitions/NewRequisitionDialog').then(m => m.NewRequisitionDialog), { ssr: false });
 const RequestLeaveDialog = dynamic(() => import('@/components/leave/RequestLeaveDialog').then(m => m.RequestLeaveDialog), { ssr: false });
 const NewWorkbookDialog = dynamic(() => import('@/components/workbook/NewWorkbookDialog').then(m => m.NewWorkbookDialog), { ssr: false });
-const ProfileDialog = dynamic(() => import('@/components/profile/ProfileDialog').then(m => m.ProfileDialog), { ssr: false });
 const SettingsDialog = dynamic(() => import('@/components/settings/SettingsDialog').then(m => m.SettingsDialog), { ssr: false });
 const ChatDialog = dynamic(() => import('@/components/chat/ChatDialog').then(m => m.ChatDialog), { ssr: false });
 const InviteUserDialog = dynamic(() => import('@/components/settings/InviteUserDialog').then(m => m.InviteUserDialog), { ssr: false });
@@ -37,6 +35,7 @@ interface GlobalDialogsProps {
 }
 
 export function GlobalDialogs({ userProfile, permissions, onAnyDialogOpenChange }: GlobalDialogsProps) {
+  const { isSuperAdminModeActive } = useSuperAdminMode();
   const [isWorkbookOpen, setIsWorkbookOpen] = useState(false);
   const [isWorkbookModal, setIsWorkbookModal] = useState(false);
   const [initialWorkbookPayload, setInitialWorkbookPayload] = useState<{ workbookId?: string; sheetId?: string | null } | undefined>();
@@ -61,19 +60,13 @@ export function GlobalDialogs({ userProfile, permissions, onAnyDialogOpenChange 
   
   const [isLibraryOpen, setIsLibraryOpen] = useState(false);
   const [isLibraryModal, setIsLibraryModal] = useState(false);
-  
-  const [isDisplaysOpen, setIsDisplaysOpen] = useState(false);
-  const [isDisplaysModal, setIsDisplaysModal] = useState(false);
-  const [initialDisplaysPayload, setInitialDisplaysPayload] = useState<{ displayId?: string } | undefined>();
-  
+
   const [isAssignTaskOpen, setIsAssignTaskOpen] = useState(false);
   const [assignTaskPayload, setAssignTaskPayload] = useState<any>(null);
   const [isNewRequisitionOpen, setIsNewRequisitionOpen] = useState(false);
   const [isRequestLeaveOpen, setIsRequestLeaveOpen] = useState(false);
   const [isNewWorkbookOpen, setIsNewWorkbookOpen] = useState(false);
   
-  const [isProfileOpen, setIsProfileOpen] = useState(false);
-  const [isProfileModal, setIsProfileModal] = useState(false);
   
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isSettingsModal, setIsSettingsModal] = useState(false);
@@ -102,12 +95,10 @@ export function GlobalDialogs({ userProfile, permissions, onAnyDialogOpenChange 
     setIsLeaveOpen(false);
     setIsReportsOpen(false);
     setIsLibraryOpen(false);
-    setIsDisplaysOpen(false);
     setIsAssignTaskOpen(false);
     setIsNewRequisitionOpen(false);
     setIsRequestLeaveOpen(false);
     setIsNewWorkbookOpen(false);
-    setIsProfileOpen(false);
     setIsSettingsOpen(false);
     setIsChatOpen(false);
     setIsInviteOpen(false);
@@ -122,24 +113,23 @@ export function GlobalDialogs({ userProfile, permissions, onAnyDialogOpenChange 
   useEffect(() => {
     const isOpen = 
         isWorkbookOpen || isFinanceOpen || isTasksOpen || isAttendanceOpen || 
-        isLeaveOpen || isReportsOpen || isLibraryOpen || isDisplaysOpen || 
+        isLeaveOpen || isReportsOpen || isLibraryOpen ||
         isAssignTaskOpen || isNewRequisitionOpen || isRequestLeaveOpen || 
-        isNewWorkbookOpen || isProfileOpen || isSettingsOpen || isChatOpen || 
+        isNewWorkbookOpen || isSettingsOpen || isChatOpen ||
         isInviteOpen || isNewAnnouncementOpen || isSuperAdminOpen || isNotificationsOpen ||
         isCreateChannelOpen || isLiveMonitorOpen || isDatabaseExplorerOpen;
     onAnyDialogOpenChange(isOpen);
   }, [
     isWorkbookOpen, isFinanceOpen, isTasksOpen, isAttendanceOpen, 
-    isLeaveOpen, isReportsOpen, isLibraryOpen, isDisplaysOpen, 
+    isLeaveOpen, isReportsOpen, isLibraryOpen,
     isAssignTaskOpen, isNewRequisitionOpen, isRequestLeaveOpen, 
-    isNewWorkbookOpen, isProfileOpen, isSettingsOpen, isChatOpen, 
+    isNewWorkbookOpen, isSettingsOpen, isChatOpen,
     isInviteOpen, isNewAnnouncementOpen, isSuperAdminOpen, isNotificationsOpen,
     isCreateChannelOpen, isLiveMonitorOpen, isDatabaseExplorerOpen,
     onAnyDialogOpenChange
   ]);
 
   useEffect(() => {
-    const openProfile = (p?: any) => { setIsProfileModal(!!p?.modal); setIsProfileOpen(true); };
     const openSettings = (p?: any) => { setIsSettingsModal(!!p?.modal); setIsSettingsOpen(true); };
     const openChat = (payload?: any) => {
       if (payload) setInitialChatPayload(payload);
@@ -169,11 +159,6 @@ export function GlobalDialogs({ userProfile, permissions, onAnyDialogOpenChange 
         setIsReportsOpen(true);
     };
     const openLibrary = (p?: any) => { setIsLibraryModal(!!p?.modal); setIsLibraryOpen(true); };
-    const openDisplays = (payload?: any) => {
-        if (payload) setInitialDisplaysPayload(payload);
-        setIsDisplaysModal(!!payload?.modal);
-        setIsDisplaysOpen(true);
-    };
     const openAssignTask = (payload?: any) => {
         setAssignTaskPayload(payload || null);
         setIsAssignTaskOpen(true);
@@ -190,9 +175,10 @@ export function GlobalDialogs({ userProfile, permissions, onAnyDialogOpenChange 
         setLiveMonitorPayload(payload);
         setIsLiveMonitorOpen(true);
     };
-    const openDatabaseExplorer = () => setIsDatabaseExplorerOpen(true);
+    const openDatabaseExplorer = () => {
+      if (isSuperAdminModeActive) setIsDatabaseExplorerOpen(true);
+    };
 
-    uiEmitter.on('open-profile-dialog', openProfile);
     uiEmitter.on('open-settings-dialog', openSettings);
     uiEmitter.on('open-chat-dialog', openChat);
     uiEmitter.on('open-tasks-dialog', openTasks);
@@ -202,7 +188,6 @@ export function GlobalDialogs({ userProfile, permissions, onAnyDialogOpenChange 
     uiEmitter.on('open-leave-dialog', openLeave);
     uiEmitter.on('open-reports-dialog', openReports);
     uiEmitter.on('open-library-dialog', openLibrary);
-    uiEmitter.on('open-displays-dialog', openDisplays);
     uiEmitter.on('open-assign-task-dialog', openAssignTask);
     uiEmitter.on('open-new-requisition-dialog', openNewRequisition);
     uiEmitter.on('open-request-leave-dialog', openRequestLeave);
@@ -217,7 +202,6 @@ export function GlobalDialogs({ userProfile, permissions, onAnyDialogOpenChange 
     uiEmitter.on('close-all-dialogs', closeAllDialogs);
     
     return () => {
-      uiEmitter.off('open-profile-dialog', openProfile);
       uiEmitter.off('open-settings-dialog', openSettings);
       uiEmitter.off('open-chat-dialog', openChat);
       uiEmitter.off('open-tasks-dialog', openTasks);
@@ -227,7 +211,6 @@ export function GlobalDialogs({ userProfile, permissions, onAnyDialogOpenChange 
       uiEmitter.off('open-leave-dialog', openLeave);
       uiEmitter.off('open-reports-dialog', openReports);
       uiEmitter.off('open-library-dialog', openLibrary);
-      uiEmitter.off('open-displays-dialog', openDisplays);
       uiEmitter.off('open-assign-task-dialog', openAssignTask);
       uiEmitter.off('open-new-requisition-dialog', openNewRequisition);
       uiEmitter.off('open-request-leave-dialog', openRequestLeave);
@@ -241,7 +224,11 @@ export function GlobalDialogs({ userProfile, permissions, onAnyDialogOpenChange 
       uiEmitter.off('open-database-explorer-dialog', openDatabaseExplorer);
       uiEmitter.off('close-all-dialogs', closeAllDialogs);
     };
-  }, [closeAllDialogs]);
+  }, [closeAllDialogs, isSuperAdminModeActive]);
+
+  useEffect(() => {
+    if (!isSuperAdminModeActive) setIsDatabaseExplorerOpen(false);
+  }, [isSuperAdminModeActive]);
 
   return (
     <>
@@ -286,25 +273,8 @@ export function GlobalDialogs({ userProfile, permissions, onAnyDialogOpenChange 
           modal={isReportsModal}
       />
       <LibraryDialog open={isLibraryOpen} onOpenChange={setIsLibraryOpen} modal={isLibraryModal} />
-      <DisplaysDialog 
-        open={isDisplaysOpen} 
-        onOpenChange={(isOpen) => {
-            setIsDisplaysOpen(isOpen);
-            if (!isOpen) setInitialDisplaysPayload(undefined);
-        }} 
-        initialPayload={initialDisplaysPayload}
-        modal={isDisplaysModal}
-      />
       <SuperAdminDialog open={isSuperAdminOpen} onOpenChange={setIsSuperAdminOpen} modal={isSuperAdminModal} />
       
-      {isProfileOpen && userProfile && (
-        <ProfileDialog 
-          open={isProfileOpen} 
-          onOpenChange={setIsProfileOpen} 
-          userProfile={userProfile} 
-          modal={isProfileModal}
-        />
-      )}
       {isSettingsOpen && userProfile && (
         <SettingsDialog 
           open={isSettingsOpen} 
@@ -358,7 +328,7 @@ export function GlobalDialogs({ userProfile, permissions, onAnyDialogOpenChange 
             targetUserName={liveMonitorPayload.targetUserName}
           />
       )}
-      {isDatabaseExplorerOpen && (
+      {isSuperAdminModeActive && isDatabaseExplorerOpen && (
           <DatabaseExplorerDialog open={isDatabaseExplorerOpen} onOpenChange={setIsDatabaseExplorerOpen} />
       )}
     </>

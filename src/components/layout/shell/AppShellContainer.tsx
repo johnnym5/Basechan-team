@@ -14,11 +14,11 @@ interface AppShellContainerProps {
  */
 export function AppShellContainer({ children, className }: AppShellContainerProps) {
   return (
-    <div className="min-h-screen w-full bg-[#0a0a0a] text-foreground p-2 sm:p-4 lg:p-6 flex items-center justify-center overflow-hidden">
+    <div className="min-h-screen w-full bg-background text-foreground p-2 sm:p-4 lg:p-6 flex items-center justify-center overflow-hidden">
       {/* Docked App Shell Case */}
       <div
         className={cn(
-          "w-full max-w-[1800px] h-[95vh] flex flex-col rounded-[2.5rem] border border-white/10 bg-card/20 backdrop-blur-3xl shadow-[0_32px_64px_-16px_rgba(0,0,0,0.5)] overflow-hidden relative transition-all duration-700 ease-apple-ease animate-in fade-in zoom-in-95",
+          "w-full max-w-[1800px] h-[95vh] flex flex-col rounded-[2.5rem] border border-border/50 bg-card/20 backdrop-blur-3xl shadow-2xl overflow-hidden relative transition-all duration-700 ease-apple-ease animate-in fade-in zoom-in-95",
           className
         )}
       >

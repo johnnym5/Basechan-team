@@ -5,11 +5,11 @@ import { collection, query, where, or, and } from 'firebase/firestore';
 import type { ExternalDisplay, UserProfile } from '@/lib/types';
 import { MonitorDot, ChevronRight, Globe, Lock } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { uiEmitter } from '@/lib/ui-emitter';
 import { ORG_ID } from '@/lib/config';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useMemo } from 'react';
 import { Badge } from '@/components/ui/badge';
+import { useRouter } from 'next/navigation';
 
 interface DashboardLiveDisplaysProps {
     userProfile: UserProfile | null;
@@ -17,6 +17,7 @@ interface DashboardLiveDisplaysProps {
 
 export function DashboardLiveDisplays({ userProfile }: DashboardLiveDisplaysProps) {
     const firestore = useFirestore();
+    const router = useRouter();
     const orgId = userProfile?.orgId || ORG_ID;
     const permissions = usePermissions(userProfile);
 
@@ -51,7 +52,7 @@ export function DashboardLiveDisplays({ userProfile }: DashboardLiveDisplaysProp
     }, [allDisplays]);
 
     const handleJumpToDisplay = (displayId: string) => {
-        uiEmitter.emit('open-displays-dialog', { displayId });
+        router.push(`/livedisplay?id=${displayId}`);
     };
 
     if (isLoading) {
@@ -67,9 +68,9 @@ export function DashboardLiveDisplays({ userProfile }: DashboardLiveDisplaysProp
     }
 
     return (
-        <section className="border border-border/60 bg-muted/30 rounded-xl p-4 md:p-6 shadow-sm animate-in fade-in slide-in-from-bottom-2 duration-500 interactive-element">
+        <section className="border border-border/50 bg-muted/50 rounded-xl p-4 md:p-6 shadow-sm animate-in fade-in slide-in-from-bottom-2 duration-500 interactive-element">
             <div className="flex items-center justify-between mb-4">
-                <h3 className="text-xs font-bold font-headline flex items-center gap-2 uppercase tracking-tight">
+                <h3 className="text-xs font-bold font-headline flex items-center gap-2 uppercase tracking-tight text-foreground">
                     <Globe className="h-3.5 w-3.5 text-primary" />
                     Live Displays
                 </h3>
@@ -83,15 +84,15 @@ export function DashboardLiveDisplays({ userProfile }: DashboardLiveDisplaysProp
             <div className="space-y-2">
                 {!displays || displays.length === 0 ? (
                     <div className="py-6 flex flex-col items-center justify-center text-center opacity-40 grayscale">
-                        <MonitorDot className="h-6 w-6 mb-2" />
-                        <p className="font-bold text-[9px] uppercase tracking-[0.1em]">No shared dashboards</p>
+                        <MonitorDot className="h-6 w-6 mb-2 text-muted-foreground" />
+                        <p className="font-bold text-[9px] uppercase tracking-[0.1em] text-muted-foreground">No shared dashboards</p>
                     </div>
                 ) : (
                     displays.map((display) => (
                         <div 
                             key={display.id}
                             onClick={() => handleJumpToDisplay(display.id)}
-                            className="flex items-center justify-between p-2 rounded-xl border border-white/5 bg-background/30 hover:bg-primary/5 hover:border-primary/20 transition-all cursor-pointer group"
+                            className="flex items-center justify-between p-2 rounded-xl border border-border/50 bg-muted hover:bg-primary/10 hover:border-primary/30 transition-all cursor-pointer group"
                         >
                             <div className="flex items-center gap-3 min-w-0">
                                 <div className="p-1.5 rounded-lg bg-primary/10 text-primary group-hover:bg-primary/20 transition-colors shrink-0 relative">
@@ -99,7 +100,7 @@ export function DashboardLiveDisplays({ userProfile }: DashboardLiveDisplaysProp
                                 </div>
                                 <div className="min-w-0">
                                     <div className="flex items-center gap-1">
-                                        <p className="font-bold text-[10px] truncate leading-none">{display.title}</p>
+                                        <p className="font-bold text-[10px] truncate leading-none text-foreground">{display.title}</p>
                                         {display.displayMode === 'PRIVATE' && (
                                             <Lock className="h-2.5 w-2.5 text-muted-foreground ml-1" />
                                         )}
@@ -115,9 +116,9 @@ export function DashboardLiveDisplays({ userProfile }: DashboardLiveDisplaysProp
                 )}
             </div>
             
-            <div className="mt-3 pt-2 border-t border-white/5">
+            <div className="mt-3 pt-2 border-t border-border/50">
                 <button 
-                    onClick={() => uiEmitter.emit('open-displays-dialog')}
+                    onClick={() => router.push('/livedisplay')}
                     className="w-full text-[7px] font-black text-primary hover:underline uppercase tracking-[0.2em] text-center"
                 >
                     View All Dashboards

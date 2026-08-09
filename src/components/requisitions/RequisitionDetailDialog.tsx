@@ -13,9 +13,9 @@ import {
   Requisition,
   UserProfile,
   ActivityEntry,
-  RequisitionStatus
+  RequisitionStatus,
+  Permissions
 } from '@/lib/types'
-import { Permissions } from '@/hooks/usePermissions'
 import { RequisitionStatusBadge } from './RequisitionStatusBadge'
 import { format, differenceInHours } from 'date-fns'
 import {

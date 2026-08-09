@@ -4,7 +4,7 @@ import React from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { ModuleContainer } from "@/components/layout/shell/ModuleContainer";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Users, CalendarCheck2, CalendarPlus, UserCircle } from "lucide-react";
+import { Users, CalendarCheck2, CalendarPlus, UserCircle, BarChart3 } from "lucide-react";
 import { useUser, useDoc, useMemoFirebase, useFirestore } from '@/firebase';
 import { doc } from 'firebase/firestore';
 import type { UserProfile } from '@/lib/types';
@@ -26,6 +26,7 @@ export default function StaffModuleLayout({ children }: { children: React.ReactN
     const getActiveTab = () => {
         if (pathname.includes('/staff/attendance')) return 'attendance';
         if (pathname.includes('/staff/leave')) return 'leave';
+        if (pathname.includes('/staff/reports')) return 'reports';
         if (pathname.includes('/staff/profile')) return 'profile';
         return 'directory';
     };
@@ -36,6 +37,7 @@ export default function StaffModuleLayout({ children }: { children: React.ReactN
         if (value === 'directory') router.push('/staff');
         else if (value === 'attendance') router.push('/staff/attendance');
         else if (value === 'leave') router.push('/staff/leave');
+        else if (value === 'reports') router.push('/staff/reports');
         else if (value === 'profile') router.push(`/staff/profile`);
     };
 
@@ -67,6 +69,11 @@ export default function StaffModuleLayout({ children }: { children: React.ReactN
                         {permissions.canAccessLeave && (
                             <TabsTrigger value="leave" className="rounded-xl px-6 font-black uppercase text-[10px] tracking-widest gap-2 data-[state=active]:bg-background transition-all">
                                 <CalendarPlus className="h-3.5 w-3.5" /> Leave
+                            </TabsTrigger>
+                        )}
+                        {permissions.canAccessReports && (
+                            <TabsTrigger value="reports" className="rounded-xl px-6 font-black uppercase text-[10px] tracking-widest gap-2 data-[state=active]:bg-background transition-all">
+                                <BarChart3 className="h-3.5 w-3.5" /> Reports
                             </TabsTrigger>
                         )}
                     </TabsList>

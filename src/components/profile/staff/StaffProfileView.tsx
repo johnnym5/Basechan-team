@@ -55,8 +55,7 @@ import { uiEmitter } from '@/lib/ui-emitter';
 import { EditStaffProfileForm } from './EditStaffProfileForm';
 import { StaffDocumentUpload } from './StaffDocumentUpload';
 import { UserAccessEditor } from '@/components/settings/security/UserAccessEditor';
-import type { Permissions } from '@/hooks/usePermissions';
-import type { UserProfile, Kudos } from '@/lib/types';
+import type { UserProfile, Kudos, Permissions } from '@/lib/types';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface StaffProfileViewProps {
@@ -69,7 +68,7 @@ interface StaffProfileViewProps {
 
 export function StaffProfileView({ userId, onBack, onViewProfile, currentUserProfile, permissions }: StaffProfileViewProps) {
   const firestore = useFirestore();
-  const { data: profile, isLoading } = useStaffProfile(userId);
+  const { data: profile, isLoading, refetch } = useStaffProfile(userId);
   const [isEditing, setIsEditing] = useState(false);
   const [localTime, setLocalTime] = useState<string>('');
 
@@ -141,26 +140,19 @@ export function StaffProfileView({ userId, onBack, onViewProfile, currentUserPro
   if (isLoading) return <Skeleton className="h-[600px] w-full rounded-[2.5rem]" />;
   if (!profile) return <div className="p-20 text-center uppercase font-black opacity-20">Profile Not Found</div>;
 
-  if (isEditing) {
-    return (
-      <div className="space-y-6">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => setIsEditing(false)} className="rounded-full">
-            <ChevronLeft className="h-5 w-5" />
-          </Button>
-          <h2 className="text-2xl font-black font-headline tracking-tighter">Modify Staff Profile</h2>
-        </div>
-        <EditStaffProfileForm
-          profile={profile}
-          onCancel={() => setIsEditing(false)}
-          permissions={permissions}
-        />
-      </div>
-    );
-  }
-
   return (
     <div className="flex flex-col h-full gap-8">
+      {/* Edit Profile Modal */}
+      <EditStaffProfileForm
+        profile={profile}
+        open={isEditing}
+        onOpenChange={(open) => {
+            setIsEditing(open);
+            if (!open) refetch();
+        }}
+        permissions={permissions}
+      />
+
       {/* Celebratory Banner */}
       {(isBirthday || isWorkAnniversary) && (
         <div className="bg-gradient-to-r from-amber-500 to-primary text-white p-4 rounded-xl flex items-center justify-between shadow-sm animate-in slide-in-from-top duration-1000">

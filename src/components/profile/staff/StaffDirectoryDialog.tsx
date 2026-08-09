@@ -10,8 +10,7 @@ import {
 } from '@/components/ui/dialog';
 import { Employee360Profile } from './Employee360Profile';
 import { UnifiedStaffDirectory } from './UnifiedStaffDirectory';
-import type { UserProfile } from '@/lib/types';
-import type { Permissions } from '@/hooks/usePermissions';
+import type { UserProfile, Permissions } from '@/lib/types';
 
 interface StaffDirectoryDialogProps {
   open: boolean;

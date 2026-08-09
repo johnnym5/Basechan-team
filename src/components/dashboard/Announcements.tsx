@@ -6,8 +6,9 @@ import { Skeleton } from "../ui/skeleton";
 import { formatDistanceToNow } from "date-fns";
 import { useMemo, useState } from "react";
 import { AnnouncementDetailDialog } from "./AnnouncementDetailDialog";
+import { cn } from "@/lib/utils";
 
-export function Announcements() {
+export function Announcements({ className }: { className?: string }) {
     const { user: authUser } = useUser();
     const firestore = useFirestore();
     const [selectedAnnouncement, setSelectedAnnouncement] = useState<Announcement | null>(null);
@@ -24,7 +25,7 @@ export function Announcements() {
             collection(firestore, 'announcements'),
             where('orgId', '==', userProfile.orgId),
             orderBy('createdAt', 'desc'),
-            limit(3)
+            limit(10)
         );
     }, [firestore, userProfile, authUser]);
 
@@ -49,11 +50,11 @@ export function Announcements() {
 
     return (
         <>
-            <section className="border border-border/60 bg-muted/30 rounded-xl p-4 shadow-sm animate-slide-up-fade interactive-element">
-                <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-4">Recent Updates</h3>
-                <div className="space-y-4">
+            <section className={cn("border border-border/60 bg-muted/30 rounded-xl p-4 shadow-sm animate-slide-up-fade interactive-element flex flex-col min-h-[250px] overflow-hidden", className)}>
+                <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-4 shrink-0">Recent Updates</h3>
+                <div className="flex-1 overflow-y-auto pr-2 space-y-4 custom-scrollbar">
                     {isLoading ? (
-                        Array.from({length: 2}).map((_, i) => <Skeleton key={i} className="h-12 w-full rounded-lg" />)
+                        Array.from({length: 3}).map((_, i) => <Skeleton key={i} className="h-12 w-full rounded-lg" />)
                     ) : sortedAnnouncements.map((ann, idx) => (
                         <div 
                             key={ann.id} 
@@ -65,7 +66,7 @@ export function Announcements() {
                                 {ann.isPinned && <span className="text-[7px] font-black bg-primary/20 text-primary px-1 rounded uppercase tracking-tighter">PINNED</span>}
                                 <h4 className="text-[11px] font-bold text-foreground group-hover:text-primary transition-colors truncate">{ann.title}</h4>
                             </div>
-                            <p className="text-[10px] text-muted-foreground leading-tight line-clamp-1 mb-1.5">{ann.content}</p>
+                            <p className="text-[10px] text-muted-foreground leading-tight line-clamp-2 mb-1.5">{ann.content}</p>
                             <div className="flex items-center justify-between">
                                 <span className="text-[7px] font-black text-muted-foreground uppercase tracking-widest">
                                     {formatDistanceToNow(new Date(ann.createdAt), { addSuffix: true })}

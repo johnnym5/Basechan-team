@@ -31,6 +31,7 @@ import { PREDEFINED_DEPARTMENTS, ROLES_BY_DEPARTMENT, getRoleFromPosition } from
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
+import { PERMISSION_LABELS } from '@/lib/permissions-registry';
 
 export function UserAccessEditor({ userProfile }: { userProfile: UserProfile }) {
   const firestore = useFirestore();
@@ -323,7 +324,7 @@ export function UserAccessEditor({ userProfile }: { userProfile: UserProfile }) 
         <div className="flex flex-wrap gap-2">
             {userProfile.resolvedPermissions?.map(p => (
                 <Badge key={p} variant="outline" className="text-[7px] font-mono border-white/10 uppercase tracking-tighter bg-black/20 px-2 py-1">
-                    {p}
+                    {PERMISSION_LABELS[p as keyof typeof PERMISSION_LABELS] || p}
                 </Badge>
             )) || <span className="text-[10px] italic opacity-30">No permissions identified. Unit restricted.</span>}
         </div>

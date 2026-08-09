@@ -11,7 +11,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SubmitDailyReport } from "@/components/reports/SubmitDailyReport";
 import { MyDailyReports } from "@/components/reports/MyDailyReports";
 import { TeamDailyReports } from "@/components/reports/TeamDailyReports";
-import { PerformanceDashboard } from "@/components/reports/PerformanceDashboard";
 import { TeamHealthTab } from "@/components/reports/TeamHealthTab";
 import { useState, useEffect } from "react";
 import { Button } from "../ui/button";
@@ -22,7 +21,7 @@ import { format } from "date-fns";
 
 import { ModuleContainer } from "@/components/layout/shell/ModuleContainer";
 
-export function ReportsPageContent({ initialPayload }: { initialPayload?: { tab?: string } }) {
+export function ReportsPageContent({ initialPayload, noWrapper = false }: { initialPayload?: { tab?: string }, noWrapper?: boolean }) {
   const { user: authUser } = useUser();
   const firestore = useFirestore();
   const { toast } = useToast();
@@ -35,16 +34,25 @@ export function ReportsPageContent({ initialPayload }: { initialPayload?: { tab?
   const permissions = usePermissions(userProfile);
 
   const storageKey = 'reports-view-tab';
-  const [activeTab, setActiveTab] = useState('performance');
+  const [activeTab, setActiveTab] = useState('submit');
 
   useEffect(() => {
     if (initialPayload?.tab) {
         setActiveTab(initialPayload.tab);
     } else {
         const savedTab = localStorage.getItem(storageKey);
-        if (savedTab) setActiveTab(savedTab);
+        if (savedTab) {
+            // Migration: if the saved tab was 'performance' (My Dashboard), switch to 'submit'
+            if (savedTab === 'performance') {
+                setActiveTab(permissions.canManageStaff ? 'team-reports' : 'submit');
+            } else {
+                setActiveTab(savedTab);
+            }
+        } else {
+            setActiveTab(permissions.canManageStaff ? 'team-reports' : 'submit');
+        }
     }
-  }, [initialPayload]);
+  }, [initialPayload, permissions.canManageStaff]);
 
   useEffect(() => {
     if (activeTab) {
@@ -128,6 +136,80 @@ export function ReportsPageContent({ initialPayload }: { initialPayload?: { tab?
     return <div className="space-y-8 p-10"><Skeleton className="h-10 w-1/3" /><Skeleton className="h-[600px] w-full rounded-3xl" /></div>;
   }
 
+  const content = (
+    <div className="flex flex-col h-full gap-6">
+      <div className="flex items-center justify-between shrink-0">
+          <div>
+              <h2 className="text-lg font-black font-headline tracking-tighter uppercase">Operations Intelligence</h2>
+              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest opacity-60">Performance Metrics, Activity Logs & Team Health</p>
+          </div>
+          {permissions.canManageStaff && (
+              <Button variant="outline" onClick={handleMasterExport} disabled={isExporting} className="rounded-xl border-primary/20 hover:bg-primary/10 hover:border-primary transition-all active:scale-95 group h-10 font-black uppercase text-[10px] tracking-widest shadow-xl shadow-primary/20">
+                  {isExporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileSpreadsheet className="mr-2 h-4 w-4 group-hover:rotate-12 transition-transform text-primary" />}
+                  Export Master Data
+              </Button>
+          )}
+      </div>
+
+      <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full flex flex-col min-h-0 h-full">
+            <TabsList className="bg-secondary/20 rounded-2xl p-1 mb-8 w-fit border border-white/5 shrink-0">
+                {permissions.canManageStaff ? (
+                    <>
+                        <TabsTrigger value="team-reports" className="rounded-xl px-6 font-black uppercase text-[10px] tracking-widest data-[state=active]:bg-background transition-all">
+                            <UserCheck className="h-3.5 w-3.5 mr-2 text-emerald-500" /> Activity Logs
+                        </TabsTrigger>
+                        <TabsTrigger value="analytics" className="rounded-xl px-6 font-black uppercase text-[10px] tracking-widest data-[state=active]:bg-background transition-all">
+                            <BarChart3 className="h-3.5 w-3.5 mr-2 text-primary" /> Team Leaderboard
+                        </TabsTrigger>
+                        <TabsTrigger value="team-health" className="rounded-xl px-6 font-black uppercase text-[10px] tracking-widest data-[state=active]:bg-background transition-all">
+                            <Heart className="h-3.5 w-3.5 mr-2 text-rose-500" /> Team Health
+                        </TabsTrigger>
+                    </>
+                ) : (
+                    permissions.canSubmitReport && (
+                        <TabsTrigger value="submit" className="rounded-xl px-6 font-black uppercase text-[10px] tracking-widest data-[state=active]:bg-background transition-all">
+                            Submit Daily Report
+                        </TabsTrigger>
+                    )
+                )}
+            </TabsList>
+
+            <div className="flex-1 min-h-0">
+                {permissions.canManageStaff && (
+                    <>
+                        <TabsContent value="team-reports" className="m-0 focus-visible:ring-0 outline-none animate-in fade-in duration-500">
+                            {userProfile && <TeamDailyReports userProfile={userProfile} />}
+                        </TabsContent>
+
+                        <TabsContent value="analytics" className="m-0 space-y-8 focus-visible:ring-0 outline-none animate-in fade-in duration-500">
+                            <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+                                {userProfile && <AttendanceReport userProfile={userProfile} />}
+                                {userProfile && <KPIAnalytics userProfile={userProfile} />}
+                            </div>
+                            {userProfile && <FinancialReport userProfile={userProfile} />}
+                        </TabsContent>
+
+                        <TabsContent value="team-health" className="m-0 focus-visible:ring-0 outline-none animate-in fade-in duration-500">
+                            {userProfile && <TeamHealthTab userProfile={userProfile} />}
+                        </TabsContent>
+                    </>
+                )}
+
+                {!permissions.canManageStaff && permissions.canSubmitReport && (
+                    <TabsContent value="submit" className="m-0 space-y-8 focus-visible:ring-0 outline-none animate-in fade-in duration-500">
+                        {userProfile && <SubmitDailyReport userProfile={userProfile} />}
+                        {userProfile && <MyDailyReports userProfile={userProfile} />}
+                    </TabsContent>
+                )}
+            </div>
+          </Tabs>
+      </div>
+    </div>
+  );
+
+  if (noWrapper) return content;
+
   return (
     <ModuleContainer
         title="Reports & Analytics"
@@ -141,65 +223,7 @@ export function ReportsPageContent({ initialPayload }: { initialPayload?: { tab?
             )
         }
     >
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full flex flex-col min-h-0">
-        <TabsList className="bg-secondary/20 rounded-2xl p-1 mb-8 w-fit border border-white/5">
-            <TabsTrigger value="performance" className="rounded-xl px-6 font-black uppercase text-[10px] tracking-widest data-[state=active]:bg-background transition-all">
-                <Trophy className="h-3.5 w-3.5 mr-2 text-amber-500" /> My Dashboard
-            </TabsTrigger>
-            {permissions.canManageStaff ? (
-                <>
-                    <TabsTrigger value="analytics" className="rounded-xl px-6 font-black uppercase text-[10px] tracking-widest data-[state=active]:bg-background transition-all">
-                        <BarChart3 className="h-3.5 w-3.5 mr-2 text-primary" /> Team Leaderboard
-                    </TabsTrigger>
-                    <TabsTrigger value="team-reports" className="rounded-xl px-6 font-black uppercase text-[10px] tracking-widest data-[state=active]:bg-background transition-all">
-                        <UserCheck className="h-3.5 w-3.5 mr-2 text-emerald-500" /> Activity Logs
-                    </TabsTrigger>
-                    <TabsTrigger value="team-health" className="rounded-xl px-6 font-black uppercase text-[10px] tracking-widest data-[state=active]:bg-background transition-all">
-                        <Heart className="h-3.5 w-3.5 mr-2 text-rose-500" /> Team Health
-                    </TabsTrigger>
-                </>
-            ) : (
-                permissions.canSubmitReport && (
-                    <TabsTrigger value="submit" className="rounded-xl px-6 font-black uppercase text-[10px] tracking-widest data-[state=active]:bg-background transition-all">
-                        Submit Daily Report
-                    </TabsTrigger>
-                )
-            )}
-        </TabsList>
-
-        <div className="flex-1 min-h-0">
-            <TabsContent value="performance" className="m-0 focus-visible:ring-0 outline-none animate-in fade-in duration-500">
-                {userProfile && <PerformanceDashboard userProfile={userProfile} />}
-            </TabsContent>
-
-            {permissions.canManageStaff && (
-                <>
-                    <TabsContent value="analytics" className="m-0 space-y-8 focus-visible:ring-0 outline-none animate-in fade-in duration-500">
-                        <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-                            {userProfile && <AttendanceReport userProfile={userProfile} />}
-                            {userProfile && <KPIAnalytics userProfile={userProfile} />}
-                        </div>
-                        {userProfile && <FinancialReport userProfile={userProfile} />}
-                    </TabsContent>
-
-                    <TabsContent value="team-reports" className="m-0 focus-visible:ring-0 outline-none animate-in fade-in duration-500">
-                        {userProfile && <TeamDailyReports userProfile={userProfile} />}
-                    </TabsContent>
-
-                    <TabsContent value="team-health" className="m-0 focus-visible:ring-0 outline-none animate-in fade-in duration-500">
-                        {userProfile && <TeamHealthTab userProfile={userProfile} />}
-                    </TabsContent>
-                </>
-            )}
-
-            {!permissions.canManageStaff && permissions.canSubmitReport && (
-                <TabsContent value="submit" className="m-0 space-y-8 focus-visible:ring-0 outline-none animate-in fade-in duration-500">
-                    {userProfile && <SubmitDailyReport userProfile={userProfile} />}
-                    {userProfile && <MyDailyReports userProfile={userProfile} />}
-                </TabsContent>
-            )}
-        </div>
-      </Tabs>
+      {content}
     </ModuleContainer>
   );
 }
