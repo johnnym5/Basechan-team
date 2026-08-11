@@ -10,13 +10,13 @@ import {
 } from '@/components/ui/dialog';
 import type { Task, UserProfile, ActivityEntry, SubTask, TaskStatus, Notification, Permissions } from '@/lib/types';
 import { format, differenceInHours } from 'date-fns';
-import { Calendar, CheckSquare, History, Info, BookOpenCheck, User, Plus, Trash2, Share2, Pencil, Check, Loader2, Hourglass, LifeBuoy, Paperclip } from 'lucide-react';
+import { Calendar, CheckSquare, History, Info, BookOpenCheck, User, Plus, Trash2, Share2, Pencil, Check, Loader2, Hourglass, LifeBuoy, Paperclip, ArrowRight } from 'lucide-react';
 import { TaskPriorityBadge } from './TaskPriorityBadge';
 import { Badge } from '../ui/badge';
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
-import { useFirestore, updateDocumentNonBlocking, deleteDocumentNonBlocking, useDoc, useMemoFirebase, addDocumentNonBlocking } from '@/firebase';
-import { doc, arrayUnion, collection } from 'firebase/firestore';
+import { useFirestore, updateDocumentNonBlocking, deleteDocumentNonBlocking, useDoc, useMemoFirebase, addDocumentNonBlocking, useCollection } from '@/firebase';
+import { doc, arrayUnion, collection, query, where } from 'firebase/firestore';
 import { Checkbox } from '../ui/checkbox';
 import { Input } from '../ui/input';
 import { Button } from '../ui/button';
@@ -37,6 +37,15 @@ import { EditTaskDialog } from './EditTaskDialog';
 import { uiEmitter } from '@/lib/ui-emitter';
 import { CompletionBriefDialog } from './CompletionBriefDialog';
 import { useToast } from '@/hooks/use-toast';
+import { taskService } from '@/services/task-service';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue
+} from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 
 interface TaskDetailDialogProps {
   task: Task;
@@ -65,6 +74,13 @@ export function TaskDetailDialog({ task: initialTask, isOpen, onOpenChange, curr
   const [showShareDialog, setShowShareDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [isCompletionBriefOpen, setIsCompletionBriefOpen] = useState(false);
+  const [showTransferPopover, setShowTransferPopover] = useState(false);
+  const [transferTargetId, setSelectedTransferTargetId] = useState<string>("");
+
+  const usersQuery = useMemoFirebase(() =>
+    firestore ? query(collection(firestore, 'users'), where('orgId', '==', currentUserProfile.orgId)) : null
+  , [firestore, currentUserProfile.orgId]);
+  const { data: users } = useCollection<UserProfile>(usersQuery);
 
   useEffect(() => {
     if (task) {
@@ -204,6 +220,25 @@ export function TaskDetailDialog({ task: initialTask, isOpen, onOpenChange, curr
 
     onOpenChange(false);
     setIsSubmitting(false);
+  };
+
+  const handleTransferTask = async () => {
+    if (!firestore || !transferTargetId || transferTargetId === "NONE") return;
+
+    const newAssignee = users?.find((u: UserProfile) => u.id === transferTargetId);
+    if (!newAssignee) return;
+
+    setIsSubmitting(true);
+    try {
+        await taskService.transferTask(firestore, task, currentUserProfile, newAssignee);
+        toast({ title: "Baton Passed", description: `Task has been transferred to ${newAssignee.fullName}.` });
+        setShowTransferPopover(false);
+        onOpenChange(false);
+    } catch (e: any) {
+        toast({ variant: 'destructive', title: "Transfer Failed", description: e.message });
+    } finally {
+        setIsSubmitting(false);
+    }
   };
 
 
@@ -383,10 +418,49 @@ export function TaskDetailDialog({ task: initialTask, isOpen, onOpenChange, curr
                         </>
                     )}
                     {(permissions.canManageStaff || task.assignedTo === currentUserProfile.id) && (
-                        <Button variant="outline" onClick={() => setShowShareDialog(true)} className="rounded-xl px-4 font-black uppercase tracking-widest active:scale-95 transition-all">
-                            <Share2 className="mr-2 h-4 w-4" />
-                            Share
-                        </Button>
+                        <>
+                            <Button variant="outline" onClick={() => setShowShareDialog(true)} className="rounded-xl px-4 font-black uppercase tracking-widest active:scale-95 transition-all">
+                                <Share2 className="mr-2 h-4 w-4" />
+                                Share
+                            </Button>
+
+                            <Popover open={showTransferPopover} onOpenChange={setShowTransferPopover}>
+                                <PopoverTrigger asChild>
+                                    <Button variant="outline" className="rounded-xl px-4 font-black uppercase tracking-widest active:scale-95 transition-all border-orange-500/30 text-orange-500 hover:bg-orange-500/10">
+                                        <ArrowRight className="mr-2 h-4 w-4" />
+                                        Transfer
+                                    </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-80 apple-glass-darker border-none p-6 space-y-4" align="start">
+                                    <div className="space-y-1">
+                                        <h4 className="font-black text-sm uppercase tracking-tighter">Baton Pass</h4>
+                                        <p className="text-[10px] text-muted-foreground uppercase font-bold">Transfer ownership to another unit.</p>
+                                    </div>
+                                    <div className="space-y-4">
+                                        <Select value={transferTargetId} onValueChange={setSelectedTransferTargetId}>
+                                            <SelectTrigger className="h-10 bg-background/50 border-white/5 rounded-xl">
+                                                <SelectValue placeholder="Select New Assignee" />
+                                            </SelectTrigger>
+                                            <SelectContent className="apple-glass-darker border-none">
+                                                {users
+                                                    ?.filter((u: UserProfile) => u.id !== task.assignedTo)
+                                                    .map((u: UserProfile) => (
+                                                        <SelectItem key={u.id} value={u.id} className="text-xs font-bold">{u.fullName}</SelectItem>
+                                                    ))
+                                                }
+                                            </SelectContent>
+                                        </Select>
+                                        <Button
+                                            className="w-full bg-orange-600 hover:bg-orange-700 text-white rounded-xl font-black uppercase text-[10px] tracking-widest"
+                                            disabled={!transferTargetId || transferTargetId === "NONE" || isSubmitting}
+                                            onClick={handleTransferTask}
+                                        >
+                                            {isSubmitting ? <Loader2 className="animate-spin h-4 w-4" /> : "Confirm Transfer"}
+                                        </Button>
+                                    </div>
+                                </PopoverContent>
+                            </Popover>
+                        </>
                     )}
                 </div>
             </div>

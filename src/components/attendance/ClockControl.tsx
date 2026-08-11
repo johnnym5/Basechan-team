@@ -23,6 +23,8 @@ import {
     DialogFooter
 } from "@/components/ui/dialog";
 import { Textarea } from "../ui/textarea";
+import { ClockOutDebriefModal } from "./ClockOutDebriefModal";
+import type { Task } from '@/lib/types';
 
 interface ClockControlProps {
     userProfile: UserProfile | null;
@@ -45,6 +47,7 @@ export function ClockControl({ userProfile, permissions, systemConfig, className
     const [distanceFromOffice, setDistanceFromOffice] = useState<number | null>(null);
     const [lateReason, setLateReason] = useState('');
     const [showLateDialog, setShowLateDialog] = useState(false);
+    const [isDebriefModalOpen, setIsDebriefModalOpen] = useState(false);
 
     const isMobile = useMediaQuery("(max-width: 768px)");
     const isAdmin = permissions.canManageStaff;
@@ -80,6 +83,18 @@ export function ClockControl({ userProfile, permissions, systemConfig, className
     const { data: attendanceData, isLoading } = useCollection<Attendance>(attendanceQuery);
     const attendanceRecord = attendanceData?.[0] || null;
 
+    const tasksQuery = useMemoFirebase(() => {
+        if (!userProfile?.id || !userProfile?.orgId || !firestore) return null;
+        return query(
+            collection(firestore, 'tasks'),
+            where('orgId', '==', userProfile.orgId),
+            where('assignedTo', '==', userProfile.id),
+            where('status', 'in', ['ACTIVE', 'QUEUED'])
+        );
+    }, [firestore, userProfile?.id, userProfile?.orgId]);
+
+    const { data: activeTasks } = useCollection<Task>(tasksQuery);
+
     const isClockedIn = !!attendanceRecord && !attendanceRecord.clockOut;
     const isOnBreak = !!attendanceRecord?.onBreak;
 
@@ -91,23 +106,15 @@ export function ClockControl({ userProfile, permissions, systemConfig, className
             const now = new Date();
             const start = new Date(attendanceRecord.clockIn);
 
-            let currentBreakElapsed = 0;
-            if (attendanceRecord.onBreak && attendanceRecord.breaks?.length) {
-                const lastBreak = attendanceRecord.breaks[attendanceRecord.breaks.length - 1];
-                if (!lastBreak.end) {
-                    currentBreakElapsed = Math.max(0, differenceInSeconds(now, new Date(lastBreak.start)));
-                }
-            }
+            // Total elapsed time since the start of the shift
+            const totalElapsedSeconds = Math.floor((now.getTime() - start.getTime()) / 1000);
 
-            const totalElapsed = differenceInSeconds(now, start);
-            const workedSeconds = totalElapsed - (attendanceRecord.totalBreak || 0) - currentBreakElapsed - (attendanceRecord.idleTime || 0);
-
-            const h = String(Math.floor(workedSeconds / 3600)).padStart(2, '0');
-            const m = String(Math.floor((workedSeconds % 3600) / 60)).padStart(2, '0');
-            const s = String(Math.floor(workedSeconds % 60)).padStart(2, '0');
+            const h = String(Math.floor(totalElapsedSeconds / 3600)).padStart(2, '0');
+            const m = String(Math.floor((totalElapsedSeconds % 3600) / 60)).padStart(2, '0');
+            const s = String(Math.floor(totalElapsedSeconds % 60)).padStart(2, '0');
 
             setShiftDuration(`${h}:${m}:${s}`);
-            setProgress(Math.min(100, (workedSeconds / STANDARD_SHIFT_SECONDS) * 100));
+            setProgress(Math.min(100, (totalElapsedSeconds / STANDARD_SHIFT_SECONDS) * 100));
 
             if (systemConfig?.work_hours?.end) {
                 const [endH, endM] = systemConfig.work_hours.end.split(':').map(Number);
@@ -229,12 +236,17 @@ export function ClockControl({ userProfile, permissions, systemConfig, className
     }
 
     const handleClockOut = async () => {
+        setIsDebriefModalOpen(true);
+    };
+
+    const handleConfirmClockOut = async (debriefData: { manualReport: string; attachedTaskId?: string }) => {
         if (!userProfile || !attendanceRecord || !firestore) return;
         setIsSubmitting(true);
         try {
-            await attendanceService.clockOut(firestore, userProfile, attendanceRecord, systemConfig);
+            await attendanceService.clockOut(firestore, userProfile, attendanceRecord, systemConfig, debriefData);
             webRTCService.stopScreenShare();
-            toast({ title: 'Shift Ended', description: "Oversight link severed." });
+            toast({ title: 'Shift Ended', description: "Oversight link severed. Debrief submitted." });
+            setIsDebriefModalOpen(false);
         } catch (e: any) { errorEmitter.emit('firestore-error', e); }
         finally { setIsSubmitting(false); }
     };
@@ -348,6 +360,14 @@ export function ClockControl({ userProfile, permissions, systemConfig, className
                 </DialogFooter>
             </DialogContent>
         </Dialog>
+
+        <ClockOutDebriefModal
+            isOpen={isDebriefModalOpen}
+            onOpenChange={setIsDebriefModalOpen}
+            activeTasks={activeTasks || []}
+            onConfirmClockOut={handleConfirmClockOut}
+            isSubmitting={isSubmitting}
+        />
         </>
     );
 }

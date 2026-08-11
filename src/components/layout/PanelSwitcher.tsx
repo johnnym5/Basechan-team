@@ -63,7 +63,7 @@ export function PanelSwitcher({ isVertical }: PanelSwitcherProps) {
                         if ('isSeparator' in item) return <div key={idx} className="h-px bg-white/5 my-2 mx-2" />;
                         if ('permission' in item && userProfile && !permissions[item.permission as keyof typeof permissions]) return null;
 
-                        const isActive = searchParams.get('panel') === item.dialog;
+                        const isActive = pathname === item.href;
 
                         return (
                             <Tooltip key={idx}>
@@ -109,7 +109,7 @@ export function PanelSwitcher({ isVertical }: PanelSwitcherProps) {
                         if ('isSeparator' in item) return null;
                         if ('permission' in item && userProfile && !permissions[item.permission as keyof typeof permissions]) return null;
 
-                        const isActive = searchParams.get('panel') === item.dialog;
+                        const isActive = pathname === item.href;
 
                         return (
                             <Button

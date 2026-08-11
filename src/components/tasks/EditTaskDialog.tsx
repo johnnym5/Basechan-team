@@ -188,7 +188,12 @@ export function EditTaskDialog({ task, open, onOpenChange, currentUserProfile }:
                             <FormControl><SelectTrigger className="rounded-xl h-10 bg-background/50 border-white/5"><SelectValue placeholder="Link Workbook" /></SelectTrigger></FormControl>
                             <SelectContent className="apple-glass-darker border-none">
                                 <SelectItem value="none">No Link</SelectItem>
-                                {workbooks?.map(wb => <SelectItem key={wb.id} value={wb.id}>{wb.title}</SelectItem>)}
+                                {workbooks
+                                    ?.filter(wb => wb.id && wb.id.trim() !== "")
+                                    .map(wb => (
+                                        <SelectItem key={wb.id} value={wb.id}>{wb.title}</SelectItem>
+                                    ))
+                                }
                             </SelectContent>
                         </Select>
                         <FormMessage /></FormItem>
@@ -200,7 +205,12 @@ export function EditTaskDialog({ task, open, onOpenChange, currentUserProfile }:
                             <FormControl><SelectTrigger className="rounded-xl h-10 bg-background/50 border-white/5"><SelectValue placeholder="Select Sheet" /></SelectTrigger></FormControl>
                             <SelectContent className="apple-glass-darker border-none">
                                 <SelectItem value="none">Unlinked</SelectItem>
-                                {sheets?.map(sh => <SelectItem key={sh.id} value={sh.id}>{sh.name}</SelectItem>)}
+                                {sheets
+                                    ?.filter(sh => sh.id && sh.id.trim() !== "")
+                                    .map(sh => (
+                                        <SelectItem key={sh.id} value={sh.id}>{sh.name}</SelectItem>
+                                    ))
+                                }
                             </SelectContent>
                         </Select>
                         <FormMessage /></FormItem>

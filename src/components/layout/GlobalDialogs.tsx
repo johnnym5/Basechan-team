@@ -27,6 +27,8 @@ const NotificationsDialog = dynamic(() => import('@/components/layout/Notificati
 const CreateChannelDialog = dynamic(() => import('@/components/chat/CreateChannelDialog').then(m => m.CreateChannelDialog), { ssr: false });
 const LiveMonitorDialog = dynamic(() => import('@/components/superadmin/LiveMonitorDialog').then(m => m.LiveMonitorDialog), { ssr: false });
 const DatabaseExplorerDialog = dynamic(() => import('@/components/superadmin/DatabaseExplorerDialog').then(m => m.DatabaseExplorerDialog), { ssr: false });
+const ITSupportDialog = dynamic(() => import('@/components/support/ITSupportDialog').then(m => m.ITSupportDialog).catch(() => ({ default: () => null })), { ssr: false });
+const StaffDirectoryDialog = dynamic(() => import('@/components/profile/staff/StaffDirectoryDialog').then(m => m.StaffDirectoryDialog), { ssr: false });
 
 interface GlobalDialogsProps {
   userProfile: UserProfile | null;
@@ -86,6 +88,8 @@ export function GlobalDialogs({ userProfile, permissions, onAnyDialogOpenChange 
   const [isLiveMonitorOpen, setIsLiveMonitorOpen] = useState(false);
   const [liveMonitorPayload, setLiveMonitorPayload] = useState<{ targetUserId: string; targetUserName: string } | null>(null);
   const [isDatabaseExplorerOpen, setIsDatabaseExplorerOpen] = useState(false);
+  const [isITSupportOpen, setIsITSupportOpen] = useState(false);
+  const [isStaffDirectoryOpen, setIsStaffDirectoryOpen] = useState(false);
 
   const closeAllDialogs = useCallback(() => {
     setIsWorkbookOpen(false);
@@ -108,6 +112,7 @@ export function GlobalDialogs({ userProfile, permissions, onAnyDialogOpenChange 
     setIsCreateChannelOpen(false);
     setIsLiveMonitorOpen(false);
     setIsDatabaseExplorerOpen(false);
+    setIsITSupportOpen(false);
   }, []);
 
   useEffect(() => {
@@ -117,7 +122,7 @@ export function GlobalDialogs({ userProfile, permissions, onAnyDialogOpenChange 
         isAssignTaskOpen || isNewRequisitionOpen || isRequestLeaveOpen || 
         isNewWorkbookOpen || isSettingsOpen || isChatOpen ||
         isInviteOpen || isNewAnnouncementOpen || isSuperAdminOpen || isNotificationsOpen ||
-        isCreateChannelOpen || isLiveMonitorOpen || isDatabaseExplorerOpen;
+        isCreateChannelOpen || isLiveMonitorOpen || isDatabaseExplorerOpen || isITSupportOpen || isStaffDirectoryOpen;
     onAnyDialogOpenChange(isOpen);
   }, [
     isWorkbookOpen, isFinanceOpen, isTasksOpen, isAttendanceOpen, 
@@ -125,7 +130,7 @@ export function GlobalDialogs({ userProfile, permissions, onAnyDialogOpenChange 
     isAssignTaskOpen, isNewRequisitionOpen, isRequestLeaveOpen, 
     isNewWorkbookOpen, isSettingsOpen, isChatOpen,
     isInviteOpen, isNewAnnouncementOpen, isSuperAdminOpen, isNotificationsOpen,
-    isCreateChannelOpen, isLiveMonitorOpen, isDatabaseExplorerOpen,
+    isCreateChannelOpen, isLiveMonitorOpen, isDatabaseExplorerOpen, isITSupportOpen, isStaffDirectoryOpen,
     onAnyDialogOpenChange
   ]);
 
@@ -178,6 +183,8 @@ export function GlobalDialogs({ userProfile, permissions, onAnyDialogOpenChange 
     const openDatabaseExplorer = () => {
       if (isSuperAdminModeActive) setIsDatabaseExplorerOpen(true);
     };
+    const openITSupport = () => setIsITSupportOpen(true);
+    const openStaffDirectory = () => setIsStaffDirectoryOpen(true);
 
     uiEmitter.on('open-settings-dialog', openSettings);
     uiEmitter.on('open-chat-dialog', openChat);
@@ -199,6 +206,8 @@ export function GlobalDialogs({ userProfile, permissions, onAnyDialogOpenChange 
     uiEmitter.on('open-create-channel-dialog', openCreateChannel);
     uiEmitter.on('open-live-monitor-dialog', openLiveMonitor);
     uiEmitter.on('open-database-explorer-dialog', openDatabaseExplorer);
+    uiEmitter.on('open-it-support-dialog', openITSupport);
+    uiEmitter.on('open-staff-directory-dialog', openStaffDirectory);
     uiEmitter.on('close-all-dialogs', closeAllDialogs);
     
     return () => {
@@ -222,6 +231,8 @@ export function GlobalDialogs({ userProfile, permissions, onAnyDialogOpenChange 
       uiEmitter.off('open-create-channel-dialog', openCreateChannel);
       uiEmitter.off('open-live-monitor-dialog', openLiveMonitor);
       uiEmitter.off('open-database-explorer-dialog', openDatabaseExplorer);
+      uiEmitter.off('open-it-support-dialog', openITSupport);
+      uiEmitter.off('open-staff-directory-dialog', openStaffDirectory);
       uiEmitter.off('close-all-dialogs', closeAllDialogs);
     };
   }, [closeAllDialogs, isSuperAdminModeActive]);
@@ -330,6 +341,12 @@ export function GlobalDialogs({ userProfile, permissions, onAnyDialogOpenChange 
       )}
       {isSuperAdminModeActive && isDatabaseExplorerOpen && (
           <DatabaseExplorerDialog open={isDatabaseExplorerOpen} onOpenChange={setIsDatabaseExplorerOpen} />
+      )}
+      {isITSupportOpen && userProfile && (
+          <ITSupportDialog open={isITSupportOpen} onOpenChange={setIsITSupportOpen} userProfile={userProfile} />
+      )}
+      {isStaffDirectoryOpen && userProfile && (
+          <StaffDirectoryDialog open={isStaffDirectoryOpen} onOpenChange={setIsStaffDirectoryOpen} currentUserProfile={userProfile} permissions={permissions} modal />
       )}
     </>
   );

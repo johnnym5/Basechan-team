@@ -72,8 +72,7 @@ export function useSyncDialogsWithUrl() {
         const handlers: any[] = [];
         
         const panelNames = [
-            'profile', 'settings', 'chat', 'tasks', 'workbooks', 
-            'requisitions', 'attendance', 'leave', 'reports', 
+            'profile', 'settings', 'requisitions', 'attendance', 'leave', 'reports',
             'accounting', 'library', 'superadmin', 'staff-directory'
         ];
 

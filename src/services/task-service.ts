@@ -145,5 +145,57 @@ export const taskService = {
     if (newStatus === 'AWAITING_REVIEW') {
         activityService.logActivity(db, currentUser, 5);
     }
+  },
+
+  async transferTask(
+    db: Firestore,
+    task: Task,
+    currentUser: UserProfile,
+    newAssignee: UserProfile
+  ) {
+    const taskRef = doc(db, 'tasks', task.id);
+    const now = new Date().toISOString();
+
+    const transferRecord = {
+      fromId: currentUser.id,
+      fromName: currentUser.fullName,
+      toId: newAssignee.id,
+      toName: newAssignee.fullName,
+      timestamp: now,
+    };
+
+    const activityEntry: ActivityEntry = {
+      type: 'LOG',
+      actorId: currentUser.id,
+      actorName: currentUser.fullName,
+      timestamp: now,
+      text: `transferred the task to ${newAssignee.fullName}.`,
+      fromStatus: task.status,
+      toStatus: 'QUEUED',
+    };
+
+    const updatePayload = {
+      assignedTo: newAssignee.id,
+      assignedToName: newAssignee.fullName,
+      status: 'QUEUED',
+      isTransferred: true,
+      transferHistory: arrayUnion(transferRecord),
+      activity: arrayUnion(activityEntry),
+      updatedAt: now,
+    };
+
+    updateDocumentNonBlocking(taskRef, updatePayload);
+
+    // Notify new assignee
+    const notification: Omit<Notification, 'id'> = {
+      orgId: currentUser.orgId,
+      userId: newAssignee.id,
+      title: 'Task Transferred to You',
+      description: `"${task.title}" has been handed over by ${currentUser.fullName}.`,
+      href: `/tasks?taskId=${task.id}`,
+      isRead: false,
+      createdAt: now,
+    };
+    addDocumentNonBlocking(collection(db, 'notifications'), notification);
   }
 };

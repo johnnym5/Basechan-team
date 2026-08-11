@@ -47,6 +47,7 @@ type FormData = z.infer<typeof formSchema>;
 
 interface SubmitDailyReportProps {
   userProfile: UserProfile;
+  onSuccess?: () => void;
 }
 
 const PULSE_OPTIONS = [
@@ -56,7 +57,7 @@ const PULSE_OPTIONS = [
     { value: 'STRUGGLING', label: 'Struggling', icon: Construction, color: 'text-rose-500' },
 ];
 
-export function SubmitDailyReport({ userProfile }: SubmitDailyReportProps) {
+export function SubmitDailyReport({ userProfile, onSuccess }: SubmitDailyReportProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const firestore = useFirestore();
   const { toast } = useToast();
@@ -152,6 +153,8 @@ ${values.nextFocus}
             pulse: 'PRODUCTIVE',
             completedTasks: [],
         });
+
+        if (onSuccess) onSuccess();
 
     } catch (e: any) {
         toast({ variant: 'destructive', title: 'Submission Failed', description: e.message });
@@ -341,7 +344,7 @@ ${values.nextFocus}
 
             <Button type="submit" disabled={isSubmitting} className="w-full h-14 rounded-2xl font-black uppercase tracking-[0.2em] shadow-xl shadow-primary/20 m3-interactive">
               {isSubmitting ? <Loader2 className="animate-spin mr-2" /> : <Send className="mr-2 h-5 w-5" />}
-              Dispatch Intelligence Ledger
+              Submit Report
             </Button>
           </form>
         </Form>

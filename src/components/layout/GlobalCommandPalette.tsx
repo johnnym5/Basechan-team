@@ -22,14 +22,16 @@ import {
   Clock,
   PlusCircle,
   Users,
-  Search
+  Search,
+  CheckCircle2
 } from "lucide-react"
 import { useUser, useFirestore, useCollection, useMemoFirebase, useDoc } from "@/firebase"
 import { collection, query, where, doc } from "firebase/firestore"
-import type { UserProfile } from "@/lib/types"
+import type { UserProfile, Task } from "@/lib/types"
 import { usePermissions } from "@/hooks/usePermissions"
 import { useTheme } from "next-themes"
 import { uiEmitter } from "@/lib/ui-emitter"
+import { sanitizeSearchQuery } from "@/lib/security"
 
 export function GlobalCommandPalette() {
   const [open, setOpen] = useState(false)
@@ -55,6 +57,18 @@ export function GlobalCommandPalette() {
 
   const { data: staffList } = useCollection<UserProfile>(usersQuery);
 
+  const tasksQuery = useMemoFirebase(() => {
+    if (!firestore || !userProfile?.id || !userProfile?.orgId) return null;
+    return query(
+      collection(firestore, 'tasks'),
+      where('orgId', '==', userProfile.orgId),
+      where('assignedTo', '==', userProfile.id),
+      where('status', '!=', 'ARCHIVED')
+    );
+  }, [firestore, userProfile?.id, userProfile?.orgId]);
+
+  const { data: myTasks } = useCollection<Task>(tasksQuery);
+
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
       if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
@@ -63,7 +77,14 @@ export function GlobalCommandPalette() {
       }
     }
     document.addEventListener("keydown", down)
-    return () => document.removeEventListener("keydown", down)
+
+    const handleOpen = () => setOpen(true);
+    uiEmitter.on('open-command-palette', handleOpen);
+
+    return () => {
+      document.removeEventListener("keydown", down)
+      uiEmitter.off('open-command-palette', handleOpen);
+    }
   }, [])
 
   const runCommand = (command: () => void) => {
@@ -72,8 +93,30 @@ export function GlobalCommandPalette() {
   }
 
   return (
-    <CommandDialog open={open} onOpenChange={setOpen}>
-      <CommandInput placeholder="Type a command or search staff..." />
+    <CommandDialog
+      open={open}
+      onOpenChange={setOpen}
+      filter={(value: string, search: string) => {
+        const cleanSearch = sanitizeSearchQuery(search);
+        if (!cleanSearch) return 1;
+
+        const normalizedValue = value.toLowerCase();
+        const normalizedSearch = cleanSearch.toLowerCase();
+
+        if (normalizedValue.includes(normalizedSearch)) return 1;
+
+        // Fuzzy match logic
+        let searchIndex = 0;
+        for (let i = 0; i < normalizedValue.length; i++) {
+          if (normalizedValue[i] === normalizedSearch[searchIndex]) {
+            searchIndex++;
+          }
+          if (searchIndex === normalizedSearch.length) return 0.5;
+        }
+        return 0;
+      }}
+    >
+      <CommandInput placeholder="Search tasks, pages, or commands..." />
       <CommandList className="custom-scrollbar">
         <CommandEmpty>No results found.</CommandEmpty>
 
@@ -82,7 +125,7 @@ export function GlobalCommandPalette() {
             <LayoutDashboard className="mr-2 h-4 w-4" />
             <span>Dashboard</span>
           </CommandItem>
-          <CommandItem onSelect={() => runCommand(() => router.push('/profile'))}>
+          <CommandItem onSelect={() => runCommand(() => router.push('/staff/profile'))}>
             <User className="mr-2 h-4 w-4" />
             <span>My Profile</span>
           </CommandItem>
@@ -115,11 +158,29 @@ export function GlobalCommandPalette() {
             <Clock className="mr-2 h-4 w-4" />
             <span>Clock In / Out</span>
           </CommandItem>
-          <CommandItem onSelect={() => runCommand(() => uiEmitter.emit('open-tasks-dialog'))}>
+          <CommandItem onSelect={() => runCommand(() => uiEmitter.emit('open-assign-task-dialog'))}>
             <PlusCircle className="mr-2 h-4 w-4" />
             <span>Create New Task</span>
           </CommandItem>
         </CommandGroup>
+
+        {myTasks && myTasks.length > 0 && (
+          <>
+            <CommandSeparator />
+            <CommandGroup heading="My Active Tasks">
+              {myTasks.map((task) => (
+                <CommandItem
+                  key={task.id}
+                  onSelect={() => runCommand(() => uiEmitter.emit('open-tasks-dialog', { taskId: task.id }))}
+                >
+                  <CheckCircle2 className="mr-2 h-4 w-4 text-primary" />
+                  <span className="truncate">{task.title}</span>
+                  <span className="ml-2 text-[8px] font-black uppercase opacity-40 px-1 border rounded">{task.status}</span>
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </>
+        )}
 
         {permissions.canManageStaff && staffList && staffList.length > 0 && (
           <>
@@ -128,7 +189,7 @@ export function GlobalCommandPalette() {
               {staffList.map((staff) => (
                 <CommandItem
                   key={staff.id}
-                  onSelect={() => runCommand(() => router.push(`/staff/profile/${staff.id}`))}
+                  onSelect={() => runCommand(() => router.push(`/staff/profile?userId=${staff.id}`))}
                 >
                   <Users className="mr-2 h-4 w-4" />
                   <span>{staff.fullName}</span>

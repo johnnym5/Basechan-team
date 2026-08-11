@@ -1,8 +1,7 @@
 "use client";
 
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { UserProfile, Chat, ChatMessage, Task, Requisition, Permissions } from '@/lib/types';
-import { useCollection, useFirestore, useMemoFirebase, deleteDocumentNonBlocking, useDatabase, useUser, updateDocumentNonBlocking, useDoc } from '@/firebase';
+import { useCollection, useFirestore, useMemoFirebase, useDatabase, useUser, updateDocumentNonBlocking, useDoc } from '@/firebase';
 import { collection, query, where, orderBy, doc, limit } from 'firebase/firestore';
 import { ref, onValue, off } from 'firebase/database';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -10,12 +9,12 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useState, useMemo, useRef, useEffect } from 'react';
 import { Input } from '../ui/input';
 import { Button } from '../ui/button';
-import { Send, Loader2, PlusCircle, Hash, MessageSquare, MoreVertical, Trash2, CheckCheck, History, Terminal, Paperclip, ArrowRight, ListTodo, Briefcase, ChevronLeft, ShieldAlert } from 'lucide-react';
+import { Send, Loader2, PlusCircle, Hash, MessageSquare, MoreVertical, Trash2, CheckCheck, History, Terminal, Paperclip, ArrowRight, ListTodo, Briefcase, ChevronLeft } from 'lucide-react';
 import { Skeleton } from '../ui/skeleton';
-import { cn, sanitizeInput } from '@/lib/utils';
+import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '../ui/dropdown-menu';
-import { AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from '../ui/alert-dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '../ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { chatService } from '@/services/chat-service';
 import { uiEmitter } from '@/lib/ui-emitter';
@@ -23,19 +22,16 @@ import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { useMediaQuery } from '@/hooks/use-media-query';
 
-interface ChatDialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
+interface ChatPageContentProps {
   currentUserProfile: UserProfile;
   permissions: Permissions;
-  initialPayload?: { initialUserId?: string; chatId?: string };
-  modal?: boolean;
+  initialChatId?: string;
 }
 
 function AssetPreview({ asset }: { asset: ChatMessage['asset'] }) {
     if (!asset) return null;
     const Icon = asset.type === 'TASK' ? ListTodo : Briefcase;
-    
+
     const handleNavigate = () => {
         if (asset.type === 'TASK') {
             uiEmitter.emit('open-tasks-dialog', { taskId: asset.id });
@@ -45,7 +41,7 @@ function AssetPreview({ asset }: { asset: ChatMessage['asset'] }) {
     };
 
     return (
-        <div 
+        <div
             onClick={handleNavigate}
             className="mt-3 p-3 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-between cursor-pointer hover:bg-primary/20 transition-all group"
         >
@@ -69,17 +65,20 @@ function ChatMessages({ chat, currentUserProfile, onConvertTask }: { chat: Chat,
     const scrollAreaRef = useRef<HTMLDivElement>(null);
     const [showAll, setShowAll] = useState(false);
 
-    const messagesQuery = useMemoFirebase(() => 
+    const messagesQuery = useMemoFirebase(() =>
         query(collection(firestore!, 'chats', chat.id, 'messages'), orderBy('timestamp', 'asc'))
     , [firestore, chat.id]);
     const { data: messages, isLoading } = useCollection<ChatMessage>(messagesQuery);
-    
+
     useEffect(() => {
         if (scrollAreaRef.current) {
-            scrollAreaRef.current.scrollTo({
-                top: scrollAreaRef.current.scrollHeight,
-                behavior: 'smooth',
-            });
+            const scrollContainer = scrollAreaRef.current.querySelector('[data-radix-scroll-area-viewport]');
+            if (scrollContainer) {
+                scrollContainer.scrollTo({
+                    top: scrollContainer.scrollHeight,
+                    behavior: 'smooth',
+                });
+            }
         }
     }, [messages, showAll]);
 
@@ -101,7 +100,7 @@ function ChatMessages({ chat, currentUserProfile, onConvertTask }: { chat: Chat,
 
     const getReadStatus = (message: ChatMessage) => {
         if (message.senderId !== currentUserProfile.id) return null;
-        
+
         const readers = chat.participants
             .filter(p => p !== currentUserProfile.id)
             .filter(p => chat.readReceipts?.[p] && new Date(chat.readReceipts[p]) >= new Date(message.timestamp));
@@ -121,9 +120,9 @@ function ChatMessages({ chat, currentUserProfile, onConvertTask }: { chat: Chat,
             <div className="p-6 space-y-6">
                 {hasHiddenMessages && (
                     <div className="flex justify-center pb-4">
-                        <Button 
-                            variant="ghost" 
-                            size="sm" 
+                        <Button
+                            variant="ghost"
+                            size="sm"
                             onClick={() => setShowAll(true)}
                             className="rounded-full text-[9px] font-black uppercase tracking-[0.2em] bg-secondary/30 hover:bg-primary/10 hover:text-primary transition-all group"
                         >
@@ -145,9 +144,9 @@ function ChatMessages({ chat, currentUserProfile, onConvertTask }: { chat: Chat,
                                 <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
                                         <div className={cn(
-                                            "rounded-[1.5rem] px-4 py-3 text-sm shadow-sm leading-relaxed cursor-pointer transition-all active:scale-[0.98]", 
-                                            isCurrentUser 
-                                                ? "bg-primary text-primary-foreground rounded-br-none hover:bg-primary/90" 
+                                            "rounded-[1.5rem] px-4 py-3 text-sm shadow-sm leading-relaxed cursor-pointer transition-all active:scale-[0.98]",
+                                            isCurrentUser
+                                                ? "bg-primary text-primary-foreground rounded-br-none hover:bg-primary/90"
                                                 : "bg-secondary/50 backdrop-blur-xl rounded-bl-none border border-white/5 hover:bg-secondary/70"
                                         )}>
                                             <p>{message.content}</p>
@@ -184,12 +183,12 @@ function AssetPicker({ onPick }: { onPick: (asset: ChatMessage['asset']) => void
     , [firestore, user?.uid]);
     const { data: userProfile } = useDoc<UserProfile>(userProfileRef);
 
-    const tasksQuery = useMemoFirebase(() => 
+    const tasksQuery = useMemoFirebase(() =>
         firestore && user?.uid && userProfile?.orgId ? query(collection(firestore, 'tasks'), where('orgId', '==', userProfile.orgId), where('assignedTo', '==', user?.uid), limit(10)) : null
     , [firestore, user?.uid, userProfile?.orgId]);
     const { data: tasks } = useCollection<Task>(tasksQuery);
 
-    const reqsQuery = useMemoFirebase(() => 
+    const reqsQuery = useMemoFirebase(() =>
         firestore && user?.uid && userProfile?.orgId ? query(collection(firestore, 'requisitions'), where('orgId', '==', userProfile.orgId), where('createdBy', '==', user?.uid), limit(10)) : null
     , [firestore, user?.uid, userProfile?.orgId]);
     const { data: reqs } = useCollection<Requisition>(reqsQuery);
@@ -224,12 +223,12 @@ function AssetPicker({ onPick }: { onPick: (asset: ChatMessage['asset']) => void
     );
 }
 
-export function ChatDialog({ open, onOpenChange, currentUserProfile, permissions, initialPayload, modal = false }: ChatDialogProps) {
+export function ChatPageContent({ currentUserProfile, permissions, initialChatId }: ChatPageContentProps) {
   const firestore = useFirestore();
   const database = useDatabase();
   const { toast } = useToast();
   const isMobile = useMediaQuery("(max-width: 768px)");
-  
+
   const [selectedChat, setSelectedChat] = useState<Chat | null>(null);
   const [message, setMessage] = useState('');
   const [isSending, setIsSending] = useState(false);
@@ -239,7 +238,7 @@ export function ChatDialog({ open, onOpenChange, currentUserProfile, permissions
   const [mobileView, setMobileView] = useState<'list' | 'chat'>('list');
   const typingTimeoutRef = useRef<NodeJS.Timeout>(null);
 
-  const chatsQuery = useMemoFirebase(() => 
+  const chatsQuery = useMemoFirebase(() =>
     query(
         collection(firestore!, 'chats'),
         where('orgId', '==', currentUserProfile.orgId),
@@ -248,14 +247,14 @@ export function ChatDialog({ open, onOpenChange, currentUserProfile, permissions
   , [firestore, currentUserProfile.id, currentUserProfile.orgId]);
   const { data: chats, isLoading: isChatsLoading } = useCollection<Chat>(chatsQuery);
 
-  const allUsersQuery = useMemoFirebase(() => 
+  const allUsersQuery = useMemoFirebase(() =>
     query(collection(firestore!, 'users'), where('orgId', '==', currentUserProfile.orgId))
   , [firestore, currentUserProfile.orgId]);
   const { data: allUsers, isLoading: isUsersLoading } = useCollection<UserProfile>(allUsersQuery);
 
   const { channels, personnelTransmissions } = useMemo(() => {
     if (!chats) return { channels: [], personnelTransmissions: [] };
-    
+
     const sortedChats = [...chats].sort((a, b) => new Date(b.updatedAt || 0).getTime() - new Date(a.updatedAt || 0).getTime());
     const ch: Chat[] = sortedChats.filter(c => c.type === 'CHANNEL');
     const dms: Chat[] = sortedChats.filter(c => c.type === 'DIRECT');
@@ -263,7 +262,7 @@ export function ChatDialog({ open, onOpenChange, currentUserProfile, permissions
     if (!allUsers) return { channels: ch, personnelTransmissions: dms };
 
     const otherUsers = allUsers.filter(u => u.id !== currentUserProfile.id);
-    
+
     const dmMap = new Map<string, Chat>();
     dms.forEach(dm => {
       const otherId = dm.participants.find(p => p !== currentUserProfile.id);
@@ -288,12 +287,12 @@ export function ChatDialog({ open, onOpenChange, currentUserProfile, permissions
       return virtualChat;
     });
 
-    return { 
-        channels: ch, 
+    return {
+        channels: ch,
         personnelTransmissions: transmissions.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
     };
   }, [chats, allUsers, currentUserProfile]);
-  
+
   useEffect(() => {
     if (!database || !selectedChat) return;
 
@@ -318,28 +317,24 @@ export function ChatDialog({ open, onOpenChange, currentUserProfile, permissions
   }, [database, selectedChat, currentUserProfile.id]);
 
   useEffect(() => {
-    if (!open || !personnelTransmissions.length) return;
+    if (!personnelTransmissions.length) return;
 
     let chatToSelect: Chat | null = null;
 
-    if (initialPayload?.chatId) {
-        chatToSelect = channels.find(c => c.id === initialPayload.chatId) || personnelTransmissions.find(c => c.id === initialPayload.chatId) || null;
-    } else if (initialPayload?.initialUserId) {
-        const userId = initialPayload.initialUserId;
-        const dmId = [currentUserProfile.id, userId].sort().join('_');
-        chatToSelect = personnelTransmissions.find(dm => dm.id === dmId) || null;
+    if (initialChatId) {
+        chatToSelect = channels.find(c => c.id === initialChatId) || personnelTransmissions.find(c => c.id === initialChatId) || null;
     }
-    
+
     if (chatToSelect) {
       setSelectedChat(chatToSelect);
       if (isMobile) setMobileView('chat');
     }
-  }, [open, initialPayload, channels, personnelTransmissions, currentUserProfile, isMobile]);
+  }, [initialChatId, channels, personnelTransmissions, isMobile]);
 
   useEffect(() => {
       const isVirtualChat = selectedChat?.updatedAt === '1970-01-01T00:00:00.000Z';
 
-      if (open && selectedChat && firestore && !isVirtualChat) {
+      if (selectedChat && firestore && !isVirtualChat) {
           chatService.markAsRead(firestore, selectedChat.id, currentUserProfile.id);
           chatService.purgeOldMessages(firestore, selectedChat.id);
 
@@ -350,14 +345,14 @@ export function ChatDialog({ open, onOpenChange, currentUserProfile, permissions
               });
           }
       }
-  }, [open, selectedChat?.id, selectedChat?.updatedAt, firestore, currentUserProfile.id]);
+  }, [selectedChat?.id, selectedChat?.updatedAt, firestore, currentUserProfile.id]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       setMessage(e.target.value);
       if (!database || !selectedChat) return;
 
       chatService.setTypingStatus(database, selectedChat.id, currentUserProfile.id, true);
-      
+
       if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
       typingTimeoutRef.current = setTimeout(() => {
           chatService.setTypingStatus(database, selectedChat.id, currentUserProfile.id, false);
@@ -367,7 +362,7 @@ export function ChatDialog({ open, onOpenChange, currentUserProfile, permissions
   const handleSendMessage = async () => {
     if (!selectedChat || (!message.trim() && !selectedAsset) || !firestore) return;
     setIsSending(true);
-    
+
     try {
         await chatService.sendMessage(firestore, selectedChat, currentUserProfile, message, selectedAsset || undefined);
         setMessage('');
@@ -381,16 +376,13 @@ export function ChatDialog({ open, onOpenChange, currentUserProfile, permissions
   }
 
   const handleConvertTask = (msg: ChatMessage) => {
-    onOpenChange(false);
-    setTimeout(() => {
-        uiEmitter.emit('open-assign-task-dialog', {
-            title: `From Chat: ${msg.senderName}`,
-            description: msg.content,
-            priority: 'LEVEL_2'
-        });
-    }, 100);
+    uiEmitter.emit('open-assign-task-dialog', {
+        title: `From Chat: ${msg.senderName}`,
+        description: msg.content,
+        priority: 'LEVEL_2'
+    });
   };
-  
+
   const getDirectMessageTitle = (chat: Chat) => {
     const otherParticipantId = chat.participants.find(p => p !== currentUserProfile.id);
     if (!otherParticipantId) return "Unknown User";
@@ -413,29 +405,8 @@ export function ChatDialog({ open, onOpenChange, currentUserProfile, permissions
       if (isMobile) setMobileView('chat');
   };
 
-    if (open && !permissions.canAccessChat) {
-        return (
-          <Dialog open={open} onOpenChange={onOpenChange} modal={modal}>
-            <DialogContent position="center" className="p-8 flex flex-col items-center justify-center text-center rounded-[2.5rem] border-none apple-glass max-w-sm">
-               <ShieldAlert className="w-16 h-16 text-destructive mb-4" />
-               <h1 className="text-2xl font-bold font-headline text-white">Access Denied</h1>
-               <p className="text-muted-foreground mt-2">The Chat Hub module is currently disabled for your account or organization.</p>
-               <Button onClick={() => onOpenChange(false)} className="mt-6">Close</Button>
-            </DialogContent>
-          </Dialog>
-        );
-    }
-
     return (
-    <>
-    <Dialog open={open} onOpenChange={onOpenChange} modal={modal}>
-      <DialogContent position="left" className="p-0 flex flex-col apple-glass border-none overflow-hidden h-full">
-        <DialogHeader className="sr-only">
-          <DialogTitle>Chat Hub</DialogTitle>
-          <DialogDescription>Secure messaging for the organization.</DialogDescription>
-        </DialogHeader>
-
-        <div className="flex-1 bg-card border border-border rounded-xl shadow-lg p-4 md:p-6 m-4 lg:m-6 overflow-hidden relative">
+    <div className="flex-1 bg-card border border-border rounded-xl shadow-lg flex flex-col overflow-hidden m-4 md:m-6">
             <div className="grid grid-cols-1 md:grid-cols-12 overflow-hidden h-full min-h-0">
                 {/* Sidebar Pane */}
             <div className={cn(
@@ -453,11 +424,11 @@ export function ChatDialog({ open, onOpenChange, currentUserProfile, permissions
                            <div className="flex items-center justify-between px-2 mb-2">
                              <h4 className="text-[9px] font-black uppercase tracking-[0.2em] text-primary opacity-70">Public Channels</h4>
                              {permissions.canSendChatMessage && (
-                                 <Button 
+                                 <Button
                                     type="button"
-                                    variant="ghost" 
-                                    size="icon" 
-                                    className="h-6 w-6 rounded-lg bg-primary/10 text-primary" 
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-6 w-6 rounded-lg bg-primary/10 text-primary"
                                     onClick={(e) => {
                                         e.stopPropagation();
                                         uiEmitter.emit('open-create-channel-dialog');
@@ -470,9 +441,9 @@ export function ChatDialog({ open, onOpenChange, currentUserProfile, permissions
                            <div className="space-y-1">
                                 {isChatsLoading && Array.from({length: 3}).map((_, i) => <Skeleton key={i} className="h-12 w-full rounded-xl" />)}
                                 {channels.map(chat => (
-                                    <div 
-                                        key={chat.id} 
-                                        onClick={() => handleSelectChat(chat)} 
+                                    <div
+                                        key={chat.id}
+                                        onClick={() => handleSelectChat(chat)}
                                         className={cn(
                                             "p-3 rounded-2xl cursor-pointer flex justify-between items-center transition-all group active:scale-95",
                                             selectedChat?.id === chat.id ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20" : "hover:bg-white/5"
@@ -513,9 +484,9 @@ export function ChatDialog({ open, onOpenChange, currentUserProfile, permissions
                            <div className="space-y-1">
                                 {(isChatsLoading || isUsersLoading) && Array.from({length: 4}).map((_, i) => <Skeleton key={i} className="h-14 w-full rounded-xl" />)}
                                 {personnelTransmissions.map(chat => (
-                                    <div 
-                                        key={chat.id} 
-                                        onClick={() => handleSelectChat(chat)} 
+                                    <div
+                                        key={chat.id}
+                                        onClick={() => handleSelectChat(chat)}
                                         className={cn(
                                             "p-3 rounded-2xl cursor-pointer transition-all flex items-center gap-3 active:scale-95 group",
                                             selectedChat?.id === chat.id ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20" : "hover:bg-white/5"
@@ -581,7 +552,7 @@ export function ChatDialog({ open, onOpenChange, currentUserProfile, permissions
                                     </p>
                                 )}
                             </div>
-                            
+
                             <div className="max-w-4xl mx-auto flex flex-col gap-3">
                                 {selectedAsset && (
                                     <div className="flex items-center justify-between p-2 rounded-xl bg-primary/10 border border-primary/20 animate-in zoom-in-95">
@@ -607,9 +578,9 @@ export function ChatDialog({ open, onOpenChange, currentUserProfile, permissions
                                             }} />
                                         </PopoverContent>
                                     </Popover>
-                                    
-                                    <Input 
-                                        placeholder={permissions.canSendChatMessage ? "Write a message..." : "Channel is read-only..."} 
+
+                                    <Input
+                                        placeholder={permissions.canSendChatMessage ? "Write a message..." : "Channel is read-only..."}
                                         className="border-none bg-transparent focus-visible:ring-0 h-12 text-sm pl-2"
                                         value={message}
                                         onChange={handleInputChange}
@@ -638,10 +609,7 @@ export function ChatDialog({ open, onOpenChange, currentUserProfile, permissions
                 )}
             </div>
         </div>
-    </div>
-      </DialogContent>
-    </Dialog>
-    
+
     {channelToDelete && (
         <AlertDialog open={!!channelToDelete} onOpenChange={(isOpen) => !isOpen && setChannelToDelete(null)}>
             <AlertDialogContent className="apple-glass-darker border-none rounded-[2.5rem] p-8">
@@ -663,6 +631,6 @@ export function ChatDialog({ open, onOpenChange, currentUserProfile, permissions
             </AlertDialogContent>
         </AlertDialog>
     )}
-    </>
+    </div>
   );
 }

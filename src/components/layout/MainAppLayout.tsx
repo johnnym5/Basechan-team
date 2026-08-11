@@ -14,7 +14,6 @@ import { usePermissions } from '@/hooks/usePermissions';
 import { useImpersonation } from '@/context/ImpersonationProvider';
 import { format } from 'date-fns';
 import { useIdleTimer } from '@/hooks/useIdleTimer';
-import { useSyncDialogsWithUrl } from '@/hooks/useSyncDialogsWithUrl';
 import { hexToHslString, cn } from '@/lib/utils';
 import dynamic from 'next/dynamic';
 import { BottomNavBar } from './BottomNavBar';
@@ -53,7 +52,7 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
   const activeStream = useRef<MediaStream | null>(null);
   const signalingCleanup = useRef<(() => void) | null>(null);
 
-  useSyncDialogsWithUrl();
+
 
   const { isImpersonating, impersonatedUserId } = useImpersonation();
 

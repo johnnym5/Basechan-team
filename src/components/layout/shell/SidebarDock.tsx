@@ -63,16 +63,7 @@ export function SidebarDock({ isLoggedIn, isAuthLoading }: SidebarDockProps) {
   };
 
   const handleNavClick = (item: any) => {
-    const isCurrentPanel = searchParams.get('panel') === item.dialog;
-    const isCurrentPath = pathname === item.href;
-    const isActive = isCurrentPath || isCurrentPanel;
-
     uiEmitter.emit('close-all-dialogs');
-
-    if (isActive && item.dialog) {
-        router.push(pathname);
-        return;
-    }
 
     if (item.href) {
         router.push(item.href);
@@ -116,11 +107,7 @@ export function SidebarDock({ isLoggedIn, isAuthLoading }: SidebarDockProps) {
 
                 if (groupItems.length === 0) return null;
 
-                const groupActive = groupItems.some((item: any) => {
-                    const isCurrentPanel = searchParams.get('panel') === item.dialog;
-                    const isCurrentPath = pathname === item.href;
-                    return isCurrentPath || isCurrentPanel;
-                });
+                const groupActive = groupItems.some((item: any) => pathname === item.href);
 
                 return (
                     <div key={group.label} className="space-y-2">
@@ -136,9 +123,7 @@ export function SidebarDock({ isLoggedIn, isAuthLoading }: SidebarDockProps) {
                             {groupItems.map((item: any) => {
                                 if ('permission' in item && !permissions[item.permission as keyof typeof permissions]) return null;
 
-                                const isCurrentPanel = searchParams.get('panel') === item.dialog;
-                                const isCurrentPath = pathname === item.href;
-                                const isActive = isCurrentPath || isCurrentPanel;
+                                const isActive = pathname === item.href;
 
                                 return (
                                     <button

@@ -58,6 +58,10 @@ export const reportService = {
         const idleHrs = ((attendance.idleTime || 0) / 3600).toFixed(2);
 
         // 4. CONSTRUCT SUMMARY
+        const manualReportSection = (attendance as any).eodReport
+            ? `\nMANUAL DEBRIEF:\n${(attendance as any).eodReport}\n`
+            : "";
+
         const summary = `
 [SYSTEM GENERATED END-OF-DAY REPORT]
 -----------------------------------
@@ -65,7 +69,7 @@ SHIFT METRICS:
 - Total Time: ${totalDurationHrs} hours
 - Inactive Time: ${idleHrs} hours
 - Location: ${attendance.location}
-
+${manualReportSection}
 TASK SUMMARY:
 - Tasks Completed: ${completedToday.length}
 ${completedToday.map(t => `  • ${t.title} (${t.serialNo})`).join('\n') || '  • No tasks completed today.'}
@@ -80,7 +84,9 @@ COLLABORATION:
             userId: user.id,
             userName: user.fullName,
             reportDate: today,
-            accomplishments: sanitizeInput(summary.split('TASK SUMMARY:')[1]?.split('COLLABORATION:')[0]?.trim() || "Automated metrics synchronized."),
+            accomplishments: (attendance as any).eodReport
+                ? sanitizeInput((attendance as any).eodReport)
+                : sanitizeInput(summary.split('TASK SUMMARY:')[1]?.split('COLLABORATION:')[0]?.trim() || "Automated metrics synchronized."),
             blockers: "None identified by automated system telemetry.",
             nextFocus: "Continuous operational cycle monitoring.",
             pulse: 'PRODUCTIVE',

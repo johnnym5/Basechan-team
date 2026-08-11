@@ -218,6 +218,8 @@ export interface Attendance {
     totalBreak?: number;
     lateReason?: string | null;
     sessions?: AttendanceSession[];
+    eodReport?: string | null;
+    linkedTaskIds?: string[];
 }
 
 export type ShiftType = "MORNING" | "AFTERNOON" | "NIGHT" | "ON_CALL";
@@ -307,6 +309,14 @@ export interface SubTask {
   completed: boolean;
 }
 
+export interface TaskTransferRecord {
+  fromId: string;
+  fromName: string;
+  toId: string;
+  toName: string;
+  timestamp: string;
+}
+
 export interface Task {
   id: string;
   serialNo: string;
@@ -333,6 +343,8 @@ export interface Task {
   relatedTaskId?: string;
   requesterId?: string;
   requesterName?: string;
+  isTransferred?: boolean;
+  transferHistory?: TaskTransferRecord[];
 }
 
 export interface Announcement {

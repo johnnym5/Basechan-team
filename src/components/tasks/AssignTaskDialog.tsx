@@ -72,9 +72,17 @@ export function AssignTaskDialog({ open, onOpenChange, initialData, currentUserP
                       <FormField control={form.control} name="assignedTo" render={({ field }) => (
                           <FormItem>
                             <FormLabel className="text-[10px] font-black uppercase tracking-widest opacity-60">Assign To</FormLabel>
-                            <Select onValueChange={field.onChange} value={field.value || ""}>
+                            <Select onValueChange={field.onChange} value={field.value}>
                                 <FormControl><SelectTrigger disabled={areUsersLoading} className="h-12 rounded-xl bg-background/50 border-white/5"><SelectValue placeholder="Select Member" /></SelectTrigger></FormControl>
-                                <SelectContent className="apple-glass-darker border-none">{users?.map(user => <SelectItem key={user.id} value={user.id}>{user.fullName}</SelectItem>)}</SelectContent>
+                                <SelectContent className="apple-glass-darker border-none">
+                                    <SelectItem value="NONE">Assign to Self</SelectItem>
+                                    {users
+                                        ?.filter(user => user.id && user.id.trim() !== "")
+                                        .map(user => (
+                                            <SelectItem key={user.id} value={user.id}>{user.fullName}</SelectItem>
+                                        ))
+                                    }
+                                </SelectContent>
                             </Select>
                             <FormMessage />
                           </FormItem>
@@ -133,11 +141,16 @@ export function AssignTaskDialog({ open, onOpenChange, initialData, currentUserP
                      <FormField control={form.control} name="workbookId" render={({ field }) => (
                          <FormItem>
                              <FormLabel className="text-[10px] font-black uppercase tracking-widest opacity-60">Reference Workbook</FormLabel>
-                             <Select onValueChange={field.onChange} value={field.value || ""}>
+                             <Select onValueChange={field.onChange} value={field.value}>
                                  <FormControl><SelectTrigger disabled={areWorkbooksLoading} className="h-12 rounded-xl bg-background/50 border-white/5"><SelectValue placeholder="Select Workbook" /></SelectTrigger></FormControl>
                                  <SelectContent className="apple-glass-darker border-none">
-                                     <SelectItem value="">None</SelectItem>
-                                     {workbooks?.map(wb => <SelectItem key={wb.id} value={wb.id}>{wb.title}</SelectItem>)}
+                                     <SelectItem value="NONE">None</SelectItem>
+                                     {workbooks
+                                        ?.filter(wb => wb.id && wb.id.trim() !== "")
+                                        .map(wb => (
+                                            <SelectItem key={wb.id} value={wb.id}>{wb.title}</SelectItem>
+                                        ))
+                                     }
                                  </SelectContent>
                              </Select>
                              <FormMessage />
@@ -146,11 +159,16 @@ export function AssignTaskDialog({ open, onOpenChange, initialData, currentUserP
                      <FormField control={form.control} name="sheetId" render={({ field }) => (
                          <FormItem>
                              <FormLabel className="text-[10px] font-black uppercase tracking-widest opacity-60">Reference Sheet</FormLabel>
-                             <Select onValueChange={field.onChange} value={field.value || ""}>
-                                 <FormControl><SelectTrigger disabled={areSheetsLoading || !form.watch('workbookId')} className="h-12 rounded-xl bg-background/50 border-white/5"><SelectValue placeholder="Select Sheet" /></SelectTrigger></FormControl>
+                             <Select onValueChange={field.onChange} value={field.value}>
+                                 <FormControl><SelectTrigger disabled={areSheetsLoading || !form.watch('workbookId') || form.watch('workbookId') === 'NONE'} className="h-12 rounded-xl bg-background/50 border-white/5"><SelectValue placeholder="Select Sheet" /></SelectTrigger></FormControl>
                                  <SelectContent className="apple-glass-darker border-none">
-                                     <SelectItem value="">None</SelectItem>
-                                     {sheets?.map(sh => <SelectItem key={sh.id} value={sh.id}>{sh.name}</SelectItem>)}
+                                     <SelectItem value="NONE">None</SelectItem>
+                                     {sheets
+                                        ?.filter(sh => sh.id && sh.id.trim() !== "")
+                                        .map(sh => (
+                                            <SelectItem key={sh.id} value={sh.id}>{sh.name}</SelectItem>
+                                        ))
+                                     }
                                  </SelectContent>
                              </Select>
                              <FormMessage />

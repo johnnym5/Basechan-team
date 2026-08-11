@@ -223,7 +223,6 @@ export function Employee360Profile({
       <Tabs className="w-full" defaultValue="overview" value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="h-auto w-full justify-start overflow-x-auto bg-muted rounded-2xl p-1.5 border border-border">
           <TabsTrigger value="overview" className="rounded-xl px-6 font-black uppercase text-[10px] tracking-widest data-[state=active]:bg-primary data-[state=active]:text-white transition-all">Overview</TabsTrigger>
-          <TabsTrigger value="recognition" className="rounded-xl px-6 font-black uppercase text-[10px] tracking-widest data-[state=active]:bg-primary data-[state=active]:text-white transition-all">Recognition</TabsTrigger>
           <TabsTrigger value="structure" className="rounded-xl px-6 font-black uppercase text-[10px] tracking-widest data-[state=active]:bg-primary data-[state=active]:text-white transition-all">Structure</TabsTrigger>
           <TabsTrigger value="assets" className="rounded-xl px-6 font-black uppercase text-[10px] tracking-widest data-[state=active]:bg-primary data-[state=active]:text-white transition-all">Assets</TabsTrigger>
           <TabsTrigger value="employment" className="rounded-xl px-6 font-black uppercase text-[10px] tracking-widest data-[state=active]:bg-primary data-[state=active]:text-white transition-all">Employment</TabsTrigger>
@@ -353,10 +352,6 @@ export function Employee360Profile({
                     </CardContent>
                 </Card>
             </div>
-          </TabsContent>
-
-          <TabsContent value="recognition" className="col-span-full mt-0 focus-visible:outline-none">
-            <PerformanceDashboard userProfile={profile} />
           </TabsContent>
 
           <TabsContent value="structure" className="col-span-full mt-0 focus-visible:outline-none">

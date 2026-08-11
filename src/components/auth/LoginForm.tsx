@@ -54,9 +54,17 @@ export function LoginForm() {
   const [isIdVerified, setIsIdVerified] = useState<boolean | null>(null);
   const [isCheckingId, setIsCheckingId] = useState(false);
   const [requiresForceLogin, setRequiresForceLogin] = useState(false);
+  const [isMobileBlocked, setIsMobileBlocked] = useState(false);
   const { toast } = useToast();
   const auth = useAuth();
   const firestore = useFirestore();
+
+  useEffect(() => {
+    const isMobileHardware = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || navigator.maxTouchPoints > 0;
+    if (isMobileHardware) {
+      setIsMobileBlocked(true);
+    }
+  }, []);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -309,6 +317,21 @@ export function LoginForm() {
       setIsSubmitting(false);
     }
   };
+
+  if (isMobileBlocked) {
+    return (
+      <div className="flex flex-col items-center justify-center p-8 text-center space-y-4 bg-destructive/10 border border-destructive/20 rounded-2xl">
+        <Smartphone className="h-12 w-12 text-destructive animate-pulse" />
+        <h2 className="text-lg font-black uppercase tracking-tighter text-destructive">Mobile Access Restricted</h2>
+        <p className="text-xs font-medium leading-relaxed opacity-80">
+          Security protocols forbid mobile authentication. Please use an authorized workstation to access the organizational matrix.
+        </p>
+        <Button variant="outline" className="w-full border-destructive/20 hover:bg-destructive/10" onClick={() => window.location.reload()}>
+          Retry Hardware Check
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">

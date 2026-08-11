@@ -135,7 +135,13 @@ export const attendanceService = {
   /**
    * Terminates the work session and triggers automated EOD reporting.
    */
-  async clockOut(db: Firestore, user: UserProfile, record: Attendance, systemConfig: SystemConfig | null) {
+  async clockOut(
+    db: Firestore,
+    user: UserProfile,
+    record: Attendance,
+    systemConfig: SystemConfig | null,
+    debriefData?: { manualReport: string; attachedTaskId?: string }
+  ) {
     const now = new Date();
     const attendanceRef = doc(db, 'attendance', record.id);
     const userRef = doc(db, 'users', user.id);
@@ -162,7 +168,9 @@ export const attendanceService = {
       status: 'APPROVED',
       onBreak: false,
       remarks: Array.from(new Set(remarks)),
-      duration: totalDurationSec - (record.totalBreak || 0) - (record.idleTime || 0)
+      duration: totalDurationSec - (record.totalBreak || 0) - (record.idleTime || 0),
+      eodReport: debriefData?.manualReport || null,
+      linkedTaskIds: debriefData?.attachedTaskId ? [debriefData.attachedTaskId] : []
     };
 
     if (record.onBreak && record.breaks?.length) {

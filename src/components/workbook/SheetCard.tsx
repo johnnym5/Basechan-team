@@ -20,8 +20,8 @@ export function SheetCard({ sheet, onSelect, onRename, onDelete, onCreateTask, c
     const recordCount = sheet.data?.length ?? 0;
 
     return (
-        <Card className="group bg-card/50 hover:bg-card/90 hover:shadow-lg hover:-translate-y-1 transition-all flex flex-col justify-between">
-            <CardHeader className="flex flex-row items-start justify-between pb-2">
+        <Card className="group bg-card hover:bg-muted/50 border border-border rounded-xl shadow-sm transition-all flex flex-col justify-between overflow-hidden">
+            <CardHeader className="flex flex-row items-start justify-between pb-2 bg-secondary/10">
                 <CardTitle className="text-base font-semibold leading-tight line-clamp-1">{sheet.name}</CardTitle>
                  {canManage && (
                     <DropdownMenu>

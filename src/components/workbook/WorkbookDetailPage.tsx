@@ -179,8 +179,8 @@ export default function WorkbookDetailPage({ workbookId, onBack, initialSheetId 
     
     if (selectedSheet) {
         return (
-            <div className="space-y-4 p-6 h-full flex flex-col">
-                <div className="flex items-center gap-4 flex-shrink-0">
+            <div className="flex-1 bg-card border border-border rounded-xl shadow-lg p-4 md:p-6 m-4 lg:m-6 overflow-hidden relative flex flex-col">
+                <div className="flex items-center gap-4 flex-shrink-0 mb-4">
                     <Button variant="ghost" size="icon" onClick={() => setSelectedSheet(null)} className="-ml-2">
                         <ArrowLeft className="h-5 w-5" />
                     </Button>
@@ -189,7 +189,7 @@ export default function WorkbookDetailPage({ workbookId, onBack, initialSheetId 
                         <p className="text-sm text-muted-foreground">Part of "{workbook.title}" workbook</p>
                     </div>
                 </div>
-                <div className="flex-grow min-h-0">
+                <div className="flex-grow min-h-0 overflow-y-auto">
                     <SheetDataTable sheet={selectedSheet} permissions={workbookPermissions} />
                 </div>
             </div>
@@ -197,8 +197,8 @@ export default function WorkbookDetailPage({ workbookId, onBack, initialSheetId 
     }
 
     return (
-        <>
-            <div className="space-y-6 p-6">
+        <div className="flex-1 bg-card border border-border rounded-xl shadow-lg p-4 md:p-6 m-4 lg:m-6 overflow-hidden relative flex flex-col">
+            <div className="space-y-6 overflow-y-auto pr-2 custom-scrollbar">
                 <div className="flex items-start justify-between flex-wrap gap-4">
                     <div className="flex items-center gap-4">
                          <Button variant="ghost" size="icon" onClick={onBack} className="-ml-2">
@@ -297,6 +297,6 @@ export default function WorkbookDetailPage({ workbookId, onBack, initialSheetId 
                     </AlertDialogContent>
                 </AlertDialog>
             )}
-        </>
+        </div>
     );
 }

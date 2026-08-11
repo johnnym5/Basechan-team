@@ -1,7 +1,7 @@
 'use client';
 
 import { usePathname, useRouter } from "next/navigation";
-import { LogOut, LayoutGrid, User, LayoutDashboard, Users, CalendarCheck2, ListTodo, Settings, BarChart, Library, MonitorDot, MessageSquare } from "lucide-react";
+import { LogOut, LayoutGrid, User, LayoutDashboard, Users, CalendarCheck2, ListTodo, Settings, BarChart, Library, MonitorDot, MessageSquare, Search } from "lucide-react";
 import { mainNavItems } from "@/lib/nav-items";
 import { cn } from "@/lib/utils";
 import { useAuth, useDoc, useMemoFirebase, useFirestore, useUser } from "@/firebase";
@@ -86,8 +86,19 @@ export function AppNavFAB() {
         >
           <ScrollArea className="max-h-[min(80vh,600px)] w-full">
             <div className="flex flex-col gap-1 p-2">
-              <div className="px-4 py-3 mb-2">
+              <div className="px-4 py-3 mb-2 flex items-center justify-between">
                   <p className="text-[10px] font-black uppercase tracking-[0.3em] text-primary opacity-70">Operational Matrix</p>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 rounded-full hover:bg-primary/20 text-primary"
+                    onClick={() => {
+                        setIsOpen(false);
+                        uiEmitter.emit('open-command-palette' as any);
+                    }}
+                  >
+                      <Search className="h-4 w-4" />
+                  </Button>
               </div>
 
               <div className="grid grid-cols-1 gap-1">

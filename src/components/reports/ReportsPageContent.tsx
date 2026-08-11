@@ -12,9 +12,11 @@ import { SubmitDailyReport } from "@/components/reports/SubmitDailyReport";
 import { MyDailyReports } from "@/components/reports/MyDailyReports";
 import { TeamDailyReports } from "@/components/reports/TeamDailyReports";
 import { TeamHealthTab } from "@/components/reports/TeamHealthTab";
-import { useState, useEffect } from "react";
+import { PeerNominationForm } from "@/components/reports/PeerNominationForm";
+import { PerformanceDashboard } from "@/components/reports/PerformanceDashboard";
+import { useState, useEffect, useMemo } from "react";
 import { Button } from "../ui/button";
-import { Download, FileSpreadsheet, Loader2, Trophy, BarChart3, UserCheck, Heart, ShieldAlert } from "lucide-react";
+import { Download, FileSpreadsheet, Loader2, Trophy, BarChart3, UserCheck, Heart, ShieldAlert, Award } from "lucide-react";
 import * as XLSX from 'xlsx';
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
@@ -132,6 +134,41 @@ export function ReportsPageContent({ initialPayload, noWrapper = false }: { init
     }
   }
 
+  // Fetch Staff List for Nominations
+  const staffQuery = useMemoFirebase(() =>
+    firestore ? query(collection(firestore, 'users'), where('orgId', '==', userProfile?.orgId || '')) : null
+  , [firestore, userProfile?.orgId]);
+  const { data: rawStaff } = useCollection<UserProfile>(staffQuery);
+
+  const staffList = useMemo(() =>
+    rawStaff?.filter(s => s.id !== authUser?.uid).map(s => ({ id: s.id, name: s.fullName })) || []
+  , [rawStaff, authUser?.uid]);
+
+  const handleNominationSubmit = async (payload: any) => {
+    if (!firestore) return;
+    try {
+        const nominationBatch = payload.nominations.map((nom: any) => ({
+            ...nom,
+            orgId: userProfile?.orgId,
+            nominatorId: payload.nominatorId,
+            nominatorName: payload.nominatorName,
+            timestamp: payload.date,
+            status: 'PENDING',
+            additionalNotes: payload.additionalNotes
+        }));
+
+        const { addDocumentNonBlocking } = await import('@/firebase');
+        for (const nomination of nominationBatch) {
+            await addDocumentNonBlocking(collection(firestore, 'nominations'), nomination);
+        }
+
+        toast({ title: "Nominations Submitted", description: "Thank you for recognizing your teammates!" });
+        setActiveTab('submit');
+    } catch (e: any) {
+        toast({ variant: 'destructive', title: "Submission Failed", description: e.message });
+    }
+  };
+
   if (isProfileLoading) {
     return <div className="space-y-8 p-10"><Skeleton className="h-10 w-1/3" /><Skeleton className="h-[600px] w-full rounded-3xl" /></div>;
   }
@@ -165,12 +202,23 @@ export function ReportsPageContent({ initialPayload, noWrapper = false }: { init
                         <TabsTrigger value="team-health" className="rounded-xl px-6 font-black uppercase text-[10px] tracking-widest data-[state=active]:bg-background transition-all">
                             <Heart className="h-3.5 w-3.5 mr-2 text-rose-500" /> Team Health
                         </TabsTrigger>
+                        <TabsTrigger value="recognition" className="rounded-xl px-6 font-black uppercase text-[10px] tracking-widest data-[state=active]:bg-background transition-all">
+                            <Award className="h-3.5 w-3.5 mr-2 text-amber-500" /> Recognition
+                        </TabsTrigger>
                     </>
                 ) : (
                     permissions.canSubmitReport && (
-                        <TabsTrigger value="submit" className="rounded-xl px-6 font-black uppercase text-[10px] tracking-widest data-[state=active]:bg-background transition-all">
-                            Submit Daily Report
-                        </TabsTrigger>
+                        <>
+                            <TabsTrigger value="submit" className="rounded-xl px-6 font-black uppercase text-[10px] tracking-widest data-[state=active]:bg-background transition-all">
+                                Submit Daily Report
+                            </TabsTrigger>
+                            <TabsTrigger value="recognition" className="rounded-xl px-6 font-black uppercase text-[10px] tracking-widest data-[state=active]:bg-background transition-all">
+                                <Award className="h-3.5 w-3.5 mr-2 text-amber-500" /> Nominate Peer
+                            </TabsTrigger>
+                            <TabsTrigger value="awards" className="rounded-xl px-6 font-black uppercase text-[10px] tracking-widest data-[state=active]:bg-[#f5d547] data-[state=active]:text-black transition-all">
+                                🏆 My Awards
+                            </TabsTrigger>
+                        </>
                     )
                 )}
             </TabsList>
@@ -193,14 +241,30 @@ export function ReportsPageContent({ initialPayload, noWrapper = false }: { init
                         <TabsContent value="team-health" className="m-0 focus-visible:ring-0 outline-none animate-in fade-in duration-500">
                             {userProfile && <TeamHealthTab userProfile={userProfile} />}
                         </TabsContent>
+
+                        <TabsContent value="recognition" className="m-0 focus-visible:ring-0 outline-none animate-in fade-in duration-500">
+                            <PeerNominationForm staffList={staffList} onSubmit={handleNominationSubmit} />
+                        </TabsContent>
+
+                        <TabsContent value="awards" className="m-0 focus-visible:ring-0 outline-none animate-in fade-in duration-500">
+                            {userProfile && <PerformanceDashboard userProfile={userProfile} />}
+                        </TabsContent>
                     </>
                 )}
 
                 {!permissions.canManageStaff && permissions.canSubmitReport && (
-                    <TabsContent value="submit" className="m-0 space-y-8 focus-visible:ring-0 outline-none animate-in fade-in duration-500">
-                        {userProfile && <SubmitDailyReport userProfile={userProfile} />}
-                        {userProfile && <MyDailyReports userProfile={userProfile} />}
-                    </TabsContent>
+                    <>
+                        <TabsContent value="submit" className="m-0 space-y-8 focus-visible:ring-0 outline-none animate-in fade-in duration-500">
+                            {userProfile && <SubmitDailyReport userProfile={userProfile} />}
+                            {userProfile && <MyDailyReports userProfile={userProfile} />}
+                        </TabsContent>
+                        <TabsContent value="recognition" className="m-0 focus-visible:ring-0 outline-none animate-in fade-in duration-500">
+                            <PeerNominationForm staffList={staffList} onSubmit={handleNominationSubmit} />
+                        </TabsContent>
+                        <TabsContent value="awards" className="m-0 focus-visible:ring-0 outline-none animate-in fade-in duration-500">
+                            {userProfile && <PerformanceDashboard userProfile={userProfile} />}
+                        </TabsContent>
+                    </>
                 )}
             </div>
           </Tabs>

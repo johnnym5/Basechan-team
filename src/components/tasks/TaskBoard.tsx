@@ -1,6 +1,6 @@
 'use client';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, where, Query, doc, updateDoc } from 'firebase/firestore';
+import { collection, query, where, Query } from 'firebase/firestore';
 import type { Task, UserProfile, TaskStatus, TaskPriority, Permissions } from '@/lib/types';
 import { TaskCard } from './TaskCard';
 import { useSuperAdmin } from '@/hooks/useSuperAdmin';
@@ -9,8 +9,6 @@ import { Skeleton } from '../ui/skeleton';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { Badge } from '../ui/badge';
 import { parseISO, compareDesc, compareAsc } from 'date-fns';
-import { DndContext, closestCenter, DragEndEvent } from "@dnd-kit/core";
-import { useDroppable } from "@dnd-kit/core";
 import { Button } from '../ui/button';
 import { ChevronDown } from 'lucide-react';
 
@@ -35,8 +33,7 @@ const PRIORITY_MAP: Record<TaskPriority, number> = {
     'LEVEL_1': 1,
 };
 
-function DroppableColumn({
-    id,
+function Column({
     title,
     tasks,
     visibleCount,
@@ -45,7 +42,6 @@ function DroppableColumn({
     permissions,
     onTaskSelect
 }: {
-    id: TaskStatus,
     title: string,
     tasks: Task[],
     visibleCount: number,
@@ -54,17 +50,11 @@ function DroppableColumn({
     permissions: Permissions,
     onTaskSelect: (task: Task) => void
 }) {
-    const { setNodeRef, isOver } = useDroppable({ id });
     const visibleTasks = tasks.slice(0, visibleCount);
     const hasMore = tasks.length > visibleCount;
 
     return (
-        <div
-            ref={setNodeRef}
-            className={`w-80 flex-shrink-0 flex flex-col h-full min-h-0 rounded-[2rem] transition-colors ${
-                isOver ? 'bg-primary/5' : ''
-            }`}
-        >
+        <div className="w-80 flex-shrink-0 flex flex-col h-full min-h-0 rounded-[2rem]">
             <div className="flex items-center justify-between mb-4 px-2">
                 <h3 className="font-black text-[10px] uppercase tracking-[0.25em] text-muted-foreground">
                     {title}
@@ -73,9 +63,7 @@ function DroppableColumn({
                     {tasks.length}
                 </Badge>
             </div>
-            <div className={`flex-1 min-h-0 p-3 rounded-[2rem] border transition-colors overflow-y-auto custom-scrollbar ${
-                isOver ? 'border-primary/50 bg-secondary/20' : 'border-white/5 bg-secondary/5'
-            }`}>
+            <div className="flex-1 min-h-0 p-3 rounded-[2rem] border border-white/5 bg-secondary/5 transition-colors overflow-y-auto custom-scrollbar">
                 <div className="space-y-4 p-1">
                     {tasks.length === 0 ? (
                         <div className="text-center text-[10px] font-black uppercase tracking-widest text-muted-foreground opacity-30 pt-20">
@@ -207,40 +195,6 @@ export function TaskBoard({ userProfile, permissions, onTaskSelect, searchTerm, 
         return grouped;
     }, [localTasks, searchTerm, sortBy]);
 
-    const handleDragEnd = async (event: DragEndEvent) => {
-        const { active, over } = event;
-
-        if (!over) return;
-
-        const taskId = active.id as string;
-        const newStatus = over.id as TaskStatus;
-        const oldStatus = active.data.current?.currentStatus as TaskStatus;
-
-        if (oldStatus === newStatus) return;
-
-        // 1. Optimistic UI Update
-        setLocalTasks(prev =>
-            prev.map(task =>
-                task.id === taskId ? { ...task, status: newStatus } : task
-            )
-        );
-
-        // 2. Database Update
-        if (!firestore) return;
-        try {
-            const taskRef = doc(firestore, 'tasks', taskId);
-            await updateDoc(taskRef, {
-                status: newStatus,
-                updatedAt: new Date().toISOString()
-            });
-            console.log(`Updated Task ${taskId} to ${newStatus}`);
-        } catch (error) {
-            console.error("Failed to update status, reverting UI", error);
-            // Revert on error
-            if (initialTasks) setLocalTasks(initialTasks);
-        }
-    };
-
     if (isLoading) {
         return (
              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 h-full p-6">
@@ -257,26 +211,23 @@ export function TaskBoard({ userProfile, permissions, onTaskSelect, searchTerm, 
 
     return (
         <div className="h-full flex flex-col min-h-0">
-            <DndContext onDragEnd={handleDragEnd} collisionDetection={closestCenter}>
-                <ScrollArea className="flex-1 w-full h-full">
-                    <div className="flex h-full gap-6 p-6">
-                        {KANBAN_COLUMNS.map(col => (
-                            <DroppableColumn
-                                key={col.status}
-                                id={col.status}
-                                title={col.title}
-                                tasks={tasksByStatus[col.status]}
-                                visibleCount={visibleCounts[col.stateKey]}
-                                handleLoadMore={() => handleLoadMore(col.stateKey)}
-                                userProfile={userProfile}
-                                permissions={permissions}
-                                onTaskSelect={onTaskSelect}
-                            />
-                        ))}
-                    </div>
-                    <ScrollBar orientation="horizontal" />
-                </ScrollArea>
-            </DndContext>
+            <ScrollArea className="flex-1 w-full h-full">
+                <div className="flex h-full gap-6 p-6">
+                    {KANBAN_COLUMNS.map(col => (
+                        <Column
+                            key={col.status}
+                            title={col.title}
+                            tasks={tasksByStatus[col.status]}
+                            visibleCount={visibleCounts[col.stateKey]}
+                            handleLoadMore={() => handleLoadMore(col.stateKey)}
+                            userProfile={userProfile}
+                            permissions={permissions}
+                            onTaskSelect={onTaskSelect}
+                        />
+                    ))}
+                </div>
+                <ScrollBar orientation="horizontal" />
+            </ScrollArea>
         </div>
     );
 }

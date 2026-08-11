@@ -79,7 +79,7 @@ export function useAssignTaskForm({
   const selectedWorkbookId = form.watch('workbookId');
 
   const sheetsQuery = useMemoFirebase(() =>
-    selectedWorkbookId ? query(collection(firestore!, `workbooks/${selectedWorkbookId}/sheets`)) : null
+    (selectedWorkbookId && selectedWorkbookId !== 'NONE') ? query(collection(firestore!, `workbooks/${selectedWorkbookId}/sheets`)) : null
   , [firestore, selectedWorkbookId]);
   const { data: sheets, isLoading: areSheetsLoading } = useCollection<Sheet>(sheetsQuery);
 
@@ -90,10 +90,10 @@ export function useAssignTaskForm({
         title: initialData?.title || "",
         description: initialData?.description || "",
         priority: initialData?.priority || "LEVEL_1",
-        assignedTo: "",
+        assignedTo: "NONE",
         dueDate: initialData?.dueDate || undefined,
-        workbookId: initialData?.workbookId || "",
-        sheetId: initialData?.sheetId || "",
+        workbookId: initialData?.workbookId || "NONE",
+        sheetId: initialData?.sheetId || "NONE",
         estimatedHours: undefined,
       });
       setFileName(null);
@@ -111,7 +111,9 @@ export function useAssignTaskForm({
   };
 
   async function onSubmit(values: AssignTaskFormData) {
-    const assigneeId = permissions.canManageStaff && values.assignedTo ? values.assignedTo : currentUserProfile.id;
+    const rawAssigneeId = permissions.canManageStaff && values.assignedTo ? values.assignedTo : currentUserProfile.id;
+    const assigneeId = (rawAssigneeId === "NONE" || !rawAssigneeId) ? currentUserProfile.id : rawAssigneeId;
+
     if (!firestore || !currentUserProfile || !assigneeId) return;
 
     const assignedUser = users?.find(u => u.id === assigneeId);
@@ -129,7 +131,13 @@ export function useAssignTaskForm({
         attachmentUrl = await uploadFile(values.attachment, filePath);
       }
 
-      await taskService.createTask(firestore, currentUserProfile, assignedUser, values, attachmentUrl);
+      const sanitizedValues = {
+          ...values,
+          workbookId: values.workbookId === 'NONE' ? undefined : values.workbookId,
+          sheetId: values.sheetId === 'NONE' ? undefined : values.sheetId,
+      };
+
+      await taskService.createTask(firestore, currentUserProfile, assignedUser, sanitizedValues, attachmentUrl);
 
       toast({ title: "Task Assigned", description: `"${values.title}" has been assigned successfully.`});
       onOpenChange(false);

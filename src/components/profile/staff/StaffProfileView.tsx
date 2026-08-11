@@ -261,7 +261,6 @@ export function StaffProfileView({ userId, onBack, onViewProfile, currentUserPro
       <Tabs defaultValue="overview" className="flex-1 flex flex-col min-h-0">
         <TabsList className="bg-secondary/10 rounded-2xl p-1.5 border border-white/5 w-fit self-center md:self-start mb-6 shrink-0">
           <TabsTrigger value="overview" className="rounded-xl px-6 font-black uppercase text-[10px] tracking-widest data-[state=active]:bg-primary data-[state=active]:text-white transition-all">Overview</TabsTrigger>
-          <TabsTrigger value="recognition" className="rounded-xl px-6 font-black uppercase text-[10px] tracking-widest data-[state=active]:bg-primary data-[state=active]:text-white transition-all">Recognition</TabsTrigger>
           <TabsTrigger value="structure" className="rounded-xl px-6 font-black uppercase text-[10px] tracking-widest data-[state=active]:bg-primary data-[state=active]:text-white transition-all">Structure</TabsTrigger>
           <TabsTrigger value="assets" className="rounded-xl px-6 font-black uppercase text-[10px] tracking-widest data-[state=active]:bg-primary data-[state=active]:text-white transition-all">Assets</TabsTrigger>
           {permissions.canManageStaff && (
@@ -344,71 +343,6 @@ export function StaffProfileView({ userId, onBack, onViewProfile, currentUserPro
                 </CardContent>
               </Card>
             </div>
-
-            <div className="space-y-4 pt-6 border-t border-white/5">
-                <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-40 flex items-center gap-2"><ListTodo className="h-3 w-3" /> Tactical Mission Snapshot</p>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {activeTasks && activeTasks.length > 0 ? (
-                    activeTasks.slice(0, 6).map((task) => (
-                      <Card
-                        key={task.id}
-                        className="bg-white/5 border-white/5 hover:bg-white/10 transition-all rounded-2xl cursor-pointer p-4 group"
-                        onClick={() => uiEmitter.emit('open-tasks-dialog', { taskId: task.id })}
-                      >
-                         <div className="space-y-3">
-                            <div className="flex items-center justify-between gap-2">
-                               <p className="font-black text-xs tracking-tight truncate group-hover:text-primary transition-colors">{task.title}</p>
-                               <Badge variant="outline" className="text-[7px] font-black uppercase opacity-40">{task.status}</Badge>
-                            </div>
-                            <div className="flex items-center justify-between">
-                               <div className="flex items-center gap-1 text-[8px] font-bold text-muted-foreground uppercase">
-                                  <Timer className="h-2.5 w-2.5" />
-                                  {task.dueDate ? format(new Date(task.dueDate), 'MMM d') : 'No Due Date'}
-                                </div>
-                                {task.status === 'AWAITING_REVIEW' && <CheckCircle2 className="h-3 w-3 text-emerald-500" />}
-                            </div>
-                         </div>
-                      </Card>
-                    ))
-                  ) : (
-                    <div className="col-span-full py-10 text-center border border-dashed border-white/5 rounded-3xl">
-                       <p className="text-xs font-bold opacity-30 uppercase tracking-[0.2em]">Zero Active Missions</p>
-                    </div>
-                  )}
-                </div>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="recognition" className="mt-0 focus-visible:outline-none space-y-6">
-             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {isKudosLoading ? (
-                  Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-32 w-full rounded-2xl" />)
-                ) : kudos && kudos.length > 0 ? (
-                  kudos.map((k, idx) => (
-                    <Card key={idx} className="bg-gradient-to-br from-amber-500/5 to-primary/5 border-amber-500/10 rounded-2xl relative overflow-hidden group hover:scale-[1.02] transition-all">
-                       <div className="absolute top-0 right-0 p-2 opacity-10 group-hover:opacity-20 transition-opacity"><Star className="h-12 w-12 text-amber-500" /></div>
-                       <CardContent className="p-5 space-y-4">
-                          <div className="flex items-center gap-3">
-                             <div className="h-10 w-10 rounded-full bg-amber-500/20 flex items-center justify-center text-amber-500"><Award className="h-6 w-6" /></div>
-                             <div>
-                                <p className="text-[10px] font-black uppercase text-amber-600 tracking-widest">{k.badgeType.replace('_', ' ')}</p>
-                                <p className="text-[8px] font-bold text-muted-foreground uppercase">{format(new Date(k.timestamp), 'PPP')}</p>
-                             </div>
-                          </div>
-                          <p className="text-xs font-medium leading-relaxed italic opacity-80">"{k.message}"</p>
-                          <div className="pt-3 border-t border-white/5 flex items-center gap-2">
-                             <div className="h-5 w-5 rounded-full bg-secondary flex items-center justify-center text-[8px] font-black text-white">{k.fromUserName.charAt(0)}</div>
-                             <p className="text-[9px] font-black uppercase opacity-40">From {k.fromUserName}</p>
-                          </div>
-                       </CardContent>
-                    </Card>
-                  ))
-                ) : (
-                  <div className="col-span-full py-20 text-center border border-dashed border-white/5 rounded-3xl bg-secondary/5">
-                     <p className="text-xs font-bold opacity-30 uppercase tracking-[0.2em]">Awaiting First Recognition</p>
-                  </div>
-                )}
-             </div>
 
             <div className="space-y-4 pt-6 border-t border-white/5">
                 <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-40 flex items-center gap-2"><ListTodo className="h-3 w-3" /> Tactical Mission Snapshot</p>

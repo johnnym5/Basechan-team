@@ -27,7 +27,15 @@ interface SettingsSidebarProps {
   onSectionChange: (section: SettingsSection) => void;
 }
 
-const navItems = [
+interface NavItem {
+  id: SettingsSection;
+  label: string;
+  icon: any;
+  desc: string;
+  superAdminOnly?: boolean;
+}
+
+const navItems: NavItem[] = [
   { id: 'general', label: 'General', icon: Building2, desc: 'Company profile & localization' },
   { id: 'security', label: 'Security', icon: ShieldCheck, desc: 'Auth & infrastructure safety' },
   { id: 'notifications', label: 'Notifications', icon: Bell, desc: 'System alerts & webhooks' },
@@ -35,7 +43,7 @@ const navItems = [
   { id: 'integrations', label: 'Integrations', icon: Share2, desc: 'Third-party connections' },
   { id: 'data', label: 'Data & Compliance', icon: Database, desc: 'Retention & exports' },
   { id: 'master-console', label: 'Master Console', icon: Terminal, desc: 'Super Admin infrastructure tools', superAdminOnly: true },
-] as const;
+];
 
 export function SettingsSidebar({ activeSection, onSectionChange }: SettingsSidebarProps) {
   const { isSuperAdmin } = useSuperAdmin();
