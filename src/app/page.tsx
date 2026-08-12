@@ -11,7 +11,7 @@ import { Announcements } from "@/components/dashboard/Announcements";
 import { usePermissions } from "@/hooks/usePermissions";
 import { ClockControl } from "@/components/attendance/ClockControl";
 import { useSystemConfig } from "@/hooks/useSystemConfig";
-import { PerformanceCard } from '@/components/dashboard/PerformanceCard';
+import { DashboardAnalytics } from '@/components/dashboard/DashboardAnalytics';
 import { DashboardRecentChats } from '@/components/dashboard/DashboardRecentChats';
 import { DashboardLiveDisplays } from '@/components/dashboard/DashboardLiveDisplays';
 import { useSuperAdmin } from '@/hooks/useSuperAdmin';
@@ -92,7 +92,7 @@ export default function DashboardPage() {
                 </section>
 
                 <section className="col-span-12 md:col-span-6 lg:col-span-7 xl:col-span-8 flex flex-col h-full w-full">
-                    <PerformanceCard userProfile={userProfile || null} />
+                    <DashboardAnalytics />
                 </section>
 
                 <section className="col-span-12 lg:col-span-8 xl:col-span-9 flex flex-col h-full w-full">

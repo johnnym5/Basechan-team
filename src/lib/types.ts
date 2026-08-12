@@ -659,6 +659,55 @@ export interface ActivityPoint {
   points: number;
 }
 
+export interface Nomination {
+  id: string;
+  orgId: string;
+  nomineeId: string;
+  nomineeName: string;
+  nominatorId: string;
+  nominatorName: string;
+  categoryId: string;
+  categoryTitle: string;
+  reason: string;
+  timestamp: string;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+}
+
+export interface PerformanceReview {
+  id: string;
+  userId: string;
+  reviewerId: string;
+  reviewerName: string;
+  orgId: string;
+  reviewDate: string;
+  period: string;
+  businessTargets: {
+    applicationFee: number;
+    deposits: number;
+    pof: number;
+    visaApplication: number;
+    accommodation: number;
+  };
+  interpersonalSkills: {
+    engagementAndAttitude: number;
+    communicationAndCollaboration: number;
+    demonstrateValues: number;
+    meetDeadlines: number;
+    initiatives: number;
+    consistency: number;
+    qualityOfWork: number;
+    punctualityAndAttendance: number;
+    adaptabilityAndFlexibility: number;
+    resourceful: number;
+  };
+  summary: {
+    successAreas: string;
+    improvementAreas: string;
+    focusAreasNext: string;
+    overallAchievements: string;
+  };
+}
+
 export interface AppRole {
   id: string;
   name: string;

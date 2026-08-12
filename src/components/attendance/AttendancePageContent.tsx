@@ -1,6 +1,7 @@
 'use client';
+
+import React, { useState, useMemo } from "react";
 import { ClockControl } from "@/components/attendance/ClockControl";
-import { StatusFeed } from "@/components/attendance/StatusFeed";
 import { AttendanceHistory } from "@/components/attendance/AttendanceHistory";
 import { useUser, useDoc, useMemoFirebase, useFirestore, useCollection } from "@/firebase";
 import { doc, collection, query, where } from "firebase/firestore";
@@ -9,36 +10,201 @@ import { usePermissions } from "@/hooks/usePermissions";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PendingApprovals } from "@/components/attendance/PendingApprovals";
 import { useSystemConfig } from "@/hooks/useSystemConfig";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { TeamAttendanceHistory } from "@/components/attendance/TeamAttendanceHistory";
-import { WorkforceRoster } from "@/components/attendance/WorkforceRoster";
 import { LiveStaffMonitor } from "@/components/attendance/LiveStaffMonitor";
 import { StaffAttendanceAnalytics } from "@/components/attendance/StaffAttendanceAnalytics";
-import { useState, useEffect, useMemo } from "react";
 import { Calendar } from "@/components/ui/calendar";
-import {
-    Carousel,
-    CarouselContent,
-    CarouselItem,
-    CarouselNext,
-    CarouselPrevious,
-} from "@/components/ui/carousel";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { formatDuration } from "@/lib/formatters";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Users, Activity, CheckCircle2, ShieldAlert, CalendarDays, Timer } from "lucide-react";
 import { format, isSameDay } from "date-fns";
-import { StaffQuickViewSheet } from "@/components/profile/staff/StaffQuickViewSheet";
-import { FileText, CalendarDays, Users, BarChart3 } from "lucide-react";
-import { Card } from "@/components/ui/card";
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue
-} from "@/components/ui/select";
+import { ModuleContainer } from "@/components/layout/shell/ModuleContainer";
 import { cn } from "@/lib/utils";
 
-import { ModuleContainer } from "@/components/layout/shell/ModuleContainer";
+/**
+ * ADMIN / HR ATTENDANCE DASHBOARD
+ * Bento Box Architecture
+ */
+function AdminAttendanceDashboard({
+    userProfile,
+    permissions,
+    systemConfig
+}: {
+    userProfile: UserProfile,
+    permissions: any,
+    systemConfig: any
+}) {
+    const firestore = useFirestore();
+    const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
+
+    // KPI Queries
+    const targetDateStr = useMemo(() => format(selectedDate || new Date(), 'yyyy-MM-dd'), [selectedDate]);
+
+    const attendanceQuery = useMemoFirebase(() =>
+        firestore ? query(collection(firestore, 'attendance'), where('orgId', '==', userProfile.orgId), where('date', '==', targetDateStr)) : null
+    , [firestore, userProfile.orgId, targetDateStr]);
+    const { data: selectedDayAttendance } = useCollection<Attendance>(attendanceQuery);
+
+    const usersQuery = useMemoFirebase(() =>
+        firestore ? query(collection(firestore, 'users'), where('orgId', '==', userProfile.orgId)) : null
+    , [firestore, userProfile.orgId]);
+    const { data: allUsers } = useCollection<UserProfile>(usersQuery);
+
+    const pendingQuery = useMemoFirebase(() =>
+        firestore ? query(collection(firestore, 'attendance'), where('orgId', '==', userProfile.orgId), where('status', '==', 'PENDING')) : null
+    , [firestore, userProfile.orgId]);
+    const { data: pendingRecords } = useCollection<Attendance>(pendingQuery);
+
+    const stats = useMemo(() => {
+        const total = allUsers?.length || 0;
+        const active = selectedDayAttendance?.filter(r => !r.clockOut).length || 0;
+        const pending = pendingRecords?.length || 0;
+        return { total, active, pending };
+    }, [allUsers, selectedDayAttendance, pendingRecords]);
+
+    return (
+        <div className="flex flex-col space-y-6 w-full animate-in fade-in zoom-in-95 duration-500">
+            {/* 1. KPI ROW */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <Card className="p-4 border-white/5 bg-secondary/5 shadow-sm">
+                    <div className="flex items-center gap-2 mb-1">
+                        <Users className="w-3.5 h-3.5 text-primary opacity-60" />
+                        <span className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Total Staff</span>
+                    </div>
+                    <span className="text-2xl font-black font-headline tracking-tighter">{stats.total}</span>
+                </Card>
+                <Card className="p-4 border-white/5 bg-secondary/5 shadow-sm">
+                    <div className="flex items-center gap-2 mb-1">
+                        <Activity className="w-3.5 h-3.5 text-emerald-500 opacity-60" />
+                        <span className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Currently Active</span>
+                    </div>
+                    <span className="text-2xl font-black font-headline tracking-tighter text-emerald-500">{stats.active}</span>
+                </Card>
+                <Card className="p-4 border-white/5 bg-secondary/5 shadow-sm">
+                    <div className="flex items-center gap-2 mb-1">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-blue-500 opacity-60" />
+                        <span className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Reports Filed</span>
+                    </div>
+                    <span className="text-2xl font-black font-headline tracking-tighter text-blue-500">{selectedDayAttendance?.length || 0}</span>
+                </Card>
+                <Card className={cn(
+                    "p-4 border-amber-500/20 bg-amber-500/5 shadow-sm transition-all",
+                    stats.pending > 0 && "ring-1 ring-amber-500/30 animate-pulse"
+                )}>
+                    <div className="flex items-center gap-2 mb-1">
+                        <ShieldAlert className="w-3.5 h-3.5 text-amber-500 opacity-60" />
+                        <span className="text-[10px] font-black uppercase text-amber-500 tracking-widest">Pending Verification</span>
+                    </div>
+                    <span className="text-2xl font-black font-headline tracking-tighter text-amber-500">{stats.pending}</span>
+                </Card>
+            </div>
+
+            {/* 2. MAIN BENTO GRID */}
+            <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+                {/* LEFT SIDE: LIVE ROSTER (Span 2) */}
+                <div className="xl:col-span-2 space-y-6">
+                    <Card className="border-white/5 bg-card/40 backdrop-blur-xl shadow-2xl rounded-[2rem] overflow-hidden">
+                        <CardHeader className="p-6 border-b border-white/5 bg-white/5">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <CardTitle className="text-lg font-black font-headline tracking-tighter uppercase flex items-center gap-2">
+                                        <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                                        Personnel Telemetry
+                                    </CardTitle>
+                                    <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest opacity-60">Real-time Node Status Monitor</p>
+                                </div>
+                                <Timer className="w-5 h-5 text-primary opacity-20" />
+                            </div>
+                        </CardHeader>
+                        <CardContent className="p-0">
+                            <LiveStaffMonitor userProfile={userProfile} variant="table" selectedDate={selectedDate} />
+                        </CardContent>
+                    </Card>
+
+                    {/* Historical Analytics Table Placeholder / Integration */}
+                    <div className="space-y-4">
+                        <div className="flex items-center gap-2 px-2">
+                            <CalendarDays className="h-3.5 w-3.5 text-primary" />
+                            <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground">Historical Performance Archive</h3>
+                        </div>
+                        <StaffAttendanceAnalytics staffId={userProfile.id} />
+                    </div>
+                </div>
+
+                {/* RIGHT SIDE: CALENDAR & ACTION QUEUE */}
+                <div className="space-y-6">
+                    {/* Unified Single Calendar */}
+                    <Card className="border-white/5 bg-secondary/5 rounded-[2rem] p-4 shadow-inner">
+                        <CardHeader className="pb-4 px-2">
+                            <CardTitle className="text-xs font-black uppercase tracking-widest opacity-60">Operational Calendar</CardTitle>
+                        </CardHeader>
+                        <CardContent className="p-0 flex justify-center">
+                            <Calendar
+                                mode="single"
+                                selected={selectedDate}
+                                onSelect={setSelectedDate}
+                                className="w-full scale-100"
+                            />
+                        </CardContent>
+                    </Card>
+
+                    {/* Actionable Pending Queue */}
+                    <div className="space-y-4">
+                        <div className="flex items-center gap-2 px-2">
+                            <ShieldAlert className="h-3.5 w-3.5 text-amber-500" />
+                            <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-amber-500">Awaiting Verification</h3>
+                        </div>
+                        <PendingApprovals userProfile={userProfile} variant="compact" />
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+/**
+ * STAFF PERSONAL ATTENDANCE DASHBOARD
+ */
+function StaffAttendanceDashboard({
+    userProfile,
+    permissions,
+    systemConfig
+}: {
+    userProfile: UserProfile,
+    permissions: any,
+    systemConfig: any
+}) {
+    return (
+        <div className="flex flex-col space-y-8 w-full animate-in fade-in slide-in-from-bottom-4 duration-700">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
+                {/* 1. CLOCK CONTROL */}
+                <div className="lg:col-span-4 h-full">
+                    <ClockControl
+                        userProfile={userProfile}
+                        permissions={permissions}
+                        systemConfig={systemConfig}
+                        className="bg-card/40 border-white/5 rounded-[2.5rem] shadow-2xl backdrop-blur-xl"
+                    />
+                </div>
+
+                {/* 2. PERSONAL HISTORY */}
+                <div className="lg:col-span-8 h-full min-h-[400px]">
+                    <AttendanceHistory
+                        userProfile={userProfile}
+                    />
+                </div>
+            </div>
+
+            {/* Weekly Summary Row / Analytics for Staff */}
+            <section className="space-y-4">
+                <div className="flex items-center gap-2 px-2">
+                    <Activity className="h-3.5 w-3.5 text-primary" />
+                    <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground">Personnel Performance Summary</h3>
+                </div>
+                <StaffAttendanceAnalytics staffId={userProfile.id} />
+            </section>
+        </div>
+    );
+}
 
 export function AttendancePageContent({ noWrapper = false }: { noWrapper?: boolean }) {
   const { user: authUser } = useUser();
@@ -52,64 +218,7 @@ export function AttendancePageContent({ noWrapper = false }: { noWrapper?: boole
   const { config: systemConfig, isLoading: isConfigLoading } = useSystemConfig(userProfile?.orgId);
   const permissions = usePermissions(userProfile);
 
-  // Unified State for Overhaul
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
-  const [selectedStaffId, setSelectedStaffId] = useState<string | null>(null);
-  const [isQuickViewOpen, setIsQuickViewOpen] = useState(false);
-
-  // Fetch Attendance for the whole organization for the selected month to show dots on calendar
-  const attendanceQuery = useMemoFirebase(() => {
-    if (!firestore || !userProfile?.orgId) return null;
-    return query(
-      collection(firestore, 'attendance'),
-      where('orgId', '==', userProfile.orgId)
-    );
-  }, [firestore, userProfile?.orgId]);
-  const { data: allAttendance } = useCollection<Attendance>(attendanceQuery);
-
-  const staffOnSelectedDate = useMemo(() => {
-    if (!allAttendance || !selectedDate) return [];
-    return allAttendance.filter(r => isSameDay(new Date(r.date + 'T00:00:00'), selectedDate));
-  }, [allAttendance, selectedDate]);
-
-  const pendingQuery = useMemoFirebase(() => {
-    if (!firestore || !userProfile || !permissions.canApproveHR) return null;
-    return query(
-      collection(firestore, 'attendance'),
-      where('orgId', '==', userProfile.orgId),
-      where('status', '==', 'PENDING')
-    );
-  }, [firestore, userProfile?.orgId, permissions.canApproveHR]);
-  const { data: pendingRecords } = useCollection<Attendance>(pendingQuery);
-  const pendingCount = pendingRecords?.length || 0;
-
-  const usersQuery = useMemoFirebase(() => {
-    if (!firestore || !userProfile?.orgId) return null;
-    return query(
-      collection(firestore, 'users'),
-      where('orgId', '==', userProfile.orgId)
-    );
-  }, [firestore, userProfile?.orgId]);
-  const { data: users } = useCollection<UserProfile>(usersQuery);
-
   const isLoading = isProfileLoading || isConfigLoading;
-
-  const storageKey = 'attendance-view-tab';
-  const [activeTab, setActiveTab] = useState(() => {
-    if (typeof window !== 'undefined') {
-      const savedTab = localStorage.getItem(storageKey);
-      if (savedTab === 'history') return 'clock';
-      if (savedTab === 'team-history') return 'live-view';
-      if (savedTab) return savedTab;
-    }
-    return 'clock';
-  });
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem(storageKey, activeTab);
-    }
-  }, [activeTab]);
 
   if (isLoading) {
     return (
@@ -120,224 +229,22 @@ export function AttendancePageContent({ noWrapper = false }: { noWrapper?: boole
     )
   }
 
-  const content = (
-    <>
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0 h-full">
-        <TabsList className="w-full justify-start border-b border-white/5 rounded-none h-auto p-0 bg-transparent gap-8 mb-8 overflow-x-auto overflow-y-hidden shrink-0 pb-0">
-          <TabsTrigger value="clock" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-0 pb-3 text-[10px] font-black uppercase tracking-[0.2em] opacity-50 data-[state=active]:opacity-100 transition-all">Time Clock</TabsTrigger>
+  if (!userProfile) return null;
 
-          {permissions.canApproveHR && (
-            <TabsTrigger value="approvals" className="relative data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-0 pb-3 text-[10px] font-black uppercase tracking-[0.2em] opacity-50 data-[state=active]:opacity-100 transition-all">
-              Approvals
-              {pendingCount > 0 && (
-                <span className="absolute -top-1.5 -right-3 h-4 w-4 rounded-full bg-destructive text-white text-[8px] flex items-center justify-center font-black shadow-lg shadow-destructive/50 animate-pulse">
-                  {pendingCount}
-                </span>
-              )}
-            </TabsTrigger>
-          )}
+  const isAdmin = permissions.canApproveHR || permissions.canManageStaff;
 
-          <TabsTrigger value="live-view" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-0 pb-3 text-[10px] font-black uppercase tracking-[0.2em] opacity-50 data-[state=active]:opacity-100 transition-all">Live Roster</TabsTrigger>
-
-          {permissions.canApproveHR && (
-            <TabsTrigger value="analytics" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-0 pb-3 text-[10px] font-black uppercase tracking-[0.2em] opacity-50 data-[state=active]:opacity-100 transition-all">Historical Analytics</TabsTrigger>
-          )}
-        </TabsList>
-
-        <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar">
-          {permissions.canManageStaff && (
-              <TabsContent value="ops-command" className="mt-0 focus-visible:outline-none h-full space-y-8">
-                  {/* Phase 1: Operational Oversight (Calendar + Carousel) */}
-                  <div className="grid grid-cols-1 xl:grid-cols-12 gap-8 items-start">
-                      <div className="xl:col-span-4">
-                        <Card className="apple-glass rounded-[2rem] p-4 border border-white/5">
-                            <div className="flex items-center gap-2 px-4 mb-4">
-                                <CalendarDays className="h-4 w-4 text-primary" />
-                                <span className="text-[10px] font-black uppercase tracking-[0.2em]">Operational Archive</span>
-                            </div>
-                            <Calendar
-                                mode="single"
-                                selected={selectedDate}
-                                onSelect={setSelectedDate}
-                                className="w-full"
-                            />
-                        </Card>
-                      </div>
-
-                      <div className="xl:col-span-8 space-y-6">
-                        <div className="flex items-center justify-between">
-                            <div className="space-y-1">
-                                <h3 className="text-xl font-black font-headline tracking-tighter uppercase">Deployed Assets</h3>
-                                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest opacity-60">
-                                    {selectedDate ? format(selectedDate, 'MMMM do, yyyy') : 'No Date Selected'}
-                                </p>
-                            </div>
-                        </div>
-
-                        {staffOnSelectedDate.length === 0 ? (
-                            <div className="h-40 flex flex-col items-center justify-center border border-dashed border-white/10 rounded-[2.5rem] bg-secondary/5">
-                                <p className="text-muted-foreground uppercase font-black text-[10px] tracking-[0.3em] opacity-30">Zero deployments recorded for this cycle</p>
-                            </div>
-                        ) : (
-                            <Carousel opts={{ align: "start", dragFree: true }} className="w-full">
-                                <CarouselContent className="-ml-4">
-                                    {staffOnSelectedDate.map((record) => (
-                                        <CarouselItem key={record.id} className="pl-4 basis-auto">
-                                            {/* Staff Pill Box */}
-                                            <div
-                                                onClick={() => {
-                                                    setSelectedStaffId(record.userId);
-                                                    setIsQuickViewOpen(true);
-                                                }}
-                                                className="group flex items-center gap-4 bg-card/40 hover:bg-primary/10 border border-white/5 hover:border-primary/20 p-3 pr-6 rounded-full cursor-pointer transition-all duration-300 active:scale-95 shadow-lg"
-                                            >
-                                                <Avatar className="h-10 w-10 border border-white/10 group-hover:border-primary/30 transition-colors">
-                                                    <AvatarFallback className="bg-secondary text-[10px] font-black">{record.userName.charAt(0)}</AvatarFallback>
-                                                </Avatar>
-                                                <div className="min-w-0">
-                                                    <p className="text-xs font-black text-white truncate leading-none group-hover:text-primary transition-colors">{record.userName}</p>
-                                                    <div className="flex items-center gap-2 mt-1">
-                                                        <span className="text-[9px] font-mono font-bold text-emerald-400/80">{format(new Date(record.clockIn), 'HH:mm')}</span>
-                                                        <span className="text-muted-foreground opacity-30 text-[8px]">→</span>
-                                                        <span className={cn("text-[9px] font-mono font-bold", record.clockOut ? "text-rose-400/80" : "text-primary animate-pulse")}>
-                                                            {record.clockOut ? format(new Date(record.clockOut), 'HH:mm') : 'ACTIVE'}
-                                                        </span>
-                                                        <div className="h-2 w-px bg-white/10 mx-1" />
-                                                        <span className="text-[9px] font-black text-muted-foreground">{formatDuration(record.duration)}</span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </CarouselItem>
-                                    ))}
-                                </CarouselContent>
-                                <div className="flex justify-end gap-2 mt-4">
-                                    <CarouselPrevious className="static h-8 w-8 translate-y-0 rounded-xl" />
-                                    <CarouselNext className="static h-8 w-8 translate-y-0 rounded-xl" />
-                                </div>
-                            </Carousel>
-                        )}
-
-                        <div className="pt-4">
-                            <LiveStaffMonitor userProfile={userProfile!} />
-                        </div>
-                      </div>
-                  </div>
-
-                  {/* Phase 2: Roster Matrix */}
-                  <div className="space-y-4">
-                      <div className="flex items-center gap-2">
-                        <Users className="h-4 w-4 text-emerald-500" />
-                        <h3 className="text-sm font-black uppercase tracking-[0.2em]">Force Readiness Matrix</h3>
-                      </div>
-                      <WorkforceRoster userProfile={userProfile!} permissions={permissions} />
-                  </div>
-              </TabsContent>
-          )}
-
-          <TabsContent value="clock" className="mt-0 focus-visible:outline-none h-full">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-stretch min-h-full p-4 md:p-6 bg-card/20 rounded-[2.5rem] border border-white/5">
-              <div className="lg:col-span-1 h-full">
-                <ClockControl userProfile={userProfile || null} permissions={permissions} systemConfig={systemConfig || null} />
-              </div>
-              <div className="lg:col-span-2 h-full overflow-hidden">
-                <AttendanceHistory userProfile={userProfile || null} />
-              </div>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="roster" className="mt-0 focus-visible:outline-none h-full">
-            {userProfile && <WorkforceRoster userProfile={userProfile} permissions={permissions} />}
-          </TabsContent>
-
-          <TabsContent value="live-view" className="mt-0 focus-visible:outline-none h-full flex flex-col p-4 md:p-6 bg-card/20 rounded-[2.5rem] border border-white/5 space-y-8">
-            <div className="flex flex-col gap-8 h-full">
-              <div className="shrink-0">
-                {permissions.canViewTeam && userProfile && (
-                  <LiveStaffMonitor userProfile={userProfile} />
-                )}
-              </div>
-              <div className="space-y-4">
-                  <div className="flex items-center gap-2">
-                    <Users className="h-4 w-4 text-emerald-500" />
-                    <h3 className="text-sm font-black uppercase tracking-[0.2em]">Force Readiness Matrix</h3>
-                  </div>
-                  <div className="overflow-x-auto w-full">
-                    <div className="min-w-[800px]">
-                        <WorkforceRoster userProfile={userProfile!} permissions={permissions} />
-                    </div>
-                  </div>
-              </div>
-              <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
-                <div className="lg:col-span-8 h-full">
-                  {permissions.canViewTeam && userProfile && (
-                    <TeamAttendanceHistory userProfile={userProfile} />
-                  )}
-                </div>
-                <div className="lg:col-span-4 h-full">
-                  <StatusFeed userProfile={userProfile || null} permissions={permissions} />
-                </div>
-              </div>
-            </div>
-          </TabsContent>
-
-          {permissions.canApproveHR && userProfile && (
-            <TabsContent value="approvals" className="mt-0 focus-visible:outline-none h-full">
-              <PendingApprovals userProfile={userProfile} />
-            </TabsContent>
-          )}
-
-          {permissions.canApproveHR && (
-            <TabsContent value="analytics" className="mt-0 focus-visible:outline-none h-full flex flex-col p-4 md:p-6 bg-card/20 rounded-[2.5rem] border border-white/5 space-y-8">
-                <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-                    <div className="space-y-1">
-                        <h2 className="text-2xl font-black font-headline tracking-tighter uppercase flex items-center gap-3">
-                            <BarChart3 className="h-6 w-6 text-primary" /> Historical Analytics
-                        </h2>
-                        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest opacity-60">Deep Dive Personnel Performance Telemetry</p>
-                    </div>
-
-                    <div className="w-full md:w-64">
-                        <Select value={selectedStaffId || ""} onValueChange={setSelectedStaffId}>
-                            <SelectTrigger className="rounded-xl border-white/10 bg-background/50 backdrop-blur-md">
-                                <SelectValue placeholder="Select Staff Member" />
-                            </SelectTrigger>
-                            <SelectContent className="rounded-xl border-white/10 bg-background/90 backdrop-blur-xl">
-                                {users?.map(u => (
-                                    <SelectItem key={u.id} value={u.id} className="text-xs font-bold">{u.fullName}</SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    </div>
-                </div>
-
-                <div className="flex-1 min-h-0">
-                    {selectedStaffId ? (
-                        <StaffAttendanceAnalytics staffId={selectedStaffId} />
-                    ) : (
-                        <div className="h-64 flex flex-col items-center justify-center border border-dashed border-white/10 rounded-[2.5rem] bg-secondary/5">
-                            <Users className="h-12 w-12 mb-4 opacity-20" />
-                            <p className="text-muted-foreground uppercase font-black text-[10px] tracking-[0.3em] opacity-30">Select a staff member to initialize analytics</p>
-                        </div>
-                    )}
-                </div>
-            </TabsContent>
-          )}
-        </div>
-      </Tabs>
-
-      <StaffQuickViewSheet
-          isOpen={isQuickViewOpen}
-          onClose={() => {
-              setIsQuickViewOpen(false);
-              setSelectedStaffId(null);
-          }}
-          userId={selectedStaffId}
-          orgId={userProfile?.orgId || ''}
-          onViewFullProfile={(id) => {
-              // Navigation is handled via global layout or specific router push
-          }}
+  const content = isAdmin ? (
+      <AdminAttendanceDashboard
+        userProfile={userProfile}
+        permissions={permissions}
+        systemConfig={systemConfig}
       />
-    </>
+  ) : (
+      <StaffAttendanceDashboard
+        userProfile={userProfile}
+        permissions={permissions}
+        systemConfig={systemConfig}
+      />
   );
 
   if (noWrapper) return content;
@@ -345,10 +252,12 @@ export function AttendancePageContent({ noWrapper = false }: { noWrapper?: boole
   return (
     <ModuleContainer
         title="Attendance Center"
-        subtitle="Operations & Personnel Oversight"
+        subtitle={isAdmin ? "Strategic Personnel Oversight" : "Active Service Monitoring"}
         noScroll={true}
     >
-      {content}
+      <div className="h-full overflow-y-auto custom-scrollbar pr-1">
+        {content}
+      </div>
     </ModuleContainer>
   );
 }

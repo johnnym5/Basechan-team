@@ -1,7 +1,7 @@
 "use client";
 
 import { UserProfile, Chat, ChatMessage, Task, Requisition, Permissions } from '@/lib/types';
-import { useCollection, useFirestore, useMemoFirebase, useDatabase, useUser, updateDocumentNonBlocking, useDoc } from '@/firebase';
+import { useCollection, useFirestore, useMemoFirebase, useDatabase, useUser, updateDocumentNonBlocking, useDoc, deleteDocumentNonBlocking } from '@/firebase';
 import { collection, query, where, orderBy, doc, limit } from 'firebase/firestore';
 import { ref, onValue, off } from 'firebase/database';
 import { ScrollArea } from '@/components/ui/scroll-area';

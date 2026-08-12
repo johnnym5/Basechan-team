@@ -255,7 +255,7 @@ export function ClockControl({ userProfile, permissions, systemConfig, className
 
     return (
         <>
-        <section className={cn("border border-border/60 bg-muted/30 rounded-xl p-8 flex flex-col items-center justify-center text-center shadow-sm relative overflow-hidden h-full min-h-[350px]", className)}>
+        <section className={cn("border border-border/60 bg-muted/30 rounded-xl p-8 flex flex-col items-center justify-center text-center shadow-sm relative overflow-hidden h-full", className)}>
             {isOnBreak && <div className="absolute top-0 left-0 w-full h-1.5 bg-amber-500 animate-pulse" />}
             <div className="mb-6 flex items-center gap-2 text-muted-foreground uppercase tracking-[0.3em] text-[10px] font-black opacity-60">
                 <Clock className="w-4 h-4" />

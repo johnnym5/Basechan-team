@@ -16,7 +16,12 @@ interface PendingApprovalsProps {
   userProfile: UserProfile;
 }
 
-export function PendingApprovals({ userProfile }: PendingApprovalsProps) {
+interface PendingApprovalsProps {
+  userProfile: UserProfile;
+  variant?: 'full' | 'compact';
+}
+
+export function PendingApprovals({ userProfile, variant = 'full' }: PendingApprovalsProps) {
   const firestore = useFirestore();
   const { toast } = useToast();
 
@@ -76,6 +81,52 @@ export function PendingApprovals({ userProfile }: PendingApprovalsProps) {
     };
     addDocumentNonBlocking(collection(firestore, 'notifications'), notification);
   };
+
+  if (variant === 'compact') {
+      return (
+          <div className="space-y-3">
+              {isLoading ? (
+                  <Skeleton className="h-20 w-full rounded-xl" />
+              ) : !pendingRecords || pendingRecords.length === 0 ? (
+                  <div className="text-center p-6 text-[10px] font-black uppercase tracking-widest text-muted-foreground border border-dashed border-white/10 rounded-xl opacity-30">
+                      Zero pending verifications.
+                  </div>
+              ) : (
+                  pendingRecords.map(req => (
+                      <div key={req.id} className="p-4 border border-white/5 rounded-2xl bg-white/5 hover:bg-white/10 transition-all space-y-3">
+                          <div className="flex items-center justify-between">
+                              <div>
+                                  <p className="font-bold text-xs text-white">{req.userName}</p>
+                                  <p className="text-[9px] font-mono text-muted-foreground uppercase tracking-tighter mt-0.5">
+                                      {format(new Date(req.clockIn), 'HH:mm')} • {req.location}
+                                  </p>
+                              </div>
+                              <Badge variant="outline" className="text-[8px] font-black border-amber-500/20 text-amber-500 bg-amber-500/5 uppercase">Pending</Badge>
+                          </div>
+                          <div className="flex gap-2">
+                              <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="flex-1 h-8 rounded-xl bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500 hover:text-white text-[9px] font-black uppercase tracking-widest"
+                                  onClick={() => handleDecision(req, 'APPROVED')}
+                              >
+                                  Verify
+                              </Button>
+                              <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="flex-1 h-8 rounded-xl bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white text-[9px] font-black uppercase tracking-widest"
+                                  onClick={() => handleDecision(req, 'REJECTED')}
+                              >
+                                  Deny
+                              </Button>
+                          </div>
+                      </div>
+                  ))
+              )}
+          </div>
+      );
+  }
 
   return (
     <Card className="border border-border/60 bg-muted/30 rounded-xl p-4 shadow-sm">

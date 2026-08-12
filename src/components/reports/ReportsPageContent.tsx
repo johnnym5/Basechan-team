@@ -14,6 +14,8 @@ import { TeamDailyReports } from "@/components/reports/TeamDailyReports";
 import { TeamHealthTab } from "@/components/reports/TeamHealthTab";
 import { PeerNominationForm } from "@/components/reports/PeerNominationForm";
 import { PerformanceDashboard } from "@/components/reports/PerformanceDashboard";
+import { MyAwardsAndReviews } from "@/components/reports/MyAwardsAndReviews";
+import { TeamDashboard } from "@/components/reports/TeamDashboard";
 import { useState, useEffect, useMemo } from "react";
 import { Button } from "../ui/button";
 import { Download, FileSpreadsheet, Loader2, Trophy, BarChart3, UserCheck, Heart, ShieldAlert, Award } from "lucide-react";
@@ -231,11 +233,7 @@ export function ReportsPageContent({ initialPayload, noWrapper = false }: { init
                         </TabsContent>
 
                         <TabsContent value="analytics" className="m-0 space-y-8 focus-visible:ring-0 outline-none animate-in fade-in duration-500">
-                            <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-                                {userProfile && <AttendanceReport userProfile={userProfile} />}
-                                {userProfile && <KPIAnalytics userProfile={userProfile} />}
-                            </div>
-                            {userProfile && <FinancialReport userProfile={userProfile} />}
+                            {userProfile && <TeamDashboard currentUser={userProfile} />}
                         </TabsContent>
 
                         <TabsContent value="team-health" className="m-0 focus-visible:ring-0 outline-none animate-in fade-in duration-500">
@@ -247,7 +245,7 @@ export function ReportsPageContent({ initialPayload, noWrapper = false }: { init
                         </TabsContent>
 
                         <TabsContent value="awards" className="m-0 focus-visible:ring-0 outline-none animate-in fade-in duration-500">
-                            {userProfile && <PerformanceDashboard userProfile={userProfile} />}
+                            {userProfile && <MyAwardsAndReviews userProfile={userProfile} />}
                         </TabsContent>
                     </>
                 )}
@@ -262,7 +260,7 @@ export function ReportsPageContent({ initialPayload, noWrapper = false }: { init
                             <PeerNominationForm staffList={staffList} onSubmit={handleNominationSubmit} />
                         </TabsContent>
                         <TabsContent value="awards" className="m-0 focus-visible:ring-0 outline-none animate-in fade-in duration-500">
-                            {userProfile && <PerformanceDashboard userProfile={userProfile} />}
+                            {userProfile && <MyAwardsAndReviews userProfile={userProfile} />}
                         </TabsContent>
                     </>
                 )}

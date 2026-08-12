@@ -6,7 +6,7 @@ import { doc } from 'firebase/firestore';
 import { uiEmitter } from '@/lib/ui-emitter';
 import { Button } from '@/components/ui/button';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import type { UserProfile } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -21,6 +21,7 @@ export function PanelSwitcher({ isVertical }: PanelSwitcherProps) {
     const firestore = useFirestore();
     const router = useRouter();
     const searchParams = useSearchParams();
+    const pathname = usePathname();
     const longPressTimer = useRef<NodeJS.Timeout | null>(null);
 
     const userProfileRef = useMemoFirebase(() => 

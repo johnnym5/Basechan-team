@@ -27,11 +27,12 @@ import {
   CheckCircle2,
   Clock,
   Circle,
-  Eye
+  Eye,
+  CalendarClock
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useMemo } from 'react';
-import { formatDistanceToNow } from 'date-fns';
+import { formatDistanceToNow, format } from 'date-fns';
 import { useSuperAdminMode } from '@/context/SuperAdminModeProvider';
 import { useImpersonation } from '@/context/ImpersonationProvider';
 import { useToast } from '@/hooks/use-toast';
@@ -189,6 +190,63 @@ export function StaffQuickViewSheet({ isOpen, onClose, userId, orgId, onViewFull
                             <Clock className="h-3 w-3 text-primary opacity-20 group-hover:opacity-100 transition-opacity" />
                         </div>
                     ))
+                )}
+             </div>
+          </section>
+
+          {/* RECENT ATTENDANCE SECTION */}
+          <section className="space-y-4">
+             <div className="flex items-center gap-2 text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground opacity-40">
+                <CalendarClock className="h-3 w-3" />
+                Recent Attendance
+             </div>
+
+             <div className="bg-white/5 border border-white/5 rounded-2xl overflow-hidden flex flex-col">
+                {isLoading ? (
+                    <div className="p-4 space-y-2"><Skeleton className="h-8 w-full rounded-lg" /><Skeleton className="h-8 w-full rounded-lg" /></div>
+                ) : !attendance || attendance.length === 0 ? (
+                    <div className="p-8 text-[10px] font-black uppercase tracking-widest text-muted-foreground text-center opacity-30">No recent records found.</div>
+                ) : (
+                    attendance.slice(0, 5).map((record, index) => {
+                        const isApproved = record.status === 'APPROVED';
+                        const isRejected = record.status === 'REJECTED';
+                        const displayStatus = isApproved ? 'PRESENT' : isRejected ? 'ABSENT' : 'PENDING';
+
+                        return (
+                            <div
+                                key={record.id || index}
+                                className="flex items-center justify-between p-4 border-b border-white/5 last:border-0 hover:bg-white/5 transition-all"
+                            >
+                                {/* Date */}
+                                <span className="font-bold text-white text-[10px] w-20">
+                                    {format(new Date(record.date + 'T00:00:00'), 'MMM dd')}
+                                </span>
+
+                                {/* Status Badge */}
+                                <div className="flex-1 flex justify-start pl-4">
+                                    <span className={cn(
+                                        "px-2 py-0.5 text-[8px] font-black uppercase rounded-full flex items-center gap-1.5",
+                                        isApproved ? "bg-emerald-500/10 text-emerald-500" :
+                                        isRejected ? "bg-rose-500/10 text-rose-500" :
+                                        "bg-amber-500/10 text-amber-500"
+                                    )}>
+                                        <span className={cn(
+                                            "w-1 h-1 rounded-full",
+                                            isApproved ? "bg-emerald-500" :
+                                            isRejected ? "bg-rose-500" :
+                                            "bg-amber-500"
+                                        )} />
+                                        {displayStatus}
+                                    </span>
+                                </div>
+
+                                {/* Logged Hours */}
+                                <span className="text-[10px] font-mono text-white font-black opacity-80">
+                                    {record.duration ? `${(record.duration / 3600).toFixed(1)}h` : '--'}
+                                </span>
+                            </div>
+                        );
+                    })
                 )}
              </div>
           </section>

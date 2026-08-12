@@ -21,69 +21,69 @@
   }
 
   :root {
-    /* Standardized Material You M3 Border & Shell Logic */
-    --app-border-width: 1px;
-    --app-border-color: hsl(var(--border) / 0.5);
+    /* LIGHT MODE: Soft Peach Background */
+    --background: 24 100% 98%; /* Soft pastel peach */
+    --foreground: 222 47% 11%; /* Deep slate for high contrast text */
 
-    /* High-Contrast Premium Light Mode */
-    --background: 210 40% 98%;
-    --foreground: 222.2 84% 4.9%;
-
+    /* Cards remain white to pop off the peach background */
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 222 47% 11%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover-foreground: 222 47% 11%;
 
-    --primary: 45 100% 75%;
-    --primary-foreground: 222.2 84% 4.9%;
+    /* Google-inspired Pastel Blue for Primary Actions */
+    --primary: 217 91% 60%;
+    --primary-foreground: 210 40% 98%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 24 20% 92%; /* Slightly darker peach for secondary buttons */
+    --secondary-foreground: 222 47% 11%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --muted: 24 20% 92%;
+    --muted-foreground: 215 16% 47%; /* Darker gray for readable muted text */
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --accent: 217 91% 95%; /* Very light blue highlight */
+    --accent-foreground: 217 91% 40%;
 
-    --destructive: 0 84.2% 60.2%;
+    --destructive: 0 84% 65%; /* Softened pastel red */
     --destructive-foreground: 210 40% 98%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
-    --radius: 2rem; /* M3 extra large corner radius */
+    --border: 214 32% 90%;
+    --input: 214 32% 90%;
+    --ring: 217 91% 60%;
+    --radius: 0.5rem;
   }
 
   .dark {
-    /* Material You (M3) - Pastel Dark Mode (Navy & Gold) */
-    --background: 215 45% 6%; /* Even deeper for OLED pop */
-    --foreground: 45 100% 96%;
+    /* DARK MODE: Lighter Slate-Blue Background */
+    --background: 215 28% 17%; /* Lighter, soothing navy/slate */
+    --foreground: 210 40% 98%; /* High contrast off-white text */
 
-    --card: 215 45% 10%;
-    --card-foreground: 45 100% 96%;
+    --card: 215 25% 22%; /* Slightly lighter than background for depth */
+    --card-foreground: 210 40% 98%;
 
-    --popover: 215 45% 8%;
-    --popover-foreground: 45 100% 96%;
+    --popover: 215 25% 22%;
+    --popover-foreground: 210 40% 98%;
 
-    --primary: 45 100% 75%;
-    --primary-foreground: 215 45% 8%;
+    /* Soft Blue for Primary Actions */
+    --primary: 217 91% 65%;
+    --primary-foreground: 222 47% 11%; /* Dark text on light blue button */
 
-    --secondary: 215 25% 15%;
-    --secondary-foreground: 45 100% 96%;
+    --secondary: 215 20% 28%;
+    --secondary-foreground: 210 40% 98%;
 
-    --muted: 215 20% 12%;
-    --muted-foreground: 215 15% 70%;
+    --muted: 215 20% 28%;
+    --muted-foreground: 215 20% 75%; /* High contrast light gray for muted text */
 
-    --accent: 45 100% 75%;
-    --accent-foreground: 215 45% 8%;
+    --accent: 215 20% 28%;
+    --accent-foreground: 210 40% 98%;
 
-    --destructive: 0 62.8% 30.6%;
+    --destructive: 0 62% 40%; /* Adjusted red for dark mode */
     --destructive-foreground: 210 40% 98%;
 
-    --border: 215 20% 18%;
-    --input: 215 20% 18%;
+    --border: 215 20% 28%;
+    --input: 215 20% 28%;
+    --ring: 217 91% 65%;
   }
 }
 
