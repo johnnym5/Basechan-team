@@ -70,11 +70,13 @@ export function AppNavFAB() {
           <Button
             size="icon"
             className={cn(
-                "h-14 w-14 rounded-full shadow-2xl transition-all duration-300 active:scale-95 group",
-                isOpen ? "bg-primary text-primary-foreground" : "bg-muted text-foreground hover:bg-muted/80 backdrop-blur-md border border-border"
+                "h-16 w-16 rounded-full shadow-[0_8px_30px_rgb(0,0,0,0.12)] transition-all duration-300 active:scale-95 group border-none",
+                isOpen
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-[#0b121e] text-white dark:bg-[#f5d547] dark:text-[#0b121e] hover:opacity-90"
             )}
           >
-            <LayoutGrid className={cn("h-6 w-6 transition-transform duration-300", isOpen && "rotate-90")} />
+            <LayoutGrid className={cn("h-7 w-7 transition-transform duration-300", isOpen && "rotate-90")} />
           </Button>
         </PopoverTrigger>
         <PopoverContent

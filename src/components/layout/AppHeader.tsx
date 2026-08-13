@@ -73,21 +73,10 @@ export default function AppHeader({
     ) : null
   , [firestore, user, userProfile?.orgId]);
   
-  const announcementsQuery = useMemoFirebase(() => 
-    firestore && userProfile ? query(collection(firestore, 'announcements'), where('orgId', '==', userProfile.orgId), orderBy('createdAt', 'desc'), limit(1)) : null
-  , [firestore, userProfile]);
-
   const { data: notifications } = useCollection<Notification>(notificationsQuery);
-  const { data: announcements } = useCollection<Announcement>(announcementsQuery);
-
-  const latestAnnouncement = announcements?.[0];
-  const tickerText = latestAnnouncement
-    ? `LATEST BROADCAST: ${latestAnnouncement.title.toUpperCase()} — ${latestAnnouncement.content.toUpperCase()}`
-    : "LATEST BROADCAST: PLEASE ENSURE ALL END-OF-DAY REPORTS ARE SUBMITTED BY 17:00.";
 
   const unreadNotifications = notifications?.filter(n => !n.isRead) || [];
   const unreadCount = unreadNotifications.length;
-  const broadcastCount = announcements?.length || 0;
 
   useEffect(() => {
     if (unreadCount > prevUnreadCount.current) {
@@ -128,11 +117,6 @@ export default function AppHeader({
                     title="Daily Updates"
                   >
                       <Sparkles className="w-6 h-6" />
-                      {broadcastCount > 0 && (
-                          <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[8px] font-black text-primary-foreground ring-2 ring-background animate-pulse shadow-sm">
-                              {broadcastCount}
-                          </span>
-                      )}
                       <div className="absolute left-full ml-4 px-3 py-1.5 bg-amber-500 text-primary-foreground text-[9px] font-black uppercase tracking-widest rounded-lg opacity-0 group-hover/btn:opacity-100 transition-opacity whitespace-nowrap z-50 shadow-2xl">
                           Intelligence
                       </div>
@@ -182,17 +166,6 @@ export default function AppHeader({
                 <Clock className="h-3 w-3" />
                 {currentTime} <span className="opacity-30">—</span> Operational Command
             </p>
-        </div>
-
-        {/* Scrolling Intelligence Ticker */}
-        <div className="flex-1 max-w-2xl mx-12 overflow-hidden relative hidden lg:block">
-            <div className="absolute inset-y-0 left-0 w-12 bg-gradient-to-r from-background to-transparent z-10" />
-            <div className="absolute inset-y-0 right-0 w-12 bg-gradient-to-l from-background to-transparent z-10" />
-            <div className="whitespace-nowrap animate-marquee py-1">
-                <span className="text-[10px] font-black uppercase tracking-[0.25em] text-muted-foreground/40">
-                    {tickerText} &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {tickerText}
-                </span>
-            </div>
         </div>
 
         <div className="flex items-center gap-6">

@@ -119,30 +119,30 @@ export function KPIAnalytics({ userProfile }: KPIAnalyticsProps) {
 
     return (
         <Card className="h-full flex flex-col border-none bg-card/30 backdrop-blur-xl overflow-hidden">
-            <CardHeader className="bg-white/5 border-b border-white/5 pb-4">
-                <div className="flex items-center justify-between">
+            <CardHeader className="bg-white/5 border-b border-white/5 p-4 md:p-6 pb-4 shrink-0">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div>
-                        <CardTitle className="text-xl flex items-center gap-2">
+                        <CardTitle className="text-lg md:text-xl flex items-center gap-2">
                              <Trophy className="h-5 w-5 text-amber-500" />
                              Team Leaderboard
                         </CardTitle>
-                        <CardDescription>Rankings based on completed tasks and peer recognition.</CardDescription>
+                        <CardDescription className="text-xs md:text-sm">Rankings based on completed tasks and peer recognition.</CardDescription>
                     </div>
-                    <div className="hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 border border-primary/20">
+                    <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 w-fit">
                         <Sparkles className="h-3 w-3 text-primary animate-pulse" />
                         <span className="text-[10px] font-black uppercase tracking-widest text-primary">Live Stats</span>
                     </div>
                 </div>
             </CardHeader>
             <CardContent className="flex-1 overflow-hidden p-0">
-                <ScrollArea className="h-full custom-scrollbar">
-                    <Table>
-                        <TableHeader className="bg-secondary/10">
+                <div className="h-full w-full overflow-x-auto custom-scrollbar">
+                    <Table className="min-w-[500px]">
+                        <TableHeader className="bg-secondary/10 sticky top-0 z-10 backdrop-blur-md">
                             <TableRow className="hover:bg-transparent border-white/5">
-                                <TableHead className="font-black uppercase tracking-[0.2em] text-[10px]">Rank & Staff</TableHead>
+                                <TableHead className="font-black uppercase tracking-[0.2em] text-[10px] pl-6 md:pl-8">Rank & Staff</TableHead>
                                 <TableHead className="text-center font-black uppercase tracking-[0.2em] text-[10px]">Efficiency</TableHead>
                                 <TableHead className="text-center font-black uppercase tracking-[0.2em] text-[10px]">Recognition</TableHead>
-                                <TableHead className="text-right font-black uppercase tracking-[0.2em] text-[10px]">Total Score</TableHead>
+                                <TableHead className="text-right font-black uppercase tracking-[0.2em] text-[10px] pr-6 md:pr-8">Total Score</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -150,25 +150,25 @@ export function KPIAnalytics({ userProfile }: KPIAnalyticsProps) {
                                 <TableRow>
                                     <TableCell colSpan={4} className="text-center py-24 text-muted-foreground opacity-30">
                                         <AlertCircle className="h-10 w-10 mx-auto mb-4" />
-                                        <p className="font-black uppercase tracking-widest">No activity recorded</p>
+                                        <p className="font-black uppercase tracking-widest text-[10px]">No activity recorded</p>
                                     </TableCell>
                                 </TableRow>
                             ) : (
                                 kpiData.map((stat, idx) => (
                                     <TableRow key={stat.name} className="hover:bg-primary/5 transition-colors border-white/5 group">
-                                        <TableCell className="py-4">
+                                        <TableCell className="py-4 pl-6 md:pl-8">
                                             <div className="flex items-center gap-3">
                                                 <div className={cn(
-                                                    "h-8 w-8 rounded-full flex items-center justify-center text-xs font-black shadow-lg",
+                                                    "h-8 w-8 rounded-full flex items-center justify-center text-xs font-black shadow-lg shrink-0",
                                                     idx === 0 ? "bg-amber-500 text-amber-950 ring-2 ring-amber-500/20" : 
                                                     idx === 1 ? "bg-slate-300 text-slate-900 ring-2 ring-slate-300/20" :
                                                     idx === 2 ? "bg-amber-700 text-white ring-2 ring-amber-700/20" : "bg-secondary text-muted-foreground"
                                                 )}>
                                                     {idx + 1}
                                                 </div>
-                                                <div className="flex flex-col">
-                                                    <span className="font-black text-sm">{stat.name}</span>
-                                                    <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">{stat.completed} Tasks Done</span>
+                                                <div className="flex flex-col min-w-0">
+                                                    <span className="font-black text-sm truncate max-w-[120px] md:max-w-none">{stat.name}</span>
+                                                    <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest truncate">{stat.completed} Tasks Done</span>
                                                 </div>
                                             </div>
                                         </TableCell>
@@ -184,10 +184,10 @@ export function KPIAnalytics({ userProfile }: KPIAnalyticsProps) {
                                                 <span className="text-[7px] font-black uppercase text-muted-foreground tracking-tighter">Kudos</span>
                                             </div>
                                         </TableCell>
-                                        <TableCell className="text-right pr-6">
+                                        <TableCell className="text-right pr-6 md:pr-8">
                                             <div className="flex flex-col items-end">
                                                 <span className={cn(
-                                                    "text-3xl font-black font-headline tracking-tighter",
+                                                    "text-2xl md:text-3xl font-black font-headline tracking-tighter",
                                                     idx === 0 ? "text-amber-500" : "text-foreground"
                                                 )}>
                                                     {stat.hrScore}
@@ -200,8 +200,9 @@ export function KPIAnalytics({ userProfile }: KPIAnalyticsProps) {
                             )}
                         </TableBody>
                     </Table>
-                </ScrollArea>
+                </div>
             </CardContent>
         </Card>
     );
 }
+

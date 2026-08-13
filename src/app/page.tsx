@@ -11,7 +11,6 @@ import { Announcements } from "@/components/dashboard/Announcements";
 import { usePermissions } from "@/hooks/usePermissions";
 import { ClockControl } from "@/components/attendance/ClockControl";
 import { useSystemConfig } from "@/hooks/useSystemConfig";
-import { DashboardAnalytics } from '@/components/dashboard/DashboardAnalytics';
 import { DashboardRecentChats } from '@/components/dashboard/DashboardRecentChats';
 import { DashboardLiveDisplays } from '@/components/dashboard/DashboardLiveDisplays';
 import { useSuperAdmin } from '@/hooks/useSuperAdmin';
@@ -20,8 +19,8 @@ import { Button } from '@/components/ui/button';
 import { uiEmitter } from '@/lib/ui-emitter';
 import { cn } from '@/lib/utils';
 import { LoginForm } from '@/components/auth/LoginForm';
-import { DashboardQuickActions } from '@/components/dashboard/DashboardQuickActions';
-import { DashboardRecentReports } from '@/components/dashboard/DashboardRecentReports';
+import { StaffDashboard } from '@/components/dashboard/StaffDashboard';
+import { AdminDashboard } from '@/components/dashboard/AdminDashboard';
 import { useEffect, useState } from 'react';
 
 import { ModuleContainer } from "@/components/layout/shell/ModuleContainer";
@@ -84,33 +83,11 @@ export default function DashboardPage() {
         )
     }
 
-    return (
-        <ModuleContainer contentClassName="pt-4 lg:pt-6">
-            <div className="grid grid-cols-12 gap-6 w-full h-full">
-                <section className="col-span-12 md:col-span-6 lg:col-span-5 xl:col-span-4 interactive-element flex flex-col h-full w-full">
-                    <ClockControl userProfile={userProfile || null} permissions={permissions} systemConfig={systemConfig} />
-                </section>
+    const isAdmin = permissions.canManageStaff || permissions.canManageCompany;
 
-                <section className="col-span-12 md:col-span-6 lg:col-span-7 xl:col-span-8 flex flex-col h-full w-full">
-                    <DashboardAnalytics />
-                </section>
+    if (isAdmin) {
+        return <AdminDashboard userProfile={userProfile!} permissions={permissions} systemConfig={systemConfig || null} />;
+    }
 
-                <section className="col-span-12 lg:col-span-8 xl:col-span-9 flex flex-col h-full w-full">
-                    <DashboardTaskList userProfile={userProfile || null} permissions={permissions} />
-                </section>
-
-                <div className="col-span-12 lg:col-span-4 xl:col-span-3 flex flex-col h-full w-full">
-                    <div className="flex flex-col gap-6 h-full w-full">
-                        <DashboardQuickActions />
-                        <DashboardLiveDisplays userProfile={userProfile || null} />
-                        <DashboardRecentReports />
-                        <DashboardRecentChats />
-                        <div className="flex-1 flex flex-col min-h-0">
-                            <Announcements className="flex-1" />
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </ModuleContainer>
-    );
+    return <StaffDashboard userProfile={userProfile!} permissions={permissions} systemConfig={systemConfig || null} />;
 }

@@ -312,5 +312,36 @@ export const attendanceService = {
       const userRef = doc(db, 'users', record.userId);
       await updateDoc(userRef, { status: 'OFFLINE', lastSeen: clockOutIso });
     }
+  },
+
+  /**
+   * Verifies a pending attendance punch (Approve/Reject).
+   */
+  async verifyPunch(db: Firestore, recordId: string, status: 'APPROVED' | 'REJECTED', adminUser: UserProfile) {
+    const recordRef = doc(db, 'attendance', recordId);
+    const recordSnap = await getDoc(recordRef);
+    if (!recordSnap.exists()) throw new Error("Record not found");
+    const record = recordSnap.data() as Attendance;
+
+    await updateDoc(recordRef, { status });
+
+    const userRef = doc(db, 'users', record.userId);
+    if (status === 'APPROVED') {
+        // If approved and not yet clocked out, set user to ONLINE
+        if (!record.clockOut) {
+            await updateDoc(userRef, { status: 'ONLINE' });
+        }
+    } else {
+        // If rejected, set user to OFFLINE
+        await updateDoc(userRef, { status: 'OFFLINE' });
+    }
+
+    await auditService.logAction(
+      db,
+      adminUser,
+      'ATTENDANCE_VERIFY',
+      `Verified punch for ${record.userName} as ${status} (Record ID: ${recordId})`,
+      { id: recordId, type: 'ATTENDANCE' }
+    );
   }
 };

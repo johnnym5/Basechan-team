@@ -75,11 +75,11 @@ export function PeerNominationForm({ staffList, onSubmit }: PeerNominationFormPr
   return (
     <Card className="max-w-4xl mx-auto border-border bg-card shadow-lg">
       <CardHeader className="border-b border-border bg-secondary/10 pb-6">
-        <CardTitle className="text-2xl text-primary font-black uppercase tracking-tighter">Team Recognition Awards</CardTitle>
-        <CardDescription className="text-base mt-2 space-y-2">
-          <p className="font-medium">Do you know a colleague who consistently goes above and beyond?</p>
+        <h3 className="text-2xl text-primary font-black uppercase tracking-tighter font-headline">Team Recognition Awards</h3>
+        <div className="text-base mt-2 space-y-2 flex flex-col text-muted-foreground">
+          <p className="font-medium text-foreground">Do you know a colleague who consistently goes above and beyond?</p>
           <p className="text-sm opacity-80 italic">Use this form to nominate them. Nominations are anonymous to nominees, but your identity is recorded for HR follow-up.</p>
-        </CardDescription>
+        </div>
 
         {/* Auto-filled Identity Box */}
         <div className="flex flex-col md:flex-row gap-4 mt-4 pt-4 border-t border-border/50">

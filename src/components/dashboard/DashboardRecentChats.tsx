@@ -41,8 +41,8 @@ export function DashboardRecentChats() {
     }
 
     return (
-        <section className="border border-border/60 bg-muted/30 rounded-xl p-4 shadow-sm animate-slide-up-fade interactive-element" style={{ animationDelay: '200ms' }}>
-            <h3 className="text-xs font-black uppercase tracking-tight mb-4">Recent Messages</h3>
+        <div className="flex flex-col h-full overflow-hidden">
+            <h3 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-4">Recent Messages</h3>
             <div className="space-y-4">
                 {isLoading ? (
                     Array.from({length: 3}).map((_, i) => <Skeleton key={i} className="h-12 w-full rounded-lg" />)
@@ -73,6 +73,6 @@ export function DashboardRecentChats() {
                     <p className="text-center text-xs text-muted-foreground py-4 italic">No recent conversations.</p>
                 )}
             </div>
-        </section>
+        </div>
     );
 }

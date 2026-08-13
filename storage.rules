@@ -9,7 +9,20 @@ service firebase.storage {
     }
 
     function isAdmin() {
-        return request.auth != null && firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.role in ['ORG_ADMIN', 'MANAGING_DIRECTOR'];
+        return request.auth != null && firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.role in ['ORG_ADMIN', 'MANAGING_DIRECTOR', 'SUPERADMIN'];
+    }
+
+    function canManageLibrary(orgId) {
+        let user = firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data;
+        return request.auth != null && user.orgId == orgId && (
+            user.role in ['ORG_ADMIN', 'MANAGING_DIRECTOR', 'SUPERADMIN', 'HR_MANAGER'] ||
+            (user.keys().contains('resolvedPermissions') && 'LIBRARY_MANAGE' in user.resolvedPermissions)
+        );
+    }
+
+    match /library/{orgId}/{fileName} {
+      allow read: if isUserInOrg(orgId);
+      allow write: if canManageLibrary(orgId);
     }
 
     match /requisitions/{orgId}/{fileName} {

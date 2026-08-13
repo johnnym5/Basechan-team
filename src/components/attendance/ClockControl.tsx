@@ -3,7 +3,20 @@
 import { useState, useEffect } from 'react';
 import { Button } from '../ui/button';
 import { format, differenceInSeconds, isAfter, parse } from 'date-fns';
-import { Clock, Loader2, Building, Briefcase, LogOut, Coffee, Play, MapPin, AlertTriangle, Hourglass, MonitorPlay } from 'lucide-react';
+import {
+    Clock,
+    Loader2,
+    Building,
+    Briefcase,
+    LogOut,
+    Coffee,
+    Play,
+    MapPin,
+    AlertTriangle,
+    Hourglass,
+    MonitorPlay,
+    Lock
+} from 'lucide-react';
 import type { UserProfile, Attendance, SystemConfig, AttendanceLocation, Permissions } from '@/lib/types';
 import { useFirestore, useCollection, useMemoFirebase, errorEmitter } from '@/firebase';
 import { collection, query, where, limit, orderBy } from 'firebase/firestore';
@@ -25,6 +38,8 @@ import {
 import { Textarea } from "../ui/textarea";
 import { ClockOutDebriefModal } from "./ClockOutDebriefModal";
 import type { Task } from '@/lib/types';
+import { Card, CardContent } from '../ui/card';
+import { useDeviceTrust } from '@/hooks/useDeviceTrust';
 
 interface ClockControlProps {
     userProfile: UserProfile | null;
@@ -38,6 +53,7 @@ const STANDARD_SHIFT_SECONDS = 28800; // 8 hours
 export function ClockControl({ userProfile, permissions, systemConfig, className }: ClockControlProps) {
     const firestore = useFirestore();
     const { toast } = useToast();
+    const { isMobile: isDeviceMobile } = useDeviceTrust();
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [shiftDuration, setShiftDuration] = useState('00:00:00');
     const [timeRemaining, setTimeRemaining] = useState('00:00:00');
@@ -49,9 +65,9 @@ export function ClockControl({ userProfile, permissions, systemConfig, className
     const [showLateDialog, setShowLateDialog] = useState(false);
     const [isDebriefModalOpen, setIsDebriefModalOpen] = useState(false);
 
-    const isMobile = useMediaQuery("(max-width: 768px)");
+    const isMobileViewport = useMediaQuery("(max-width: 768px)");
     const isAdmin = permissions.canManageStaff;
-    const isRestricted = isMobile && !isAdmin;
+    const isRestricted = (isMobileViewport || isDeviceMobile) && !isAdmin;
 
     useEffect(() => { setToday(format(new Date(), 'yyyy-MM-dd')); }, []);
 
@@ -175,8 +191,7 @@ export function ClockControl({ userProfile, permissions, systemConfig, className
         let mediaErrorCaught: any = null;
 
         // STEP 1: IMMEDIATELY REQUEST SCREEN SHARE TO PRESERVE USER GESTURE CONTEXT
-        // Do not call toast() or setIsSubmitting() before this!
-        const requireScreenShare = false; // Disabled for now: systemConfig?.require_screen_share ?? true;
+        const requireScreenShare = false;
 
         if (requireScreenShare && isPC && navigator.mediaDevices && navigator.mediaDevices.getDisplayMedia) {
             try {
@@ -195,9 +210,9 @@ export function ClockControl({ userProfile, permissions, systemConfig, className
         try {
             if (requireScreenShare && isPC) {
                 if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
-                    toast({ variant: "destructive", title: "Unsupported Environment", description: "Screen sharing API unavailable. Clocking in with limited oversight." });
+                    toast({ variant: "destructive", title: "Unsupported Environment", description: "Screen sharing API unavailable." });
                 } else if (screenShareActive && stream) {
-                    toast({ title: "Authorization Granted", description: "Screen share active. Linking workstation to Mission Control..." });
+                    toast({ title: "Authorization Granted", description: "Screen share active." });
                     try {
                         await webRTCService.startScreenShare(firestore, userProfile.id, userProfile.orgId, stream);
                         uiEmitter.emit('set-active-stream', { stream });
@@ -206,16 +221,16 @@ export function ClockControl({ userProfile, permissions, systemConfig, className
                     }
                 } else if (mediaErrorCaught) {
                     if (mediaErrorCaught.name === 'NotAllowedError') {
-                        toast({ variant: "destructive", title: "Authorization Denied", description: "Screen share denied. System bypassing requirement for development mode." });
+                        toast({ variant: "destructive", title: "Authorization Denied", description: "Screen share denied." });
                     } else {
                         console.error("Screen share error:", mediaErrorCaught);
-                        toast({ variant: "destructive", title: "Capture Failed", description: "Could not initialize screen share. Proceeding with limited oversight." });
+                        toast({ variant: "destructive", title: "Capture Failed", description: "Could not initialize screen share." });
                     }
                 }
             }
 
             await attendanceService.clockIn(firestore, userProfile, location, today, systemConfig, reason);
-            toast({ title: 'Shift Started', description: screenShareActive ? "Workstation linked to Mission Control." : "Clock-in successful (No video oversight)." });
+            toast({ title: 'Shift Started', description: screenShareActive ? "Workstation linked." : "Clock-in successful." });
             setShowLateDialog(false);
             setLateReason('');
         } catch (error: any) {
@@ -255,83 +270,87 @@ export function ClockControl({ userProfile, permissions, systemConfig, className
 
     return (
         <>
-        <section className={cn("border border-border/60 bg-muted/30 rounded-xl p-8 flex flex-col items-center justify-center text-center shadow-sm relative overflow-hidden h-full", className)}>
-            {isOnBreak && <div className="absolute top-0 left-0 w-full h-1.5 bg-amber-500 animate-pulse" />}
-            <div className="mb-6 flex items-center gap-2 text-muted-foreground uppercase tracking-[0.3em] text-[10px] font-black opacity-60">
-                <Clock className="w-4 h-4" />
-                {isClockedIn ? (isOnBreak ? 'Resting Phase' : 'Active Duty') : 'Ready for Duty'}
-            </div>
+        <Card className={cn("bg-card border border-border shadow-sm rounded-2xl flex flex-col items-center justify-center text-center relative overflow-hidden h-full p-8", className)}>
+            <CardContent className="p-0 w-full flex flex-col items-center justify-center">
+                {isOnBreak && <div className="absolute top-0 left-0 w-full h-1.5 bg-amber-500 animate-pulse" />}
+                <div className="mb-6 flex items-center gap-2 text-muted-foreground uppercase tracking-[0.3em] text-[10px] font-black opacity-60">
+                    <Clock className="w-4 h-4" />
+                    {isClockedIn ? (isOnBreak ? 'Resting Phase' : 'Active Duty') : 'Ready for Duty'}
+                </div>
 
-            <div className="flex flex-col items-center gap-2 mb-6">
-                <h3 className={cn("text-5xl md:text-6xl font-black font-mono tracking-tighter transition-all", isOnBreak && "text-amber-500 opacity-50")}>
-                    {isClockedIn ? (isOnBreak ? 'BREAK' : shiftDuration) : '00:00:00'}
-                </h3>
-                {isClockedIn && !isOnBreak && (
-                    <div className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-secondary/10 border border-white/5 animate-in fade-in">
-                        <Hourglass className="w-3 h-3 text-amber-500" />
-                        <span className="text-[10px] md:text-xs font-black font-mono text-amber-500">{timeRemaining} REMAINING</span>
+                <div className="flex flex-col items-center gap-2 mb-6">
+                    <h3 className={cn("text-5xl md:text-6xl font-black font-mono tracking-tighter transition-all", isOnBreak && "text-amber-500 opacity-50")}>
+                        {isClockedIn ? (isOnBreak ? 'BREAK' : shiftDuration) : '00:00:00'}
+                    </h3>
+                    {isClockedIn && !isOnBreak && (
+                        <div className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-secondary/10 border border-white/5 animate-in fade-in">
+                            <Hourglass className="w-3 h-3 text-amber-500" />
+                            <span className="text-[10px] md:text-xs font-black font-mono text-amber-500">{timeRemaining} REMAINING</span>
+                        </div>
+                    )}
+                </div>
+
+                {isClockedIn && (
+                    <div className="w-full max-w-xs mb-8 space-y-2">
+                        <div className="flex justify-between text-[8px] font-black text-muted-foreground uppercase tracking-widest">
+                            <span>Daily Progress</span>
+                            <span>{Math.round(progress)}%</span>
+                        </div>
+                        <Progress value={progress} className="h-1.5" indicatorClassName={cn(progress >= 100 ? "bg-emerald-500" : "bg-primary")} />
                     </div>
                 )}
-            </div>
 
-            {isClockedIn && (
-                <div className="w-full max-w-xs mb-8 space-y-2">
-                    <div className="flex justify-between text-[8px] font-black text-muted-foreground uppercase tracking-widest">
-                        <span>Daily Progress</span>
-                        <span>{Math.round(progress)}%</span>
-                    </div>
-                    <Progress value={progress} className="h-1.5" indicatorClassName={cn(progress >= 100 ? "bg-emerald-500" : "bg-primary")} />
-                </div>
-            )}
-
-            <div className={cn("w-full space-y-4 mb-4", !isClockedIn && "mt-2")}>
-                {isClockedIn ? (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full">
-                        <Button
-                            variant={isOnBreak ? 'default' : 'outline'}
-                            className={cn("h-16 rounded-[1.5rem] text-[10px] font-black uppercase tracking-widest transition-all", isOnBreak ? "bg-amber-600 hover:bg-amber-700" : "border-amber-500/30 text-amber-500 hover:bg-amber-500/10")}
-                            onClick={handleToggleBreak}
-                            disabled={isSubmitting || isRestricted}
-                        >
-                            {isSubmitting ? <Loader2 className="animate-spin" /> : (isOnBreak ? <><Play className="mr-2 h-5 w-5" /> Resume</> : <><Coffee className="mr-2 h-5 w-5" /> Take Break</>)}
-                        </Button>
-                        <Button className="h-16 bg-rose-600/10 hover:bg-rose-600 text-rose-500 hover:text-white border border-rose-600/20 rounded-[1.5rem] text-[10px] font-black uppercase tracking-widest transition-all" onClick={handleClockOut} disabled={isSubmitting || isRestricted}>
-                            {isSubmitting ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <><LogOut className="mr-2 h-5 w-5" /> End Shift</>}
-                        </Button>
-                    </div>
-                ) : (
-                    <div className="w-full space-y-3">
-                        <Button 
-                            className="w-full h-20 bg-primary hover:bg-primary/90 text-primary-foreground rounded-[2rem] text-xl font-black uppercase tracking-[0.1em] shadow-2xl shadow-primary/30 m3-interactive"
-                            onClick={() => handleClockIn()}
-                            disabled={isSubmitting || !permissions?.canClockIn || isRestricted}
-                        >
-                            {isSubmitting ? <Loader2 className="animate-spin" /> : <><MonitorPlay className="mr-2 h-6 w-6" /> Start Working</>}
-                        </Button>
-                        {isRestricted && (
-                            <p className="text-center text-[10px] text-amber-500 font-bold uppercase tracking-wider bg-amber-500/10 p-2 rounded-xl border border-amber-500/20">
-                                Please use your workstation system to clock in.
+                <div className={cn("w-full space-y-4 mb-4", !isClockedIn && "mt-2")}>
+                    {isRestricted ? (
+                        <div className="mt-4 p-4 bg-secondary/20 border border-border/50 rounded-2xl flex flex-col items-center justify-center gap-3 animate-in fade-in zoom-in-95">
+                            <Lock className="w-6 h-6 text-muted-foreground opacity-50" />
+                            <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground text-center leading-tight">
+                                Clock-in restricted to<br/>Secure PC Terminals
                             </p>
-                        )}
-                        {!permissions?.canClockIn && !isRestricted && (
-                            <p className="text-center text-[10px] text-rose-500 font-bold uppercase tracking-wider bg-rose-500/10 p-2 rounded-xl border border-rose-500/20">
-                                Attendance clock-in is restricted by administrator.
-                            </p>
-                        )}
-                    </div>
-                )}
-            </div>
+                        </div>
+                    ) : isClockedIn ? (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full">
+                            <Button
+                                variant={isOnBreak ? 'default' : 'outline'}
+                                className={cn("h-16 rounded-[1.5rem] text-[10px] font-black uppercase tracking-widest transition-all", isOnBreak ? "bg-amber-600 hover:bg-amber-700" : "border-amber-500/30 text-amber-500 hover:bg-amber-500/10")}
+                                onClick={handleToggleBreak}
+                                disabled={isSubmitting}
+                            >
+                                {isSubmitting ? <Loader2 className="animate-spin" /> : (isOnBreak ? <><Play className="mr-2 h-5 w-5" /> Resume</> : <><Coffee className="mr-2 h-5 w-5" /> Take Break</>)}
+                            </Button>
+                            <Button className="h-16 bg-rose-600/10 hover:bg-rose-600 text-rose-500 hover:text-white border border-rose-600/20 rounded-[1.5rem] text-[10px] font-black uppercase tracking-widest transition-all" onClick={handleClockOut} disabled={isSubmitting}>
+                                {isSubmitting ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <><LogOut className="mr-2 h-5 w-5" /> End Shift</>}
+                            </Button>
+                        </div>
+                    ) : (
+                        <div className="w-full space-y-3">
+                            <Button
+                                className="w-full h-20 bg-primary hover:bg-primary/90 text-primary-foreground rounded-[2rem] text-xl font-black uppercase tracking-[0.1em] shadow-2xl shadow-primary/30 m3-interactive"
+                                onClick={() => handleClockIn()}
+                                disabled={isSubmitting || !permissions?.canClockIn}
+                            >
+                                {isSubmitting ? <Loader2 className="animate-spin" /> : <><MonitorPlay className="mr-2 h-6 w-6" /> Start Working</>}
+                            </Button>
+                            {!permissions?.canClockIn && (
+                                <p className="text-center text-[10px] text-rose-500 font-bold uppercase tracking-wider bg-rose-500/10 p-2 rounded-xl border border-amber-500/20">
+                                    Attendance clock-in is restricted by administrator.
+                                </p>
+                            )}
+                        </div>
+                    )}
+                </div>
 
-            <div className="flex items-center justify-center space-x-8 pt-6 border-t border-white/5 w-full">
-                <div onClick={() => !isClockedIn && !isRestricted && setLocation('OFFICE')} className={cn("flex items-center gap-2 cursor-pointer transition-all", location === 'OFFICE' ? "text-primary" : "text-muted-foreground opacity-50")}>
-                    <Building className="w-5 h-5" /><span className="text-[10px] font-black uppercase tracking-widest">Office</span>
+                <div className="flex items-center justify-center space-x-8 pt-6 border-t border-white/5 w-full">
+                    <div onClick={() => !isClockedIn && !isRestricted && setLocation('OFFICE')} className={cn("flex items-center gap-2 cursor-pointer transition-all", location === 'OFFICE' ? "text-primary" : "text-muted-foreground opacity-50")}>
+                        <Building className="w-5 h-5" /><span className="text-[10px] font-black uppercase tracking-widest">Office</span>
+                    </div>
+                    <div className="h-5 w-px bg-white/10" />
+                    <div onClick={() => !isClockedIn && !isRestricted && setLocation('REMOTE')} className={cn("flex items-center gap-2 cursor-pointer transition-all", location === 'REMOTE' ? "text-primary" : "text-muted-foreground opacity-50")}>
+                        <Briefcase className="w-5 h-5" /><span className="text-[10px] font-black uppercase tracking-widest">Remote</span>
+                    </div>
                 </div>
-                <div className="h-5 w-px bg-white/10" />
-                <div onClick={() => !isClockedIn && !isRestricted && setLocation('REMOTE')} className={cn("flex items-center gap-2 cursor-pointer transition-all", location === 'REMOTE' ? "text-primary" : "text-muted-foreground opacity-50")}>
-                    <Briefcase className="w-5 h-5" /><span className="text-[10px] font-black uppercase tracking-widest">Remote</span>
-                </div>
-            </div>
-        </section>
+            </CardContent>
+        </Card>
 
         <Dialog open={showLateDialog} onOpenChange={setShowLateDialog}>
             <DialogContent className="apple-glass border-none sm:max-w-md">

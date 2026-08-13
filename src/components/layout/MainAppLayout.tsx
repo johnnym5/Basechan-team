@@ -2,11 +2,11 @@
 
 import { useUser, useDoc, useMemoFirebase, useFirestore, useCollection, useAuth } from '@/firebase';
 import { useState, useEffect, Suspense, useMemo, useRef } from 'react';
-import { doc, collection, query, where, limit, updateDoc, onSnapshot } from 'firebase/firestore';
+import { doc, collection, query, where, limit, updateDoc, onSnapshot, orderBy } from 'firebase/firestore';
 import { signOut } from 'firebase/auth';
 import { useStorage } from '@/firebase';
 import { ref as storageRef, uploadString } from 'firebase/storage';
-import type { UserProfile, Attendance } from '@/lib/types';
+import type { UserProfile, Attendance, Announcement } from '@/lib/types';
 import { useSystemConfig } from '@/hooks/useSystemConfig';
 import AppHeader from '@/components/layout/AppHeader';
 import { PanelSwitcher } from '@/components/layout/PanelSwitcher';
@@ -35,6 +35,7 @@ const GlobalDialogs = dynamic(() => import('@/components/layout/GlobalDialogs').
 import { AppShellContainer } from './shell/AppShellContainer';
 import { AppNavFAB } from './shell/AppNavFAB';
 import { GlobalCommandPalette } from './GlobalCommandPalette';
+import { GlobalBroadcastTicker } from './GlobalBroadcastTicker';
 
 export function MainAppLayout({ children }: { children: React.ReactNode }) {
   const { user, isUserLoading } = useUser();
@@ -101,7 +102,17 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
     return doc(firestore, 'users', targetId);
   }, [firestore, user?.uid, isImpersonating, impersonatedUserId]);
   const { data: userProfile } = useDoc<UserProfile>(userProfileRef);
-  
+
+  const announcementsQuery = useMemoFirebase(() =>
+    firestore && userProfile ? query(
+        collection(firestore, 'announcements'),
+        where('orgId', '==', userProfile.orgId),
+        orderBy('createdAt', 'desc'),
+        limit(10)
+    ) : null
+  , [firestore, userProfile]);
+  const { data: announcements } = useCollection<Announcement>(announcementsQuery);
+
   const stableProfile = useMemo(() => {
     if (!user) return null;
     const targetId = (isImpersonating && impersonatedUserId) ? impersonatedUserId : user.uid;
@@ -302,12 +313,12 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
   if (!mounted) return <div className="min-h-screen bg-background flex items-center justify-center"><div className="animate-pulse w-12 h-12 rounded-full bg-primary/20" /></div>;
 
   return (
-    <AppShellContainer>
+    <div className="flex flex-col md:flex-row h-screen w-full bg-background overflow-x-hidden md:overflow-hidden">
         {isLiveActive && (
             <div className="fixed top-0 left-0 right-0 z-[2000] bg-emerald-600 text-white py-2 px-4 flex items-center justify-center gap-4 shadow-2xl animate-in slide-in-from-top duration-500">
                 <div className="flex items-center gap-2">
                     <Signal className="h-4 w-4 animate-pulse" />
-                    <span className="text-[10px] font-black uppercase tracking-[0.3em]">Workstation Monitoring Active</span>
+                    <span className="text-[8px] md:text-[10px] font-black uppercase tracking-[0.3em]">Monitoring Active</span>
                 </div>
             </div>
         )}
@@ -316,7 +327,10 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
         <AppNavFAB />
 
         {/* Main Content Viewport Container */}
-        <div className="flex-1 flex flex-col min-w-0 h-full bg-secondary/10">
+        <div className="flex-1 flex flex-col min-w-0 h-full bg-secondary/10 overflow-x-hidden md:overflow-hidden">
+          {announcements && announcements.length > 0 && (
+              <GlobalBroadcastTicker broadcasts={announcements} userProfile={stableProfile} />
+          )}
           <AppHeader
               userProfile={stableProfile}
               onMenuClick={() => {}}
@@ -325,11 +339,9 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
               systemConfig={config || null}
               isVertical={false}
           />
-          <main className="flex-1 min-h-0 overflow-hidden relative w-full h-full flex flex-col">
-              <div className="w-full mx-auto max-w-full min-h-0 flex-1 animate-in fade-in duration-700 flex flex-col overflow-hidden px-6 pb-6 lg:px-8 lg:pb-8">
-                  <div className="flex-1 min-h-0 w-full rounded-[2rem] border border-border/50 bg-card/40 backdrop-blur-xl overflow-hidden shadow-inner relative">
-                      {children}
-                  </div>
+          <main className="flex-1 overflow-y-auto overflow-x-hidden p-3 md:p-6 lg:p-8 w-full max-w-[1600px] mx-auto custom-scrollbar">
+              <div className="flex flex-col gap-6 w-full">
+                {children}
               </div>
           </main>
         </div>
@@ -344,6 +356,6 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
             </Suspense>
         </>
       )}
-    </AppShellContainer>
+    </div>
   );
 }

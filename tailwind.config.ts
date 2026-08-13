@@ -81,6 +81,10 @@ export default {
         marquee: {
           '0%': { transform: 'translateX(100%)' },
           '100%': { transform: 'translateX(-100%)' },
+        },
+        progress: {
+          '0%': { transform: 'translateX(-100%)' },
+          '100%': { transform: 'translateX(0)' },
         }
       },
       animation: {
@@ -90,6 +94,7 @@ export default {
         'slide-down-fade': 'slide-down-fade 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards',
         'pop-in': 'pop-in 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.1) forwards',
         marquee: 'marquee 30s linear infinite',
+        progress: 'progress 5s linear infinite',
       },
     },
   },

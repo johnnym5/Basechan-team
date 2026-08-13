@@ -22,9 +22,9 @@ interface SidebarDockProps {
 }
 
 const groups = [
-    { label: 'Core Operations', items: ['Dashboard', 'Tasks', 'Workbooks', 'Live Displays'] },
+    { label: 'Core Operations', items: ['Dashboard', 'Tasks', 'Workbooks', 'Live Dashboards'] },
     { label: 'People & HR', items: ['Staff', 'Attendance', 'Leave'] },
-    { label: 'Finance & Analytics', items: ['Finance', 'Reports', 'Library'] },
+    { label: 'Finance & Analytics', items: ['Finance', 'Reports', 'Knowledge Base'] },
     { label: 'System Admin', items: ['Admin Console', 'Chat'] },
 ];
 

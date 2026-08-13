@@ -35,12 +35,12 @@ export function DashboardRecentReports() {
     const { data: reports, isLoading } = useCollection<DailyReport>(reportsQuery);
 
     return (
-        <Card className="border border-border/60 bg-muted/30 rounded-xl p-4 shadow-sm">
-            <CardHeader className="flex flex-row items-center justify-between p-0 pb-3">
-                <CardTitle className="text-xs font-black uppercase tracking-tight">Daily Reports</CardTitle>
+        <div className="flex flex-col h-full overflow-hidden">
+            <div className="flex flex-row items-center justify-between pb-3">
+                <h3 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Daily Reports</h3>
                 <Button variant="link" size="sm" className="text-[10px] font-black uppercase p-0 h-auto" onClick={() => uiEmitter.emit('open-reports-dialog')}>View All</Button>
-            </CardHeader>
-            <CardContent className="p-0">
+            </div>
+            <div className="flex-1">
                 {isLoading && (
                     <div className="space-y-4">
                         <Skeleton className="h-12 w-full" />
@@ -66,7 +66,7 @@ export function DashboardRecentReports() {
                         ))}
                     </div>
                 )}
-            </CardContent>
-        </Card>
+            </div>
+        </div>
     );
 }

@@ -57,21 +57,17 @@ export function DashboardLiveDisplays({ userProfile }: DashboardLiveDisplaysProp
 
     if (isLoading) {
         return (
-            <section className="apple-glass rounded-2xl p-4 shadow-lg">
-                <Skeleton className="h-5 w-1/2 mb-3" />
-                <div className="space-y-2">
-                    <Skeleton className="h-10 w-full rounded-xl" />
-                    <Skeleton className="h-10 w-full rounded-xl" />
-                </div>
-            </section>
+            <div className="space-y-3">
+                <Skeleton className="h-5 w-1/2" />
+                <Skeleton className="h-20 w-full rounded-xl" />
+            </div>
         );
     }
 
     return (
-        <section className="border border-border/50 bg-muted/50 rounded-xl p-4 md:p-6 shadow-sm animate-in fade-in slide-in-from-bottom-2 duration-500 interactive-element">
+        <div className="flex flex-col h-full overflow-hidden">
             <div className="flex items-center justify-between mb-4">
-                <h3 className="text-xs font-bold font-headline flex items-center gap-2 uppercase tracking-tight text-foreground">
-                    <Globe className="h-3.5 w-3.5 text-primary" />
+                <h3 className="text-[10px] font-black uppercase tracking-[0.25em] text-muted-foreground">
                     Live Displays
                 </h3>
                 {allDisplays && allDisplays.length > 0 && (
@@ -81,7 +77,7 @@ export function DashboardLiveDisplays({ userProfile }: DashboardLiveDisplaysProp
                 )}
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-2 flex-1 overflow-y-auto pr-1 custom-scrollbar">
                 {!displays || displays.length === 0 ? (
                     <div className="py-6 flex flex-col items-center justify-center text-center opacity-40 grayscale">
                         <MonitorDot className="h-6 w-6 mb-2 text-muted-foreground" />
@@ -124,6 +120,6 @@ export function DashboardLiveDisplays({ userProfile }: DashboardLiveDisplaysProp
                     View All Dashboards
                 </button>
             </div>
-        </section>
+        </div>
     );
 }

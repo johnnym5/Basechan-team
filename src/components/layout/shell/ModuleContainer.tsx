@@ -32,25 +32,24 @@ export function ModuleContainer({
   return (
     <div className={cn(
       "flex flex-col h-full w-full overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-700",
-      "border border-border rounded-2xl bg-card/80 backdrop-blur-sm shadow-lg",
       className
     )}>
       {/* Module Header */}
       {(header || title) && (
-        <header className="shrink-0 px-8 py-6 border-b border-border/50 flex items-center justify-between bg-secondary/20 z-20">
+        <header className="shrink-0 pb-6 flex flex-col sm:flex-row sm:items-center justify-between z-20 gap-4">
           {header || (
             <>
               <div className="space-y-1">
-                <h1 className="text-3xl font-black font-headline tracking-tighter text-foreground uppercase">
+                <h1 className="text-xl md:text-2xl font-black font-headline tracking-tighter text-foreground uppercase">
                   {title}
                 </h1>
                 {subtitle && (
-                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground opacity-60">
+                  <p className="text-[8px] md:text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground opacity-60">
                     {subtitle}
                   </p>
                 )}
               </div>
-              {actions && <div className="flex items-center gap-3">{actions}</div>}
+              {actions && <div className="flex items-center gap-3 flex-wrap">{actions}</div>}
             </>
           )}
         </header>
@@ -59,12 +58,12 @@ export function ModuleContainer({
       {/* Module Body */}
       <main className="flex-1 min-h-0 relative">
         {noScroll ? (
-          <div className={cn("h-full w-full p-6 lg:p-8", contentClassName)}>
+          <div className={cn("h-full w-full", contentClassName)}>
             {children}
           </div>
         ) : (
-          <ScrollArea className="h-full">
-            <div className={cn("p-6 lg:p-8 space-y-8", contentClassName)}>
+          <ScrollArea className="h-full pr-2">
+            <div className={cn("space-y-8", contentClassName)}>
               {children}
             </div>
           </ScrollArea>

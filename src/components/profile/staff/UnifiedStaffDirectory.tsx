@@ -124,8 +124,8 @@ export function UnifiedStaffDirectory({ orgId, currentUserProfile, canManageStaf
 
       {/* Main Directory Table */}
       <div className="flex-1 overflow-hidden border border-border bg-muted/50 rounded-xl p-0 shadow-sm relative">
-        <div className="h-full overflow-y-auto custom-scrollbar">
-          <Table>
+        <div className="h-full overflow-y-auto custom-scrollbar overflow-x-auto w-full">
+          <Table className="min-w-[800px]">
             <TableHeader className="bg-secondary sticky top-0 z-20 backdrop-blur-md">
               <TableRow className="border-border/50 hover:bg-transparent h-14">
                 <TableHead className="font-black uppercase text-[10px] tracking-[0.2em] pl-8 text-muted-foreground">Personnel Asset</TableHead>
@@ -138,7 +138,7 @@ export function UnifiedStaffDirectory({ orgId, currentUserProfile, canManageStaf
             <TableBody>
               {filteredStaff.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={4} className="h-96 text-center">
+                  <TableCell colSpan={5} className="h-96 text-center">
                      <div className="flex flex-col items-center gap-3 opacity-20">
                         <Users className="h-12 w-12 text-muted-foreground" />
                         <p className="font-black uppercase text-[10px] tracking-[0.3em] text-muted-foreground">Zero Personnel Identified</p>
@@ -161,23 +161,23 @@ export function UnifiedStaffDirectory({ orgId, currentUserProfile, canManageStaf
                     >
                       <TableCell className="pl-8">
                         <div className="flex items-center gap-4">
-                          <div className="relative">
+                          <div className="relative shrink-0">
                              <Avatar className="h-12 w-12 border-2 border-border group-hover:border-primary/50 transition-all rounded-2xl shadow-lg">
                                <AvatarImage src={person.avatarUrl || ''} />
                                <AvatarFallback className="bg-secondary text-foreground font-black text-xs">{person.fullName.charAt(0)}</AvatarFallback>
                              </Avatar>
                              {isOnline && <div className="absolute -bottom-1 -right-1 h-4 w-4 bg-emerald-500 rounded-full border-2 border-background animate-pulse" />}
                           </div>
-                          <div className="space-y-0.5">
-                            <p className="font-black text-sm tracking-tight text-foreground">{person.fullName}</p>
-                            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest opacity-60">{person.email}</p>
+                          <div className="space-y-0.5 min-w-0">
+                            <p className="font-black text-sm tracking-tight text-white truncate">{person.fullName}</p>
+                            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest opacity-60 truncate">{person.email}</p>
                           </div>
                         </div>
                       </TableCell>
                       <TableCell>
-                        <div className="space-y-0.5">
-                           <p className="text-xs font-black text-primary uppercase tracking-tight">{person.jobTitle || 'Unit Staff'}</p>
-                           <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest opacity-50">{person.departmentName || 'Operations'}</p>
+                        <div className="space-y-0.5 min-w-0">
+                           <p className="text-xs font-black text-primary uppercase tracking-tight truncate">{person.jobTitle || 'Unit Staff'}</p>
+                           <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest opacity-50 truncate">{person.departmentName || 'Operations'}</p>
                         </div>
                       </TableCell>
                       <TableCell>
@@ -199,7 +199,6 @@ export function UnifiedStaffDirectory({ orgId, currentUserProfile, canManageStaf
                                 e.stopPropagation();
                                 setSelectedStaffId(person.id);
                                 setIsQuickViewOpen(true);
-                                // Optional: logic to jump straight to report tab if we add tabs to QuickView
                             }}
                           >
                              <FileText className="h-3.5 w-3.5" /> Reports

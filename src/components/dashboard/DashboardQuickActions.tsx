@@ -145,7 +145,7 @@ export function DashboardQuickActions() {
   };
 
   return (
-    <div className="bg-card border border-border rounded-xl p-4 md:p-6 shadow-sm">
+    <div className="flex flex-col h-full overflow-hidden">
       <h3 className="text-[10px] font-black uppercase mb-4 text-muted-foreground tracking-[0.25em]">Quick Actions</h3>
 
       {/* 3. BUTTON GRID */}

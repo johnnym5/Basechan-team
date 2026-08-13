@@ -9,9 +9,15 @@ import {
 } from '@/components/ui/dialog';
 import type { Announcement, UserProfile } from '@/lib/types';
 import { format } from 'date-fns';
-import { User, Calendar, Eye } from 'lucide-react';
+import { User, Calendar, Eye, Edit3, Trash2, ShieldAlert } from 'lucide-react';
 import { Badge } from '../ui/badge';
 import { ScrollArea } from '../ui/scroll-area';
+import { Button } from '../ui/button';
+import { useState } from 'react';
+import { EditAnnouncementDialog } from './EditAnnouncementDialog';
+import { useFirestore, deleteDocumentNonBlocking } from '@/firebase';
+import { doc } from 'firebase/firestore';
+import { useToast } from '@/hooks/use-toast';
 
 interface AnnouncementDetailDialogProps {
   announcement: Announcement;
@@ -21,7 +27,26 @@ interface AnnouncementDetailDialogProps {
 }
 
 export function AnnouncementDetailDialog({ announcement, isOpen, onOpenChange, userProfile }: AnnouncementDetailDialogProps) {
-  const isAdmin = userProfile.role === 'ORG_ADMIN' || userProfile.role === 'MANAGING_DIRECTOR' || userProfile.role === 'HR_MANAGER';
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const firestore = useFirestore();
+  const { toast } = useToast();
+
+  const isAdmin = userProfile.role === 'ORG_ADMIN' || userProfile.role === 'MANAGING_DIRECTOR' || userProfile.role === 'HR_MANAGER' || userProfile.role === 'SUPERADMIN' || userProfile.role === 'FINANCE_MANAGER';
+  const isAuthor = announcement.authorId === userProfile.id;
+  const canManage = isAdmin || isAuthor;
+
+  const handleDelete = async () => {
+    if (!firestore) return;
+    if (!confirm("Are you sure you want to delete this announcement? This action cannot be undone.")) return;
+
+    try {
+        await deleteDocumentNonBlocking(doc(firestore, 'announcements', announcement.id));
+        toast({ title: "Announcement Deleted", description: "The broadcast has been removed." });
+        onOpenChange(false);
+    } catch (e: any) {
+        toast({ variant: "destructive", title: "Deletion Failed", description: e.message });
+    }
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -59,20 +84,39 @@ export function AnnouncementDetailDialog({ announcement, isOpen, onOpenChange, u
             </ScrollArea>
         </div>
 
-        {isAdmin && (
-            <div className="mt-4 p-4 rounded-xl border border-primary/10 bg-primary/5 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-lg bg-primary/20">
-                        <Eye className="h-5 w-5 text-primary" />
+        {canManage && (
+            <div className="mt-4 space-y-3">
+                <div className="p-4 rounded-xl border border-primary/10 bg-primary/5 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <div className="p-2 rounded-lg bg-primary/20 text-primary">
+                            <Eye className="h-5 w-5" />
+                        </div>
+                        <div>
+                            <p className="text-sm font-semibold text-foreground">Personnel Acknowledged</p>
+                            <p className="text-xs text-muted-foreground uppercase tracking-widest">Audit Tracking Active</p>
+                        </div>
                     </div>
-                    <div>
-                        <p className="text-sm font-semibold">Audience Reach</p>
-                        <p className="text-xs text-muted-foreground uppercase tracking-widest">View Analytics</p>
+                    <div className="text-right">
+                        <p className="text-2xl font-black font-headline text-primary">{announcement.viewedBy?.length || 0}</p>
+                        <p className="text-[10px] text-muted-foreground uppercase font-bold">Units</p>
                     </div>
                 </div>
-                <div className="text-right">
-                    <p className="text-2xl font-bold font-headline">{announcement.viewedBy?.length || 0}</p>
-                    <p className="text-[10px] text-muted-foreground uppercase">Staff Members</p>
+
+                <div className="flex gap-3">
+                    <Button
+                        variant="outline"
+                        onClick={() => setIsEditOpen(true)}
+                        className="flex-1 h-12 rounded-xl border-border hover:bg-primary hover:text-white transition-all font-black uppercase text-[10px] tracking-widest"
+                    >
+                        <Edit3 className="mr-2 h-4 w-4" /> Edit Transmission
+                    </Button>
+                    <Button
+                        variant="outline"
+                        onClick={handleDelete}
+                        className="flex-1 h-12 rounded-xl border-rose-500/20 bg-rose-500/5 text-rose-500 hover:bg-rose-500 hover:text-white transition-all font-black uppercase text-[10px] tracking-widest"
+                    >
+                        <Trash2 className="mr-2 h-4 w-4" /> Terminate
+                    </Button>
                 </div>
             </div>
         )}
@@ -80,11 +124,20 @@ export function AnnouncementDetailDialog({ announcement, isOpen, onOpenChange, u
         <div className="mt-6 flex justify-end">
             <button 
                 onClick={() => onOpenChange(false)}
-                className="px-6 py-2 rounded-lg bg-secondary hover:bg-secondary/80 transition-colors text-sm font-medium"
+                className="px-8 h-12 rounded-xl bg-secondary hover:bg-secondary/80 transition-all text-xs font-black uppercase tracking-widest"
             >
-                Close
+                Dismiss
             </button>
         </div>
+
+        {canManage && (
+            <EditAnnouncementDialog
+                open={isEditOpen}
+                onOpenChange={setIsEditOpen}
+                announcement={announcement}
+                userProfile={userProfile}
+            />
+        )}
       </DialogContent>
     </Dialog>
   );

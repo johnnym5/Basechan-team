@@ -11,11 +11,12 @@
     height: 100%;
     margin: 0;
     padding: 0;
-    overflow: hidden;
+    overflow-x: hidden;
+    overflow-y: auto;
   }
 
   html {
-    font-size: 10.5px;
+    font-size: 10px; /* Base for rem */
     scroll-behavior: smooth;
     scrollbar-gutter: stable;
   }
@@ -112,8 +113,8 @@
   }
 
   ::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
+    width: 8px;
+    height: 8px;
   }
 
   ::-webkit-scrollbar-track {
@@ -123,10 +124,12 @@
   ::-webkit-scrollbar-thumb {
     background-color: hsl(var(--secondary));
     border-radius: 10px;
+    border: 2px solid transparent;
+    background-clip: content-box;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    background-color: hsl(var(--primary) / 0.5);
+    background-color: hsl(var(--primary) / 0.8);
   }
 }
 
