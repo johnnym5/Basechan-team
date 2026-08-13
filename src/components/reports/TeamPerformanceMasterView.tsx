@@ -123,9 +123,9 @@ export function TeamPerformanceMasterView({
             <div className="flex items-center justify-between">
                 <div>
                     <CardTitle className="text-lg md:text-xl font-black font-headline tracking-tighter uppercase flex items-center gap-2">
-                        <Trophy className="w-5 h-5 md:w-6 md:h-6 text-primary" /> Force Leaderboard
+                        <Trophy className="w-5 h-5 md:w-6 md:h-6 text-primary" /> Performance Leaderboard
                     </CardTitle>
-                    <CardDescription className="text-[9px] md:text-[10px] font-bold uppercase tracking-widest opacity-60">Composite ranking: Tasks, Punctuality & Peer Feedback</CardDescription>
+                    <CardDescription className="text-[9px] md:text-[10px] font-bold uppercase tracking-widest opacity-60">Composite ranking: Tasks, Punctuality & Feedback</CardDescription>
                 </div>
                 <Badge variant="outline" className="border-primary/20 bg-primary/5 text-primary text-[8px] font-black tracking-widest">LIVE DATA</Badge>
             </div>
@@ -134,16 +134,16 @@ export function TeamPerformanceMasterView({
             <table className="w-full text-sm text-left border-collapse min-w-[600px]">
               <thead className="bg-secondary/20 text-[10px] font-black uppercase text-muted-foreground sticky top-0 backdrop-blur-md z-20">
                 <tr>
-                  <th className="px-6 py-4">Node & Operator</th>
+                  <th className="px-6 py-4">Team Member</th>
                   <th className="px-6 py-4 text-center">Efficiency</th>
-                  <th className="px-6 py-4 text-center">Kudos</th>
-                  <th className="px-6 py-4 text-right">Integrity Score</th>
+                  <th className="px-6 py-4 text-center">Awards</th>
+                  <th className="px-6 py-4 text-right">Performance Score</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5">
                 {staffRankings.length === 0 ? (
                     <tr>
-                        <td colSpan={4} className="py-20 text-center opacity-30 italic text-sm font-bold uppercase tracking-widest">Awaiting tactical data...</td>
+                        <td colSpan={4} className="py-20 text-center opacity-30 italic text-sm font-bold uppercase tracking-widest">Awaiting performance data...</td>
                     </tr>
                 ) : staffRankings.map((staff, idx) => (
                   <tr key={staff.id} className="hover:bg-white/5 transition-colors group">
@@ -159,7 +159,7 @@ export function TeamPerformanceMasterView({
                       </span>
                       <div className="min-w-0">
                         <p className="font-black text-sm uppercase tracking-tight text-white truncate">{staff.name}</p>
-                        <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest truncate">{staff.tasksDone} Missions Finalized</p>
+                        <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest truncate">{staff.tasksDone} Tasks Completed</p>
                       </div>
                     </td>
                     <td className="px-6 py-5 text-center">
@@ -260,12 +260,12 @@ export function TeamPerformanceMasterView({
           <Card className="apple-glass border-none shadow-2xl flex flex-col flex-1 overflow-hidden min-h-[300px]">
             <CardHeader className="border-b border-white/5 pb-4 shrink-0 bg-white/5 px-4 md:px-6 pt-5">
               <CardTitle className="text-xs font-black uppercase tracking-[0.2em] flex items-center gap-2 text-primary">
-                <Award className="w-4 h-4" /> Personnel Recognition
+                <Award className="w-4 h-4" /> Staff Recognition
               </CardTitle>
             </CardHeader>
             <CardContent className="p-4 md:p-6 overflow-y-auto custom-scrollbar flex-1 space-y-4 bg-black/10">
                {nominations.length === 0 ? (
-                   <div className="py-12 text-center opacity-30 italic text-[10px] font-black uppercase tracking-widest">No active recognitions.</div>
+                   <div className="py-12 text-center opacity-30 italic text-[10px] font-black uppercase tracking-widest">No active awards.</div>
                ) : nominations.map(award => (
                  <div key={award.id} className="p-3 md:p-4 rounded-2xl border border-white/5 bg-card/40 hover:border-primary/30 transition-all group">
                     <div className="flex items-center justify-between mb-2">
@@ -276,9 +276,9 @@ export function TeamPerformanceMasterView({
                    <div className="flex items-center gap-2 mt-4 pt-3 border-t border-white/5">
                         <Users className="w-3 h-3 text-muted-foreground opacity-40 shrink-0" />
                         <p className="text-[9px] font-black uppercase tracking-tighter text-muted-foreground truncate">
-                            Target: <span className="text-white">{award.nomineeName}</span>
+                            To: <span className="text-white">{award.nomineeName}</span>
                             <span className="mx-2 opacity-20">|</span>
-                            Source: <span className="text-white/60">{award.nominatorName}</span>
+                            From: <span className="text-white/60">{award.nominatorName}</span>
                         </p>
                    </div>
                  </div>

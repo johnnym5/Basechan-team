@@ -22,7 +22,7 @@ const BADGE_CONFIG: Record<BadgeType, { icon: any; color: string; label: string 
 export function PerformanceDashboard({ userProfile }: { userProfile: UserProfile }) {
     const firestore = useFirestore();
 
-    // 1. Fetch all telemetry for this user
+    // 1. Fetch performance data for this user
     const tasksQuery = useMemoFirebase(() => 
         query(collection(firestore!, 'tasks'), where('orgId', '==', userProfile.orgId), where('assignedTo', '==', userProfile.id))
     , [firestore, userProfile.id, userProfile.orgId]);
@@ -86,7 +86,7 @@ export function PerformanceDashboard({ userProfile }: { userProfile: UserProfile
 
     return (
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-700">
-            {/* Elite Identity Card */}
+            {/* Employee Profile Card */}
             <Card className="apple-glass border-none shadow-2xl overflow-hidden relative">
                 <div className="absolute top-0 right-0 p-8 opacity-10">
                     <Medal className="h-48 w-48 text-primary" />
@@ -108,13 +108,13 @@ export function PerformanceDashboard({ userProfile }: { userProfile: UserProfile
                             <p className="text-sm font-bold uppercase tracking-widest text-primary mt-1">{userProfile.position}</p>
                             <div className="mt-4 flex flex-wrap justify-center md:justify-start gap-4">
                                 <div className="flex flex-col">
-                                    <span className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Global Influence</span>
+                                    <span className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Overall Standing</span>
                                     <span className="text-2xl font-black font-mono text-foreground">{stats.totalPoints} <span className="text-sm opacity-50">PTS</span></span>
                                 </div>
                                 <div className="w-px h-10 bg-white/10 hidden sm:block" />
                                 <div className="flex flex-col">
                                     <span className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Recognition Level</span>
-                                    <span className="text-2xl font-black font-mono text-emerald-500">{stats.kudosCount} <span className="text-sm opacity-50">KUDOS</span></span>
+                                    <span className="text-2xl font-black font-mono text-emerald-500">{stats.kudosCount} <span className="text-sm opacity-50">AWARDS</span></span>
                                 </div>
                             </div>
                         </div>
@@ -132,11 +132,11 @@ export function PerformanceDashboard({ userProfile }: { userProfile: UserProfile
             </Card>
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-                {/* Identity Badges Grid */}
+                {/* Performance Awards Grid */}
                 <div className="lg:col-span-8 space-y-6">
                     <h3 className="text-xl font-black font-headline tracking-tighter flex items-center gap-2">
                         <Star className="h-5 w-5 text-amber-500" />
-                        Mission Medals
+                        Performance Awards
                     </h3>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         {Object.entries(BADGE_CONFIG).map(([type, config]) => {
@@ -160,8 +160,8 @@ export function PerformanceDashboard({ userProfile }: { userProfile: UserProfile
 
                     <Card className="apple-glass border-none">
                         <CardHeader>
-                            <CardTitle className="text-lg">Recent Comms Feedback</CardTitle>
-                            <CardDescription>Recognition comments from your fellow units.</CardDescription>
+                            <CardTitle className="text-lg">Recent Peer Feedback</CardTitle>
+                            <CardDescription>Recognition comments from your teammates.</CardDescription>
                         </CardHeader>
                         <CardContent>
                             <div className="space-y-4">
@@ -199,25 +199,25 @@ export function PerformanceDashboard({ userProfile }: { userProfile: UserProfile
                 <div className="lg:col-span-4 space-y-6">
                     <h3 className="text-xl font-black font-headline tracking-tighter flex items-center gap-2">
                         <Target className="h-5 w-5 text-primary" />
-                        Mission Telemetry
+                        Performance Analytics
                     </h3>
                     <div className="space-y-4">
                         <Card className="bg-primary/5 border border-primary/20 rounded-3xl">
                             <CardContent className="p-6">
-                                <p className="text-[10px] font-black uppercase tracking-widest text-primary">Mission Completion</p>
+                                <p className="text-[10px] font-black uppercase tracking-widest text-primary">Task Completion</p>
                                 <div className="flex items-baseline gap-2 mt-1">
                                     <span className="text-4xl font-black font-mono">{stats.taskCount}</span>
-                                    <span className="text-xs font-bold text-muted-foreground uppercase">Missions Finalized</span>
+                                    <span className="text-xs font-bold text-muted-foreground uppercase">Tasks Completed</span>
                                 </div>
                             </CardContent>
                         </Card>
                         
                         <Card className="bg-emerald-500/5 border border-emerald-500/20 rounded-3xl">
                             <CardContent className="p-6">
-                                <p className="text-[10px] font-black uppercase tracking-widest text-emerald-500">Punctuality Score</p>
+                                <p className="text-[10px] font-black uppercase tracking-widest text-emerald-500">Attendance Score</p>
                                 <div className="flex items-baseline gap-2 mt-1">
                                     <span className="text-4xl font-black font-mono">{stats.perfectDays}</span>
-                                    <span className="text-xs font-bold text-muted-foreground uppercase">Perfect Shifts</span>
+                                    <span className="text-xs font-bold text-muted-foreground uppercase">Perfect Attendance</span>
                                 </div>
                             </CardContent>
                         </Card>
@@ -225,10 +225,10 @@ export function PerformanceDashboard({ userProfile }: { userProfile: UserProfile
                         <div className="p-6 rounded-[2.5rem] bg-amber-500/10 border border-amber-500/20">
                             <div className="flex items-center gap-3 text-amber-600 mb-2">
                                 <ShieldCheck className="h-5 w-5" />
-                                <span className="text-xs font-black uppercase tracking-tighter">Node Integrity</span>
+                                <span className="text-xs font-black uppercase tracking-tighter">Integrity Score</span>
                             </div>
                             <p className="text-[10px] leading-relaxed text-amber-700/80 font-medium">
-                                Scores are generated automatically based on system interaction logs, task deadlines, and peer recognition badges. This record is immutable and contributes to global node rankings.
+                                Scores are generated automatically based on system interaction logs, task deadlines, and peer recognition. This record is used for performance evaluations and contributes to company rankings.
                             </p>
                         </div>
                     </div>

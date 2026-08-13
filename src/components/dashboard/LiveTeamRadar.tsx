@@ -8,15 +8,15 @@ import { format, subDays, startOfToday } from "date-fns"
 import { cn } from "@/lib/utils"
 import { uiEmitter } from "@/lib/ui-emitter"
 
-interface LiveFleetRadarProps {
+interface LiveTeamRadarProps {
   staffList: UserProfile[];
   attendanceLogs: Attendance[];
 }
 
-export function LiveFleetRadar({ staffList = [], attendanceLogs = [] }: LiveFleetRadarProps) {
+export function LiveTeamRadar({ staffList = [], attendanceLogs = [] }: LiveTeamRadarProps) {
 
   // Real data categorization
-  const fleetStatus = useMemo(() => {
+  const teamStatus = useMemo(() => {
     const today = format(new Date(), 'yyyy-MM-dd')
     const yesterday = format(subDays(new Date(), 1), 'yyyy-MM-dd')
 
@@ -48,7 +48,7 @@ export function LiveFleetRadar({ staffList = [], attendanceLogs = [] }: LiveFlee
       <CardHeader className="border-b border-white/5 pb-4 bg-white/5 shrink-0 px-6 pt-5 flex flex-row justify-between items-center">
         <div>
             <CardTitle className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground flex items-center gap-2">
-                <Activity className="w-4 h-4 text-primary" /> Live Fleet Radar
+                <Activity className="w-4 h-4 text-primary" /> Live Team Tracker
             </CardTitle>
         </div>
         <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
@@ -58,15 +58,15 @@ export function LiveFleetRadar({ staffList = [], attendanceLogs = [] }: LiveFlee
         <div className="flex flex-col">
 
           {/* CATEGORY: CLOCKED IN */}
-          {fleetStatus.clockedIn.length > 0 && (
+          {teamStatus.clockedIn.length > 0 && (
             <div className="mb-0">
               <div className="sticky top-0 bg-emerald-500/10 backdrop-blur-md px-5 py-2 text-[8px] font-black uppercase tracking-[0.2em] text-emerald-500 border-y border-white/5 z-10 flex items-center justify-between">
                 <span className="flex items-center gap-2">
-                    <UserCheck className="w-3 h-3" /> Active Duty ({fleetStatus.clockedIn.length})
+                    <UserCheck className="w-3 h-3" /> On Duty ({teamStatus.clockedIn.length})
                 </span>
               </div>
               <div className="divide-y divide-white/5">
-                {fleetStatus.clockedIn.map(log => (
+                {teamStatus.clockedIn.map(log => (
                     <div key={log.id} className="px-6 py-3.5 text-xs flex justify-between items-center hover:bg-white/5 transition-colors group">
                         <div className="flex items-center gap-3">
                             <div className="h-2 w-2 rounded-full bg-emerald-500" />
@@ -80,13 +80,13 @@ export function LiveFleetRadar({ staffList = [], attendanceLogs = [] }: LiveFlee
           )}
 
           {/* CATEGORY: LATE TODAY */}
-          {fleetStatus.late.length > 0 && (
+          {teamStatus.late.length > 0 && (
             <div className="mb-0">
               <div className="sticky top-0 bg-amber-500/10 backdrop-blur-md px-5 py-2 text-[8px] font-black uppercase tracking-[0.2em] text-amber-500 border-y border-white/5 z-10 flex items-center gap-2">
-                <Clock className="w-3 h-3" /> Late Arrivals ({fleetStatus.late.length})
+                <Clock className="w-3 h-3" /> Late Arrivals ({teamStatus.late.length})
               </div>
               <div className="divide-y divide-white/5">
-                {fleetStatus.late.map(log => (
+                {teamStatus.late.map(log => (
                     <div key={`late-${log.id}`} className="px-6 py-3.5 text-xs flex justify-between items-center hover:bg-white/5 transition-colors group">
                         <div className="flex items-center gap-3">
                             <div className="h-2 w-2 rounded-full bg-amber-500" />
@@ -100,20 +100,20 @@ export function LiveFleetRadar({ staffList = [], attendanceLogs = [] }: LiveFlee
           )}
 
           {/* CATEGORY: PENDING */}
-          {fleetStatus.pending.length > 0 && (
+          {teamStatus.pending.length > 0 && (
             <div className="mb-0">
               <div className="sticky top-0 bg-white/5 backdrop-blur-md px-5 py-2 text-[8px] font-black uppercase tracking-[0.2em] text-muted-foreground border-y border-white/5 z-10 flex items-center gap-2">
-                <AlertTriangle className="w-3 h-3" /> Pending Nodes ({fleetStatus.pending.length})
+                <AlertTriangle className="w-3 h-3" /> Not Checked In ({teamStatus.pending.length})
               </div>
               <div className="divide-y divide-white/5 opacity-60">
-                {fleetStatus.pending.map(staff => (
+                {teamStatus.pending.map(staff => (
                     <div key={`pending-${staff.id}`} className="px-6 py-3.5 text-xs flex justify-between items-center hover:bg-white/5 transition-colors group">
                         <span className="font-bold text-muted-foreground uppercase tracking-tight">{staff.fullName}</span>
                         <button
                             onClick={() => uiEmitter.emit('open-chat-dialog' as any, { userId: staff.id })}
                             className="text-[8px] font-black uppercase text-primary hover:text-white px-2 py-1 rounded-md border border-primary/20 bg-primary/5 hover:bg-primary transition-all"
                         >
-                            Ping
+                            Message
                         </button>
                     </div>
                 ))}
@@ -122,20 +122,20 @@ export function LiveFleetRadar({ staffList = [], attendanceLogs = [] }: LiveFlee
           )}
 
           {/* CATEGORY: ABSENT YESTERDAY */}
-          {fleetStatus.absentYesterday.length > 0 && (
+          {teamStatus.absentYesterday.length > 0 && (
             <div className="mb-0">
               <div className="sticky top-0 bg-rose-500/10 backdrop-blur-md px-5 py-2 text-[8px] font-black uppercase tracking-[0.2em] text-rose-500 border-y border-white/5 z-10 flex items-center gap-2">
-                <UserMinus className="w-3 h-3" /> AWOL Yesterday ({fleetStatus.absentYesterday.length})
+                <UserMinus className="w-3 h-3" /> Absent Yesterday ({teamStatus.absentYesterday.length})
               </div>
               <div className="divide-y divide-white/5">
-                {fleetStatus.absentYesterday.map(staff => (
+                {teamStatus.absentYesterday.map(staff => (
                     <div key={`awol-${staff.id}`} className="px-6 py-3.5 text-xs flex justify-between items-center hover:bg-white/5 transition-colors group">
                         <span className="font-bold text-rose-500/80 uppercase tracking-tight">{staff.fullName}</span>
                         <button
                              onClick={() => uiEmitter.emit('open-staff-profile-dialog' as any, { userId: staff.id })}
                              className="text-[8px] font-black uppercase text-rose-500 hover:text-white px-2 py-1 rounded-md border border-rose-500/20 bg-rose-500/5 hover:bg-rose-500 transition-all"
                         >
-                            Review
+                            Details
                         </button>
                     </div>
                 ))}

@@ -54,6 +54,10 @@ export function ReportsPageContent({ initialPayload, noWrapper = false }: { init
             // Migration: if the saved tab was 'performance' (My Dashboard), switch to 'submit'
             if (savedTab === 'performance' || savedTab === 'analytics' || savedTab === 'team-health') {
                 setActiveTab(permissions.canManageStaff ? 'team-performance' : 'submit');
+            } else if (savedTab === 'team-reports') {
+                setActiveTab('team-reports');
+            } else if (savedTab === 'intelligent-brief') {
+                setActiveTab('intelligent-brief');
             } else {
                 setActiveTab(savedTab);
             }

@@ -54,17 +54,9 @@ export function LoginForm() {
   const [isIdVerified, setIsIdVerified] = useState<boolean | null>(null);
   const [isCheckingId, setIsCheckingId] = useState(false);
   const [requiresForceLogin, setRequiresForceLogin] = useState(false);
-  const [isMobileBlocked, setIsMobileBlocked] = useState(false);
   const { toast } = useToast();
   const auth = useAuth();
   const firestore = useFirestore();
-
-  useEffect(() => {
-    const isMobileHardware = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || navigator.maxTouchPoints > 0;
-    if (isMobileHardware) {
-      setIsMobileBlocked(true);
-    }
-  }, []);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -145,7 +137,6 @@ export function LoginForm() {
     if (!auth || !firestore) return;
     setIsSubmitting(true);
     
-    // TRIMMING THE INPUT IS CRITICAL - Mobile keyboards often add trailing spaces!
     const identity = values.username.trim().toLowerCase();
     const deviceType = getDeviceType();
     const sessionId = generateUUID();
@@ -156,7 +147,6 @@ export function LoginForm() {
 
       // 1. Resolve User Identity
       if (!identity.includes('@')) {
-          // If it is a username (no @), first query the Firestore users collection to find the document matching that username
           const usersRef = collection(firestore, "users");
           const userQuery = query(
             usersRef, 
@@ -174,7 +164,6 @@ export function LoginForm() {
           userData = { id: userSnapshot.docs[0].id, ...userSnapshot.docs[0].data() } as UserProfile;
           userEmail = userData.email;
       } else {
-          // If login by email, we still need to fetch the profile to check session
           const usersRef = collection(firestore, "users");
           const userQuery = query(
             usersRef, 
@@ -187,19 +176,18 @@ export function LoginForm() {
           }
       }
 
-      // 2. CHECK FOR ACTIVE SESSION (Heartbeat logic)
+      // 2. CHECK FOR ACTIVE SESSION
       if (userData && userData.activeSessionId && userData.lastHeartbeat && !values.forceLogin) {
           const lastHeartbeat = new Date(userData.lastHeartbeat);
           const diff = differenceInMinutes(new Date(), lastHeartbeat);
           
-          // If session was active in the last 3 minutes, prevent login
           if (diff < 3) {
               setRequiresForceLogin(true);
               throw new Error(`Security Alert: This account is already logged in on another ${userData.deviceType === 'PC' ? 'Desktop' : 'Mobile'} device. Please check "Force Login" to override this block and sign out the other device.`);
           }
       }
 
-      // 3. Authenticate against Firestore database first (source of truth)
+      // 3. Authenticate
       if (!userData) {
           throw new Error("Invalid username or password.");
       }
@@ -207,12 +195,10 @@ export function LoginForm() {
           throw new Error("Invalid username or password.");
       }
 
-      // Synchronize/log in on Firebase Auth to preserve active secure session
       let userCredential;
       try {
           userCredential = await signInWithEmailAndPassword(auth, userEmail, values.password);
       } catch (authError: any) {
-          // If password matched in Firestore but user account doesn't exist yet in Firebase Auth, register on the fly
           if (authError.code === 'auth/user-not-found' || authError.code === 'auth/invalid-credential') {
               const { createUserWithEmailAndPassword } = await import('firebase/auth');
               userCredential = await createUserWithEmailAndPassword(auth, userEmail, values.password);
@@ -221,18 +207,14 @@ export function LoginForm() {
           }
       }
       
-      // 4. Register Session & Node Info & Sync Profile UID
       const authUid = userCredential.user.uid;
 
-      // If the profile document ID in Firestore is not the same as the Auth UID, migrate it
       if (userData.id !== authUid) {
-          console.log(`[AUTH] Profile UID mismatch. Migrating document from ${userData.id} to ${authUid}`);
           try {
               const batch = writeBatch(firestore);
               const newRef = doc(firestore, 'users', authUid);
               const oldRef = doc(firestore, 'users', userData.id);
 
-              // Copy data to new location
               batch.set(newRef, {
                   ...userData,
                   id: authUid,
@@ -242,14 +224,9 @@ export function LoginForm() {
                   status: 'ONLINE'
               });
 
-              // Delete old location
               batch.delete(oldRef);
-
               await batch.commit();
-              console.log("[AUTH] Profile migration successful.");
           } catch (migrateError) {
-              console.error("[AUTH] Profile migration failed:", migrateError);
-              // Fallback: try to at least update the auth UID document if copy fails
               await setDoc(doc(firestore, 'users', authUid), {
                   ...userData,
                   id: authUid,
@@ -269,10 +246,7 @@ export function LoginForm() {
           });
       }
 
-      // 5. Force Refresh Privilege Matrix
       await authService.syncUserPermissions(firestore, authUid);
-
-      // Store sessionId locally for verification
       localStorage.setItem('basechan-active-session', sessionId);
 
       toast({ 
@@ -317,21 +291,6 @@ export function LoginForm() {
       setIsSubmitting(false);
     }
   };
-
-  if (isMobileBlocked) {
-    return (
-      <div className="flex flex-col items-center justify-center p-8 text-center space-y-4 bg-destructive/10 border border-destructive/20 rounded-2xl">
-        <Smartphone className="h-12 w-12 text-destructive animate-pulse" />
-        <h2 className="text-lg font-black uppercase tracking-tighter text-destructive">Mobile Access Restricted</h2>
-        <p className="text-xs font-medium leading-relaxed opacity-80">
-          Security protocols forbid mobile authentication. Please use an authorized workstation to access the organizational matrix.
-        </p>
-        <Button variant="outline" className="w-full border-destructive/20 hover:bg-destructive/10" onClick={() => window.location.reload()}>
-          Retry Hardware Check
-        </Button>
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-4">

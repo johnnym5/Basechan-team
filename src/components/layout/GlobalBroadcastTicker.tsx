@@ -89,7 +89,7 @@ export function GlobalBroadcastTicker({ broadcasts, userProfile }: GlobalBroadca
 
         try {
             await deleteDocumentNonBlocking(doc(firestore, 'announcements', activeBroadcast.id));
-            toast({ title: "Announcement Deleted", description: "The broadcast has been removed from the fleet." });
+            toast({ title: "Announcement Deleted", description: "The broadcast has been removed." });
             setIsOpen(false);
             if (currentIndex > 0) setCurrentIndex(prev => prev - 1);
         } catch (e: any) {
@@ -161,7 +161,7 @@ export function GlobalBroadcastTicker({ broadcasts, userProfile }: GlobalBroadca
                                             <Eye className="w-4 h-4" />
                                         </div>
                                         <div>
-                                            <p className="text-[10px] font-black uppercase tracking-widest text-primary">Audit Node</p>
+                                            <p className="text-[10px] font-black uppercase tracking-widest text-primary">Administration</p>
                                             <p className="text-xs font-bold text-muted-foreground">{activeBroadcast?.viewedBy?.length || 0} Personnel Acknowledged</p>
                                         </div>
                                     </div>

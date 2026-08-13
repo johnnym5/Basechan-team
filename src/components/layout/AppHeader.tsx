@@ -164,7 +164,7 @@ export default function AppHeader({
             <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-primary opacity-50 mb-1">{greeting}</h3>
             <p className="text-xs font-black uppercase tracking-[0.1em] text-muted-foreground flex items-center gap-2">
                 <Clock className="h-3 w-3" />
-                {currentTime} <span className="opacity-30">—</span> Operational Command
+                {currentTime} <span className="opacity-30">—</span> Operations Center
             </p>
         </div>
 

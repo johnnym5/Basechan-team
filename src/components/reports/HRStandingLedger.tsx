@@ -76,21 +76,21 @@ export function HRStandingLedger({ staffList = [] }: HRStandingLedgerProps) {
         <div className="space-y-1">
             <CardTitle className="text-sm font-black uppercase tracking-[0.2em] flex items-center gap-2">
                 <Scale className="h-4 w-4 text-primary" />
-                HR Standing & Merit Ledger
+                Staff Performance Ledger
             </CardTitle>
-            <CardDescription className="text-[10px] font-bold uppercase tracking-widest opacity-60">Internal Organizational Integrity Matrix</CardDescription>
+            <CardDescription className="text-[10px] font-bold uppercase tracking-widest opacity-60">Company Performance & Integrity Ranking</CardDescription>
         </div>
-        <Badge variant="outline" className="bg-background/50 border-white/5 text-[9px] font-black uppercase">Admin Overwatch Active</Badge>
+        <Badge variant="outline" className="bg-background/50 border-white/5 text-[9px] font-black uppercase">Staff Audit Active</Badge>
       </CardHeader>
 
       <CardContent className="p-0 overflow-y-auto custom-scrollbar flex-1 bg-black/5 overflow-x-auto w-full">
         <table className="w-full text-sm text-left border-collapse min-w-[700px]">
           <thead className="bg-secondary/20 text-[10px] font-black uppercase text-muted-foreground sticky top-0 z-10 backdrop-blur-md">
             <tr className="border-b border-white/5">
-              <th className="px-6 py-4">Personnel Asset</th>
+              <th className="px-6 py-4">Team Member</th>
               <th className="px-6 py-4 text-center">Score</th>
               <th className="px-6 py-4 text-center">Standing</th>
-              <th className="px-6 py-4 text-right">HR Authorization</th>
+              <th className="px-6 py-4 text-right">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-white/5">

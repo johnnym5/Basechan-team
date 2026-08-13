@@ -124,7 +124,7 @@ export function DebriefModal({ userProfile }: { userProfile: UserProfile }) {
         setIsDeleting(true);
         try {
             await deleteDoc(doc(firestore, 'announcements', latestAnnouncement.id));
-            toast({ title: 'Announcement Purged', description: 'Broadcast has been removed from system.' });
+            toast({ title: 'Announcement Removed', description: 'Post has been deleted.' });
             setShowDeleteConfirm(false);
         } catch (e: any) {
             toast({ variant: 'destructive', title: 'Action Failed', description: e.message });
@@ -149,7 +149,7 @@ export function DebriefModal({ userProfile }: { userProfile: UserProfile }) {
                 content: editContent,
                 updatedAt: new Date().toISOString()
             });
-            toast({ title: 'Broadcast Updated', description: 'Transmission has been modified.' });
+            toast({ title: 'Broadcast Updated', description: 'Content has been modified.' });
             setIsEditing(false);
         } catch (e: any) {
             toast({ variant: 'destructive', title: 'Action Failed', description: e.message });
@@ -168,19 +168,19 @@ export function DebriefModal({ userProfile }: { userProfile: UserProfile }) {
             className="sm:max-w-lg"
         >
             <div className="py-4 space-y-6">
-                {/* Tactical Status Sector */}
+                {/* Daily Status Section */}
                 <div className="p-5 rounded-3xl bg-primary/10 border border-primary/20 relative overflow-hidden group">
                     <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
                         <LayoutDashboard className="h-20 w-20 text-primary" />
                     </div>
                     <div className="flex items-center gap-2 text-primary mb-3">
                         <Sparkles className="h-4 w-4 animate-pulse" />
-                        <span className="text-[10px] font-black uppercase tracking-[0.2em]">Today's Overview</span>
+                        <span className="text-[10px] font-black uppercase tracking-[0.2em]">Today's Progress</span>
                     </div>
                     <div className="relative z-10">
                          <p className="text-sm font-medium leading-relaxed italic text-foreground/90">
                             Welcome in! You have {taskIntel.pending} open tasks to focus on today.
-                            {taskIntel.urgent > 0 && ` Attention: ${taskIntel.urgent} critical deadlines require your presence.`}
+                            {taskIntel.urgent > 0 && ` Attention: ${taskIntel.urgent} deadlines require your attention.`}
                         </p>
                     </div>
                 </div>
@@ -276,15 +276,15 @@ export function DebriefModal({ userProfile }: { userProfile: UserProfile }) {
         <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
             <AlertDialogContent className="apple-glass border-none rounded-[2rem]">
                 <AlertDialogHeader>
-                    <AlertDialogTitle className="text-xl font-black uppercase tracking-tighter">Purge Broadcast?</AlertDialogTitle>
+                    <AlertDialogTitle className="text-xl font-black uppercase tracking-tighter">Delete Broadcast?</AlertDialogTitle>
                     <AlertDialogDescription className="text-sm font-bold uppercase tracking-widest opacity-60">
-                        This will permanently remove the announcement from the system ticker and briefing modals.
+                        This will permanently remove the announcement from the system ticker and summary modals.
                     </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                    <AlertDialogCancel className="rounded-xl font-black uppercase text-[10px] tracking-widest border-white/10">Abort</AlertDialogCancel>
+                    <AlertDialogCancel className="rounded-xl font-black uppercase text-[10px] tracking-widest border-white/10">Cancel</AlertDialogCancel>
                     <AlertDialogAction onClick={handleDeleteAnnouncement} disabled={isDeleting} className="bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-black uppercase text-[10px] tracking-widest">
-                        {isDeleting ? <Loader2 className="animate-spin h-4 w-4" /> : "Confirm Purge"}
+                        {isDeleting ? <Loader2 className="animate-spin h-4 w-4" /> : "Confirm Delete"}
                     </AlertDialogAction>
                 </AlertDialogFooter>
             </AlertDialogContent>
@@ -295,7 +295,7 @@ export function DebriefModal({ userProfile }: { userProfile: UserProfile }) {
             <DialogContent className="apple-glass border-none rounded-[2.5rem] p-8 max-w-lg">
                 <DialogHeader>
                     <DialogTitle className="text-2xl font-black font-headline tracking-tighter uppercase">Edit Broadcast</DialogTitle>
-                    <DialogDescription className="text-[10px] font-black uppercase tracking-widest opacity-60">Modify the organization-wide transmission.</DialogDescription>
+                    <DialogDescription className="text-[10px] font-black uppercase tracking-widest opacity-60">Modify the organization-wide message.</DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4 py-4">
                     <div className="space-y-2">
@@ -319,7 +319,7 @@ export function DebriefModal({ userProfile }: { userProfile: UserProfile }) {
                     <Button variant="ghost" onClick={() => setIsEditing(false)} className="rounded-xl font-black uppercase text-[10px] tracking-widest opacity-40">Cancel</Button>
                     <Button onClick={handleSaveEdit} disabled={isSaving} className="h-12 px-8 rounded-xl font-black uppercase text-[10px] tracking-widest">
                         {isSaving ? <Loader2 className="animate-spin h-4 w-4 mr-2" /> : <Sparkles className="h-4 w-4 mr-2" />}
-                        Apply Changes
+                        Save Changes
                     </Button>
                 </DialogFooter>
             </DialogContent>

@@ -42,7 +42,7 @@ import { DashboardTaskList } from "./DashboardTaskList"
 import { DashboardRecentReports } from "./DashboardRecentReports"
 import { DashboardRecentChats } from "./DashboardRecentChats"
 import { Announcements } from "./Announcements"
-import { LiveFleetRadar } from "./LiveFleetRadar"
+import { LiveTeamRadar } from "./LiveTeamRadar"
 import {
     LineChart,
     Line,
@@ -80,7 +80,7 @@ export function AdminDashboard({ userProfile, permissions, systemConfig }: Admin
   const router = useRouter()
   const firestore = useFirestore()
 
-  // 1. DATA ORCHESTRATION (REAL-TIME DATA STREAMS)
+  // 1. DATA ORCHESTRATION
   const attQuery = useMemoFirebase(() =>
     firestore ? query(collection(firestore, 'attendance'), where('orgId', '==', userProfile.orgId)) : null
   , [firestore, userProfile.orgId]);
@@ -113,7 +113,7 @@ export function AdminDashboard({ userProfile, permissions, systemConfig }: Admin
     { label: "Leave Management", icon: Calendar, route: "/staff/leave" },
     { label: "Financial Hub", icon: Receipt, route: "/finance" },
     { label: "Analytics Logs", icon: FileText, route: "/reports" },
-    { label: "Message", icon: MessageSquare, route: "/chat" },
+    { label: "Messages", icon: MessageSquare, route: "/chat" },
     { label: "Knowledge Base", icon: BookOpen, route: "/library" },
     { label: "Timesheet", icon: Clock, route: "/staff/attendance" },
     { label: "Team Roster", icon: Users, route: "/staff" },
@@ -121,12 +121,12 @@ export function AdminDashboard({ userProfile, permissions, systemConfig }: Admin
     { label: "Policies", icon: Shield, route: "/library" },
     { label: "HR Helpdesk", icon: HelpCircle, action: () => uiEmitter.emit('open-it-support-dialog') },
     { label: "Payroll", icon: CreditCard, route: "/finance" },
-    { label: "Health & Benefits", icon: Stethoscope, route: "/staff/profile" }
+    { label: "Benefits", icon: Stethoscope, route: "/staff/profile" }
   ]
 
   const activeStaffIds = useMemo(() => allStaff?.map(s => s.id) || [], [allStaff])
 
-  const triageQueue = useMemo(() => {
+  const actionQueue = useMemo(() => {
     const pendingLeaves = leaveRequests
       ?.filter(req => req.status === 'PENDING' && activeStaffIds.includes(req.userId))
       .map(req => ({
@@ -178,10 +178,10 @@ export function AdminDashboard({ userProfile, permissions, systemConfig }: Admin
             </div>
         </div>
 
-        {/* 2. THE COMMAND STRIP (Top Row) */}
+        {/* 2. OPERATIONAL STRIP (Top Row) */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 md:gap-6 items-stretch">
 
-            {/* System Clock & Readiness (Span 3) */}
+            {/* Session Timer (Span 3) */}
             <div className="lg:col-span-3 h-full">
                 <ClockControl
                     userProfile={userProfile}
@@ -191,7 +191,7 @@ export function AdminDashboard({ userProfile, permissions, systemConfig }: Admin
                 />
             </div>
 
-            {/* Strategic Intelligence Rotator (Span 5) */}
+            {/* Team Insights Rotator (Span 5) */}
             <div className="lg:col-span-5 h-full">
                 <IntelligentSummaryCenter
                     staffList={allStaff || []}
@@ -202,31 +202,31 @@ export function AdminDashboard({ userProfile, permissions, systemConfig }: Admin
                 />
             </div>
 
-            {/* Live Fleet Radar (Span 4) */}
+            {/* Live Team Tracker (Span 4) */}
             <div className="lg:col-span-4 h-full">
-                <LiveFleetRadar
+                <LiveTeamRadar
                     staffList={allStaff || []}
                     attendanceLogs={attendanceLogs || []}
                 />
             </div>
         </div>
-      {/* 3. THE TRIAGE & EXECUTION GRID */}
+      {/* 3. MANAGEMENT GRID */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 md:gap-6 items-start">
 
-            {/* Triage Queue (Span 4) */}
+            {/* Action Queue (Span 4) */}
             <Card className="lg:col-span-4 apple-glass border-none shadow-2xl flex flex-col h-fit max-h-[600px] overflow-hidden">
                 <CardHeader className="border-b border-white/5 pb-3 md:pb-4 bg-orange-500/5 shrink-0 px-4 md:px-8 pt-5 md:pt-6">
-                    <CardTitle className="text-[10px] font-black uppercase tracking-[0.2em] text-orange-500">Triage Queue</CardTitle>
+                    <CardTitle className="text-[10px] font-black uppercase tracking-[0.2em] text-orange-500">Action Queue</CardTitle>
                 </CardHeader>
                 <CardContent className="p-3 md:p-4 overflow-y-auto custom-scrollbar space-y-3 bg-black/10">
-                    {triageQueue.length === 0 ? (
+                    {actionQueue.length === 0 ? (
                         <div className="flex flex-col items-center justify-center py-10 opacity-20 h-full">
                             <Shield className="w-10 h-10 md:w-12 md:h-12 mb-4" />
-                            <p className="text-[10px] font-black uppercase tracking-widest text-center px-4 md:px-6 leading-relaxed">No pending requests awaiting administrative authorization.</p>
+                            <p className="text-[10px] font-black uppercase tracking-widest text-center px-4 md:px-6 leading-relaxed">No pending requests awaiting authorization.</p>
                         </div>
                     ) : (
                         <div className="space-y-3">
-                            {triageQueue.map(item => (
+                            {actionQueue.map(item => (
                                 <div
                                     key={`${item.type}-${item.id}`}
                                     onClick={() => router.push(item.type === 'LEAVE' ? '/staff/leave' : '/tasks')}
@@ -246,13 +246,13 @@ export function AdminDashboard({ userProfile, permissions, systemConfig }: Admin
                 </CardContent>
             </Card>
 
-            {/* Active Tasks Hub (Span 8) */}
+            {/* Active Task Hub (Span 8) */}
             <Card className="lg:col-span-8 apple-glass border-none shadow-2xl overflow-hidden h-fit max-h-[600px] flex flex-col">
                 <CardHeader className="border-b border-white/5 pb-3 md:pb-4 px-4 md:px-8 pt-5 md:pt-6 bg-white/5">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                         <div>
-                            <CardTitle className="text-sm font-black uppercase tracking-widest">Active Tasks Hub</CardTitle>
-                            <CardDescription className="text-[10px] font-bold uppercase opacity-40 mt-1">Personnel task deployment & status monitoring</CardDescription>
+                            <CardTitle className="text-sm font-black uppercase tracking-widest">Active Task Hub</CardTitle>
+                            <CardDescription className="text-[10px] font-bold uppercase opacity-40 mt-1">Employee task assignments & status monitoring</CardDescription>
                         </div>
                         <Button
                             variant="outline"
@@ -260,7 +260,7 @@ export function AdminDashboard({ userProfile, permissions, systemConfig }: Admin
                             className="h-8 md:h-9 rounded-xl border-primary/20 bg-primary/5 text-primary hover:bg-primary hover:text-white text-[8px] md:text-[9px] font-black uppercase tracking-widest gap-2 w-fit"
                             onClick={() => router.push('/tasks')}
                         >
-                            Task Center <ChevronRight className="w-3.5 h-3.5" />
+                            Task Management <ChevronRight className="w-3.5 h-3.5" />
                         </Button>
                     </div>
                 </CardHeader>
@@ -276,7 +276,7 @@ export function AdminDashboard({ userProfile, permissions, systemConfig }: Admin
                 <CardHeader className="border-b border-white/5 px-4 md:px-8 pt-5 md:pt-6 pb-3 md:pb-4 bg-white/5">
                     <div className="flex items-center justify-between">
                         <CardTitle className="text-[10px] font-black uppercase tracking-[0.2em]">Broadcast Message</CardTitle>
-                        <Button variant="ghost" className="h-8 text-[9px] font-black text-primary hover:underline uppercase" onClick={() => uiEmitter.emit('open-new-announcement-dialog')}>Create New</Button>
+                        <Button variant="ghost" className="h-8 text-[9px] font-black text-primary hover:underline uppercase" onClick={() => uiEmitter.emit('open-new-announcement-dialog')}>New Post</Button>
                     </div>
                 </CardHeader>
                 <CardContent className="p-3 md:p-4 max-h-[300px] overflow-y-auto custom-scrollbar">
@@ -286,7 +286,7 @@ export function AdminDashboard({ userProfile, permissions, systemConfig }: Admin
 
             <Card className="apple-glass border-none shadow-xl overflow-hidden">
                 <CardHeader className="border-b border-white/5 px-4 md:px-8 pt-5 md:pt-6 pb-3 md:pb-4 bg-white/5">
-                    <CardTitle className="text-[10px] font-black uppercase tracking-[0.2em]">Personnel Communications</CardTitle>
+                    <CardTitle className="text-[10px] font-black uppercase tracking-[0.2em]">Staff Communications</CardTitle>
                 </CardHeader>
                 <CardContent className="p-0 max-h-[250px] overflow-y-auto custom-scrollbar">
                     <DashboardRecentChats />

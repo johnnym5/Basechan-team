@@ -33,8 +33,8 @@ export function useNotificationScheduler(
                 
                 if (isAfter(now, notificationLeadTime) && isBefore(now, startTime)) {
                     triggerReminder(
-                        'Shift Impending',
-                        `Good morning ${user.fullName.split(' ')[0]}, it's almost time to deploy. Ready to start your shift?`,
+                        'Shift Starting Soon',
+                        `Good morning ${user.fullName.split(' ')[0]}, it's almost time to start. Ready to begin your shift?`,
                         'shift-start',
                         [{ action: 'login', title: 'Start Shift' }]
                     );
@@ -73,7 +73,7 @@ export function useNotificationScheduler(
                 if (isInGeofence && wasInGeofenceRef.current === false && !attendance) {
                     triggerReminder(
                         'Arrival Detected',
-                        `You've arrived at the node. Clock in for your shift?`,
+                        `You've arrived at work. Clock in for your shift?`,
                         'geofence-arrival',
                         [{ action: 'login', title: 'Clock In' }]
                     );

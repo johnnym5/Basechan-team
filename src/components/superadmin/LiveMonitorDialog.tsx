@@ -182,7 +182,7 @@ export function LiveMonitorDialog({ open, onOpenChange, targetUserId, targetUser
                                     </div>
                                     <div className="space-y-2">
                                         <p className="text-sm font-bold uppercase tracking-widest text-rose-400">Signal Terminated</p>
-                                        <p className="text-[10px] text-muted-foreground uppercase leading-relaxed">The telemetry link has been severed or the node has concluded its cycle.</p>
+                                        <p className="text-[10px] text-muted-foreground uppercase leading-relaxed">The connection has been severed or the shift has concluded.</p>
                                     </div>
                                     <Button variant="outline" onClick={() => initializeConnection()} className="rounded-xl h-12 px-8 font-black uppercase tracking-widest border-emerald-500/20 hover:bg-emerald-500/10 text-emerald-500">Reconnect Signal</Button>
                                 </>
@@ -193,8 +193,8 @@ export function LiveMonitorDialog({ open, onOpenChange, targetUserId, targetUser
                                         <MonitorPlay className="h-6 w-6 text-primary absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-pulse" />
                                     </div>
                                     <div className="space-y-2">
-                                        <p className="text-sm font-bold uppercase tracking-widest text-primary">Negotiating Node Handshake...</p>
-                                        <p className="text-[10px] text-muted-foreground uppercase leading-relaxed font-medium">The target node must be approved and active for the stream to initialize. Authorization was granted at clock-in.</p>
+                                        <p className="text-sm font-bold uppercase tracking-widest text-primary">Establishing Connection...</p>
+                                        <p className="text-[10px] text-muted-foreground uppercase leading-relaxed font-medium">The employee's device must be approved and active for the stream to initialize.</p>
                                     </div>
                                 </>
                             )}

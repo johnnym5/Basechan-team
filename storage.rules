@@ -16,7 +16,7 @@ service firebase.storage {
         let user = firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data;
         return request.auth != null && user.orgId == orgId && (
             user.role in ['ORG_ADMIN', 'MANAGING_DIRECTOR', 'SUPERADMIN', 'HR_MANAGER'] ||
-            (user.keys().contains('resolvedPermissions') && 'LIBRARY_MANAGE' in user.resolvedPermissions)
+            (user.keys().hasAny(['resolvedPermissions']) && 'LIBRARY_MANAGE' in user.resolvedPermissions)
         );
     }
 

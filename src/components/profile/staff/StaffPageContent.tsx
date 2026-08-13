@@ -34,8 +34,8 @@ export function StaffPageContent() {
 
   return (
     <ModuleContainer
-        title={selectedUserId ? "Staff Node 360" : "Command Center: Team"}
-        subtitle={selectedUserId ? "Deep Personnel Intelligence & Tactical Summary" : "Human Resources & Operational Identifying Nodes"}
+        title={selectedUserId ? "Employee Overview" : "Team Directory"}
+        subtitle={selectedUserId ? "Comprehensive employee profile & performance summary" : "Human Resources & Team Member Directory"}
     >
         <div className="flex-1 min-h-0 relative w-full h-full flex flex-col">
             {selectedUserId ? (

@@ -102,7 +102,7 @@ export function ComplianceWatchlist({ staffList, attendanceData }: ComplianceWat
                     <h3 className="text-xl font-black font-headline tracking-tighter text-rose-500 uppercase flex items-center gap-2">
                         <AlertTriangle className="w-6 h-6" /> Punctuality Watchlist
                     </h3>
-                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest opacity-60 mt-1">Identifying operational friction points.</p>
+                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest opacity-60 mt-1">Identifying performance issue points.</p>
                 </div>
 
                 <div className="w-full md:w-80">

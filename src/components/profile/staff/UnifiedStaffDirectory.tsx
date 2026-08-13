@@ -80,7 +80,7 @@ export function UnifiedStaffDirectory({ orgId, currentUserProfile, canManageStaf
         <div className="relative flex-1 w-full">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground opacity-50" />
           <Input
-            placeholder="Identify unit by name, email, or serial..."
+            placeholder="Search employees by name, email, or ID..."
             className="pl-12 rounded-2xl bg-background/50 border-border/50 h-12 text-sm font-medium text-foreground"
             value={searchTerm ?? ""}
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -91,29 +91,29 @@ export function UnifiedStaffDirectory({ orgId, currentUserProfile, canManageStaf
           {canManageStaff && (
               <Button onClick={() => setIsInviteOpen(true)} className="rounded-xl h-12 px-6 font-black uppercase text-[10px] tracking-widest shadow-xl shadow-primary/20 m3-interactive">
                   <PlusCircle className="mr-2 h-4 w-4" />
-                  Add Unit
+                  Add Staff
               </Button>
           )}
 
           <Select value={roleFilter} onValueChange={setRoleFilter}>
             <SelectTrigger className="w-[150px] rounded-xl bg-background/50 border-border/50 h-12 text-[10px] font-black uppercase tracking-widest text-foreground">
-              <SelectValue placeholder="System Role" />
+              <SelectValue placeholder="User Role" />
             </SelectTrigger>
             <SelectContent className="rounded-2xl m3-surface-high border-none">
-              <SelectItem value="ALL">All Authority</SelectItem>
+              <SelectItem value="ALL">All Roles</SelectItem>
               <SelectItem value="ORG_ADMIN">Administrators</SelectItem>
-              <SelectItem value="HR_MANAGER">HR Command</SelectItem>
-              <SelectItem value="FINANCE_MANAGER">Finance Ops</SelectItem>
-              <SelectItem value="STAFF">Regular Staff</SelectItem>
+              <SelectItem value="HR_MANAGER">HR Team</SelectItem>
+              <SelectItem value="FINANCE_MANAGER">Finance Team</SelectItem>
+              <SelectItem value="STAFF">Staff</SelectItem>
             </SelectContent>
           </Select>
 
           <Select value={deptFilter} onValueChange={setDepartmentFilter}>
             <SelectTrigger className="w-[180px] rounded-xl bg-background/50 border-border/50 h-12 text-[10px] font-black uppercase tracking-widest text-foreground">
-              <SelectValue placeholder="Sector/Dept" />
+              <SelectValue placeholder="Department" />
             </SelectTrigger>
             <SelectContent className="rounded-2xl m3-surface-high border-none">
-              <SelectItem value="ALL">All Sectors</SelectItem>
+              <SelectItem value="ALL">All Departments</SelectItem>
               {departments.map(dept => (
                 <SelectItem key={dept} value={dept!}>{dept}</SelectItem>
               ))}
@@ -128,10 +128,10 @@ export function UnifiedStaffDirectory({ orgId, currentUserProfile, canManageStaf
           <Table className="min-w-[800px]">
             <TableHeader className="bg-secondary sticky top-0 z-20 backdrop-blur-md">
               <TableRow className="border-border/50 hover:bg-transparent h-14">
-                <TableHead className="font-black uppercase text-[10px] tracking-[0.2em] pl-8 text-muted-foreground">Personnel Asset</TableHead>
-                <TableHead className="font-black uppercase text-[10px] tracking-[0.2em] text-muted-foreground">Sector / Designation</TableHead>
-                <TableHead className="font-black uppercase text-[10px] tracking-[0.2em] text-muted-foreground">Live Status</TableHead>
-                <TableHead className="font-black uppercase text-[10px] tracking-[0.2em] text-muted-foreground">Daily Intelligence</TableHead>
+                <TableHead className="font-black uppercase text-[10px] tracking-[0.2em] pl-8 text-muted-foreground">Team Member</TableHead>
+                <TableHead className="font-black uppercase text-[10px] tracking-[0.2em] text-muted-foreground">Department / Job Title</TableHead>
+                <TableHead className="font-black uppercase text-[10px] tracking-[0.2em] text-muted-foreground">Status</TableHead>
+                <TableHead className="font-black uppercase text-[10px] tracking-[0.2em] text-muted-foreground">Daily Reports</TableHead>
                 <TableHead className="w-[100px] pr-8 text-right"></TableHead>
               </TableRow>
             </TableHeader>
@@ -141,7 +141,7 @@ export function UnifiedStaffDirectory({ orgId, currentUserProfile, canManageStaf
                   <TableCell colSpan={5} className="h-96 text-center">
                      <div className="flex flex-col items-center gap-3 opacity-20">
                         <Users className="h-12 w-12 text-muted-foreground" />
-                        <p className="font-black uppercase text-[10px] tracking-[0.3em] text-muted-foreground">Zero Personnel Identified</p>
+                        <p className="font-black uppercase text-[10px] tracking-[0.3em] text-muted-foreground">No Employees Found</p>
                      </div>
                   </TableCell>
                 </TableRow>

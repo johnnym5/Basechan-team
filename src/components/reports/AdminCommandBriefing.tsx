@@ -4,12 +4,10 @@ import React, { useState, useMemo } from "react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts"
 import { IntelligentSummaryCenter } from "./IntelligentSummaryCenter"
+import { PerformanceScoreManager } from "./PerformanceScoreManager"
 import type { UserProfile, Attendance, Task, LeaveRequest, Nomination } from "@/lib/types"
 import {
-    startOfWeek,
-    endOfWeek,
     isWithinInterval,
     parseISO,
     format,
@@ -18,7 +16,6 @@ import {
     endOfDay,
     subDays,
     isWeekend,
-    isToday,
     startOfToday,
     isAfter
 } from "date-fns"
@@ -26,17 +23,9 @@ import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import {
   ChevronRight,
-  AlertTriangle,
+  ShieldAlert,
   CheckCircle,
-  Clock,
-  Info,
-  UserX,
-  LineChart as ChartIcon,
-  Zap,
-  CheckCircle2,
-  Calendar,
-  Activity,
-  ShieldAlert
+  Activity
 } from "lucide-react"
 import { useRouter } from "next/navigation"
 
@@ -58,9 +47,8 @@ export function AdminCommandBriefing({
   const router = useRouter()
   const [timeframe, setTimeframe] = useState("WEEK")
   const [roleFilter, setRoleFilter] = useState("ALL")
-  const [dismissedAlerts, setDismissedAlerts] = useState<string[]>([])
 
-  // --- DATA ENGINE (REAL DATA ONLY) ---
+  // --- DATA ENGINE ---
 
   // 1. Filter Staff by Role/Department
   const activeStaff = useMemo(() => {
@@ -74,8 +62,8 @@ export function AdminCommandBriefing({
 
   const activeStaffIds = useMemo(() => activeStaff.map(s => s.id), [activeStaff])
 
-  // 2. The Triage Queue (Critical Action Items)
-  const triageQueue = useMemo(() => {
+  // 2. Action Items (Critical)
+  const actionItems = useMemo(() => {
     const pendingLeaves = leaveRequests
       .filter(req => req.status === 'PENDING' && activeStaffIds.includes(req.userId))
       .map(req => ({
@@ -97,37 +85,12 @@ export function AdminCommandBriefing({
       }))
 
     return [...pendingLeaves, ...pendingTasks].sort((a, b) =>
-        new Date(a.date).getTime() - new Date(b.date).getTime()
+        new Date(b.date).getTime() - new Date(a.date).getTime()
     )
   }, [leaveRequests, tasks, activeStaffIds])
 
-  // 3. System Velocity (Task Completion over time)
-  const velocityData = useMemo(() => {
-    const now = new Date()
-    const lookback = timeframe === 'MONTH' ? 30 : 7
-    const interval = eachDayOfInterval({
-        start: subDays(now, lookback - 1),
-        end: now
-    })
-
-    return interval.map(day => {
-      const dateStr = format(day, 'yyyy-MM-dd')
-      const completedCount = tasks.filter(t =>
-        t.status === 'ARCHIVED' &&
-        activeStaffIds.includes(t.assignedTo) &&
-        t.createdAt?.startsWith(dateStr)
-      ).length
-
-      return {
-        name: format(day, timeframe === 'MONTH' ? 'dd' : 'EEE'),
-        completed: completedCount,
-        fullDate: dateStr
-      }
-    })
-  }, [tasks, activeStaffIds, timeframe])
-
-  // 4. Compliance & Friction Radar
-  const frictionRadar = useMemo(() => {
+  // 3. Performance Flags
+  const performanceFlagsData = useMemo(() => {
     const today = startOfToday()
     const lookback = timeframe === 'MONTH' ? 30 : timeframe === 'WEEK' ? 7 : 1
     const intervalDays = eachDayOfInterval({
@@ -146,7 +109,6 @@ export function AdminCommandBriefing({
 
       const lateCount = staffLogs.filter(l => l.remarks?.includes('LATE')).length
 
-      // Absence logic: Weekdays in interval with no logs
       const absentCount = intervalDays.filter(day => {
           if (isWeekend(day) || isAfter(day, today)) return false
           const dateStr = format(day, 'yyyy-MM-dd')
@@ -158,7 +120,7 @@ export function AdminCommandBriefing({
         t.status === 'AWAITING_REVIEW'
       ).length
 
-      const frictionScore = lateCount + (absentCount * 2) + pendingTasks;
+      const issueScore = lateCount + (absentCount * 2) + pendingTasks;
 
       return {
           id: staff.id,
@@ -166,9 +128,9 @@ export function AdminCommandBriefing({
           lateCount,
           absentCount,
           pendingTasks,
-          frictionScore
+          issueScore
       }
-    }).sort((a, b) => b.frictionScore - a.frictionScore)
+    }).sort((a, b) => b.issueScore - a.issueScore)
   }, [activeStaff, attendanceLogs, tasks, timeframe])
 
 
@@ -176,7 +138,7 @@ export function AdminCommandBriefing({
   return (
     <div className="flex flex-col gap-6 w-full animate-in fade-in zoom-in-95 duration-700 pb-12">
 
-      {/* 1. STRATEGIC OVERWATCH HEADER */}
+      {/* 1. TEAM OVERVIEW HEADER */}
       <div className="flex flex-col md:flex-row justify-between items-end gap-6 bg-card/40 backdrop-blur-xl p-8 rounded-[2.5rem] border border-white/5 shadow-2xl relative overflow-hidden group">
         <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity">
             <ShieldAlert className="w-32 h-32 text-primary" />
@@ -184,29 +146,29 @@ export function AdminCommandBriefing({
         <div className="relative z-10">
             <div className="flex items-center gap-3 mb-2">
                 <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
-                <h2 className="text-2xl font-black uppercase tracking-[0.3em] text-white font-headline">Command Briefing</h2>
+                <h2 className="text-2xl font-black uppercase tracking-[0.3em] text-white font-headline">Team Dashboard</h2>
             </div>
-            <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest opacity-60 ml-5"> Fleet Tactical Intelligence & Operational Triage</p>
+            <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest opacity-60 ml-5">Team Performance Analytics & Operational Insights</p>
         </div>
 
         <div className="flex gap-3 relative z-10">
           <div className="flex flex-col gap-1.5">
-              <span className="text-[9px] font-black uppercase tracking-widest text-primary ml-1 opacity-50 text-right mr-2">Operational Node</span>
+              <span className="text-[9px] font-black uppercase tracking-widest text-primary ml-1 opacity-50 text-right mr-2">Department</span>
               <Select value={roleFilter} onValueChange={setRoleFilter}>
                 <SelectTrigger className="w-[200px] h-12 rounded-2xl bg-black/40 border-white/10 text-[10px] font-black uppercase tracking-widest hover:border-primary/50 transition-all shadow-inner">
-                    <SelectValue placeholder="Full Fleet" />
+                    <SelectValue placeholder="All Departments" />
                 </SelectTrigger>
                 <SelectContent className="apple-glass-darker border-none">
-                  <SelectItem value="ALL" className="text-[10px] font-bold uppercase p-3">Full Fleet</SelectItem>
-                  <SelectItem value="STAFF" className="text-[10px] font-bold uppercase p-3">Personnel</SelectItem>
-                  <SelectItem value="HR_MANAGER" className="text-[10px] font-bold uppercase p-3">HR Command</SelectItem>
-                  <SelectItem value="FINANCE_MANAGER" className="text-[10px] font-bold uppercase p-3">Finance Ops</SelectItem>
+                  <SelectItem value="ALL" className="text-[10px] font-bold uppercase p-3">All Staff</SelectItem>
+                  <SelectItem value="STAFF" className="text-[10px] font-bold uppercase p-3">Operations</SelectItem>
+                  <SelectItem value="HR_MANAGER" className="text-[10px] font-bold uppercase p-3">HR Team</SelectItem>
+                  <SelectItem value="FINANCE_MANAGER" className="text-[10px] font-bold uppercase p-3">Finance Team</SelectItem>
                 </SelectContent>
               </Select>
           </div>
 
           <div className="flex flex-col gap-1.5">
-              <span className="text-[9px] font-black uppercase tracking-widest text-primary ml-1 opacity-50 text-right mr-2">Temporal Window</span>
+              <span className="text-[9px] font-black uppercase tracking-widest text-primary ml-1 opacity-50 text-right mr-2">Timeframe</span>
               <Select value={timeframe} onValueChange={setTimeframe}>
                 <SelectTrigger className="w-[140px] h-12 rounded-2xl bg-black/40 border-white/10 text-[10px] font-black uppercase tracking-widest hover:border-primary/50 transition-all shadow-inner">
                     <SelectValue />
@@ -221,10 +183,10 @@ export function AdminCommandBriefing({
         </div>
       </div>
 
-      {/* 2. INTELLIGENCE & TRIAGE BENTO */}
+      {/* 2. ANALYTICS & ACTION BENTO */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
 
-        {/* Intelligence Rotator (Span 8) - Centerpiece */}
+        {/* Analytics Rotator (Span 8) - Centerpiece */}
         <div className="lg:col-span-8 h-full">
            <IntelligentSummaryCenter
                 staffList={activeStaff}
@@ -235,19 +197,19 @@ export function AdminCommandBriefing({
            />
         </div>
 
-        {/* Triage Queue (Span 4) */}
+        {/* Action Items (Span 4) */}
         <Card className="lg:col-span-4 apple-glass border-none shadow-2xl flex flex-col h-[350px] overflow-hidden">
           <CardHeader className="border-b border-white/5 pb-4 bg-orange-500/5 shrink-0 px-8 pt-6">
-            <CardTitle className="text-[10px] font-black uppercase tracking-[0.2em] text-orange-500">Triage Queue</CardTitle>
+            <CardTitle className="text-[10px] font-black uppercase tracking-[0.2em] text-orange-500">Action Items</CardTitle>
           </CardHeader>
           <CardContent className="p-4 overflow-y-auto custom-scrollbar flex-1 space-y-2 bg-black/10">
-            {triageQueue.length === 0 ? (
+            {actionItems.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full opacity-20">
                   <CheckCircle className="w-10 h-10 mb-3" />
-                  <p className="text-[9px] font-black uppercase tracking-widest text-center">Operational Queue Clear</p>
+                  <p className="text-[9px] font-black uppercase tracking-widest text-center">No Pending Actions</p>
               </div>
             ) : (
-              triageQueue.map(item => (
+              actionItems.map(item => (
                 <div
                   key={`${item.type}-${item.id}`}
                   onClick={() => router.push(item.type === 'LEAVE' ? '/staff/leave' : '/tasks')}
@@ -267,73 +229,30 @@ export function AdminCommandBriefing({
         </Card>
       </div>
 
-      {/* 3. MIDDLE ROW: Velocity & Friction */}
+      {/* 3. MIDDLE ROW: Performance Scoring & Flags */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
 
-        {/* System Velocity (Span 7) */}
-        <Card className="lg:col-span-7 apple-glass border-none shadow-2xl overflow-hidden h-[450px] flex flex-col">
-          <CardHeader className="border-b border-white/5 pb-4 bg-white/5 px-8">
-            <CardTitle className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Fleet Velocity (Missions Finalized)</CardTitle>
-          </CardHeader>
-          <CardContent className="p-8 flex-1">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={velocityData} margin={{ top: 20, right: 20, bottom: 20, left: -20 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
-                <XAxis
-                    dataKey="name"
-                    stroke="rgba(255,255,255,0.3)"
-                    fontSize={10}
-                    fontWeight={900}
-                    tickLine={false}
-                    axisLine={false}
-                />
-                <YAxis
-                    stroke="rgba(255,255,255,0.3)"
-                    fontSize={10}
-                    fontWeight={900}
-                    tickLine={false}
-                    axisLine={false}
-                />
-                <Tooltip
-                    contentStyle={{
-                        backgroundColor: 'hsl(var(--card))',
-                        borderRadius: '1rem',
-                        border: '1px solid rgba(255,255,255,0.1)',
-                        fontWeight: 900,
-                        textTransform: 'uppercase',
-                        fontSize: '9px'
-                    }}
-                />
-                <Line
-                    type="monotone"
-                    dataKey="completed"
-                    stroke="hsl(var(--primary))"
-                    strokeWidth={4}
-                    dot={{ r: 4, fill: "hsl(var(--primary))", strokeWidth: 0 }}
-                    activeDot={{ r: 8, strokeWidth: 0 }}
-                    animationDuration={1500}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
+        {/* Performance Score Manager (Span 7) */}
+        <div className="lg:col-span-7 h-[450px]">
+          <PerformanceScoreManager staffList={activeStaff} isAdmin={true} />
+        </div>
 
-        {/* Friction Radar Table (Span 5) */}
+        {/* Performance Flags Radar (Span 5) */}
         <Card className="lg:col-span-5 apple-glass border-none shadow-2xl flex flex-col h-[450px] overflow-hidden">
           <CardHeader className="border-b border-white/5 pb-4 bg-rose-500/5 shrink-0 px-8">
-            <CardTitle className="text-[10px] font-black uppercase tracking-[0.2em] text-rose-500">Operational Friction Radar</CardTitle>
+            <CardTitle className="text-[10px] font-black uppercase tracking-[0.2em] text-rose-500">Performance Flags Radar</CardTitle>
           </CardHeader>
           <CardContent className="p-0 overflow-y-auto custom-scrollbar flex-1 bg-black/10">
             <table className="w-full text-sm text-left">
               <thead className="bg-secondary/20 text-[10px] font-black uppercase text-muted-foreground sticky top-0 backdrop-blur-md z-10">
                 <tr>
-                  <th className="px-6 py-4">Personnel</th>
-                  <th className="px-6 py-4 text-center">Friction Events</th>
-                  <th className="px-6 py-4 text-right">Integrity Score</th>
+                  <th className="px-6 py-4">Team Member</th>
+                  <th className="px-6 py-4 text-center">Issues</th>
+                  <th className="px-6 py-4 text-right">Current Status</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5">
-                {frictionRadar.slice(0, 10).map(staff => (
+                {performanceFlagsData.slice(0, 10).map(staff => (
                   <tr
                     key={staff.id}
                     onClick={() => router.push(`/staff/attendance?userId=${staff.id}`)}
@@ -350,19 +269,19 @@ export function AdminCommandBriefing({
                     <td className="px-6 py-4 text-center">
                       <span className={cn(
                           "font-black font-mono text-base",
-                          staff.frictionScore > 5 ? 'text-rose-500' : staff.frictionScore > 2 ? 'text-orange-500' : 'text-muted-foreground opacity-40'
+                          staff.issueScore > 5 ? 'text-rose-500' : staff.issueScore > 2 ? 'text-orange-500' : 'text-muted-foreground opacity-40'
                       )}>
-                        {staff.frictionScore}
+                        {staff.issueScore}
                       </span>
                     </td>
                     <td className="px-6 py-4 text-right">
                       <span className={cn(
                           "text-[10px] font-black uppercase px-2 py-1 rounded-lg border",
-                          staff.frictionScore === 0 ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20" :
-                          staff.frictionScore < 4 ? "bg-blue-500/10 text-blue-500 border-blue-500/20" :
+                          staff.issueScore === 0 ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20" :
+                          staff.issueScore < 4 ? "bg-blue-500/10 text-blue-500 border-blue-500/20" :
                           "bg-rose-500/10 text-rose-500 border-rose-500/20"
                       )}>
-                        {staff.frictionScore === 0 ? 'Optimal' : staff.frictionScore < 4 ? 'Stable' : 'Flagged'}
+                        {staff.issueScore === 0 ? 'Excellent' : staff.issueScore < 4 ? 'Stable' : 'Flagged'}
                       </span>
                     </td>
                   </tr>

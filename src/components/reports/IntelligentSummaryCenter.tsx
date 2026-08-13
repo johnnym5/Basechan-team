@@ -95,12 +95,11 @@ export function IntelligentSummaryCenter({
   const [selectedStaffId, setSelectedStaffId] = useState("ALL")
   const [currentIndex, setCurrentIndex] = useState(0)
   const [isPaused, setIsPaused] = useState(false)
-  const [dismissedInsights, setDismissedInsights] = useState<string[]>([])
 
   const [activeModal, setActiveModal] = useState<string | null>(null)
   const [modalData, setModalData] = useState<any>(null)
 
-  // --- ENGINE: Tactical Insight Generation (30 RULES) ---
+  // --- ENGINE: Strategic Insight Generation (30 RULES) ---
   const allInsights = useMemo(() => {
     const generated: any[] = []
     if (!userProfile) return generated
@@ -113,29 +112,26 @@ export function IntelligentSummaryCenter({
     const lookbackDays = timeframe === 'MONTH' ? 30 : timeframe === 'WEEK' ? 7 : 1
     const interval = { start: startOfDay(subDays(now, lookbackDays - 1)), end: endOfDay(now) }
 
-    // Helper: Is staffPOOL authorized for weekend work?
     const isAuthorizedWeekend = (userId: string) => false
 
-    // --- 1. PERSONAL (STAFF) MICRO ENGINE (Rules 1-10) ---
+    // --- 1. PERSONAL (STAFF) MICRO ENGINE ---
     const myLogs = attendanceLogs.filter(log => log.userId === userProfile.id)
     const myTasks = tasks.filter(t => t.assignedTo === userProfile.id)
     const myLeaves = leaveRequests.filter(req => req.userId === userProfile.id)
-    const myReceivedNominations = nominations.filter(n => n.nomineeId === userProfile.id)
-    const mySentNominations = nominations.filter(n => n.nominatorId === userProfile.id)
     const personalPeriodLogs = myLogs.filter(l => isWithinInterval(parseISO(l.date + 'T00:00:00'), interval))
 
     // 1. Time Analytics
     const totalHrs = personalPeriodLogs.reduce((acc, l) => acc + ((l.duration || 0) / 3600), 0)
     const earliest = personalPeriodLogs.map(l => l.clockIn ? format(new Date(l.clockIn), 'HH:mm') : '00:00').sort()[0]
     generated.push({
-      id: "staff_time", type: "info", severity: "STANDARD", icon: Clock, title: "Personal Analytics",
+      id: `staff_time_${todayStr}`, type: "info", severity: "STANDARD", icon: Clock, title: "Personal Analytics",
       text: personalPeriodLogs.length > 0
         ? `You've logged ${totalHrs.toFixed(1)} hours this cycle. Earliest arrival: ${earliest}.`
-        : "Operational node cold. No hours detected in current temporal window.",
+        : "Operational profile inactive. No hours detected in current timeframe.",
       actionLabel: "Full Ledger", actionType: "ROUTE", actionTarget: "/staff/attendance"
     })
 
-    // 2. Perfect Cadence (Streak)
+    // 2. Perfect Attendance (Streak)
     const sortedLogs = [...myLogs].sort((a, b) => b.date.localeCompare(a.date))
     let streak = 0
     for (const log of sortedLogs) {
@@ -143,44 +139,44 @@ export function IntelligentSummaryCenter({
       else break
     }
     generated.push({
-      id: "staff_streak", type: streak >= 3 ? "success" : "info", severity: "STANDARD", icon: Sparkles, title: "Perfect Cadence",
+      id: `staff_streak_${todayStr}`, type: streak >= 3 ? "success" : "info", severity: "STANDARD", icon: Sparkles, title: "Perfect Attendance",
       text: streak >= 3
-        ? `Tactical Excellence: Perfect on-time streak of ${streak} days confirmed.`
-        : `Personal streak currently at ${streak} days. Node optimization in progress.`,
-      actionLabel: "View Trophy", actionType: "ROUTE", actionTarget: "/staff/reports"
+        ? `Excellence: Perfect on-time streak of ${streak} days confirmed.`
+        : `Personal streak currently at ${streak} days. Performance optimization in progress.`,
+      actionLabel: "View Standing", actionType: "ROUTE", actionTarget: "/staff/reports"
     })
 
-    // 3. Overtime Tracker (CRITICAL)
+    // 3. Overtime Tracker
     const otShifts = personalPeriodLogs.filter(l => (l.duration || 0) > 30600).length // > 8.5h
     generated.push({
-        id: "staff_ot", type: otShifts > 0 ? "warning" : "success", severity: otShifts > 3 ? "CRITICAL" : "STANDARD", icon: Zap, title: "Overtime Tracker",
+        id: `staff_ot_${todayStr}`, type: otShifts > 0 ? "warning" : "success", severity: otShifts > 3 ? "CRITICAL" : "STANDARD", icon: Zap, title: "Overtime Tracker",
         text: otShifts > 0
-            ? `High Intensity Node: ${otShifts} tactical overtime sessions detected this cycle.`
-            : "Nominal Intensity: No excessive node utilization detected.",
+            ? `High Intensity: ${otShifts} overtime sessions detected this cycle.`
+            : "Stable Intensity: No excessive workload detected.",
         actionLabel: "Check Stats", actionType: "ROUTE", actionTarget: "/staff/attendance"
     })
 
-    // 4. Arrival Friction
+    // 4. Punctuality
     const recentLates = personalPeriodLogs.filter(l => l.remarks?.includes('LATE')).length
     generated.push({
-      id: "staff_late_trend", type: recentLates >= 2 ? "warning" : "success", severity: "STANDARD", icon: Clock, title: "Arrival Friction",
+      id: `staff_late_trend_${todayStr}`, type: recentLates >= 2 ? "warning" : "success", severity: "STANDARD", icon: Clock, title: "Arrival Punctuality",
       text: recentLates >= 2
-        ? `Node Warning: Arrival latency detected ${recentLates} times. Calibration required.`
-        : "Node Synced: Zero arrival friction events in recent cycles.",
-      actionLabel: "Sync Logs", actionType: "ROUTE", actionTarget: "/staff/attendance"
+        ? `Warning: Punctuality issues flagged ${recentLates} times. Improvement required.`
+        : "Standard: Zero arrival issues in recent cycles.",
+      actionLabel: "View Records", actionType: "ROUTE", actionTarget: "/staff/attendance"
     })
 
-    // 5. Node Capacity
+    // 5. Workload Capacity
     const activePersonalTasks = myTasks.filter(t => t.status === 'ACTIVE' || t.status === 'QUEUED')
     generated.push({
-      id: "staff_idle", type: activePersonalTasks.length === 0 ? "action" : "info", severity: "STANDARD", icon: UserX, title: "Node Capacity",
+      id: `staff_idle_${todayStr}`, type: activePersonalTasks.length === 0 ? "action" : "info", severity: "STANDARD", icon: UserX, title: "Workload Status",
       text: activePersonalTasks.length === 0
-        ? "Capacity Idle: Node has zero active mission assignments. Re-sync required."
-        : `Node Saturated: ${activePersonalTasks.length} missions in active deployment.`,
-      actionLabel: "Mission Hub", actionType: "ROUTE", actionTarget: "/tasks"
+        ? "Capacity Available: You have zero active task assignments."
+        : `Active: ${activePersonalTasks.length} tasks currently in progress.`,
+      actionLabel: "Task Center", actionType: "ROUTE", actionTarget: "/tasks"
     })
 
-    // 6. Task Stagnation
+    // 6. Task Progress
     const stagnant = activePersonalTasks.find(t => {
         const lastActivity = t.activity && t.activity.length > 0
             ? new Date(t.activity[t.activity.length - 1].timestamp)
@@ -188,69 +184,69 @@ export function IntelligentSummaryCenter({
         return (now.getTime() - lastActivity.getTime()) > 172800000 // 48h
     })
     generated.push({
-        id: "staff_stagnant", type: stagnant ? "warning" : "success", severity: "STANDARD", icon: Hourglass, title: "Node Velocity",
+        id: `staff_stagnant_${todayStr}`, type: stagnant ? "warning" : "success", severity: "STANDARD", icon: Hourglass, title: "Task Velocity",
         text: stagnant
-            ? `High Friction: '${stagnant.title}' has stalled for > 48h. Clear blockers?`
-            : "Optimal Flow: No stagnant personal workflows detected.",
+            ? `Update Required: '${stagnant.title}' has stalled for > 48h.`
+            : "Flow Optimal: All personal tasks are progressing normally.",
         actionLabel: "Sync Status", actionType: "ROUTE", actionTarget: "/tasks"
     })
 
-    // 7. New Deployment
+    // 7. New Assignments
     const newPersonalTasks = myTasks.filter(t => t.status === 'QUEUED' && (now.getTime() - new Date(t.createdAt).getTime()) < 86400000)
     generated.push({
-        id: "staff_new_task", type: newPersonalTasks.length > 0 ? "success" : "info", severity: "STANDARD", icon: Activity, title: "Tactical Deployment",
+        id: `staff_new_task_${todayStr}`, type: newPersonalTasks.length > 0 ? "success" : "info", severity: "STANDARD", icon: Activity, title: "New Tasks",
         text: newPersonalTasks.length > 0
-            ? `Node Alert: ${newPersonalTasks.length} fresh mission assignments initialized.`
-            : "No new mission assignments detected in recent cycle.",
+            ? `Notice: ${newPersonalTasks.length} new task assignments added today.`
+            : "No new task assignments detected in recent hours.",
         actionLabel: "Start Work", actionType: "ROUTE", actionTarget: "/tasks"
     })
 
-    // 8. Node Telemetry sync (CRITICAL check)
+    // 8. Attendance Sync
     const yesterdayLog = myLogs.find(l => l.date === yesterdayStr)
     const ghostSync = yesterdayLog && !yesterdayLog.clockOut
     generated.push({
-      id: "staff_ghost_personal", type: ghostSync ? "warning" : "success", severity: ghostSync ? "CRITICAL" : "STANDARD", icon: AlertTriangle, title: "Telemetry Sync",
+      id: `staff_ghost_personal_${todayStr}`, type: ghostSync ? "warning" : "success", severity: ghostSync ? "CRITICAL" : "STANDARD", icon: AlertTriangle, title: "Record Sync",
       text: ghostSync
-        ? "Telemetry Mismatch: Failed to finalize clock-out for previous cycle."
-        : "Node Integrity Verified: Telemetry synced perfectly with the grid.",
+        ? "Action Needed: Failed to finalize clock-out for the previous work day."
+        : "Verified: All attendance records are up to date.",
       actionLabel: "Resolve Sync", actionType: "ROUTE", actionTarget: "/staff/attendance"
     })
 
-    // 9. Leave Station
+    // 9. Leave Schedule
     const upcomingLeave = myLeaves.find(req => req.status === 'APPROVED' && isWithinInterval(parseISO(req.startDate), { start: now, end: addDays(now, 7) }))
     generated.push({
-        id: "staff_upcoming_leave", type: "info", severity: "STANDARD", icon: Calendar, title: "Leave Station",
+        id: `staff_upcoming_leave_${todayStr}`, type: upcomingLeave ? "info" : "info", severity: "STANDARD", icon: Calendar, title: "Leave Schedule",
         text: upcomingLeave
-            ? `Authorized Absence: Node sign-off starts on ${format(parseISO(upcomingLeave.startDate), 'MMM dd')}.`
-            : "No authorized node absences detected in next 7-day window.",
-        actionLabel: "Plan Leave", actionType: "ROUTE", actionTarget: "/staff/leave"
+            ? `Notice: Your scheduled leave starts on ${format(parseISO(upcomingLeave.startDate), 'MMM dd')}.`
+            : "No scheduled absences detected in the next 7-day window.",
+        actionLabel: "Manage Leave", actionType: "ROUTE", actionTarget: "/staff/leave"
     })
 
-    // 10. Intel Reporting
+    // 10. Daily Reporting
     const yesterdayWorkDay = !isWeekend(subDays(now, 1))
     const missingEOD = yesterdayWorkDay && yesterdayLog && !yesterdayLog.eodReport
     generated.push({
-        id: "staff_missing_eod", type: missingEOD ? "warning" : "success", severity: "STANDARD", icon: FileText, title: "Node Intel",
+        id: `staff_missing_eod_${todayStr}`, type: missingEOD ? "warning" : "success", severity: "STANDARD", icon: FileText, title: "Reporting Status",
         text: missingEOD
-            ? "Intelligence Gap: Previous Daily Intelligence Report missing from archive."
-            : "Node Integrity: All tactical reports submitted for recent active cycles.",
-        actionLabel: "Submit Intel", actionType: "ROUTE", actionTarget: "/staff/reports"
+            ? "Missing Report: Your previous Daily Report is missing."
+            : "Complete: All daily reports submitted for recent work days.",
+        actionLabel: "Submit Report", actionType: "ROUTE", actionTarget: "/staff/reports"
     })
 
-    // --- 2. ADMINISTRATIVE (FLEET) MACRO ENGINE (20 Admin Rules) ---
+    // --- 2. ADMINISTRATIVE MACRO ENGINE (20 Admin Rules) ---
     if (isAdmin) {
       const todaysLogs = attendanceLogs.filter(l => l.date === todayStr)
       const expectedStaff = staffList.filter(s => !['SUPERADMIN', 'ORG_ADMIN', 'MANAGING_DIRECTOR', 'HR_MANAGER'].includes(s.role))
       const activeStaffPool = selectedStaffId === "ALL" ? expectedStaff : expectedStaff.filter(s => s.id === selectedStaffId)
       const activeStaffIds = activeStaffPool.map(s => s.id)
 
-      // 11. Live Overwatch (Always)
+      // 11. Real-time Attendance
       const lateToday = todaysLogs.filter(l => l.remarks?.includes('LATE') && activeStaffIds.includes(l.userId))
       generated.push({
-          id: "admin_late_today", type: lateToday.length > 0 ? "warning" : "success", severity: "STANDARD", icon: Clock, title: "Fleet Overwatch",
+          id: `admin_late_today_${todayStr}`, type: lateToday.length > 0 ? "warning" : "success", severity: "STANDARD", icon: Clock, title: "Company Attendance",
           text: lateToday.length > 0
-            ? `${lateToday.length} unit(s) arrived with arrival latency today.`
-            : "Full Fleet Synced: Zero arrival friction detected across active nodes.",
+            ? `${lateToday.length} staff member(s) arrived with attendance latency today.`
+            : "Team Synced: Zero arrival performance flags detected today.",
           actionLabel: "View Roster", actionType: "ROUTE", actionTarget: "/staff/attendance"
       })
 
@@ -258,43 +254,43 @@ export function IntelligentSummaryCenter({
       const missingToday = activeStaffPool.filter(s => !todaysLogs.some(l => l.userId === s.id))
       if (missingToday.length > 0 && !isWeekend(now)) {
         generated.push({
-          id: "admin_missing", type: "action", severity: "CRITICAL", icon: UserX, title: "Fleet AWOL",
-          text: `Critical Gap: ${missingToday.length} nodes failed to initialize today's telemetry.`,
-          actionLabel: "Audit Fleet", actionType: "ROUTE", actionTarget: "/staff/attendance"
+          id: `admin_missing_${todayStr}`, type: "action", severity: "CRITICAL", icon: UserX, title: "Missing Personnel",
+          text: `Critical Gap: ${missingToday.length} staff members failed to initialize today's attendance.`,
+          actionLabel: "Investigate", actionType: "ROUTE", actionTarget: "/staff/attendance"
         })
       }
 
-      // 13. Ghost Shifts (CRITICAL)
+      // 13. Attendance Gaps (CRITICAL)
       const ghosts = attendanceLogs.filter(l => l.date === yesterdayStr && !l.clockOut && activeStaffIds.includes(l.userId))
       if (ghosts.length > 0) {
         generated.push({
-          id: "admin_ghosts", type: "warning", severity: "CRITICAL", icon: AlertTriangle, title: "Node Ghosting",
-          text: `Protocol Violation: ${ghosts.length} nodes failed clock-out yesterday.`,
-          actionLabel: "Fix Telemetry", actionType: "MODAL", actionTarget: "VERIFY_SHIFT"
+          id: `admin_ghosts_${todayStr}`, type: "warning", severity: "CRITICAL", icon: AlertTriangle, title: "Attendance Gaps",
+          text: `System Alert: ${ghosts.length} employees failed to clock-out yesterday.`,
+          actionLabel: "Fix Records", actionType: "MODAL", actionTarget: "VERIFY_SHIFT"
         })
       }
 
-      // 14. Review Bottleneck (Always)
+      // 14. Review Queue
       const pendingCount = tasks.filter(t => t.status === 'AWAITING_REVIEW' && activeStaffIds.includes(t.assignedTo)).length
       generated.push({
-        id: "admin_reviews", type: pendingCount > 0 ? "action" : "success", severity: "STANDARD", icon: Activity, title: "Fleet Triage",
+        id: `admin_reviews_${todayStr}`, type: pendingCount > 0 ? "action" : "success", severity: "STANDARD", icon: Activity, title: "Review Queue",
         text: pendingCount > 0
-            ? `Mission Stalled: ${pendingCount} deployments awaiting administrative review.`
-            : "Tactical Flow Optimal: Authorization queue clear.",
-        actionLabel: "Clear Path", actionType: "ROUTE", actionTarget: "/tasks"
+            ? `Action Required: ${pendingCount} tasks awaiting administrative review.`
+            : "Flow Optimal: The task authorization queue is currently clear.",
+        actionLabel: "Process Queue", actionType: "ROUTE", actionTarget: "/tasks"
       })
 
-      // 15. Idle Nodes (Always)
-      const idleNodes = activeStaffPool.filter(s => !tasks.some(t => t.assignedTo === s.id && t.status !== 'ARCHIVED'))
+      // 15. Team Capacity
+      const idleStaff = activeStaffPool.filter(s => !tasks.some(t => t.assignedTo === s.id && t.status !== 'ARCHIVED'))
       generated.push({
-          id: "admin_idle", type: idleNodes.length > 0 ? "action" : "success", severity: "STANDARD", icon: UserX, title: "Fleet Capacity",
-          text: idleNodes.length > 0
-            ? `Unutilized Nodes: ${idleNodes.length} staff currently have zero active missions.`
-            : "Fleet Utilization Optimal: Zero unassigned units detected.",
-          actionLabel: "Deploy Work", actionType: "ROUTE", actionTarget: "/tasks"
+          id: `admin_idle_${todayStr}`, type: idleStaff.length > 0 ? "action" : "success", severity: "STANDARD", icon: UserX, title: "Team Capacity",
+          text: idleStaff.length > 0
+            ? `Unutilized Capacity: ${idleStaff.length} staff currently have zero active tasks.`
+            : "Utilization High: All available employees have active assignments.",
+          actionLabel: "Assign Tasks", actionType: "ROUTE", actionTarget: "/tasks"
       })
 
-      // 16. Chronic Absenteeism (Always)
+      // 16. Chronic Absenteeism
       const monthStart = startOfToday()
       monthStart.setDate(1)
       const chronicAbsent = activeStaffPool.map(s => {
@@ -302,156 +298,156 @@ export function IntelligentSummaryCenter({
           return { id: s.id, name: s.fullName, count: 22 - logs.length }
       }).sort((a, b) => b.count - a.count)[0]
       generated.push({
-        id: "admin_chronic_absent", type: (chronicAbsent && chronicAbsent.count > 5) ? "warning" : "info", severity: "STANDARD", icon: ShieldAlert, title: "Fleet Integrity",
+        id: `admin_chronic_absent_${todayStr}`, type: (chronicAbsent && chronicAbsent.count > 5) ? "warning" : "info", severity: "STANDARD", icon: ShieldAlert, title: "Team Stability",
         text: (chronicAbsent && chronicAbsent.count > 5)
-            ? `Chronic Gap: ${chronicAbsent.name} missed ${chronicAbsent.count} sessions this month.`
-            : "Fleet Resilience High: No chronic absenteeism patterns detected.",
+            ? `Performance Flag: ${chronicAbsent.name} missed ${chronicAbsent.count} shifts this month.`
+            : "Resilience High: No chronic absenteeism patterns detected.",
         actionLabel: "Audit History", actionType: "ROUTE", actionTarget: "/reports"
       })
 
-      // 17. Velocity Leader (Always)
+      // 17. High Performance
       const weekStart = startOfWeek(now, { weekStartsOn: 1 })
       const topVelocity = activeStaffPool.map(s => ({
           name: s.fullName,
           count: tasks.filter(t => t.assignedTo === s.id && t.status === 'ARCHIVED' && isAfter(parseISO(t.createdAt), weekStart)).length
       })).sort((a, b) => b.count - a.count)[0]
       generated.push({
-        id: "admin_velocity_top", type: (topVelocity && topVelocity.count > 3) ? "success" : "info", severity: "STANDARD", icon: Zap, title: "Velocity Leader",
+        id: `admin_velocity_top_${todayStr}`, type: (topVelocity && topVelocity.count > 3) ? "success" : "info", severity: "STANDARD", icon: Zap, title: "Top Performance",
         text: (topVelocity && topVelocity.count > 3)
-            ? `Tactical Lead: ${topVelocity.name} finalized ${topVelocity.count} missions this week.`
-            : "Operational Velocity Stable: Fleet performance at nominal levels.",
-        actionLabel: "Send Medals", actionType: "MODAL", actionTarget: "SEND_KUDOS"
+            ? `Excellent Velocity: ${topVelocity.name} completed ${topVelocity.count} tasks this week.`
+            : "Status: Team performance is at standard levels.",
+        actionLabel: "Send Recognition", actionType: "MODAL", actionTarget: "SEND_KUDOS"
       })
 
-      // 18. Leave Depletion (Always)
+      // 18. Leave Balances
       const depletedLeave = activeStaffPool.find(s => (s.leaveEntitlements?.ANNUAL || 21) <= 2)
       generated.push({
-          id: "admin_leave_low", type: depletedLeave ? "info" : "success", severity: "STANDARD", icon: Calendar, title: "Fleet Reserves",
+          id: `admin_leave_low_${todayStr}`, type: depletedLeave ? "info" : "success", severity: "STANDARD", icon: Calendar, title: "Leave Balances",
           text: depletedLeave
-            ? `Balance Alert: ${depletedLeave.fullName} has critical leave reserves (< 2 days).`
-            : "Personnel Reserves Stable: Fleet leave balances within authorized thresholds.",
-          actionLabel: "Review Ledger", actionType: "ROUTE", actionTarget: "/reports"
+            ? `Balance Alert: ${depletedLeave.fullName} has low leave reserves (< 2 days).`
+            : "Reserves Stable: Team leave balances are within standard limits.",
+          actionLabel: "Review Records", actionType: "ROUTE", actionTarget: "/reports"
       })
 
-      // 19. Task Revision Loop (Always)
+      // 19. Workflow Friction
       const revisionLoop = tasks.find(t => t.status === 'ACTIVE' && (t.activity?.filter(a => a.toStatus === 'AWAITING_REVIEW').length || 0) > 1)
       generated.push({
-          id: "admin_rev_loop", type: revisionLoop ? "warning" : "success", severity: "STANDARD", icon: Repeat, title: "Mission Logic",
+          id: `admin_rev_loop_${todayStr}`, type: revisionLoop ? "warning" : "success", severity: "STANDARD", icon: Repeat, title: "Workflow Friction",
           text: revisionLoop
-            ? `Node Friction: Mission '${revisionLoop.title}' stuck in revision loop.`
-            : "Workflow Cohesion: No mission logic fragmentation detected.",
+            ? `Performance Flag: Task '${revisionLoop.title}' is stuck in a revision loop.`
+            : "Workflow Cohesion: No task fragmentation detected.",
           actionLabel: "Audit Flow", actionType: "ROUTE", actionTarget: "/tasks"
       })
 
-      // 20. Mass Leave Warning (Always)
+      // 20. Team Availability
       const massLeaveDate = leaveRequests.filter(req => req.status === 'APPROVED' && isAfter(parseISO(req.startDate), now)).map(r => r.startDate)
       const dateCounts = massLeaveDate.reduce((acc, d) => { acc[d] = (acc[d] || 0) + 1; return acc; }, {} as Record<string, number>)
       const peakDate = Object.entries(dateCounts).find(([_, count]) => count > (expectedStaff.length * 0.15))
       generated.push({
-          id: "admin_mass_leave", type: peakDate ? "warning" : "success", severity: "STANDARD", icon: AlertTriangle, title: "Strategic Gaps",
+          id: `admin_mass_leave_${todayStr}`, type: peakDate ? "warning" : "success", severity: "STANDARD", icon: AlertTriangle, title: "Team Availability",
           text: peakDate
-            ? `Capacity Alert: Over 15% of fleet absent on ${format(parseISO(peakDate[0]), 'MMM dd')}.`
-            : "Operational Continuity: No overlapping fleet-wide leaves detected.",
-          actionLabel: "View Matrix", actionType: "ROUTE", actionTarget: "/staff/attendance"
+            ? `Capacity Alert: Over 15% of the team is scheduled for leave on ${format(parseISO(peakDate[0]), 'MMM dd')}.`
+            : "Availability High: No overlapping team-wide leaves scheduled.",
+          actionLabel: "View Roster", actionType: "ROUTE", actionTarget: "/staff/attendance"
       })
 
-      // 21. Shift Truncation (Always)
+      // 21. Workday Compliance
       const truncationNodes = activeStaffPool.filter(s => {
           const logs = attendanceLogs.filter(l => l.userId === s.id && l.remarks?.includes('UNDERTIME'))
           return logs.length >= 3
       })
       generated.push({
-          id: "admin_trunc_crit", type: truncationNodes.length > 0 ? "warning" : "success", severity: truncationNodes.length > 0 ? "CRITICAL" : "STANDARD", icon: Clock, title: "Duty Cycle",
+          id: `admin_trunc_crit_${todayStr}`, type: truncationNodes.length > 0 ? "warning" : "success", severity: truncationNodes.length > 0 ? "CRITICAL" : "STANDARD", icon: Clock, title: "Workday Compliance",
           text: truncationNodes.length > 0
-            ? `Telemetry Friction: ${truncationNodes.length} nodes exhibiting repeated early out.`
-            : "Standard Duty Cycles: Node persistence within established protocols.",
-          actionLabel: "Audit Nodes", actionType: "ROUTE", actionTarget: "/staff/attendance"
+            ? `Performance Flag: ${truncationNodes.length} staff members show repeated early clock-outs.`
+            : "Compliance High: Attendance patterns within established policies.",
+          actionLabel: "Review Attendance", actionType: "ROUTE", actionTarget: "/staff/attendance"
       })
 
-      // 22. Recognition Drought (Always)
+      // 22. Recognition Pulse
       const sortedNominations = [...nominations].sort((a, b) => b.timestamp.localeCompare(a.timestamp))
       const lastKudoDays = sortedNominations[0] ? differenceInDays(now, new Date(sortedNominations[0].timestamp)) : 99
       generated.push({
-        id: "admin_culture", type: lastKudoDays > 14 ? "info" : "success", severity: "STANDARD", icon: Heart, title: "Cultural Pulse",
+        id: `admin_culture_${todayStr}`, type: lastKudoDays > 14 ? "info" : "success", severity: "STANDARD", icon: Heart, title: "Recognition Pulse",
         text: lastKudoDays > 14
-            ? `Morale Alert: Recognition drought detected (${lastKudoDays} days since last Kudos).`
-            : `Culture High: Fleet node recognized ${lastKudoDays} days ago.`,
-        actionLabel: "Boost Morale", actionType: "ROUTE", actionTarget: "/reports"
+            ? `Culture Alert: No recognition awards issued in the last 14 days.`
+            : `Culture High: Team member recognized ${lastKudoDays} days ago.`,
+        actionLabel: "Issue Award", actionType: "ROUTE", actionTarget: "/reports"
       })
 
-      // 23. Unauthorized Telemetry (Always)
+      // 23. Schedule Integrity
       const weekendGhost = attendanceLogs.find(l => {
           const day = getDay(parseISO(l.date))
           return (day === 0 || day === 6) && !isAuthorizedWeekend(l.userId)
       })
       generated.push({
-          id: "admin_weekend", type: weekendGhost ? "warning" : "success", severity: "STANDARD", icon: ShieldQuestion, title: "Grid Integrity",
+          id: `admin_weekend_${todayStr}`, type: weekendGhost ? "warning" : "success", severity: "STANDARD", icon: ShieldQuestion, title: "Schedule Integrity",
           text: weekendGhost
-            ? `Unauthorized Telemetry: Node activity detected during unauthorized cycle (Weekend).`
-            : "Grid Integrity: Zero unauthorized telemetry events detected on idle cycles.",
+            ? `Warning: Unscheduled activity detected during the weekend.`
+            : "Integrity Verified: All attendance records match scheduled work days.",
           actionLabel: "Audit Security", actionType: "ROUTE", actionTarget: "/reports"
       })
 
-      // 24. Task Overload (Always)
+      // 24. Workload Balance
       const overloaded = activeStaffPool.find(s => tasks.filter(t => t.assignedTo === s.id && t.status !== 'ARCHIVED').length > 10)
       generated.push({
-          id: "admin_overload", type: overloaded ? "warning" : "success", severity: "STANDARD", icon: ShieldAlert, title: "Node Loading",
+          id: `admin_overload_${todayStr}`, type: overloaded ? "warning" : "success", severity: "STANDARD", icon: ShieldAlert, title: "Workload Balance",
           text: overloaded
-            ? `Node Critical: ${overloaded.fullName} overloaded with > 10 missions.`
-            : "Load Balancing Optimal: All nodes operating within healthy mission density.",
-          actionLabel: "Balance Load", actionType: "ROUTE", actionTarget: "/tasks"
+            ? `Overload Alert: ${overloaded.fullName} is managing over 10 active tasks.`
+            : "Balance Optimal: All team members have manageable task loads.",
+          actionLabel: "Balance Workload", actionType: "ROUTE", actionTarget: "/tasks"
       })
 
-      // 25. Authorization Flow (Always)
+      // 25. HR Authorization Flow
       const staleLeave = leaveRequests.find(req => req.status === 'PENDING' && differenceInHours(now, new Date(req.createdAt)) > 48)
       generated.push({
-          id: "admin_leave_stale", type: staleLeave ? "action" : "success", severity: "STANDARD", icon: Hourglass, title: "Command Hub",
+          id: `admin_leave_stale_${todayStr}`, type: staleLeave ? "action" : "success", severity: "STANDARD", icon: Hourglass, title: "Management Hub",
           text: staleLeave
-            ? "Command Friction: Authorized absence requests pending for > 48 hours."
-            : "Command Response Optimal: Authorization queue clear of stale entries.",
+            ? "Workflow Alert: Leave requests are pending for more than 48 hours."
+            : "Response Optimal: Leave authorization queue is up to date.",
           actionLabel: "Clear Queue", actionType: "ROUTE", actionTarget: "/staff/leave"
       })
 
-      // 26. Operational Elite (Always)
-      const topStreakNode = expectedStaff.map(s => {
+      // 26. Exceptional Performance
+      const topStreak = activeStaffPool.map(s => {
           const sLogs = [...attendanceLogs.filter(l => l.userId === s.id)].sort((a, b) => b.date.localeCompare(a.date))
           let sCount = 0
           for (const l of sLogs) { if (l.status === 'APPROVED' && !l.remarks?.includes('LATE')) sCount++; else break; }
           return { name: s.fullName, sCount }
       }).sort((a, b) => b.sCount - a.sCount)[0]
       generated.push({
-        id: "admin_elite", type: "success", severity: "STANDARD", icon: Trophy, title: "Fleet Elite",
-        text: topStreakNode
-            ? `Top Unit: ${topStreakNode.name} maintains a perfect ${topStreakNode.sCount}-day arrival streak.`
-            : "Fleet Readiness: Analyzing nodal punctuality cadences.",
-        actionLabel: "Review Leads", actionType: "MODAL", actionTarget: "SEND_KUDOS"
+        id: `admin_elite_${todayStr}`, type: "success", severity: "STANDARD", icon: Trophy, title: "Team Excellence",
+        text: topStreak
+            ? `Excellence: ${topStreak.name} has a perfect ${topStreak.sCount}-day attendance streak.`
+            : "Performance Tracking: Analyzing team punctuality metrics.",
+        actionLabel: "Review Awards", actionType: "MODAL", actionTarget: "SEND_KUDOS"
       })
 
-      // 27. Duty Reporting (Always)
+      // 27. Reporting Timelines
       const lateEOD = attendanceLogs.find(l => l.eodReport && l.clockOut && new Date(l.clockOut).getHours() >= 23)
       generated.push({
-          id: "admin_late_eod", type: lateEOD ? "info" : "success", severity: "STANDARD", icon: Clock, title: "Reporting Sync",
+          id: `admin_late_eod_${todayStr}`, type: lateEOD ? "info" : "success", severity: "STANDARD", icon: Clock, title: "Reporting Timeline",
           text: lateEOD
-            ? "Intelligence Latency: Detected report submissions past node midnight."
-            : "Reporting Integrity: All tactical data submitted within duty parameters.",
+            ? "Timeline Delay: Daily reports are being submitted very late in the evening."
+            : "Reporting Integrity: All reports submitted within standard business hours.",
           actionLabel: "View Ledger", actionType: "ROUTE", actionTarget: "/reports"
       })
 
-      // 28. Burnout Watch (Always)
+      // 28. Employee Wellbeing
       const burnoutRisk = expectedStaff.find(s => {
           const logs = attendanceLogs.filter(l => l.userId === s.id && isAfter(parseISO(l.date + 'T00:00:00'), subDays(now, 21)))
           const hours = logs.reduce((acc, l) => acc + ((l.duration || 0) / 3600), 0)
           return hours > 135
       })
       generated.push({
-          id: "admin_burnout_risk", type: burnoutRisk ? "warning" : "success", severity: "STANDARD", icon: Heart, title: "Health Metrics",
+          id: `admin_burnout_risk_${todayStr}`, type: burnoutRisk ? "warning" : "success", severity: "STANDARD", icon: Heart, title: "Employee Wellbeing",
           text: burnoutRisk
-            ? `Burnout Risk: High intensity node utilization detected for ${burnoutRisk.fullName}.`
-            : "Fleet Health: Unit utilization within healthy operational limits.",
+            ? `Burnout Risk: High intensity hours detected for ${burnoutRisk.fullName}.`
+            : "Wellbeing Stable: Employee workloads appear within healthy limits.",
           actionLabel: "Check Pulse", actionType: "ROUTE", actionTarget: "/reports"
       })
 
-      // 29. Global Velocity (Always)
+      // 29. Project Momentum
       const globalStagnant = tasks.find(t =>
           t.status === 'ACTIVE' &&
           activeStaffIds.includes(t.assignedTo) &&
@@ -459,33 +455,33 @@ export function IntelligentSummaryCenter({
           (now.getTime() - new Date(t.activity[t.activity.length-1].timestamp).getTime()) > 259200000
       )
       generated.push({
-          id: "admin_stagnant_fleet", type: globalStagnant ? "warning" : "success", severity: "STANDARD", icon: Hourglass, title: "Global Velocity",
+          id: `admin_stagnant_fleet_${todayStr}`, type: globalStagnant ? "warning" : "success", severity: "STANDARD", icon: Hourglass, title: "Project Momentum",
           text: globalStagnant
-            ? `Mission Friction: Global stagnant missions detected (> 72h).`
-            : "Operational Velocity High: Fleet missions moving through path optimally.",
-          actionLabel: "Sync Fleet", actionType: "ROUTE", actionTarget: "/tasks"
+            ? `Momentum Flag: Certain projects have had zero updates in 72 hours.`
+            : "Momentum High: All team projects are moving forward optimally.",
+          actionLabel: "Sync Projects", actionType: "ROUTE", actionTarget: "/tasks"
       })
 
-      // 30. Service Landmarks (Always)
+      // 30. Anniversary Milestones
       const anniversaryNode = expectedStaff.find(s => {
           if (!s.joinedDate) return false
           const join = parseISO(s.joinedDate)
           return isThisWeek(join) && differenceInYears(now, join) >= 1
       })
       generated.push({
-          id: "admin_anniversary", type: anniversaryNode ? "success" : "info", severity: "STANDARD", icon: Gift, title: "Service Cycle",
+          id: `admin_anniversary_${todayStr}`, type: anniversaryNode ? "success" : "info", severity: "STANDARD", icon: Gift, title: "Work Anniversaries",
           text: anniversaryNode
-            ? `Node Milestone: Celebrating node integrity anniversary for ${anniversaryNode.fullName}.`
-            : "Service Reliability: No node anniversaries in current temporal window.",
-          actionLabel: "Commemorate", actionType: "MODAL", actionTarget: "MESSAGE_STAFF"
+            ? `Milestone: Celebrating a work anniversary for ${anniversaryNode.fullName}.`
+            : "Status: No upcoming staff anniversaries in this window.",
+          actionLabel: "Send Message", actionType: "MODAL", actionTarget: "MESSAGE_STAFF"
       })
     }
 
     // Fallback
     if (generated.length === 0) {
       generated.push({
-        id: "empty", type: "success", severity: "STANDARD", icon: CheckCircle, title: "Status Nominal",
-        text: "Operations are running at 100% readiness. No anomalies detected.",
+        id: "empty", type: "success", severity: "STANDARD", icon: CheckCircle, title: "Status Normal",
+        text: "Company operations are running efficiently. No flags detected.",
         actionLabel: "Dashboard", actionType: "ROUTE", actionTarget: "/"
       })
     }
@@ -493,8 +489,8 @@ export function IntelligentSummaryCenter({
     return generated
   }, [attendanceLogs, tasks, staffList, timeframe, isAdmin, userProfile, nominations, selectedStaffId])
 
-  const criticalAlerts = useMemo(() => allInsights.filter(i => i.severity === 'CRITICAL' && !dismissedInsights.includes(i.id)), [allInsights, dismissedInsights])
-  const standardBriefings = useMemo(() => allInsights.filter(i => i.severity !== 'CRITICAL' && !dismissedInsights.includes(i.id)), [allInsights, dismissedInsights])
+  const criticalAlerts = useMemo(() => allInsights.filter(i => i.severity === 'CRITICAL' && !(userProfile?.dismissedAlertIds || []).includes(i.id)), [allInsights, userProfile?.dismissedAlertIds])
+  const standardBriefings = useMemo(() => allInsights.filter(i => i.severity !== 'CRITICAL' && !(userProfile?.dismissedAlertIds || []).includes(i.id)), [allInsights, userProfile?.dismissedAlertIds])
 
   // --- ROTATION LOGIC ---
   const handleNext = useCallback(() => {
@@ -521,14 +517,30 @@ export function IntelligentSummaryCenter({
     if (currentIndex >= standardBriefings.length) setCurrentIndex(0)
   }, [standardBriefings.length, currentIndex])
 
-  const handleInsightAction = (insight: any) => {
-    if (insight.actionType === 'ROUTE') {
-      router.push(insight.actionTarget)
-    } else if (insight.actionType === 'MODAL') {
-      setModalData(insight)
-      setActiveModal(insight.actionTarget)
+  const handleAcknowledge = async (alert: any) => {
+    if (!firestore || !userProfile) return;
+
+    const newDismissed = Array.from(new Set([...(userProfile.dismissedAlertIds || []), alert.id]));
+
+    // 1. Update User Document (Optimistic UI handled by Firestore hooks usually, but we can local-set if needed)
+    try {
+        const { updateDocumentNonBlocking } = await import('@/firebase');
+        const userRef = doc(firestore, 'users', userProfile.id);
+        updateDocumentNonBlocking(userRef, { dismissedAlertIds: newDismissed });
+
+        // 2. Log to Audit Ledger
+        const { auditService } = await import('@/services/audit-service');
+        await auditService.logAction(
+            firestore,
+            userProfile,
+            'ALERT_ACKNOWLEDGED',
+            `Acknowledged insight [${alert.title}]: ${alert.text}`,
+            { id: alert.id, type: 'INTELLIGENT_INSIGHT' }
+        );
+    } catch (e) {
+        console.error("Acknowledgment synchronization failed:", e);
     }
-  }
+  };
 
   const activeInsight = standardBriefings[currentIndex]
   const Icon = activeInsight?.icon || CheckCircle
@@ -536,7 +548,7 @@ export function IntelligentSummaryCenter({
   return (
     <div className="w-full flex flex-col h-full gap-4 md:gap-6 overflow-x-hidden">
 
-      {/* 1. CRITICAL ALERT OVERWATCH (Only renders if crisis detected) */}
+      {/* 1. CRITICAL ALERT SECTION */}
       {criticalAlerts.length > 0 && (
         <div className="flex flex-col gap-3 w-full animate-in slide-in-from-top-4 duration-700">
           {criticalAlerts.map(alert => (
@@ -549,7 +561,7 @@ export function IntelligentSummaryCenter({
                   <AlertTriangle className="w-4 h-4 md:w-5 md:h-5" />
                 </div>
                 <div className="min-w-0">
-                  <h4 className="text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] text-rose-500 mb-0.5">Critical Overwatch</h4>
+                  <h4 className="text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] text-rose-500 mb-0.5">Critical Alerts</h4>
                   <p className="text-xs md:text-sm font-black tracking-tight text-white leading-tight break-words">{alert.text}</p>
                 </div>
               </div>
@@ -558,7 +570,7 @@ export function IntelligentSummaryCenter({
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => setDismissedInsights(prev => [...prev, alert.id])}
+                    onClick={() => handleAcknowledge(alert)}
                     className="h-8 md:h-9 px-3 md:px-4 text-[8px] md:text-[9px] font-black uppercase tracking-widest text-rose-500/60 hover:text-rose-500 hover:bg-rose-500/10 rounded-lg md:rounded-xl"
                   >
                     Acknowledge
@@ -575,7 +587,7 @@ export function IntelligentSummaryCenter({
         </div>
       )}
 
-      {/* 2. TACTICAL BRIEFING ROTATOR */}
+      {/* 2. INSIGHTS ROTATOR */}
       <Card
         onClick={() => router.push(isAdmin ? '/reports?tab=team-reports' : '/reports?tab=intelligent-brief')}
         className="bg-card border-border shadow-2xl rounded-[1.5rem] md:rounded-[2rem] overflow-hidden flex flex-col h-full transition-all duration-500 cursor-pointer hover:border-primary/30 group/card"
@@ -587,9 +599,9 @@ export function IntelligentSummaryCenter({
                 </div>
                 <div>
                     <CardTitle className="text-[10px] md:text-xs font-black uppercase tracking-[0.2em] text-primary">
-                        {isAdmin ? "Team Insight" : "Personal Insight"}
+                        {isAdmin ? "Team Insights" : "Personal Insights"}
                     </CardTitle>
-                    <CardDescription className="text-[7px] md:text-[8px] font-bold uppercase opacity-40">AI-Driven Node Analysis</CardDescription>
+                    <CardDescription className="text-[7px] md:text-[8px] font-bold uppercase opacity-40">Performance & Trend Analytics</CardDescription>
                 </div>
             </div>
 
@@ -606,7 +618,7 @@ export function IntelligentSummaryCenter({
                     size="icon"
                     onClick={handlePrev}
                     className="h-7 w-7 md:h-8 md:w-8 rounded-lg md:rounded-xl hover:bg-secondary text-muted-foreground transition-all active:scale-95 border border-white/5"
-                    title="Previous Node"
+                    title="Previous"
                 >
                     <ChevronLeft className="w-3.5 h-3.5 md:w-4 md:h-4" />
                 </Button>
@@ -615,7 +627,7 @@ export function IntelligentSummaryCenter({
                     size="icon"
                     onClick={handleNext}
                     className="h-7 w-7 md:h-8 md:w-8 rounded-lg md:rounded-xl hover:bg-secondary text-muted-foreground transition-all active:scale-95 border border-white/5"
-                    title="Next Node"
+                    title="Next"
                 >
                     <ChevronRight className="w-3.5 h-3.5 md:w-4 md:h-4" />
                 </Button>
@@ -690,10 +702,10 @@ export function IntelligentSummaryCenter({
                     </div>
                     <div className="min-w-0">
                         <DialogTitle className="text-xl md:text-2xl font-black font-headline tracking-tighter uppercase truncate">
-                            {activeModal === 'MESSAGE_STAFF' ? "Triage Comms" :
-                             activeModal === 'VERIFY_SHIFT' ? "Operational Audit" : "Intelligence Action"}
+                            {activeModal === 'MESSAGE_STAFF' ? "Staff Communication" :
+                             activeModal === 'VERIFY_SHIFT' ? "Attendance Audit" : "Intelligence Action"}
                         </DialogTitle>
-                        <DialogDescription className="text-[9px] md:text-[10px] font-black uppercase tracking-widest opacity-60 truncate">System Override Node</DialogDescription>
+                        <DialogDescription className="text-[9px] md:text-[10px] font-black uppercase tracking-widest opacity-60 truncate">System Administration</DialogDescription>
                     </div>
                 </div>
             </DialogHeader>
@@ -705,21 +717,21 @@ export function IntelligentSummaryCenter({
                     <p className="text-xs md:text-sm font-medium leading-relaxed italic opacity-80 break-words">"{modalData?.text}"</p>
                 </div>
                 <div className="h-32 md:h-40 border-2 border-dashed border-white/10 rounded-xl md:rounded-2xl flex items-center justify-center">
-                    <p className="text-[9px] md:text-[10px] font-black uppercase tracking-widest opacity-30 px-6 text-center">Messaging Form Interface</p>
+                    <p className="text-[9px] md:text-[10px] font-black uppercase tracking-widest opacity-30 px-6 text-center">Messaging Interface</p>
                 </div>
-                <Button className="w-full h-10 md:h-12 rounded-lg md:rounded-xl font-black uppercase tracking-widest shadow-xl shadow-primary/20 text-[9px] md:text-[10px]" onClick={() => setActiveModal(null)}>Initialize Comms</Button>
+                <Button className="w-full h-10 md:h-12 rounded-lg md:rounded-xl font-black uppercase tracking-widest shadow-xl shadow-primary/20 text-[9px] md:text-[10px]" onClick={() => setActiveModal(null)}>Send Message</Button>
               </div>
             )}
 
             {activeModal === 'VERIFY_SHIFT' && (
               <div className="space-y-4 md:space-y-6">
                 <div className="p-3 md:p-4 rounded-xl md:rounded-2xl bg-rose-500/5 border border-rose-500/10">
-                    <p className="text-[10px] font-black text-rose-500 uppercase mb-2">Anomaly Detected</p>
-                    <p className="text-xs md:text-sm font-medium leading-relaxed opacity-80 break-words">Manual verification required for session dwell time with zero activity.</p>
+                    <p className="text-[10px] font-black text-rose-500 uppercase mb-2">Attendance Gap</p>
+                    <p className="text-xs md:text-sm font-medium leading-relaxed opacity-80 break-words">Manual verification required for session with missing records.</p>
                 </div>
                 <div className="grid grid-cols-2 gap-3 md:gap-4">
-                    <Button variant="outline" className="h-12 md:h-14 rounded-lg md:rounded-xl border-white/10 hover:bg-emerald-500/10 hover:text-emerald-500 font-black uppercase text-[8px] md:text-[10px] tracking-widest" onClick={() => setActiveModal(null)}>Valid</Button>
-                    <Button variant="outline" className="h-12 md:h-14 rounded-lg md:rounded-xl border-white/10 hover:bg-rose-500/10 hover:text-rose-500 font-black uppercase text-[8px] md:text-[10px] tracking-widest" onClick={() => setActiveModal(null)}>Flag</Button>
+                    <Button variant="outline" className="h-12 md:h-14 rounded-lg md:rounded-xl border-white/10 hover:bg-emerald-500/10 hover:text-emerald-500 font-black uppercase text-[8px] md:text-[10px] tracking-widest" onClick={() => setActiveModal(null)}>Mark Valid</Button>
+                    <Button variant="outline" className="h-12 md:h-14 rounded-lg md:rounded-xl border-white/10 hover:bg-rose-500/10 hover:text-rose-500 font-black uppercase text-[8px] md:text-[10px] tracking-widest" onClick={() => setActiveModal(null)}>Flag Issue</Button>
                 </div>
               </div>
             )}
@@ -730,10 +742,10 @@ export function IntelligentSummaryCenter({
                     <Trophy className="w-10 h-10 md:w-12 md:h-12 text-amber-500 animate-bounce" />
                 </div>
                 <div className="min-w-0">
-                    <h4 className="text-base md:text-lg font-black uppercase tracking-tight truncate">Recognize Performance</h4>
-                    <p className="text-[10px] md:text-xs text-muted-foreground mt-1 break-words">Acknowledge exceptional velocity or streak.</p>
+                    <h4 className="text-base md:text-lg font-black uppercase tracking-tight truncate">Staff Recognition</h4>
+                    <p className="text-[10px] md:text-xs text-muted-foreground mt-1 break-words">Acknowledge exceptional performance or streak.</p>
                 </div>
-                <Button className="w-full h-10 md:h-12 rounded-lg md:rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-black uppercase tracking-widest text-[9px] md:text-[10px]" onClick={() => setActiveModal(null)}>Dispatch Recognition</Button>
+                <Button className="w-full h-10 md:h-12 rounded-lg md:rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-black uppercase tracking-widest text-[9px] md:text-[10px]" onClick={() => setActiveModal(null)}>Issue Award</Button>
               </div>
             )}
           </DialogContent>

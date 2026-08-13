@@ -216,7 +216,7 @@ export function AttendanceCenter({ staffList, attendanceLogs, currentUserProfile
                     <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
                     Personnel Telemetry ({activeFilter})
                 </h2>
-                <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-tighter mt-1 opacity-60">Real-time Node Status Monitor</p>
+                <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-tighter mt-1 opacity-60">Real-time Attendance Stream</p>
             </div>
             <Badge variant="outline" className="h-7 px-3 rounded-full border-white/10 text-[9px] font-black uppercase tracking-widest bg-background/50">
                 {format(selectedDate, 'MMM dd, yyyy')}
@@ -227,8 +227,8 @@ export function AttendanceCenter({ staffList, attendanceLogs, currentUserProfile
               <thead className="bg-secondary/50 text-[9px] font-black uppercase tracking-widest sticky top-0 backdrop-blur-md z-10 border-b border-white/5">
                 <tr>
                   <th className="px-6 py-4">Staff Member</th>
-                  <th className="px-6 py-4 text-center">Status</th>
                   <th className="px-6 py-4 text-center">Clock In</th>
+                  <th className="px-6 py-4 text-center">Clock Out</th>
                   <th className="px-6 py-4 text-center">Total Time</th>
                   <th className="px-6 py-4 text-right">Actions</th>
                 </tr>
@@ -237,7 +237,7 @@ export function AttendanceCenter({ staffList, attendanceLogs, currentUserProfile
                 {filteredRoster.length === 0 ? (
                     <tr>
                         <td colSpan={5} className="px-6 py-20 text-center text-muted-foreground uppercase font-black text-[10px] tracking-widest opacity-20">
-                            Zero nodes detected for this filter state
+                            No employees detected
                         </td>
                     </tr>
                 ) : (
@@ -254,26 +254,19 @@ export function AttendanceCenter({ staffList, attendanceLogs, currentUserProfile
                                     </div>
                                 </div>
                             </td>
-                            <td className="px-6 py-4 text-center">
-                                {log ? (
-                                    <Badge variant="outline" className={cn(
-                                        "h-6 px-3 rounded-xl text-[8px] font-black uppercase tracking-widest border-none",
-                                        log.clockOut ? "bg-muted/20 text-muted-foreground" : "bg-emerald-500/10 text-emerald-500 animate-pulse"
-                                    )}>
-                                        {log.clockOut ? 'OUT' : 'ACTIVE'}
-                                    </Badge>
-                                ) : (
-                                    <Badge variant="outline" className="h-6 px-3 rounded-xl text-[8px] font-black uppercase tracking-widest bg-rose-500/10 text-rose-500 border-none">
-                                        ABSENT
-                                    </Badge>
-                                )}
-                            </td>
                             <td className="px-6 py-4 text-center font-mono text-xs">
                                 {log ? (
                                     <div className="flex flex-col items-center">
                                         <span className="text-white font-bold">{format(new Date(log.clockIn), 'HH:mm')}</span>
                                         {log.lateReason && <Badge className="mt-1 h-4 text-[7px] bg-amber-500 text-black border-none font-black px-1.5 uppercase">LATE</Badge>}
                                     </div>
+                                ) : '--:--'}
+                            </td>
+                            <td className="px-6 py-4 text-center font-mono text-xs">
+                                {log?.clockOut ? (
+                                    <span className="text-white font-bold">{format(new Date(log.clockOut), 'HH:mm')}</span>
+                                ) : log ? (
+                                    <Badge variant="outline" className="h-5 px-2 rounded-lg text-[7px] font-black uppercase bg-emerald-500/10 text-emerald-500 border-none animate-pulse">ACTIVE</Badge>
                                 ) : '--:--'}
                             </td>
                             <td className="px-6 py-4 text-center font-mono font-black text-xs text-primary">

@@ -144,6 +144,11 @@ export interface UserProfile {
 
   adminNotes?: string;
 
+  // Performance & Points System
+  performanceScore?: number; // 0-100, baseline 50
+  performanceRating?: 'S' | 'A' | 'B' | 'C' | 'D' | 'E' | 'F';
+  performanceStatus?: 'EXCELLING' | 'STABLE' | 'NEEDS_IMPROVEMENT' | 'FLAGGED';
+
   leaveEntitlements?: {
     ANNUAL: number;
     SICK: number;
@@ -154,6 +159,7 @@ export interface UserProfile {
   deviceType?: 'MOBILE' | 'PC' | null;
   lastHeartbeat?: string | null;
   pendingCommand?: 'SCREENSHOT' | 'SCREEN_SHARE' | 'NONE' | null;
+  dismissedAlertIds?: string[]; // Persisted acknowledgments for Intelligent Summary
   notificationPreferences?: {
     requisitionUpdates?: boolean;
     taskAssignments?: boolean;

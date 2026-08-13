@@ -34,7 +34,8 @@ import { IntelligentSummaryCenter } from "@/components/reports/IntelligentSummar
 import { DashboardTaskList } from "./DashboardTaskList"
 import { DashboardRecentReports } from "./DashboardRecentReports"
 import { DashboardRecentChats } from "./DashboardRecentChats"
-import { LiveFleetRadar } from "./LiveFleetRadar"
+import { LiveTeamRadar } from "./LiveTeamRadar"
+import { StaffPerformanceScore } from "./StaffPerformanceScore"
 import { Announcements } from "./Announcements"
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, ReferenceLine } from "recharts"
 import { startOfWeek, endOfWeek, format, eachDayOfInterval, parseISO } from "date-fns"
@@ -54,13 +55,13 @@ export function StaffDashboard({ userProfile, permissions, systemConfig }: Staff
   const { isMobile } = useDeviceTrust()
 
   const quickActions = [
-    { label: "Add Task", icon: Plus, action: () => uiEmitter.emit('open-assign-task-dialog') },
+    { label: "New Task", icon: Plus, action: () => uiEmitter.emit('open-assign-task-dialog') },
     { label: "Submit EOD", icon: FileText, route: "/staff/reports" },
     { label: "Request Leave", icon: Calendar, action: () => uiEmitter.emit('open-request-leave-dialog') },
-    { label: "Nominate Peer", icon: Award, action: () => uiEmitter.emit('open-recognition-dialog' as any) },
+    { label: "Give Award", icon: Award, action: () => uiEmitter.emit('open-recognition-dialog' as any) },
     { label: "IT Support", icon: MonitorCheck, action: () => uiEmitter.emit('open-it-support-dialog') },
     { label: "Log Expense", icon: Receipt, action: () => uiEmitter.emit('open-new-requisition-dialog') },
-    { label: "Message", icon: MessageSquare, route: "/chat" },
+    { label: "Messages", icon: MessageSquare, route: "/chat" },
     { label: "Workbooks", icon: BookOpen, route: "/library" },
     { label: "Timesheet", icon: Clock, route: "/staff/attendance" },
     { label: "Staff Directory", icon: Users, route: "/staff" },
@@ -68,10 +69,10 @@ export function StaffDashboard({ userProfile, permissions, systemConfig }: Staff
     { label: "Policies", icon: Shield, route: "/library" },
     { label: "HR Helpdesk", icon: HelpCircle, action: () => uiEmitter.emit('open-it-support-dialog') },
     { label: "Payroll", icon: CreditCard, route: "/finance" },
-    { label: "Health & Benefits", icon: Stethoscope, route: "/staff/profile" }
+    { label: "Benefits", icon: Stethoscope, route: "/staff/profile" }
   ]
 
-  // Broadcast access for all nodes
+  // Broadcast access for all staff
   quickActions.push({
       label: "Broadcast",
       icon: Megaphone,
@@ -152,10 +153,10 @@ export function StaffDashboard({ userProfile, permissions, systemConfig }: Staff
         </div>
       </div>
 
-      {/* 2. THE COMMAND STRIP (Top Row) */}
+      {/* 2. OPERATIONAL SUMMARY (Top Row) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 md:gap-6 items-stretch">
 
-        {/* Active Duty Timer (Span 3) */}
+        {/* Active Session Timer (Span 3) */}
         <div className="lg:col-span-3 h-full">
             <ClockControl
                 userProfile={userProfile}
@@ -165,7 +166,7 @@ export function StaffDashboard({ userProfile, permissions, systemConfig }: Staff
             />
         </div>
 
-        {/* The Intelligent Briefing Rotator (Span 5) */}
+        {/* The Personal Insights Rotator (Span 5) */}
         <div className="lg:col-span-5 h-full">
             <IntelligentSummaryCenter
                 staffList={allStaff || []}
@@ -176,16 +177,13 @@ export function StaffDashboard({ userProfile, permissions, systemConfig }: Staff
             />
         </div>
 
-        {/* Live Fleet Radar (Span 4) */}
+        {/* Staff Performance Standing (Span 4) */}
         <div className="lg:col-span-4 h-full">
-            <LiveFleetRadar
-                staffList={allStaff || []}
-                attendanceLogs={attendanceLogs || []}
-            />
+            <StaffPerformanceScore userProfile={userProfile} />
         </div>
       </div>
 
-      {/* 3. THE EXECUTION STRIP (Bottom Row) */}
+      {/* 3. TASK HUB (Bottom Row) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 md:gap-6 items-start">
 
         {/* Active Tasks (Span 8) */}
@@ -207,7 +205,7 @@ export function StaffDashboard({ userProfile, permissions, systemConfig }: Staff
                 onClick={() => uiEmitter.emit('open-new-announcement-dialog')}
                 className="text-[10px] font-black text-primary hover:underline uppercase tracking-tighter"
               >
-                Create New
+                New Post
               </button>
             </CardHeader>
             <CardContent className="p-3 md:p-4 max-h-[300px] overflow-y-auto custom-scrollbar">
@@ -217,7 +215,7 @@ export function StaffDashboard({ userProfile, permissions, systemConfig }: Staff
 
           <Card className="bg-card border-border shadow-sm rounded-2xl overflow-hidden">
             <CardHeader className="border-b border-border/50 pb-3 px-4 md:px-5 pt-4 md:pt-5 bg-secondary/5">
-              <CardTitle className="text-[10px] font-black uppercase tracking-widest">Personnel Comms</CardTitle>
+              <CardTitle className="text-[10px] font-black uppercase tracking-widest">Staff Communications</CardTitle>
             </CardHeader>
             <CardContent className="p-0 max-h-[250px] overflow-y-auto custom-scrollbar">
                 <DashboardRecentChats />
