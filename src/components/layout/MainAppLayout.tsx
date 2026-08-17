@@ -1,7 +1,7 @@
 'use client';
 
 import { useUser, useDoc, useMemoFirebase, useFirestore, useCollection, useAuth } from '@/firebase';
-import { useState, useEffect, Suspense, useMemo, useRef } from 'react';
+import { useState, useEffect, Suspense, useMemo, useRef, useCallback } from 'react';
 import { doc, collection, query, where, limit, updateDoc, onSnapshot, orderBy } from 'firebase/firestore';
 import { signOut } from 'firebase/auth';
 import { useStorage } from '@/firebase';
@@ -58,7 +58,7 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
 
   const { isImpersonating, impersonatedUserId } = useImpersonation();
 
-  const handleLogout = async () => {
+  const handleLogout = useCallback(async () => {
     if (auth && user?.uid) {
         try {
             const userRef = doc(firestore!, 'users', user.uid);
@@ -71,7 +71,7 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
             console.error("Logout failed:", error);
         }
     }
-  };
+  }, [auth, user?.uid, firestore]);
 
   // Listen for Service Worker messages
   useEffect(() => {
@@ -103,6 +103,18 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
     return doc(firestore, 'users', targetId);
   }, [firestore, user?.uid, isImpersonating, impersonatedUserId]);
   const { data: userProfile } = useDoc<UserProfile>(userProfileRef);
+
+  // AUTH LOCKDOWN: Check if user is disabled or archived
+  useEffect(() => {
+    if (userProfile && (userProfile.status === 'DISABLED' || userProfile.isArchived)) {
+      handleLogout();
+      toast({
+        variant: 'destructive',
+        title: 'Access Revoked',
+        description: 'Your account has been disabled or removed by an administrator.'
+      });
+    }
+  }, [userProfile?.status, userProfile?.isArchived, handleLogout, toast]);
 
   const announcementsQuery = useMemoFirebase(() =>
     firestore && userProfile ? query(
@@ -286,6 +298,16 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
   const { isIdle } = useIdleTimer(attendanceRecord);
   const { hasNotified, hasAutoLogged } = useRobustIdleTracker(attendanceRecord);
   const permissions = usePermissions(stableProfile);
+
+  // GLOBAL RADIX FIX: Reset body pointer-events if no dialogs are present
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (document.body.style.pointerEvents === 'none' && !document.querySelector('[role="dialog"], [data-radix-popper-content-wrapper]')) {
+        document.body.style.pointerEvents = "";
+      }
+    }, 1000);
+    return () => clearInterval(interval);
+  }, []);
   const { config } = useSystemConfig(stableProfile?.orgId);
 
   // AUTH SYNC: Ensure permissions are cached and up-to-date
@@ -330,9 +352,7 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
 
         {/* Main Content Viewport Container */}
         <div className="flex-1 flex flex-col min-w-0 h-full bg-secondary/10 overflow-x-hidden md:overflow-hidden">
-          {announcements && announcements.length > 0 && (
-              <GlobalBroadcastTicker broadcasts={announcements} userProfile={stableProfile} />
-          )}
+          <GlobalBroadcastTicker broadcasts={announcements || []} userProfile={stableProfile} />
           <AppHeader
               userProfile={stableProfile}
               onMenuClick={() => {}}

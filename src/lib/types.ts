@@ -3,7 +3,7 @@ import { PREDEFINED_ROLES } from './roles-and-departments';
 
 export type UserPosition = (typeof PREDEFINED_ROLES)[number];
 export type UserRole = "SUPERADMIN" | "ORG_ADMIN" | "MANAGING_DIRECTOR" | "HR_MANAGER" | "FINANCE_MANAGER" | "STAFF";
-export type UserStatus = "ONLINE" | "OFFLINE" | "ON_LEAVE" | "ACTIVE" | "SUSPENDED" | "TERMINATED";
+export type UserStatus = "ONLINE" | "OFFLINE" | "ON_LEAVE" | "ACTIVE" | "SUSPENDED" | "TERMINATED" | "DISABLED";
 export type EmploymentType = "FULL_TIME" | "PART_TIME" | "CONTRACT" | "INTERN";
 export type ModuleOverrideState = "default" | "restricted" | "unlocked";
 
@@ -148,6 +148,10 @@ export interface UserProfile {
   performanceScore?: number; // 0-100, baseline 50
   performanceRating?: 'S' | 'A' | 'B' | 'C' | 'D' | 'E' | 'F';
   performanceStatus?: 'EXCELLING' | 'STABLE' | 'NEEDS_IMPROVEMENT' | 'FLAGGED';
+
+  isArchived?: boolean;
+  archivedAt?: string;
+  accessRevokedAt?: string;
 
   leaveEntitlements?: {
     ANNUAL: number;

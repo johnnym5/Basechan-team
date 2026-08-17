@@ -75,6 +75,8 @@ export function EditStaffProfileForm({ profile, open, onOpenChange, permissions 
       bio: profile.bio || '',
       timezone: profile.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone,
       location: profile.location || '',
+      skills: profile.skills || [],
+      languages: profile.languages || [],
       orgId: profile.orgId || '',
       id: profile.id || '',
     },
@@ -261,14 +263,14 @@ export function EditStaffProfileForm({ profile, open, onOpenChange, permissions 
                     <FormField control={form.control} name="email" render={({ field }) => (
                       <FormItem>
                         <FormLabel className="text-[10px] font-black uppercase tracking-widest opacity-50">Corporate Email</FormLabel>
-                        <FormControl><Input {...field} value={field.value ?? ""} readOnly className="rounded-xl bg-muted h-11 font-bold cursor-not-allowed" /></FormControl>
+                        <FormControl><Input {...field} value={field.value ?? ""} disabled={!isHR} className={cn("rounded-xl h-11 font-bold", !isHR ? "bg-muted cursor-not-allowed" : "bg-background/50")} /></FormControl>
                         <FormMessage />
                       </FormItem>
                     )} />
                     <FormField control={form.control} name="employeeId" render={({ field }) => (
                       <FormItem>
                         <FormLabel className="text-[10px] font-black uppercase tracking-widest opacity-50">Employee ID</FormLabel>
-                        <FormControl><Input {...field} value={field.value ?? ""} readOnly className="rounded-xl bg-muted h-11 font-mono cursor-not-allowed" /></FormControl>
+                        <FormControl><Input {...field} value={field.value ?? ""} disabled={!isHR} className={cn("rounded-xl h-11 font-mono", !isHR ? "bg-muted cursor-not-allowed" : "bg-background/50")} /></FormControl>
                         <FormMessage />
                       </FormItem>
                     )} />
@@ -282,7 +284,7 @@ export function EditStaffProfileForm({ profile, open, onOpenChange, permissions 
                     <FormField control={form.control} name="departmentName" render={({ field }) => (
                       <FormItem>
                         <FormLabel className="text-[10px] font-black uppercase tracking-widest opacity-50">Department</FormLabel>
-                        <FormControl><Input {...field} value={field.value ?? ""} readOnly className="rounded-xl bg-muted h-11 cursor-not-allowed font-bold" /></FormControl>
+                        <FormControl><Input {...field} value={field.value ?? ""} disabled={!isHR} className={cn("rounded-xl h-11 font-bold", !isHR ? "bg-muted cursor-not-allowed" : "bg-background/50")} /></FormControl>
                         <FormMessage />
                       </FormItem>
                     )} />
@@ -327,6 +329,7 @@ export function EditStaffProfileForm({ profile, open, onOpenChange, permissions 
                             <SelectItem value="ACTIVE" className="text-xs font-bold uppercase">Active</SelectItem>
                             <SelectItem value="ON_LEAVE" className="text-xs font-bold uppercase">On Leave</SelectItem>
                             <SelectItem value="SUSPENDED" className="text-xs font-bold uppercase">Suspended</SelectItem>
+                            <SelectItem value="DISABLED" className="text-xs font-bold uppercase text-orange-500">Disabled</SelectItem>
                             <SelectItem value="TERMINATED" className="text-xs font-bold uppercase text-rose-500">Terminated</SelectItem>
                           </SelectContent>
                         </Select>

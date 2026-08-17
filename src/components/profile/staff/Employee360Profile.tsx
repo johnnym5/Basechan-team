@@ -25,7 +25,7 @@ import { format } from 'date-fns';
 import { EditStaffProfileForm } from './EditStaffProfileForm';
 import { StaffDocumentUpload } from './StaffDocumentUpload';
 import { PerformanceDashboard } from '@/components/reports/PerformanceDashboard';
-import { StaffAttendanceAnalytics } from '@/components/attendance/StaffAttendanceAnalytics';
+import { ProfileAttendanceTab } from './ProfileAttendanceTab';
 import { PERMISSION_LABELS } from '@/lib/permissions-registry';
 import { Switch } from '@/components/ui/switch';
 import { useSuperAdminMode } from '@/context/SuperAdminModeProvider';
@@ -75,7 +75,7 @@ export function Employee360Profile({
   if (isLoading) return <Skeleton className="h-[600px] w-full rounded-xl" />;
   if (!data?.profile) return <div className="p-20 text-center uppercase font-black opacity-20">Profile Not Found (ID: {userId})</div>;
 
-  const { profile, attendance, tasks } = data;
+  const { profile, attendance, tasks, reports } = data;
 
   const handleRemoteCommand = async (type: 'SCREENSHOT' | 'SCREEN_SHARE' | 'FORCE_LOGOUT') => {
     if (!firestore || !profile) return;
@@ -383,7 +383,7 @@ export function Employee360Profile({
 
           {isAdmin && (
             <TabsContent value="attendance" className="col-span-full mt-0 focus-visible:outline-none">
-              <StaffAttendanceAnalytics staffId={userId} />
+              <ProfileAttendanceTab staffId={userId} attendanceLogs={attendance} reportsData={reports} />
             </TabsContent>
           )}
 

@@ -64,7 +64,7 @@ export function StaffDashboard({ userProfile, permissions, systemConfig }: Staff
     { label: "Messages", icon: MessageSquare, route: "/chat" },
     { label: "Workbooks", icon: BookOpen, route: "/library" },
     { label: "Timesheet", icon: Clock, route: "/staff/attendance" },
-    { label: "Staff Directory", icon: Users, route: "/staff" },
+    ...(permissions.canViewTeam ? [{ label: "Staff Directory", icon: Users, route: "/staff" }] : []),
     { label: "Book Workspace", icon: Building, route: "/livedisplay" },
     { label: "Policies", icon: Shield, route: "/library" },
     { label: "HR Helpdesk", icon: HelpCircle, action: () => uiEmitter.emit('open-it-support-dialog') },
@@ -179,7 +179,7 @@ export function StaffDashboard({ userProfile, permissions, systemConfig }: Staff
 
         {/* Staff Performance Standing (Span 4) */}
         <div className="lg:col-span-4 h-full">
-            <StaffPerformanceScore userProfile={userProfile} />
+            <StaffPerformanceScore userProfile={userProfile} isAdmin={permissions.canManageStaff || permissions.canManageCompany} />
         </div>
       </div>
 
@@ -200,9 +200,9 @@ export function StaffDashboard({ userProfile, permissions, systemConfig }: Staff
         <div className="lg:col-span-4 flex flex-col gap-4 md:gap-6 w-full">
           <Card className="bg-card border-border shadow-sm rounded-2xl overflow-hidden">
             <CardHeader className="border-b border-border/50 pb-3 px-4 md:px-5 pt-4 md:pt-5 flex flex-row justify-between items-center bg-secondary/5">
-              <CardTitle className="text-[10px] font-black uppercase tracking-widest">Broadcast Message</CardTitle>
+              <CardTitle className="text-[10px] font-black uppercase tracking-widest cursor-pointer hover:text-primary transition-colors" onClick={() => uiEmitter.emit('open-broadcast-system')}>Broadcast Message</CardTitle>
               <button
-                onClick={() => uiEmitter.emit('open-new-announcement-dialog')}
+                onClick={() => uiEmitter.emit('open-broadcast-system')}
                 className="text-[10px] font-black text-primary hover:underline uppercase tracking-tighter"
               >
                 New Post

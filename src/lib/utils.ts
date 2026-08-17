@@ -80,3 +80,17 @@ export function getDistanceInMeters(lat1: number, lon1: number, lat2: number, lo
     const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) + Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
     return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
 }
+
+/**
+ * Strips undefined values from an object (non-recursive).
+ * Crucial for Firebase operations which throw on 'undefined'.
+ */
+export function removeUndefined(obj: any): any {
+    const newObj: any = {};
+    Object.keys(obj).forEach(key => {
+        if (obj[key] !== undefined) {
+            newObj[key] = obj[key];
+        }
+    });
+    return newObj;
+}

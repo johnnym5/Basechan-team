@@ -4,14 +4,14 @@ import React, { useState, useMemo } from "react";
 import { ClockControl } from "@/components/attendance/ClockControl";
 import { AttendanceHistory } from "@/components/attendance/AttendanceHistory";
 import { useUser, useDoc, useMemoFirebase, useFirestore, useCollection } from "@/firebase";
-import { doc, collection, query, where } from "firebase/firestore";
+import { doc, collection, query, where, orderBy } from "firebase/firestore";
 import type { UserProfile, Attendance } from "@/lib/types";
 import { usePermissions } from "@/hooks/usePermissions";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PendingApprovals } from "@/components/attendance/PendingApprovals";
 import { useSystemConfig } from "@/hooks/useSystemConfig";
 import { LiveStaffMonitor } from "@/components/attendance/LiveStaffMonitor";
-import { StaffAttendanceAnalytics } from "@/components/attendance/StaffAttendanceAnalytics";
+import { ProfileAttendanceTab } from "@/components/profile/staff/ProfileAttendanceTab";
 import { Calendar } from "@/components/ui/calendar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -73,6 +73,28 @@ function StaffAttendanceDashboard({
     permissions: any,
     systemConfig: any
 }) {
+    const firestore = useFirestore();
+
+    const attendanceQuery = useMemoFirebase(() =>
+        firestore ? query(
+            collection(firestore, 'attendance'),
+            where('orgId', '==', userProfile.orgId),
+            where('userId', '==', userProfile.id),
+            orderBy('clockIn', 'desc')
+        ) : null
+    , [firestore, userProfile.orgId, userProfile.id]);
+    const { data: attendanceData } = useCollection<Attendance>(attendanceQuery);
+
+    const reportsQuery = useMemoFirebase(() =>
+        firestore ? query(
+            collection(firestore, 'daily_reports'),
+            where('orgId', '==', userProfile.orgId),
+            where('userId', '==', userProfile.id),
+            orderBy('reportDate', 'desc')
+        ) : null
+    , [firestore, userProfile.orgId, userProfile.id]);
+    const { data: reportsData } = useCollection<any>(reportsQuery);
+
     return (
         <div className="flex flex-col space-y-8 w-full animate-in fade-in slide-in-from-bottom-4 duration-700">
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
@@ -100,7 +122,11 @@ function StaffAttendanceDashboard({
                     <Activity className="h-3.5 w-3.5 text-primary" />
                     <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground">Personnel Performance Summary</h3>
                 </div>
-                <StaffAttendanceAnalytics staffId={userProfile.id} />
+                <ProfileAttendanceTab
+                    staffId={userProfile.id}
+                    attendanceLogs={attendanceData || []}
+                    reportsData={reportsData || []}
+                />
             </section>
         </div>
     );

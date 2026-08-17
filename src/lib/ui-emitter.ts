@@ -23,6 +23,9 @@ type AppEvents = {
   'open-create-channel-dialog': { modal?: boolean } | void;
   'open-live-monitor-dialog': { targetUserId: string; targetUserName: string; modal?: boolean } | void;
   'open-database-explorer-dialog': { modal?: boolean } | void;
+  'open-broadcast-system': void;
+  'open-recognition-dialog': { userId?: string } | void;
+  'open-staff-profile-dialog': { userId: string } | void;
   'open-command-palette': void;
   'open-it-support-dialog': void;
   'open-staff-directory-dialog': void;

@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import { useEmployee360 } from '@/hooks/useEmployee360';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query, where, orderBy, limit } from 'firebase/firestore';
-import type { UserProfile, DailyReport, Task, Attendance } from '@/lib/types';
+import type { UserProfile, DailyReport, Task, Attendance, PulseCheck } from '@/lib/types';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -28,14 +28,18 @@ import {
   Clock,
   Circle,
   Eye,
-  CalendarClock
+  CalendarClock,
+  ChevronLeft,
+  ChevronRight,
+  AlertCircle
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useMemo } from 'react';
-import { formatDistanceToNow, format } from 'date-fns';
+import { useMemo, useState } from 'react';
+import { formatDistanceToNow, format, startOfWeek, endOfWeek, subWeeks, addWeeks, eachDayOfInterval, isSameDay, parseISO, isWeekend } from 'date-fns';
 import { useSuperAdminMode } from '@/context/SuperAdminModeProvider';
 import { useImpersonation } from '@/context/ImpersonationProvider';
 import { useToast } from '@/hooks/use-toast';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 
 interface StaffQuickViewSheetProps {
   isOpen: boolean;
@@ -45,6 +49,141 @@ interface StaffQuickViewSheetProps {
   onViewFullProfile: (userId: string) => void;
 }
 
+export function WeeklyAttendanceLedger({
+    attendanceLogs = [],
+    reportsData = [],
+    pulseChecks = [],
+    staffId
+}: {
+    attendanceLogs: Attendance[],
+    reportsData: DailyReport[],
+    pulseChecks: PulseCheck[],
+    staffId: string
+}) {
+  const [referenceDate, setReferenceDate] = useState(() => {
+    const today = new Date()
+    return today.getDay() === 1 ? subWeeks(today, 1) : today
+  })
+
+  const handlePrevWeek = () => setReferenceDate(prev => subWeeks(prev, 1))
+  const handleNextWeek = () => setReferenceDate(prev => addWeeks(prev, 1))
+
+  const weekStart = startOfWeek(referenceDate, { weekStartsOn: 1 })
+  const weekEnd = endOfWeek(referenceDate, { weekStartsOn: 1 })
+  const isCurrentWeek = startOfWeek(referenceDate, { weekStartsOn: 1 }).getTime() >= startOfWeek(new Date(), { weekStartsOn: 1 }).getTime()
+
+  const weeklyData = useMemo(() => {
+    const days = eachDayOfInterval({ start: weekStart, end: weekEnd }).filter(d => !isWeekend(d))
+
+    return days.map(day => {
+        const dateStr = format(day, 'yyyy-MM-dd')
+        const log = attendanceLogs.find(l => l.date === dateStr)
+        const report = reportsData.find(r => r.reportDate === dateStr)
+        const pulse = pulseChecks.find(p => p.date === dateStr)
+
+        let status = "ABSENT"
+        let timeRange = "--"
+        if (log) {
+            status = log.status === 'APPROVED' ? (log.remarks?.includes('LATE') ? 'LATE' : 'PRESENT') : log.status
+            const inTime = format(new Date(log.clockIn), 'HH:mm')
+            const outTime = log.clockOut ? format(new Date(log.clockOut), 'HH:mm') : '...'
+            timeRange = `${inTime} - ${outTime}`
+        }
+
+        return {
+            id: dateStr,
+            date: format(day, 'MMM dd'),
+            fullDate: format(day, 'EEEE, MMM dd'),
+            status,
+            timeRange,
+            pulse: pulse?.mood || (report?.pulse === 'STRUGGLING' ? 'OVERWHELMED' : 'SMOOTH'),
+            lateReason: log?.lateReason || null,
+            reportText: report?.content || report?.accomplishments || null
+        }
+    }).reverse() // Show most recent days first
+  }, [weekStart, weekEnd, attendanceLogs, reportsData, pulseChecks])
+
+  return (
+    <div className="space-y-4 animate-in fade-in">
+      <div className="flex items-center justify-between border-b border-white/5 pb-3">
+        <div className="flex items-center gap-2 text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground opacity-40">
+           <CalendarClock className="h-3 w-3" />
+           Weekly Ledger
+        </div>
+        <div className="flex items-center gap-3">
+          <Button variant="ghost" size="icon" className="h-6 w-6 rounded-lg hover:bg-white/5" onClick={handlePrevWeek}>
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <span className="text-[10px] font-black uppercase tracking-widest text-primary">
+            {format(weekStart, "MMM d")} - {format(weekEnd, "MMM d")}
+          </span>
+          <Button variant="ghost" size="icon" className="h-6 w-6 rounded-lg hover:bg-white/5" onClick={handleNextWeek} disabled={isCurrentWeek}>
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+
+      <Accordion type="single" collapsible className="w-full space-y-2">
+        {weeklyData.map((day) => (
+          <AccordionItem key={day.id} value={day.id} className="border border-white/5 bg-white/[0.02] rounded-2xl px-4 overflow-hidden shadow-sm">
+            <AccordionTrigger className="hover:no-underline py-4 group">
+              <div className="flex items-center justify-between w-full pr-4">
+                <span className="text-xs font-black uppercase tracking-tight text-white group-hover:text-primary transition-colors">{day.date}</span>
+                <div className="flex items-center gap-4">
+                  <Badge variant="outline" className={cn(
+                      "text-[8px] font-black uppercase tracking-widest px-2 py-0.5 border-none",
+                      day.status === 'PRESENT' ? "bg-emerald-500/10 text-emerald-500" :
+                      day.status === 'LATE' ? "bg-amber-500/10 text-amber-500" :
+                      "bg-rose-500/10 text-rose-500"
+                  )}>
+                    {day.status}
+                  </Badge>
+                  <span className="text-[10px] font-black font-mono text-muted-foreground opacity-60 min-w-[80px] text-right">{day.timeRange}</span>
+                </div>
+              </div>
+            </AccordionTrigger>
+
+            <AccordionContent className="pb-6 pt-1 space-y-4">
+              <div className="flex items-center gap-3 px-1">
+                <Activity className="w-3.5 h-3.5 text-muted-foreground" />
+                <span className="text-[9px] uppercase font-black tracking-widest text-muted-foreground opacity-40">Daily Pulse</span>
+                <Badge variant="secondary" className={cn(
+                    "text-[8px] font-black uppercase tracking-tighter px-2",
+                    day.pulse === 'OVERWHELMED' || day.pulse === 'HEAVY' ? 'bg-rose-500/10 text-rose-500' : 'bg-primary/10 text-primary'
+                )}>
+                  {day.pulse}
+                </Badge>
+              </div>
+
+              {day.lateReason && (
+                <div className="bg-amber-500/5 border border-amber-500/10 p-4 rounded-xl space-y-1 shadow-inner">
+                    <div className="flex items-center gap-2 mb-1">
+                        <AlertCircle className="w-3 h-3 text-amber-500" />
+                        <span className="text-[8px] uppercase font-black tracking-widest text-amber-500">Lateness Justification</span>
+                    </div>
+                    <p className="text-xs text-foreground/80 leading-relaxed font-medium italic">
+                        "{day.lateReason}"
+                    </p>
+                </div>
+              )}
+
+              <div className="bg-black/20 border border-white/5 p-4 rounded-xl space-y-2 shadow-inner">
+                <div className="flex items-center gap-2 mb-1">
+                   <FileText className="w-3 h-3 text-primary" />
+                   <span className="text-[8px] uppercase font-black tracking-widest text-primary">Intelligence Report</span>
+                </div>
+                <p className="text-xs text-foreground/80 leading-relaxed italic font-medium">
+                  {day.reportText ? `"${day.reportText}"` : "No report data filed for this cycle."}
+                </p>
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+        ))}
+      </Accordion>
+    </div>
+  )
+}
+
 export function StaffQuickViewSheet({ isOpen, onClose, userId, orgId, onViewFullProfile }: StaffQuickViewSheetProps) {
   const { data, isLoading } = useEmployee360(userId || undefined, orgId);
   const firestore = useFirestore();
@@ -52,24 +191,11 @@ export function StaffQuickViewSheet({ isOpen, onClose, userId, orgId, onViewFull
   const { setImpersonatedUserId, setIsImpersonating } = useImpersonation();
   const { toast } = useToast();
 
-  // Fetch Latest Daily Report
-  const reportsQuery = useMemoFirebase(
-    () =>
-      firestore && userId ? query(
-        collection(firestore, 'daily_reports'),
-        where('orgId', '==', orgId),
-        where('userId', '==', userId),
-        orderBy('createdAt', 'desc'),
-        limit(1)
-      ) : null,
-    [firestore, userId, orgId]
-  );
-  const { data: reports, isLoading: isReportLoading } = useCollection<DailyReport>(reportsQuery);
-  const latestReport = reports?.[0];
-
   const profile = data?.profile;
   const attendance = data?.attendance;
   const tasks = data?.tasks;
+  const reportsData = data?.reports;
+  const pulseChecks = data?.pulseChecks;
 
   const activeTasks = useMemo(() => {
     return tasks?.filter(t => t.status !== 'ARCHIVED') || [];
@@ -194,87 +320,13 @@ export function StaffQuickViewSheet({ isOpen, onClose, userId, orgId, onViewFull
              </div>
           </section>
 
-          {/* RECENT ATTENDANCE SECTION */}
-          <section className="space-y-4">
-             <div className="flex items-center gap-2 text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground opacity-40">
-                <CalendarClock className="h-3 w-3" />
-                Recent Attendance
-             </div>
-
-             <div className="bg-white/5 border border-white/5 rounded-2xl overflow-hidden flex flex-col">
-                {isLoading ? (
-                    <div className="p-4 space-y-2"><Skeleton className="h-8 w-full rounded-lg" /><Skeleton className="h-8 w-full rounded-lg" /></div>
-                ) : !attendance || attendance.length === 0 ? (
-                    <div className="p-8 text-[10px] font-black uppercase tracking-widest text-muted-foreground text-center opacity-30">No recent records found.</div>
-                ) : (
-                    attendance.slice(0, 5).map((record, index) => {
-                        const isApproved = record.status === 'APPROVED';
-                        const isRejected = record.status === 'REJECTED';
-                        const displayStatus = isApproved ? 'PRESENT' : isRejected ? 'ABSENT' : 'PENDING';
-
-                        return (
-                            <div
-                                key={record.id || index}
-                                className="flex items-center justify-between p-4 border-b border-white/5 last:border-0 hover:bg-white/5 transition-all"
-                            >
-                                {/* Date */}
-                                <span className="font-bold text-white text-[10px] w-20">
-                                    {format(new Date(record.date + 'T00:00:00'), 'MMM dd')}
-                                </span>
-
-                                {/* Status Badge */}
-                                <div className="flex-1 flex justify-start pl-4">
-                                    <span className={cn(
-                                        "px-2 py-0.5 text-[8px] font-black uppercase rounded-full flex items-center gap-1.5",
-                                        isApproved ? "bg-emerald-500/10 text-emerald-500" :
-                                        isRejected ? "bg-rose-500/10 text-rose-500" :
-                                        "bg-amber-500/10 text-amber-500"
-                                    )}>
-                                        <span className={cn(
-                                            "w-1 h-1 rounded-full",
-                                            isApproved ? "bg-emerald-500" :
-                                            isRejected ? "bg-rose-500" :
-                                            "bg-amber-500"
-                                        )} />
-                                        {displayStatus}
-                                    </span>
-                                </div>
-
-                                {/* Logged Hours */}
-                                <span className="text-[10px] font-mono text-white font-black opacity-80">
-                                    {record.duration ? `${(record.duration / 3600).toFixed(1)}h` : '--'}
-                                </span>
-                            </div>
-                        );
-                    })
-                )}
-             </div>
-          </section>
-
-          {/* Latest Daily Intelligence */}
-          <section className="space-y-4">
-             <div className="flex items-center gap-2 text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground opacity-40">
-                <FileText className="h-3 w-3" />
-                Daily Intelligence Snippet
-             </div>
-             <div className="bg-secondary/10 border border-white/5 rounded-2xl p-5 relative overflow-hidden">
-                {isReportLoading ? (
-                    <Skeleton className="h-20 w-full rounded-xl" />
-                ) : latestReport ? (
-                    <>
-                        <div className="flex justify-between items-center mb-3">
-                            <p className="text-[9px] font-black uppercase text-primary tracking-widest">Report for {latestReport.reportDate}</p>
-                            <CheckCircle2 className="h-3 w-3 text-emerald-500" />
-                        </div>
-                        <p className="text-xs text-muted-foreground line-clamp-3 leading-relaxed italic">
-                            "{latestReport.content}"
-                        </p>
-                    </>
-                ) : (
-                    <p className="text-xs text-muted-foreground opacity-30 italic text-center py-4">No recent intelligence reports filed.</p>
-                )}
-             </div>
-          </section>
+          {/* WEEKLY LEDGER (Merged Attendance & Reports) */}
+          <WeeklyAttendanceLedger
+            staffId={userId}
+            attendanceLogs={attendance || []}
+            reportsData={reportsData || []}
+            pulseChecks={pulseChecks || []}
+          />
         </div>
 
         <SheetFooter className="p-8 border-t border-white/5 bg-black/20 shrink-0">

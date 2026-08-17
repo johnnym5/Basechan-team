@@ -12,12 +12,14 @@ import {
   limit,
   getDocs
 } from 'firebase/firestore';
-import type { UserProfile, Attendance, Task } from '@/lib/types';
+import type { UserProfile, Attendance, Task, DailyReport, PulseCheck } from '@/lib/types';
 
 export interface Employee360Data {
   profile: UserProfile | null;
   attendance: Attendance[];
   tasks: Task[];
+  reports: DailyReport[];
+  pulseChecks: PulseCheck[];
 }
 
 /**
@@ -31,7 +33,7 @@ export function useEmployee360(userId: string | undefined, orgId: string | undef
     queryKey: ['employee360', userId, orgId],
     queryFn: async (): Promise<Employee360Data> => {
       if (!firestore || !userId || !orgId) {
-        return { profile: null, attendance: [], tasks: [] };
+        return { profile: null, attendance: [], tasks: [], reports: [], pulseChecks: [] };
       }
 
       // 1. Identity & Permissions (Base Profile)
@@ -44,7 +46,7 @@ export function useEmployee360(userId: string | undefined, orgId: string | undef
         where('userId', '==', userId),
         where('orgId', '==', orgId),
         orderBy('clockIn', 'desc'),
-        limit(15)
+        limit(30)
       );
 
       const tasksQuery = query(
@@ -52,15 +54,33 @@ export function useEmployee360(userId: string | undefined, orgId: string | undef
         where('assignedTo', '==', userId),
         where('orgId', '==', orgId),
         orderBy('createdAt', 'desc'),
-        limit(15)
+        limit(30)
+      );
+
+      const reportsQuery = query(
+        collection(firestore, 'daily_reports'),
+        where('userId', '==', userId),
+        where('orgId', '==', orgId),
+        orderBy('reportDate', 'desc'),
+        limit(30)
+      );
+
+      const pulseQuery = query(
+        collection(firestore, 'pulse_checks'),
+        where('userId', '==', userId),
+        where('orgId', '==', orgId),
+        orderBy('date', 'desc'),
+        limit(30)
       );
 
       try {
         // Perform all fetches simultaneously for optimal performance
-        const [profileSnap, attendanceSnap, tasksSnap] = await Promise.all([
+        const [profileSnap, attendanceSnap, tasksSnap, reportsSnap, pulseSnap] = await Promise.all([
             getDoc(profileRef),
             getDocs(attendanceQuery),
-            getDocs(tasksQuery)
+            getDocs(tasksQuery),
+            getDocs(reportsQuery),
+            getDocs(pulseQuery)
         ]);
 
         if (!profileSnap.exists()) {
@@ -73,6 +93,8 @@ export function useEmployee360(userId: string | undefined, orgId: string | undef
             profile: profileSnap.exists() ? { id: profileSnap.id, ...profileSnap.data() } as UserProfile : null,
             attendance: attendanceSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Attendance)),
             tasks: tasksSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Task)),
+            reports: reportsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as DailyReport)),
+            pulseChecks: pulseSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as PulseCheck)),
         };
       } catch (error: any) {
         console.error(`[DEBUG] Firestore fetch failed for user ${userId}:`, error.code, error.message);

@@ -102,8 +102,9 @@ export function AttendanceHistory({ userProfile }: AttendanceHistoryProps) {
                             OUT: {record.clockOut ? format(new Date(record.clockOut), 'HH:mm') : 'ACTIVE'}
                         </span>
                       </div>
-                      <div className="text-[9px] font-black uppercase tracking-widest text-muted-foreground opacity-40 mt-1">
-                        TOTAL: {formatDuration(record.duration)}
+                      <div className="flex items-center justify-end gap-1 mt-1.5">
+                        {record.lateReason && <Badge variant="outline" className="h-4 text-[7px] bg-amber-500/10 text-amber-500 border-none font-black px-1.5 uppercase tracking-tighter">Lateness Case</Badge>}
+                        {record.eodReport && <Badge variant="outline" className="h-4 text-[7px] bg-primary/10 text-primary border-none font-black px-1.5 uppercase tracking-tighter">Report Filed</Badge>}
                       </div>
                     </div>
                     <Button variant="ghost" size="sm" className="h-9 rounded-xl text-rose-500 hover:bg-rose-500/10 hover:text-rose-400 border border-transparent hover:border-rose-500/20 font-black text-[9px] uppercase tracking-widest px-4 transition-all opacity-0 group-hover:opacity-100">

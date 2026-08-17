@@ -20,6 +20,9 @@ import {
 import { Button } from '@/components/ui/button';
 import { Search, MoreHorizontal, Eye, Filter, ShieldCheck, Users, PlusCircle, FileText } from 'lucide-react';
 import { useOrganizationStaff } from '@/hooks/useStaff';
+import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { collection, query, where } from 'firebase/firestore';
+import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -30,9 +33,10 @@ import {
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
-import type { UserProfile } from '@/lib/types';
+import type { UserProfile, Attendance } from '@/lib/types';
 import { InviteUserDialog } from '@/components/settings/InviteUserDialog';
 import { StaffQuickViewSheet } from './StaffQuickViewSheet';
+import { StaffActionMenu } from '@/components/shared/StaffActionMenu';
 
 interface UnifiedStaffDirectoryProps {
   orgId: string;
@@ -43,6 +47,14 @@ interface UnifiedStaffDirectoryProps {
 
 export function UnifiedStaffDirectory({ orgId, currentUserProfile, canManageStaff, onViewEmployee360 }: UnifiedStaffDirectoryProps) {
   const { data: staff, isLoading, refetch } = useOrganizationStaff(orgId);
+  const firestore = useFirestore();
+
+  const today = format(new Date(), 'yyyy-MM-dd');
+  const logsQuery = useMemoFirebase(() =>
+    firestore ? query(collection(firestore, 'attendance'), where('orgId', '==', orgId), where('date', '==', today)) : null
+  , [firestore, orgId, today]);
+  const { data: todayLogs } = useCollection<Attendance>(logsQuery);
+
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>('ALL');
   const [deptFilter, setDepartmentFilter] = useState<string>('ALL');
@@ -205,9 +217,12 @@ export function UnifiedStaffDirectory({ orgId, currentUserProfile, canManageStaf
                           </Button>
                       </TableCell>
                       <TableCell className="pr-8 text-right">
-                         <Button variant="ghost" size="icon" className="h-10 w-10 rounded-2xl hover:bg-primary/10 transition-all opacity-0 group-hover:opacity-100">
-                            <Eye className="h-5 w-5 text-primary" />
-                         </Button>
+                         <div onClick={(e) => e.stopPropagation()}>
+                            <StaffActionMenu
+                                staff={{ id: person.id, name: person.fullName, status: person.status, isArchived: person.isArchived }}
+                                currentLog={todayLogs?.find(l => l.userId === person.id)}
+                            />
+                         </div>
                       </TableCell>
                     </TableRow>
                   );

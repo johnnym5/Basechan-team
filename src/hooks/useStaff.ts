@@ -5,6 +5,7 @@ import { useFirestore } from '@/firebase';
 import { doc, getDoc, collection, getDocs, query, where, updateDoc } from 'firebase/firestore';
 import type { UserProfile } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
+import { removeUndefined } from '@/lib/utils';
 
 export function useStaffProfile(userId: string | undefined) {
   const firestore = useFirestore();
@@ -48,7 +49,8 @@ export function useUpdateStaffProfile() {
     mutationFn: async ({ userId, data }: { userId: string; data: Partial<UserProfile> }) => {
       if (!firestore) throw new Error('Firestore not initialized');
       const docRef = doc(firestore, 'users', userId);
-      await updateDoc(docRef, data);
+      const cleanData = removeUndefined(data);
+      await updateDoc(docRef, cleanData);
     },
     onMutate: async ({ userId, data }) => {
       // Cancel any outgoing refetches

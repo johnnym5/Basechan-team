@@ -27,7 +27,7 @@ export const staffProfileSchema = z.object({
   employmentType: z.enum(["FULL_TIME", "PART_TIME", "CONTRACT", "INTERN"]),
   managerId: z.string().optional(), // Reference to another user ID
   joinDate: z.string().optional(), // ISO string
-  status: z.enum(["ONLINE", "OFFLINE", "ON_LEAVE", "ACTIVE", "SUSPENDED", "TERMINATED"]),
+  status: z.enum(["ONLINE", "OFFLINE", "ON_LEAVE", "ACTIVE", "SUSPENDED", "TERMINATED", "DISABLED"]),
   employmentHistory: z.array(z.object({
     role: z.string(),
     date: z.string(),

@@ -1,4 +1,5 @@
 'use client';
+
 import { useUser, useDoc, useMemoFirebase, useFirestore, useCollection } from "@/firebase";
 import { doc, collection, query, where, getDocs } from 'firebase/firestore';
 import type { UserProfile, DailyReport, Attendance, Requisition, Task, LeaveRequest, Nomination, PulseCheck } from '@/lib/types';
@@ -27,8 +28,8 @@ import { Download, FileSpreadsheet, Loader2, Trophy, BarChart3, UserCheck, Heart
 import * as XLSX from 'xlsx';
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
-
 import { ModuleContainer } from "@/components/layout/shell/ModuleContainer";
+import { useScrubbedData } from "@/hooks/useScrubbedData";
 
 export function ReportsPageContent({ initialPayload, noWrapper = false }: { initialPayload?: { tab?: string }, noWrapper?: boolean }) {
   const { user: authUser } = useUser();
@@ -51,7 +52,6 @@ export function ReportsPageContent({ initialPayload, noWrapper = false }: { init
     } else {
         const savedTab = localStorage.getItem(storageKey);
         if (savedTab) {
-            // Migration: if the saved tab was 'performance' (My Dashboard), switch to 'submit'
             if (savedTab === 'performance' || savedTab === 'analytics' || savedTab === 'team-health') {
                 setActiveTab(permissions.canManageStaff ? 'team-performance' : 'submit');
             } else if (savedTab === 'team-reports') {
@@ -114,8 +114,7 @@ export function ReportsPageContent({ initialPayload, noWrapper = false }: { init
                 Title: r.title,
                 Amount: r.amount,
                 Vendor: r.vendorName,
-                Status: r.status,
-                CreatedBy: r.creatorName,
+                Status: r.status,CreatedBy: r.creatorName,
                 Date: format(new Date(r.createdAt), 'PP')
             };
         });
@@ -145,7 +144,7 @@ export function ReportsPageContent({ initialPayload, noWrapper = false }: { init
     }
   }
 
-  // Fetch Staff List for Nominations
+  // Fetch Staff List
   const staffQuery = useMemoFirebase(() =>
     firestore ? query(collection(firestore, 'users'), where('orgId', '==', userProfile?.orgId || '')) : null
   , [firestore, userProfile?.orgId]);
@@ -176,9 +175,25 @@ export function ReportsPageContent({ initialPayload, noWrapper = false }: { init
   , [firestore, userProfile?.orgId]);
   const { data: allPulseData } = useCollection<PulseCheck>(allPulseQuery);
 
+  // --- SCRUB DATA ---
+  const {
+      activeStaff,
+      activeAttendance,
+      activeNominations,
+      activeTasks,
+      activeLeaveRequests
+  } = useScrubbedData({
+      staffList: rawStaff || undefined,
+      attendanceLogs: allAttendance || undefined,
+      reportsData: [],
+      nominations: allNominations || undefined,
+      tasks: allTasksData || undefined,
+      leaveRequests: allLeaveData || undefined
+  });
+
   const staffList = useMemo(() =>
-    rawStaff?.filter(s => s.id !== authUser?.uid).map(s => ({ id: s.id, name: s.fullName })) || []
-  , [rawStaff, authUser?.uid]);
+    activeStaff?.filter(s => s.id !== authUser?.uid).map(s => ({ id: s.id, name: s.fullName })) || []
+  , [activeStaff, authUser?.uid]);
 
   const handleNominationSubmit = async (payload: any) => {
     if (!firestore) return;
@@ -209,7 +224,7 @@ export function ReportsPageContent({ initialPayload, noWrapper = false }: { init
     return <div className="space-y-8 p-4 md:p-10"><Skeleton className="h-10 w-1/3" /><Skeleton className="h-[400px] md:h-[600px] w-full rounded-3xl" /></div>;
   }
 
-  const content = (
+  const renderContent = () => (
     <div className="flex flex-col h-full gap-4 md:gap-6 overflow-x-hidden">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between shrink-0 gap-4">
           <div>
@@ -262,36 +277,36 @@ export function ReportsPageContent({ initialPayload, noWrapper = false }: { init
                 {permissions.canManageStaff && (
                     <>
                         <TabsContent value="team-reports" className="m-0 space-y-8 focus-visible:ring-0 outline-none animate-in fade-in duration-500">
-                            {userProfile && rawStaff && allAttendance && allTasksData && allLeaveData && allNominations && (
+                            {userProfile && activeStaff && activeAttendance && activeTasks && activeLeaveRequests && activeNominations && (
                                 <AdminCommandBriefing
-                                    staffList={rawStaff}
-                                    attendanceLogs={allAttendance}
-                                    tasks={allTasksData}
-                                    leaveRequests={allLeaveData}
-                                    nominations={allNominations}
+                                    staffList={activeStaff}
+                                    attendanceLogs={activeAttendance}
+                                    tasks={activeTasks}
+                                    leaveRequests={activeLeaveRequests}
+                                    nominations={activeNominations}
                                 />
                             )}
                             {userProfile && <TeamDailyReports userProfile={userProfile} />}
                         </TabsContent>
 
                         <TabsContent value="team-performance" className="m-0 space-y-8 focus-visible:ring-0 outline-none animate-in fade-in duration-500">
-                            {userProfile && rawStaff && allAttendance && allTasksData && allNominations && allPulseData && (
+                            {userProfile && activeStaff && activeAttendance && activeTasks && activeNominations && allPulseData && (
                                 <TeamPerformanceMasterView
-                                    staffList={rawStaff}
-                                    attendanceLogs={allAttendance}
-                                    tasks={allTasksData}
-                                    nominations={allNominations}
+                                    staffList={activeStaff}
+                                    attendanceLogs={activeAttendance}
+                                    tasks={activeTasks}
+                                    nominations={activeNominations}
                                     pulseFeed={allPulseData}
                                 />
                             )}
                         </TabsContent>
 
                         <TabsContent value="recognition" className="m-0 focus-visible:ring-0 outline-none animate-in fade-in duration-500">
-                            {userProfile && staffList && allNominations && (
+                            {userProfile && staffList && activeNominations && (
                                 <PeerRecognitionHub
                                     currentUser={userProfile}
                                     staffList={staffList}
-                                    recognitionData={allNominations}
+                                    recognitionData={activeNominations}
                                     onSubmitNomination={handleNominationSubmit}
                                 />
                             )}
@@ -306,24 +321,24 @@ export function ReportsPageContent({ initialPayload, noWrapper = false }: { init
                             {userProfile && <MyDailyReports userProfile={userProfile} />}
                         </TabsContent>
                         <TabsContent value="recognition" className="m-0 focus-visible:ring-0 outline-none animate-in fade-in duration-500">
-                            {userProfile && staffList && allNominations && (
+                            {userProfile && staffList && activeNominations && (
                                 <PeerRecognitionHub
                                     currentUser={userProfile}
                                     staffList={staffList}
-                                    recognitionData={allNominations}
+                                    recognitionData={activeNominations}
                                     onSubmitNomination={handleNominationSubmit}
                                 />
                             )}
                         </TabsContent>
                         <TabsContent value="intelligent-brief" className="m-0 focus-visible:ring-0 outline-none animate-in fade-in duration-500">
-                            {userProfile && rawStaff && allAttendance && allTasksData && allLeaveData && allNominations && (
+                            {userProfile && activeStaff && activeAttendance && activeTasks && activeLeaveRequests && activeNominations && (
                                 <MyBriefingDashboard
                                     userProfile={userProfile}
-                                    staffList={rawStaff}
-                                    attendanceLogs={allAttendance}
-                                    tasks={allTasksData}
-                                    leaveRequests={allLeaveData}
-                                    nominations={allNominations}
+                                    staffList={activeStaff}
+                                    attendanceLogs={activeAttendance}
+                                    tasks={activeTasks}
+                                    leaveRequests={activeLeaveRequests}
+                                    nominations={activeNominations}
                                 />
                             )}
                         </TabsContent>
@@ -335,22 +350,14 @@ export function ReportsPageContent({ initialPayload, noWrapper = false }: { init
     </div>
   );
 
-  if (noWrapper) return content;
+  if (noWrapper) return renderContent();
 
   return (
     <ModuleContainer
         title="Reports & Analytics"
         subtitle={permissions.canManageStaff ? "Team Performance & Activity Logs" : "Personal Task History & Achievements"}
-        actions={
-            permissions.canManageStaff && (
-                <Button variant="outline" onClick={handleMasterExport} disabled={isExporting} className="rounded-xl border-primary/20 hover:bg-primary/10 hover:border-primary transition-all active:scale-95 group h-10 font-black uppercase text-[10px] tracking-widest shadow-xl shadow-primary/20">
-                    {isExporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileSpreadsheet className="mr-2 h-4 w-4 group-hover:rotate-12 transition-transform text-primary" />}
-                    Export Master Data
-                </Button>
-            )
-        }
     >
-      {content}
+      {renderContent()}
     </ModuleContainer>
   );
 }

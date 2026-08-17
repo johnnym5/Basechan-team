@@ -71,6 +71,59 @@ interface IntelligentSummaryCenterProps {
   isAdminOverride?: boolean;
 }
 
+export function CriticalAlertRotator({ alerts = [] }: { alerts: any[] }) {
+  const router = useRouter()
+  const [currentIndex, setCurrentIndex] = useState(0)
+
+  useEffect(() => {
+    if (alerts.length <= 1) return
+    const timer = setInterval(() => {
+      setCurrentIndex((prev) => (prev + 1) % alerts.length)
+    }, 5000)
+    return () => clearInterval(timer)
+  }, [alerts.length])
+
+  if (alerts.length === 0) return null
+
+  const currentAlert = alerts[currentIndex]
+
+  return (
+    <div className="flex flex-col gap-3 w-full animate-in slide-in-from-top-4 duration-700">
+        <div
+            className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 md:p-5 rounded-2xl md:rounded-[1.5rem] border border-rose-500/30 bg-rose-500/10 shadow-2xl backdrop-blur-xl relative overflow-hidden group gap-4"
+        >
+            {/* Progress bar indicator for rotation */}
+            {alerts.length > 1 && (
+                <div key={currentIndex} className="absolute bottom-0 left-0 h-1 bg-rose-500/50 animate-progress w-full" style={{ animationDuration: '5000ms' }} />
+            )}
+
+            <div className="flex items-center gap-4 md:gap-5 z-10">
+                <div className="p-2.5 md:p-3 bg-rose-500 rounded-xl md:rounded-2xl text-white shrink-0 shadow-lg shadow-rose-500/40 animate-pulse">
+                    <AlertTriangle className="w-4 h-4 md:w-5 md:h-5" />
+                </div>
+                <div className="min-w-0">
+                    <h4 className="text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] text-rose-500 mb-0.5">
+                        Critical Alerts {alerts.length > 1 && `(${currentIndex + 1}/${alerts.length})`}
+                    </h4>
+                    <p className="text-xs md:text-sm font-black tracking-tight text-white leading-tight break-words">{currentAlert.text}</p>
+                </div>
+            </div>
+
+            <div className="flex items-center gap-2 md:gap-3 w-full sm:w-auto justify-end z-10">
+                <Button
+                    onClick={() => {
+                        if (currentAlert.actionType === 'ROUTE') router.push(currentAlert.actionTarget)
+                    }}
+                    className="h-9 md:h-10 px-4 md:px-6 rounded-lg md:rounded-xl bg-rose-500 text-white hover:bg-rose-600 font-black uppercase text-[8px] md:text-[9px] tracking-widest shadow-xl shadow-rose-500/30 flex items-center gap-2 group"
+                >
+                    {currentAlert.actionLabel} <ChevronRight className="w-3 h-3 md:w-3.5 md:h-3.5 group-hover:translate-x-0.5 transition-transform" />
+                </Button>
+            </div>
+        </div>
+    </div>
+  )
+}
+
 export function IntelligentSummaryCenter({
   staffList = [],
   attendanceLogs = [],
@@ -517,6 +570,15 @@ export function IntelligentSummaryCenter({
     if (currentIndex >= standardBriefings.length) setCurrentIndex(0)
   }, [standardBriefings.length, currentIndex])
 
+  const handleInsightAction = (insight: any) => {
+    if (insight.actionType === 'ROUTE') {
+      router.push(insight.actionTarget)
+    } else if (insight.actionType === 'MODAL') {
+      setModalData(insight)
+      setActiveModal(insight.actionTarget)
+    }
+  };
+
   const handleAcknowledge = async (alert: any) => {
     if (!firestore || !userProfile) return;
 
@@ -549,43 +611,7 @@ export function IntelligentSummaryCenter({
     <div className="w-full flex flex-col h-full gap-4 md:gap-6 overflow-x-hidden">
 
       {/* 1. CRITICAL ALERT SECTION */}
-      {criticalAlerts.length > 0 && (
-        <div className="flex flex-col gap-3 w-full animate-in slide-in-from-top-4 duration-700">
-          {criticalAlerts.map(alert => (
-            <div
-              key={alert.id}
-              className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 md:p-5 rounded-2xl md:rounded-[1.5rem] border border-rose-500/30 bg-rose-500/10 shadow-2xl backdrop-blur-xl animate-pulse gap-4"
-            >
-              <div className="flex items-center gap-4 md:gap-5">
-                <div className="p-2.5 md:p-3 bg-rose-500 rounded-xl md:rounded-2xl text-white shrink-0 shadow-lg shadow-rose-500/40">
-                  <AlertTriangle className="w-4 h-4 md:w-5 md:h-5" />
-                </div>
-                <div className="min-w-0">
-                  <h4 className="text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] text-rose-500 mb-0.5">Critical Alerts</h4>
-                  <p className="text-xs md:text-sm font-black tracking-tight text-white leading-tight break-words">{alert.text}</p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2 md:gap-3 w-full sm:w-auto justify-end">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleAcknowledge(alert)}
-                    className="h-8 md:h-9 px-3 md:px-4 text-[8px] md:text-[9px] font-black uppercase tracking-widest text-rose-500/60 hover:text-rose-500 hover:bg-rose-500/10 rounded-lg md:rounded-xl"
-                  >
-                    Acknowledge
-                  </Button>
-                  <Button
-                    onClick={() => handleInsightAction(alert)}
-                    className="h-9 md:h-10 px-4 md:px-6 rounded-lg md:rounded-xl bg-rose-500 text-white hover:bg-rose-600 font-black uppercase text-[8px] md:text-[9px] tracking-widest shadow-xl shadow-rose-500/30 flex items-center gap-2 group"
-                  >
-                    {alert.actionLabel} <ChevronRight className="w-3 h-3 md:w-3.5 md:h-3.5 group-hover:translate-x-0.5 transition-transform" />
-                  </Button>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
+      <CriticalAlertRotator alerts={criticalAlerts} />
 
       {/* 2. INSIGHTS ROTATOR */}
       <Card

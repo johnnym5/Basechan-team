@@ -32,6 +32,7 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { attendanceService } from "@/services/attendance-service"
 import { useFirestore, useUser } from "@/firebase"
 import { useToast } from "@/hooks/use-toast"
+import { StaffActionMenu } from "@/components/shared/StaffActionMenu"
 
 interface AttendanceCenterProps {
   staffList: UserProfile[];
@@ -302,9 +303,12 @@ export function AttendanceCenter({ staffList, attendanceLogs, currentUserProfile
                                             </Button>
                                         </div>
                                     )}
-                                    <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-secondary">
-                                        <MoreVertical className="h-4 w-4" />
-                                    </Button>
+                                    <div onClick={(e) => e.stopPropagation()}>
+                                        <StaffActionMenu
+                                            staff={{ id: staff.id, name: staff.fullName, status: staff.status, isArchived: staff.isArchived }}
+                                            currentLog={log}
+                                        />
+                                    </div>
                                 </div>
                             </td>
                         </tr>
@@ -400,18 +404,31 @@ export function AttendanceCenter({ staffList, attendanceLogs, currentUserProfile
                                 <thead className="bg-white/5 text-[9px] font-black uppercase tracking-widest">
                                     <tr>
                                         <th className="px-6 py-4">Operational Day</th>
-                                        <th className="px-6 py-4">Ingress</th>
-                                        <th className="px-6 py-4">Egress</th>
-                                        <th className="px-6 py-4 text-right">Total Hours</th>
+                                        <th className="px-6 py-4">Shift Timeline</th>
+                                        <th className="px-6 py-4 text-right">Activity Details</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-white/5">
-                                    {(historicalDisplayData as any[]).map(({ day, log }, idx) => (
+                                    {(historicalDisplayData as any[]).filter(d => !isWeekend(d.day)).map(({ day, log }, idx) => (
                                         <tr key={idx} className="hover:bg-white/5 transition-colors">
                                             <td className="px-6 py-4 font-bold text-white">{format(day, 'EEEE, MMM dd')}</td>
-                                            <td className="px-6 py-4 font-mono text-emerald-400">{log ? format(new Date(log.clockIn), 'HH:mm') : '--:--'}</td>
-                                            <td className="px-6 py-4 font-mono text-rose-400">{log?.clockOut ? format(new Date(log.clockOut), 'HH:mm') : '--:--'}</td>
-                                            <td className="px-6 py-4 text-right font-black text-primary">{log?.duration ? (log.duration / 3600).toFixed(2) : '0.00'}h</td>
+                                            <td className="px-6 py-4">
+                                                <div className="flex items-center gap-2 font-mono text-xs">
+                                                    <span className="text-emerald-400">{log ? format(new Date(log.clockIn), 'HH:mm') : '--:--'}</span>
+                                                    <span className="opacity-20">→</span>
+                                                    <span className="text-rose-400">{log?.clockOut ? format(new Date(log.clockOut), 'HH:mm') : log ? 'ACTIVE' : '--:--'}</span>
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4 text-right">
+                                                {log?.eodReport || log?.lateReason ? (
+                                                    <div className="flex flex-col items-end gap-1">
+                                                        {log.lateReason && <Badge variant="outline" className="bg-amber-500/10 text-amber-500 border-none text-[7px] font-black uppercase">Lateness Reported</Badge>}
+                                                        {log.eodReport && <Badge variant="outline" className="bg-primary/10 text-primary border-none text-[7px] font-black uppercase">EOD Filed</Badge>}
+                                                    </div>
+                                                ) : (
+                                                    <span className="text-[10px] font-black uppercase opacity-10 tracking-widest">No Intelligence</span>
+                                                )}
+                                            </td>
                                         </tr>
                                     ))}
                                 </tbody>
@@ -432,16 +449,17 @@ export function AttendanceCenter({ staffList, attendanceLogs, currentUserProfile
                                     {week.days.map((item: any, dIdx: number) => (
                                         <div key={dIdx} className={cn(
                                             "p-4 rounded-2xl border transition-all flex flex-col justify-between h-32",
-                                            isWeekend(item.day) ? "bg-muted/10 border-white/5 opacity-30" : "bg-white/5 border-white/5 hover:border-primary/30"
+                                            isWeekend(item.day) ? "hidden" : "bg-white/5 border-white/5 hover:border-primary/30"
                                         )}>
                                             <p className="text-[9px] font-black uppercase text-muted-foreground tracking-widest">{format(item.day, 'EEE dd')}</p>
                                             <div className="space-y-1">
-                                                <p className="text-lg font-black font-headline tracking-tighter text-white">
-                                                    {item.log?.duration ? (item.log.duration / 3600).toFixed(1) : '0.0'}h
+                                                <p className="text-[10px] font-black font-mono tracking-tighter text-white">
+                                                    {item.log ? `${format(new Date(item.log.clockIn), 'HH:mm')} - ${item.log.clockOut ? format(new Date(item.log.clockOut), 'HH:mm') : '...'}` : '--:--'}
                                                 </p>
                                                 {item.log && (
-                                                    <div className="flex items-center gap-1.5 text-[8px] font-mono font-bold text-emerald-400/60 uppercase">
-                                                        <ArrowRight className="w-2.5 h-2.5" /> {format(new Date(item.log.clockIn), 'HH:mm')}
+                                                    <div className="flex flex-wrap gap-1 mt-2">
+                                                        {item.log.lateReason && <div className="h-1.5 w-1.5 rounded-full bg-amber-500" title="Lateness Reported" />}
+                                                        {item.log.eodReport && <div className="h-1.5 w-1.5 rounded-full bg-primary" title="EOD Filed" />}
                                                     </div>
                                                 )}
                                             </div>
