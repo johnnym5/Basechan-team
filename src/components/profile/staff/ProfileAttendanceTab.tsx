@@ -5,9 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { Calendar } from "@/components/ui/calendar"
-import { Badge } from "@/components/ui/badge"
 import { Clock, AlertCircle, CheckCircle2, FileText, Activity, Timer, CalendarDays, ArrowRight } from "lucide-react"
-import { format, isSameDay, parseISO, startOfWeek, endOfWeek, subDays, isWithinInterval, startOfDay, endOfDay, isWeekend } from "date-fns"
+import { format, parseISO, startOfWeek, isWithinInterval, startOfDay, endOfDay, isWeekend } from "date-fns"
 import type { Attendance, DailyReport } from "@/lib/types"
 import { cn } from "@/lib/utils"
 
@@ -29,7 +28,6 @@ export function ProfileAttendanceTab({ staffId, attendanceLogs = [], reportsData
     if (timeFilter === 'WEEK') {
       startDate = startOfWeek(now, { weekStartsOn: 1 })
     } else {
-      // MONTH
       startDate = new Date(now.getFullYear(), now.getMonth(), 1)
     }
 
@@ -53,7 +51,6 @@ export function ProfileAttendanceTab({ staffId, attendanceLogs = [], reportsData
       }
     }
 
-    // Calculations
     let totalClockInSeconds = 0
     let totalDurationSeconds = 0
     let totalClockOutSeconds = 0
@@ -77,7 +74,7 @@ export function ProfileAttendanceTab({ staffId, attendanceLogs = [], reportsData
 
     const avgCiSecs = totalClockInSeconds / filteredLogs.length
     const avgClockIn = format(new Date().setHours(0, 0, avgCiSecs), 'hh:mm a')
-    const avgClockInStatus = avgCiSecs <= (9 * 3600) ? 'success' : 'danger' // 09:00 threshold
+    const avgClockInStatus = avgCiSecs <= (9 * 3600) ? 'success' : 'danger'
 
     const avgDurationHrs = (totalDurationSeconds / 3600) / filteredLogs.length
     const avgTotalTime = `${avgDurationHrs.toFixed(1)}h`
@@ -88,9 +85,6 @@ export function ProfileAttendanceTab({ staffId, attendanceLogs = [], reportsData
     const avgCoSecs = totalClockOutSeconds / filteredLogs.filter(l => l.clockOut).length || 0
     const avgClockOut = avgCoSecs > 0 ? format(new Date().setHours(0, 0, avgCoSecs), 'hh:mm a') : '--:--'
 
-    // Mock days missed for now - ideally compare against expected schedule
-    const daysMissed = 0
-
     return {
       avgClockIn,
       avgClockInStatus,
@@ -99,11 +93,10 @@ export function ProfileAttendanceTab({ staffId, attendanceLogs = [], reportsData
       earliestClockIn,
       avgClockOut,
       timesLate,
-      daysMissed
+      daysMissed: 0
     }
   }, [attendanceLogs, timeFilter])
 
-  // --- GET DAILY REPORT FOR SELECTED DATE ---
   const dailyData = useMemo(() => {
     if (!selectedDate) return null;
     const dateStr = format(selectedDate, 'yyyy-MM-dd')
@@ -115,8 +108,6 @@ export function ProfileAttendanceTab({ staffId, attendanceLogs = [], reportsData
 
   return (
     <div className="space-y-6 animate-in fade-in">
-
-      {/* FILTER & TOP STATS ROW */}
       <div className="flex flex-col gap-4">
         <div className="flex justify-between items-center">
           <h3 className="text-sm font-black uppercase tracking-widest text-muted-foreground opacity-60">Performance Metrics</h3>
@@ -141,10 +132,7 @@ export function ProfileAttendanceTab({ staffId, attendanceLogs = [], reportsData
         </div>
       </div>
 
-      {/* CALENDAR & DAILY SUMMARY SPLIT */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-
-        {/* Left: Calendar (Span 4) */}
         <Card className="lg:col-span-4 apple-glass rounded-[2rem] border-border/50 bg-card/40 overflow-hidden">
            <CardContent className="p-4 flex justify-center">
              <Calendar
@@ -156,7 +144,6 @@ export function ProfileAttendanceTab({ staffId, attendanceLogs = [], reportsData
            </CardContent>
         </Card>
 
-        {/* Right: Daily Summary & Report (Span 8) */}
         <div className="lg:col-span-8 flex flex-col gap-4">
           <h3 className="text-sm font-black uppercase tracking-tighter text-foreground border-b border-border/50 pb-2 flex items-center gap-2">
             <CalendarDays className="h-4 w-4 text-primary" />
@@ -181,15 +168,13 @@ export function ProfileAttendanceTab({ staffId, attendanceLogs = [], reportsData
                       </span>
                     </div>
                     {dailyData.log.status && (
-                        <Badge variant="outline" className="ml-auto border-primary/20 text-primary text-[8px] font-black uppercase tracking-widest mr-4">
+                        <span className="ml-auto border border-primary/20 text-primary text-[8px] font-black uppercase tracking-widest mr-4 px-2 py-0.5 rounded-full">
                             {dailyData.log.status}
-                        </Badge>
+                        </span>
                     )}
                   </div>
                 </AccordionTrigger>
                 <AccordionContent className="pb-8 pt-2 space-y-8 border-t border-border/50 mt-2">
-
-                  {/* Timestamps */}
                   <div className="grid grid-cols-3 gap-6 p-6 bg-secondary/30 rounded-3xl border border-white/5 shadow-inner">
                     <div className="space-y-1">
                       <p className="text-[9px] uppercase font-black tracking-widest text-muted-foreground opacity-40">Clock In</p>
@@ -205,17 +190,15 @@ export function ProfileAttendanceTab({ staffId, attendanceLogs = [], reportsData
                     </div>
                   </div>
 
-                  {/* Embedded Daily Report */}
                   <div className="space-y-4">
                     <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-3 flex items-center gap-2 px-1">
-                      <FileText className="w-4 h-4 text-primary" /> End of Day report justifiction
+                      <FileText className="w-4 h-4 text-primary" /> End of Day report justification
                     </h4>
                     {dailyData.report ? (
                       <div className="space-y-4">
                          <div className="p-6 bg-background/60 border border-border/50 rounded-3xl text-sm leading-relaxed whitespace-pre-wrap text-foreground shadow-sm italic">
                             {dailyData.report.content || dailyData.report.accomplishments}
                          </div>
-
                          {(dailyData.report.blockers || dailyData.report.nextFocus) && (
                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 {dailyData.report.blockers && (
@@ -239,7 +222,6 @@ export function ProfileAttendanceTab({ staffId, attendanceLogs = [], reportsData
                       </div>
                     )}
                   </div>
-
                 </AccordionContent>
               </AccordionItem>
             </Accordion>
@@ -250,7 +232,6 @@ export function ProfileAttendanceTab({ staffId, attendanceLogs = [], reportsData
   )
 }
 
-// Helper Sub-component for Stats
 function StatCard({ title, value, status }: { title: string, value: string, status: 'success' | 'danger' | 'warning' | 'neutral' }) {
   const colors = {
     success: "text-emerald-500",

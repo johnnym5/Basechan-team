@@ -295,7 +295,7 @@ export function IntelligentBrief({ userProfile }: IntelligentBriefProps) {
                             <p className="text-[10px] font-black uppercase text-white">{r.userName}</p>
                             <p className="text-[9px] font-bold text-muted-foreground mt-0.5 italic line-clamp-1">"{r.accomplishments}"</p>
                         </div>
-                        <Badge className="bg-orange-500/20 text-orange-500 border-none text-[8px] font-black whitespace-nowrap ml-4">0 TASKS FINALIZED</Badge>
+                        <BriefBadge className="bg-orange-500/20 text-orange-500 border-none text-[8px] font-black whitespace-nowrap ml-4">0 TASKS FINALIZED</BriefBadge>
                     </div>
                 )) : <p className="text-[10px] text-center opacity-30 py-4 font-black uppercase">Workload matches report</p>}
               </CardContent>
@@ -400,7 +400,7 @@ export function IntelligentBrief({ userProfile }: IntelligentBriefProps) {
   )
 }
 
-function Badge({ className, children }: { className?: string, children: React.ReactNode }) {
+function BriefBadge({ className, children }: { className?: string, children: React.ReactNode }) {
     return (
         <span className={cn("px-2 py-0.5 rounded-full", className)}>
             {children}

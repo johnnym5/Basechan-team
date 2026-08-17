@@ -14,7 +14,6 @@ import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query, where, orderBy, limit } from 'firebase/firestore';
 import type { UserProfile, DailyReport, Task, Attendance, PulseCheck } from '@/lib/types';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatDuration } from '@/lib/formatters';
 import {
@@ -100,7 +99,7 @@ export function WeeklyAttendanceLedger({
             lateReason: log?.lateReason || null,
             reportText: report?.content || report?.accomplishments || null
         }
-    }).reverse() // Show most recent days first
+    }).reverse()
   }, [weekStart, weekEnd, attendanceLogs, reportsData, pulseChecks])
 
   return (
@@ -130,14 +129,14 @@ export function WeeklyAttendanceLedger({
               <div className="flex items-center justify-between w-full pr-4">
                 <span className="text-xs font-black uppercase tracking-tight text-white group-hover:text-primary transition-colors">{day.date}</span>
                 <div className="flex items-center gap-4">
-                  <Badge variant="outline" className={cn(
-                      "text-[8px] font-black uppercase tracking-widest px-2 py-0.5 border-none",
+                  <span className={cn(
+                      "text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-lg border-none",
                       day.status === 'PRESENT' ? "bg-emerald-500/10 text-emerald-500" :
                       day.status === 'LATE' ? "bg-amber-500/10 text-amber-500" :
                       "bg-rose-500/10 text-rose-500"
                   )}>
                     {day.status}
-                  </Badge>
+                  </span>
                   <span className="text-[10px] font-black font-mono text-muted-foreground opacity-60 min-w-[80px] text-right">{day.timeRange}</span>
                 </div>
               </div>
@@ -147,12 +146,12 @@ export function WeeklyAttendanceLedger({
               <div className="flex items-center gap-3 px-1">
                 <Activity className="w-3.5 h-3.5 text-muted-foreground" />
                 <span className="text-[9px] uppercase font-black tracking-widest text-muted-foreground opacity-40">Daily Pulse</span>
-                <Badge variant="secondary" className={cn(
-                    "text-[8px] font-black uppercase tracking-tighter px-2",
+                <span className={cn(
+                    "text-[8px] font-black uppercase tracking-tighter px-2 py-0.5 rounded-full",
                     day.pulse === 'OVERWHELMED' || day.pulse === 'HEAVY' ? 'bg-rose-500/10 text-rose-500' : 'bg-primary/10 text-primary'
                 )}>
                   {day.pulse}
-                </Badge>
+                </span>
               </div>
 
               {day.lateReason && (
@@ -295,9 +294,9 @@ export function StaffQuickViewSheet({ isOpen, onClose, userId, orgId, onViewFull
                     <ListTodo className="h-3 w-3" />
                     Active Missions
                 </div>
-                <Badge variant="outline" className="text-[8px] font-black bg-primary/10 border-primary/20 text-primary">
+                <span className="inline-flex items-center rounded-full border px-2 py-0.5 text-[8px] font-black bg-primary/10 border-primary/20 text-primary uppercase">
                     {activeTasks.length} In Progress
-                </Badge>
+                </span>
              </div>
              <div className="space-y-2">
                 {isLoading ? (
