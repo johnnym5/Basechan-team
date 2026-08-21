@@ -12,15 +12,17 @@ import { ORG_ID } from "@/lib/config";
 interface DashboardTaskListProps {
     userProfile: UserProfile | null;
     permissions: Permissions;
+    tasks?: Task[];
+    isLoading?: boolean;
 }
 
-export function DashboardTaskList({ userProfile, permissions }: DashboardTaskListProps) {
+export function DashboardTaskList({ userProfile, permissions, tasks: propTasks, isLoading: propIsLoading }: DashboardTaskListProps) {
     const firestore = useFirestore();
     const { isSuperAdmin } = useSuperAdmin();
     const orgId = userProfile?.orgId || ORG_ID;
 
     const tasksQuery = useMemoFirebase(() => {
-        if (!firestore || !userProfile) return null;
+        if (!firestore || !userProfile || propTasks) return null;
         
         const tasksRef = collection(firestore, 'tasks');
         
@@ -40,12 +42,16 @@ export function DashboardTaskList({ userProfile, permissions }: DashboardTaskLis
                 limit(20)
             );
         }
-    }, [firestore, userProfile, permissions.canAccessAllTasks, isSuperAdmin]);
+    }, [firestore, userProfile, permissions.canAccessAllTasks, isSuperAdmin, propTasks]);
 
-    const { data: allTasks, isLoading } = useCollection<Task>(tasksQuery);
+    const { data: allTasks, isLoading: isQueryLoading } = useCollection<Task>(tasksQuery);
     
+    const isLoading = propTasks ? propIsLoading : isQueryLoading;
+
     // Filter for active tasks on the client
-    const tasks = allTasks?.filter(t => t.status !== 'ARCHIVED').slice(0, 10);
+    const tasks = propTasks
+        ? propTasks.filter(t => t.status !== 'ARCHIVED').slice(0, 10)
+        : allTasks?.filter(t => t.status !== 'ARCHIVED').slice(0, 10);
 
   return (
     <section className="flex-1 flex flex-col h-full overflow-hidden">

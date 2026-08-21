@@ -43,6 +43,7 @@ import { DashboardRecentReports } from "./DashboardRecentReports"
 import { DashboardRecentChats } from "./DashboardRecentChats"
 import { Announcements } from "./Announcements"
 import { LiveTeamRadar } from "./LiveTeamRadar"
+import { useScrubbedData } from "@/hooks/useScrubbedData"
 import {
     LineChart,
     Line,
@@ -106,6 +107,21 @@ export function AdminDashboard({ userProfile, permissions, systemConfig }: Admin
   , [firestore, userProfile.orgId]);
   const { data: allNominations } = useCollection<Nomination>(nominationsQuery);
 
+  // --- GHOST PROTOCOL: Global Data Scrub ---
+  const {
+    activeStaff,
+    activeAttendance,
+    activeTasks,
+    activeLeaveRequests,
+    activeNominations
+  } = useScrubbedData({
+    staffList: allStaff || undefined,
+    attendanceLogs: attendanceLogs || undefined,
+    tasks: allTasks || undefined,
+    leaveRequests: leaveRequests || undefined,
+    nominations: allNominations || undefined
+  });
+
   const quickActions = [
     { label: "Assign Task", icon: Plus, action: () => uiEmitter.emit('open-assign-task-dialog') },
     { label: "Broadcast", icon: Megaphone, action: () => uiEmitter.emit('open-new-announcement-dialog') },
@@ -124,33 +140,31 @@ export function AdminDashboard({ userProfile, permissions, systemConfig }: Admin
     { label: "Benefits", icon: Stethoscope, route: "/staff/profile" }
   ]
 
-  const activeStaffIds = useMemo(() => allStaff?.map(s => s.id) || [], [allStaff])
-
   const actionQueue = useMemo(() => {
-    const pendingLeaves = leaveRequests
-      ?.filter(req => req.status === 'PENDING' && activeStaffIds.includes(req.userId))
+    const pendingLeaves = activeLeaveRequests
+      .filter(req => req.status === 'PENDING')
       .map(req => ({
           id: req.id,
           type: 'LEAVE',
           title: `Leave: ${req.userName}`,
           date: req.createdAt,
           badgeClass: "bg-amber-500/20 text-amber-500 border-amber-500/30"
-      })) || []
+      }))
 
-    const pendingTasks = allTasks
-      ?.filter(t => t.status === 'AWAITING_REVIEW' && activeStaffIds.includes(t.assignedTo))
+    const pendingTasks = activeTasks
+      .filter(t => t.status === 'AWAITING_REVIEW')
       .map(t => ({
           id: t.id,
           type: 'TASK',
           title: `Review: ${t.title}`,
           date: t.createdAt,
           badgeClass: "bg-primary/20 text-primary border-primary/30"
-      })) || []
+      }))
 
     return [...pendingLeaves, ...pendingTasks].sort((a, b) =>
         new Date(b.date).getTime() - new Date(a.date).getTime()
     )
-  }, [leaveRequests, allTasks, activeStaffIds])
+  }, [activeLeaveRequests, activeTasks])
 
   const handleAction = (item: any) => {
     if (item.route) router.push(item.route)
@@ -194,19 +208,19 @@ export function AdminDashboard({ userProfile, permissions, systemConfig }: Admin
             {/* Team Insights Rotator (Span 5) */}
             <div className="lg:col-span-5 h-full">
                 <IntelligentSummaryCenter
-                    staffList={allStaff || []}
-                    attendanceLogs={attendanceLogs || []}
-                    tasks={allTasks || []}
-                    leaveRequests={leaveRequests || []}
-                    nominations={allNominations || []}
+                    staffList={activeStaff}
+                    attendanceLogs={activeAttendance}
+                    tasks={activeTasks}
+                    leaveRequests={activeLeaveRequests}
+                    nominations={activeNominations}
                 />
             </div>
 
             {/* Live Team Tracker (Span 4) */}
             <div className="lg:col-span-4 h-full">
                 <LiveTeamRadar
-                    staffList={allStaff || []}
-                    attendanceLogs={attendanceLogs || []}
+                    staffList={activeStaff}
+                    attendanceLogs={activeAttendance}
                 />
             </div>
         </div>
@@ -265,7 +279,11 @@ export function AdminDashboard({ userProfile, permissions, systemConfig }: Admin
                     </div>
                 </CardHeader>
                 <div className="p-3 md:p-6 overflow-y-auto custom-scrollbar flex-1 overflow-x-auto w-full">
-                    <DashboardTaskList userProfile={userProfile} permissions={permissions} />
+                    <DashboardTaskList
+                        userProfile={userProfile}
+                        permissions={permissions}
+                        tasks={activeTasks}
+                    />
                 </div>
             </Card>
         </div>

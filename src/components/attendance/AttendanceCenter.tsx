@@ -52,8 +52,14 @@ export function AttendanceCenter({ staffList, attendanceLogs, currentUserProfile
   const [historyTimeframe, setHistoryTimeframe] = useState<'DAILY' | 'WEEKLY' | 'MONTHLY' | 'QUARTERLY'>('WEEKLY')
   const [historyStaffId, setHistoryStaffId] = useState<string>('ALL')
 
-  // Core Data Derivation
-  const nonAdminStaff = useMemo(() => staffList.filter(u => !['SUPERADMIN', 'ORG_ADMIN', 'MANAGING_DIRECTOR', 'HR_MANAGER'].includes(u.role)), [staffList]);
+  // Core Data Derivation (Ghost Protocol Enforced)
+  const nonAdminStaff = useMemo(() =>
+    staffList.filter(u =>
+        !['SUPERADMIN', 'ORG_ADMIN', 'MANAGING_DIRECTOR', 'HR_MANAGER'].includes(u.role) &&
+        u.status !== 'DISABLED' &&
+        u.status !== 'TERMINATED' &&
+        u.isArchived !== true
+    ), [staffList]);
 
   const targetDateStr = format(selectedDate, 'yyyy-MM-dd');
   const dayLogs = useMemo(() => attendanceLogs.filter(log => log.date === targetDateStr), [attendanceLogs, targetDateStr]);

@@ -22,6 +22,7 @@ import { useFirestore, useCollection, useMemoFirebase, errorEmitter } from '@/fi
 import { collection, query, where, limit, orderBy } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { cn, getDistanceInMeters } from '@/lib/utils';
+import { validateGeofence, GEOFENCE_RADIUS_METERS } from '@/lib/geofence';
 import { Progress } from '../ui/progress';
 import { attendanceService } from '@/services/attendance-service';
 import { uiEmitter } from '@/lib/ui-emitter';
@@ -61,6 +62,7 @@ export function ClockControl({ userProfile, permissions, systemConfig, className
     const [location, setLocation] = useState<AttendanceLocation>('OFFICE');
     const [today, setToday] = useState('');
     const [distanceFromOffice, setDistanceFromOffice] = useState<number | null>(null);
+    const [nearestBranch, setNearestBranch] = useState<string | null>(null);
     const [lateReason, setLateReason] = useState('');
     const [showLateDialog, setShowLateDialog] = useState(false);
     const [isDebriefModalOpen, setIsDebriefModalOpen] = useState(false);
@@ -72,16 +74,25 @@ export function ClockControl({ userProfile, permissions, systemConfig, className
     useEffect(() => { setToday(format(new Date(), 'yyyy-MM-dd')); }, []);
 
     useEffect(() => {
-        const isExempt = permissions.canBypassGeofence;
-        const shouldCheckGeofence = systemConfig?.office_coordinates && location === 'OFFICE' && (systemConfig.attendance_strict || !isExempt);
+        const isExempt = permissions.canBypassGeofence || userProfile?.role === 'ORG_ADMIN' || userProfile?.role === 'SUPERADMIN';
+        const shouldCheckGeofence = location === 'OFFICE' && (systemConfig?.attendance_strict || !isExempt);
 
         if (shouldCheckGeofence && 'geolocation' in navigator) {
-            navigator.geolocation.getCurrentPosition((pos) => {
-                const dist = getDistanceInMeters(pos.coords.latitude, pos.coords.longitude, systemConfig.office_coordinates!.lat, systemConfig.office_coordinates!.lng);
-                setDistanceFromOffice(dist);
-            }, () => setDistanceFromOffice(null), { timeout: 10000 });
-        } else { setDistanceFromOffice(null); }
-    }, [location, systemConfig, permissions.canBypassGeofence]);
+            const watchId = navigator.geolocation.watchPosition((pos) => {
+                const result = validateGeofence(pos.coords.latitude, pos.coords.longitude);
+                setDistanceFromOffice(result.distance);
+                setNearestBranch(result.nearestBranch);
+            }, () => {
+                setDistanceFromOffice(null);
+                setNearestBranch(null);
+            }, { enableHighAccuracy: true, timeout: 10000 });
+
+            return () => navigator.geolocation.clearWatch(watchId);
+        } else {
+            setDistanceFromOffice(null);
+            setNearestBranch(null);
+        }
+    }, [location, systemConfig, permissions.canBypassGeofence, userProfile?.role]);
 
     const attendanceQuery = useMemoFirebase(() => {
         if (!userProfile?.id || !userProfile?.orgId || !today || !firestore) return null;
@@ -172,16 +183,43 @@ export function ClockControl({ userProfile, permissions, systemConfig, className
             return;
         }
 
-        const isExempt = permissions.canBypassGeofence;
-        const isOutOfRange = location === 'OFFICE' && systemConfig?.office_coordinates && distanceFromOffice !== null && distanceFromOffice > 200;
+        setIsSubmitting(true);
 
-        if (!isExempt && isOutOfRange) {
-            toast({
-                variant: "destructive",
-                title: "Out of Range",
-                description: `Please ensure you are at the office before clocking in. You are currently ${Math.round(distanceFromOffice!)}m away.`
-            });
-            return;
+        const isExempt = permissions.canBypassGeofence || userProfile.role === 'ORG_ADMIN' || userProfile.role === 'SUPERADMIN';
+
+        let locationData: { lat: number | null, lng: number | null } = { lat: null, lng: null };
+
+        // Geofence Enforcement
+        if (!isExempt && location === 'OFFICE') {
+            try {
+                const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
+                    navigator.geolocation.getCurrentPosition(resolve, reject, {
+                        enableHighAccuracy: true,
+                        timeout: 10000
+                    });
+                });
+
+                const { latitude, longitude } = pos.coords;
+                locationData = { lat: latitude, lng: longitude };
+                const result = validateGeofence(latitude, longitude);
+
+                if (!result.isWithinRange) {
+                    toast({
+                        variant: "destructive",
+                        title: "Geofence Violation",
+                        description: `You are not within the 100-meter branch radius. Nearest: ${result.nearestBranch} (${Math.round(result.distance)}m away).`
+                    });
+                    setIsSubmitting(false);
+                    return;
+                }
+            } catch (err: any) {
+                let msg = "Unable to verify your location. Please ensure GPS is enabled and you have granted permission.";
+                if (err.code === 1) msg = "Location Access Denied. You must allow location access in your browser settings to clock in.";
+
+                toast({ variant: "destructive", title: "Location Error", description: msg });
+                setIsSubmitting(false);
+                return;
+            }
         }
 
         const isPC = !/Mobile|iP(hone|od|ad)|Android|BlackBerry|IEMobile|Kindle|NetFront|Silk-Accelerated|(hpw|web)OS|Fennec|Minimo|Opera M(obi|ini)|Blazer|Dolfin|Dolphin|Skyfire|Zune/i.test(navigator.userAgent);
@@ -229,7 +267,7 @@ export function ClockControl({ userProfile, permissions, systemConfig, className
                 }
             }
 
-            await attendanceService.clockIn(firestore, userProfile, location, today, systemConfig, reason);
+            await attendanceService.clockIn(firestore, userProfile, location, today, systemConfig, reason, locationData);
             toast({ title: 'Shift Started', description: screenShareActive ? "Workstation linked." : "Clock-in successful." });
             setShowLateDialog(false);
             setLateReason('');
@@ -301,6 +339,18 @@ export function ClockControl({ userProfile, permissions, systemConfig, className
                 )}
 
                 <div className={cn("w-full space-y-4 mb-4", !isClockedIn && "mt-2")}>
+                    {!isClockedIn && location === 'OFFICE' && nearestBranch && (
+                        <div className={cn(
+                            "flex items-center justify-center gap-2 text-[9px] font-black uppercase tracking-widest p-2 rounded-xl border animate-in fade-in",
+                            distanceFromOffice !== null && distanceFromOffice <= GEOFENCE_RADIUS_METERS
+                                ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-500"
+                                : "bg-rose-500/10 border-rose-500/20 text-rose-500"
+                        )}>
+                            <MapPin className="w-3 h-3" />
+                            {nearestBranch}: {Math.round(distanceFromOffice || 0)}m
+                            {distanceFromOffice !== null && distanceFromOffice <= GEOFENCE_RADIUS_METERS ? " (In Range)" : " (Out of Range)"}
+                        </div>
+                    )}
                     {isRestricted ? (
                         <div className="mt-4 p-4 bg-secondary/20 border border-border/50 rounded-2xl flex flex-col items-center justify-center gap-3 animate-in fade-in zoom-in-95">
                             <Lock className="w-6 h-6 text-muted-foreground opacity-50" />
