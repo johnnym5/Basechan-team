@@ -112,13 +112,33 @@ export function AdvancedTimeFilter({ value, onChange, className }: AdvancedTimeF
       <PopoverContent align="end" className="w-80 p-4 apple-glass-darker border-white/10 rounded-2xl shadow-3xl z-[1000]">
         {/* Navigation Header */}
         <div className="flex items-center justify-between mb-4 pb-3 border-b border-white/5">
-          <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-white/5" onClick={() => setNavDate(subMonths(navDate, 1))}>
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            className="h-8 w-8 rounded-lg hover:bg-white/5 border-white/10"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setNavDate(subMonths(navDate, 1));
+            }}
+          >
             <ChevronLeft className="w-4 h-4" />
           </Button>
           <span className="font-black text-[10px] uppercase tracking-[0.2em] text-primary">
             {format(navDate, "MMMM yyyy")}
           </span>
-          <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-white/5" onClick={() => setNavDate(addMonths(navDate, 1))}>
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            className="h-8 w-8 rounded-lg hover:bg-white/5 border-white/10"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setNavDate(addMonths(navDate, 1));
+            }}
+          >
             <ChevronRight className="w-4 h-4" />
           </Button>
         </div>

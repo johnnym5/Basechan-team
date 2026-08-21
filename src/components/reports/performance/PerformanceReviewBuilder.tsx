@@ -239,7 +239,7 @@ export function PerformanceReviewBuilder({ userProfile, staffList }: Performance
                         </div>
                         <div className="flex items-center justify-between gap-4">
                             <div className="flex gap-2">
-                                {[1, 2, 3, 4].map(score => (
+                                {[1, 2, 3, 4, 5].map(score => (
                                     <button
                                         key={score}
                                         onClick={() => updateMetric('business', idx, 'score', score)}
@@ -293,7 +293,7 @@ export function PerformanceReviewBuilder({ userProfile, staffList }: Performance
                         </div>
                         <div className="flex items-center justify-between gap-4">
                             <div className="flex gap-2">
-                                {[1, 2, 3, 4].map(score => (
+                                {[1, 2, 3, 4, 5].map(score => (
                                     <button
                                         key={score}
                                         onClick={() => updateMetric('interpersonal', idx, 'score', score)}

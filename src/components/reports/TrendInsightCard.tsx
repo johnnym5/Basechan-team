@@ -13,6 +13,7 @@ interface TrendInsightCardProps {
     trendPercentage?: number
     sparklineData?: { value: number }[]
     status?: 'success' | 'warning' | 'danger' | 'info'
+    onClick?: () => void
 }
 
 export function TrendInsightCard({
@@ -21,7 +22,8 @@ export function TrendInsightCard({
     description,
     trendPercentage,
     sparklineData,
-    status = 'info'
+    status = 'info',
+    onClick
 }: TrendInsightCardProps) {
     const isPositive = trendPercentage && trendPercentage > 0
     const isNegative = trendPercentage && trendPercentage < 0
@@ -34,7 +36,13 @@ export function TrendInsightCard({
     }
 
     return (
-        <Card className="apple-glass border-none shadow-xl overflow-hidden group">
+        <Card
+            className={cn(
+                "apple-glass border-none shadow-xl overflow-hidden group transition-all duration-300",
+                onClick && "cursor-pointer hover:bg-white/5 active:scale-[0.98]"
+            )}
+            onClick={onClick}
+        >
             <CardContent className="p-5 flex flex-col h-full">
                 <div className="flex justify-between items-start mb-4">
                     <div className="space-y-1">

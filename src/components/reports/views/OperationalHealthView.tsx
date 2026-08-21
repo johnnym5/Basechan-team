@@ -132,21 +132,21 @@ export function OperationalHealthView({
 
         {/* SECTION 1: TACTICAL INTELLIGENCE HUB */}
         <AccordionItem value="tactical-intel" className="border-none">
-          <Card className="apple-glass-darker border-white/5 shadow-xl rounded-[2.5rem] overflow-hidden">
-            <AccordionTrigger className="hover:no-underline px-8 py-6 group">
+          <Card className="apple-glass-darker border-primary/20 shadow-xl rounded-[2.5rem] overflow-hidden">
+            <AccordionTrigger className="hover:no-underline px-8 py-6 group bg-primary/5">
                 <div className="flex items-center gap-4">
-                    <div className="p-3 bg-primary/10 rounded-2xl text-primary group-hover:scale-110 transition-transform">
-                        <Zap className="w-5 h-5" />
+                    <div className="p-3 bg-primary/20 rounded-2xl text-primary group-hover:scale-110 transition-transform">
+                        <Zap className="w-5 h-5 animate-pulse" />
                     </div>
                     <div className="flex flex-col items-start">
-                        <span className="text-sm font-black uppercase tracking-widest">Tactical Intelligence Hub</span>
-                        <span className="text-[10px] font-bold text-muted-foreground opacity-60">Behavioral patterns, individual SITREPs, and real-time alerts</span>
+                        <span className="text-sm font-black uppercase tracking-widest text-primary">Tactical Intelligence Radar (Deep-Dive)</span>
+                        <span className="text-[10px] font-bold text-muted-foreground opacity-60">Behavioral patterns, individual SITREPs, and real-time personnel insights</span>
                     </div>
                 </div>
             </AccordionTrigger>
             <AccordionContent className="p-0 border-t border-white/5 bg-black/10">
                 <IntelligentSummaryCenter
-                    staffList={staffList.filter(s => selectedStaffIds.includes(s.id))}
+                    staffList={staffList}
                     attendanceLogs={attendanceLogs}
                     tasks={tasks}
                     leaveRequests={leaveRequests}
@@ -162,11 +162,11 @@ export function OperationalHealthView({
           <Card className="apple-glass-darker border-white/5 shadow-xl rounded-[2.5rem] overflow-hidden">
             <AccordionTrigger className="hover:no-underline px-8 py-6 group">
                 <div className="flex items-center gap-4">
-                    <div className="p-3 bg-primary/10 rounded-2xl text-primary group-hover:scale-110 transition-transform">
+                    <div className="p-3 bg-white/10 rounded-2xl text-white group-hover:scale-110 transition-transform">
                         <TrendingUp className="w-5 h-5" />
                     </div>
                     <div className="flex flex-col items-start">
-                        <span className="text-sm font-black uppercase tracking-widest">Operational Performance Trends</span>
+                        <span className="text-sm font-black uppercase tracking-widest text-white">Operational Performance Trends</span>
                         <span className="text-[10px] font-bold text-muted-foreground opacity-60">Aggregate punctuality, attendance, and mission throughput</span>
                     </div>
                 </div>
@@ -258,85 +258,6 @@ export function OperationalHealthView({
                             )}
                         </CardContent>
                     </Card>
-                </div>
-            </AccordionContent>
-          </Card>
-        </AccordionItem>
-
-        {/* SECTION 4: INTELLIGENCE FEED */}
-        <AccordionItem value="intel-feed" className="border-none">
-          <Card className="apple-glass-darker border-white/5 shadow-xl rounded-[2.5rem] overflow-hidden">
-            <AccordionTrigger className="hover:no-underline px-8 py-6 group">
-                <div className="flex items-center gap-4">
-                    <div className="p-3 bg-primary/10 rounded-2xl text-primary group-hover:scale-110 transition-transform">
-                        <FileText className="w-5 h-5" />
-                    </div>
-                    <div className="flex flex-col items-start">
-                        <span className="text-sm font-black uppercase tracking-widest">Tactical Log Feed & Leaders</span>
-                        <span className="text-[10px] font-bold text-muted-foreground opacity-60">Consolidated SITREPs and top performance rankings</span>
-                    </div>
-                </div>
-            </AccordionTrigger>
-            <AccordionContent className="p-0 border-t border-white/5 bg-black/10">
-                <div className="grid grid-cols-1 xl:grid-cols-12 gap-0 items-stretch">
-                    <div className="xl:col-span-8 border-r border-white/5 p-6 overflow-hidden h-[600px] flex flex-col">
-                        <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-4">Latest Situation Reports</h3>
-                        <div className="flex-1 overflow-y-auto custom-scrollbar pr-2">
-                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                                {analytics.recentEODs.map(log => {
-                                    const pulse = pulseFeed.find(p => p.userId === log.userId && p.date === log.date)
-                                    return (
-                                        <div key={log.id} className="p-5 rounded-2xl bg-white/5 border border-white/5 flex flex-col gap-3 group hover:border-primary/30 transition-all">
-                                            <div className="flex justify-between items-start">
-                                                <div>
-                                                    <p className="text-xs font-black text-white uppercase tracking-tight">{log.userName}</p>
-                                                    <p className="text-[8px] font-bold text-muted-foreground uppercase">{format(parseISO(log.clockIn), 'MMM dd, HH:mm')}</p>
-                                                </div>
-                                                {pulse && (
-                                                    <Badge className={cn(
-                                                        "text-[7px] font-black px-2 py-0.5 border-none",
-                                                        pulse.mood === 'SMOOTH' ? "bg-emerald-500" :
-                                                        pulse.mood === 'HEAVY' ? "bg-amber-500" : "bg-rose-500"
-                                                    )}>
-                                                        {pulse.mood}
-                                                    </Badge>
-                                                )}
-                                            </div>
-                                            <p className="text-xs font-medium text-muted-foreground leading-relaxed italic line-clamp-4 group-hover:line-clamp-none transition-all">
-                                                "{log.eodReport}"
-                                            </p>
-                                        </div>
-                                    )
-                                })}
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="xl:col-span-4 p-0 bg-black/20 h-[600px] flex flex-col">
-                        <div className="p-6 border-b border-white/5">
-                            <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">Performance Leaders</h3>
-                        </div>
-                        <div className="flex-1 overflow-y-auto custom-scrollbar divide-y divide-white/5">
-                            {staffRankings.map((staff, idx) => (
-                                <div key={staff.id} className="p-4 hover:bg-white/5 transition-all flex items-center justify-between group">
-                                    <div className="flex items-center gap-4">
-                                        <span className={cn(
-                                            "w-8 h-8 rounded-xl flex items-center justify-center text-[10px] font-black shadow-inner shrink-0",
-                                            idx === 0 ? "bg-amber-500 text-black" : "bg-secondary/50 text-muted-foreground"
-                                        )}>{idx + 1}</span>
-                                        <div className="min-w-0">
-                                            <p className="text-xs font-black text-white uppercase truncate">{staff.name}</p>
-                                            <p className="text-[8px] font-bold text-muted-foreground uppercase opacity-60">Score: {staff.totalScore}</p>
-                                        </div>
-                                    </div>
-                                    <StaffActionMenu
-                                        staff={{ id: staff.id, name: staff.name, status: staff.status, isArchived: staff.isArchived }}
-                                        currentLog={staff.currentLog}
-                                    />
-                                </div>
-                            ))}
-                        </div>
-                    </div>
                 </div>
             </AccordionContent>
           </Card>

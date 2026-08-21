@@ -11,7 +11,6 @@ import { MyDailyReports } from "@/components/reports/MyDailyReports";
 import { TeamDailyReports } from "@/components/reports/TeamDailyReports";
 import { TeamInsightHub } from "@/components/reports/TeamInsightHub";
 import { MyBriefingDashboard } from "@/components/reports/MyBriefingDashboard";
-import { PeerRecognitionHub } from "@/components/reports/PeerRecognitionHub";
 import { AlertArchive } from "@/components/reports/AlertArchive";
 import { useState, useEffect, useMemo } from "react";
 import { Button } from "../ui/button";
@@ -36,27 +35,6 @@ export function ReportsPageContent({ initialPayload, noWrapper = false }: { init
 
   const storageKey = 'reports-view-tab';
   const [activeTab, setActiveTab] = useState('submit');
-
-  useEffect(() => {
-    if (initialPayload?.tab) {
-        setActiveTab(initialPayload.tab);
-    } else {
-        const savedTab = localStorage.getItem(storageKey);
-        if (savedTab) {
-            if (savedTab === 'performance' || savedTab === 'analytics' || savedTab === 'team-health') {
-                setActiveTab(permissions.canManageStaff ? 'team-performance' : 'submit');
-            } else if (savedTab === 'team-reports') {
-                setActiveTab('team-reports');
-            } else if (savedTab === 'intelligent-brief') {
-                setActiveTab('intelligent-brief');
-            } else {
-                setActiveTab(savedTab);
-            }
-        } else {
-            setActiveTab(permissions.canManageStaff ? 'team-performance' : 'submit');
-        }
-    }
-  }, [initialPayload, permissions.canManageStaff]);
 
   useEffect(() => {
     if (activeTab) {
@@ -182,10 +160,6 @@ export function ReportsPageContent({ initialPayload, noWrapper = false }: { init
       leaveRequests: allLeaveData || undefined
   });
 
-  const staffListShort = useMemo(() =>
-    activeStaff?.filter(s => s.id !== authUser?.uid).map(s => ({ id: s.id, name: s.fullName })) || []
-  , [activeStaff, authUser?.uid]);
-
   const handleNominationSubmit = async (payload: any) => {
     if (!firestore) return;
     try {
@@ -218,7 +192,7 @@ export function ReportsPageContent({ initialPayload, noWrapper = false }: { init
   }
 
   const renderContent = () => {
-    if (permissions.canManageStaff && userProfile && activeStaff && activeAttendance && activeTasks && activeLeaveRequests && activeNominations) {
+    if (userProfile && activeStaff && activeAttendance && activeTasks && activeLeaveRequests && activeNominations) {
         return (
             <TeamInsightHub
                 userProfile={userProfile}
@@ -236,60 +210,9 @@ export function ReportsPageContent({ initialPayload, noWrapper = false }: { init
     }
 
     return (
-        <div className="flex flex-col h-full gap-4 md:gap-6 overflow-x-hidden">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between shrink-0 gap-4">
-              <div>
-                  <h2 className="text-lg font-black font-headline tracking-tighter uppercase">Operations Intelligence</h2>
-                  <p className="text-[9px] md:text-[10px] font-bold text-muted-foreground uppercase tracking-widest opacity-60">Performance Metrics, Activity Logs & Team Health</p>
-              </div>
-          </div>
-
-          <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar">
-              <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full flex flex-col min-h-0 h-full">
-                <div className="w-full overflow-x-auto no-scrollbar mb-6 md:mb-8 shrink-0">
-                    <TabsList className="bg-secondary/20 rounded-2xl p-1 w-max border border-white/5 flex gap-1">
-                        <TabsTrigger value="submit" className="rounded-xl px-4 md:px-6 font-black uppercase text-[9px] md:text-[10px] tracking-widest data-[state=active]:bg-background transition-all">
-                            Submit Daily Report
-                        </TabsTrigger>
-                        <TabsTrigger value="recognition" className="rounded-xl px-4 md:px-6 font-black uppercase text-[9px] md:text-[10px] tracking-widest data-[state=active]:bg-background transition-all">
-                            <Award className="h-3.5 w-3.5 mr-2 text-amber-500" /> Recognition Hub
-                        </TabsTrigger>
-                        <TabsTrigger value="intelligent-brief" className="rounded-xl px-4 md:px-6 font-black uppercase text-[9px] md:text-[10px] tracking-widest data-[state=active]:bg-background transition-all">
-                            <Zap className="h-3.5 w-3.5 mr-2 text-amber-500" /> Personal Insight
-                        </TabsTrigger>
-                    </TabsList>
-                </div>
-
-                <div className="flex-1 min-h-0">
-                    <TabsContent value="submit" className="m-0 space-y-8 focus-visible:ring-0 outline-none animate-in fade-in duration-500">
-                        {userProfile && <SubmitDailyReport userProfile={userProfile} />}
-                        {userProfile && <MyDailyReports userProfile={userProfile} />}
-                    </TabsContent>
-                    <TabsContent value="recognition" className="m-0 focus-visible:ring-0 outline-none animate-in fade-in duration-500">
-                        {userProfile && staffListShort && activeNominations && (
-                            <PeerRecognitionHub
-                                currentUser={userProfile}
-                                staffList={staffListShort}
-                                recognitionData={activeNominations}
-                                onSubmitNomination={handleNominationSubmit}
-                            />
-                        )}
-                    </TabsContent>
-                    <TabsContent value="intelligent-brief" className="m-0 focus-visible:ring-0 outline-none animate-in fade-in duration-500">
-                        {userProfile && activeStaff && activeAttendance && activeTasks && activeLeaveRequests && activeNominations && (
-                            <MyBriefingDashboard
-                                userProfile={userProfile}
-                                staffList={activeStaff}
-                                attendanceLogs={activeAttendance}
-                                tasks={activeTasks}
-                                leaveRequests={activeLeaveRequests}
-                                nominations={activeNominations}
-                            />
-                        )}
-                    </TabsContent>
-                </div>
-              </Tabs>
-          </div>
+        <div className="py-20 flex flex-col items-center justify-center opacity-20">
+            <Loader2 className="w-10 h-10 animate-spin text-primary mb-4" />
+            <p className="text-[10px] font-black uppercase tracking-widest">Initializing Tactical Matrix...</p>
         </div>
     );
   };

@@ -3,11 +3,16 @@
 import React, { useState, useMemo } from "react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { AdvancedTimeFilter, type TimeFilterState } from "../shared/AdvancedTimeFilter"
-import { Activity, Trophy, Download, FileSpreadsheet, Loader2 } from "lucide-react"
+import { Activity, Trophy, Download, FileSpreadsheet, Loader2, FileText, Zap } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { OperationalHealthView } from "./views/OperationalHealthView"
 import { RecognitionCultureView } from "./views/RecognitionCultureView"
+import { ManagementTools } from "./views/ManagementTools"
+import { SubmitDailyReport } from "./SubmitDailyReport"
+import { MyDailyReports } from "./MyDailyReports"
+import { MyBriefingDashboard } from "./MyBriefingDashboard"
 import type { UserProfile, Attendance, Task, LeaveRequest, Nomination, PulseCheck } from "@/lib/types"
+import { usePermissions } from "@/hooks/usePermissions"
 
 interface TeamInsightHubProps {
     userProfile: UserProfile;
@@ -38,6 +43,9 @@ export function TeamInsightHub({
     onSubmitNomination,
     isExporting = false
 }: TeamInsightHubProps) {
+  const permissions = usePermissions(userProfile)
+  const isAdmin = permissions.canManageStaff || permissions.canManageCompany
+
   // 1. Master Time Filter controls ALL tabs
   const [timeFilter, setTimeFilter] = useState<TimeFilterState>({
     mode: 'WEEK',
@@ -46,9 +54,18 @@ export function TeamInsightHub({
   })
 
   const [activeTab, setActiveTab] = useState("operations")
-  const [selectedStaffIds, setSelectedStaffIds] = useState<string[]>(() =>
-    staffList.filter(s => !['SUPERADMIN', 'ORG_ADMIN', 'MANAGING_DIRECTOR', 'HR_MANAGER'].includes(s.role)).map(s => s.id)
-  )
+  const [selectedStaffIds, setSelectedStaffIds] = useState<string[]>([])
+
+  // Dynamic initialization for comparison roster
+  React.useEffect(() => {
+    if (staffList.length > 0 && selectedStaffIds.length === 0) {
+        setSelectedStaffIds(
+            staffList
+                .filter(s => !['SUPERADMIN', 'ORG_ADMIN', 'MANAGING_DIRECTOR', 'HR_MANAGER'].includes(s.role))
+                .map(s => s.id)
+        );
+    }
+  }, [staffList, selectedStaffIds.length]);
 
   return (
     <div className="flex flex-col gap-6 h-full animate-in fade-in duration-500 overflow-x-hidden">
@@ -90,16 +107,38 @@ export function TeamInsightHub({
 
         <div className="w-full overflow-x-auto no-scrollbar mb-6 shrink-0">
             <TabsList className="bg-secondary/20 rounded-2xl p-1 w-fit border border-white/5 flex gap-1">
-                <TabsTrigger value="operations" className="rounded-xl px-6 font-black uppercase text-[10px] tracking-widest data-[state=active]:bg-background transition-all">
-                    <Activity className="w-4 h-4 mr-2 text-primary" /> Operational Health
-                </TabsTrigger>
-                <TabsTrigger value="culture" className="rounded-xl px-6 font-black uppercase text-[10px] tracking-widest data-[state=active]:bg-background transition-all">
-                    <Trophy className="w-4 h-4 mr-2 text-amber-500" /> Recognition & Culture
-                </TabsTrigger>
+                {isAdmin ? (
+                    <>
+                        <TabsTrigger value="operations" className="rounded-xl px-6 font-black uppercase text-[10px] tracking-widest data-[state=active]:bg-background transition-all">
+                            <Activity className="w-4 h-4 mr-2 text-primary" /> Operational Health
+                        </TabsTrigger>
+                        <TabsTrigger value="culture" className="rounded-xl px-6 font-black uppercase text-[10px] tracking-widest data-[state=active]:bg-background transition-all">
+                            <Trophy className="w-4 h-4 mr-2 text-amber-500" /> Recognition & Culture
+                        </TabsTrigger>
+                        <TabsTrigger value="management" className="rounded-xl px-6 font-black uppercase text-[10px] tracking-widest data-[state=active]:bg-background transition-all">
+                            <Zap className="w-4 h-4 mr-2 text-purple-500" /> Management
+                        </TabsTrigger>
+                    </>
+                ) : (
+                    <>
+                        <TabsTrigger value="submit" className="rounded-xl px-6 font-black uppercase text-[10px] tracking-widest data-[state=active]:bg-background transition-all">
+                            <FileText className="w-4 h-4 mr-2 text-primary" /> Submit Report
+                        </TabsTrigger>
+                        <TabsTrigger value="culture" className="rounded-xl px-6 font-black uppercase text-[10px] tracking-widest data-[state=active]:bg-background transition-all">
+                            <Trophy className="w-4 h-4 mr-2 text-amber-500" /> Recognition Hub
+                        </TabsTrigger>
+                        <TabsTrigger value="personal" className="rounded-xl px-6 font-black uppercase text-[10px] tracking-widest data-[state=active]:bg-background transition-all">
+                            <Zap className="w-4 h-4 mr-2 text-amber-500" /> Personal Insight
+                        </TabsTrigger>
+                        <TabsTrigger value="operations" className="rounded-xl px-6 font-black uppercase text-[10px] tracking-widest data-[state=active]:bg-background transition-all">
+                            <Activity className="w-4 h-4 mr-2 text-primary" /> My Performance
+                        </TabsTrigger>
+                    </>
+                )}
             </TabsList>
         </div>
 
-        {/* TAB 1: OPERATIONS */}
+        {/* TAB 1: OPERATIONS (Shared but filtered) */}
         <TabsContent value="operations" className="mt-0 flex-1 focus-visible:outline-none">
           <OperationalHealthView
             timeFilter={timeFilter}
@@ -112,7 +151,7 @@ export function TeamInsightHub({
           />
         </TabsContent>
 
-        {/* TAB 2: CULTURE */}
+        {/* TAB 2: CULTURE (Shared) */}
         <TabsContent value="culture" className="mt-0 flex-1 focus-visible:outline-none">
           <RecognitionCultureView
             timeFilter={timeFilter}
@@ -123,6 +162,36 @@ export function TeamInsightHub({
             selectedStaffIds={selectedStaffIds}
           />
         </TabsContent>
+
+        {/* TAB 3: MANAGEMENT (Admins only) */}
+        {isAdmin && (
+            <TabsContent value="management" className="mt-0 flex-1 focus-visible:outline-none space-y-8 animate-in fade-in duration-500">
+                <ManagementTools
+                    currentUser={userProfile}
+                    staffList={staffList}
+                />
+            </TabsContent>
+        )}
+
+        {/* STAFF-ONLY TABS */}
+        {!isAdmin && (
+            <>
+                <TabsContent value="submit" className="mt-0 flex-1 focus-visible:outline-none space-y-8">
+                    <SubmitDailyReport userProfile={userProfile} />
+                    <MyDailyReports userProfile={userProfile} />
+                </TabsContent>
+                <TabsContent value="personal" className="mt-0 flex-1 focus-visible:outline-none">
+                    <MyBriefingDashboard
+                        userProfile={userProfile}
+                        staffList={staffList}
+                        attendanceLogs={attendanceLogs}
+                        tasks={tasks}
+                        leaveRequests={leaveRequests}
+                        nominations={nominations}
+                    />
+                </TabsContent>
+            </>
+        )}
 
       </Tabs>
 

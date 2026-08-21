@@ -14,7 +14,9 @@ import {
     ChevronRight,
     ArrowRight,
     Search,
-    Filter
+    Filter,
+    Target,
+    Users
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';

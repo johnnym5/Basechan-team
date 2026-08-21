@@ -740,3 +740,25 @@ export interface AppRole {
   createdAt: string;
   updatedAt: string;
 }
+
+export interface AccoladeCategory {
+    id: string;
+    orgId: string;
+    title: string;
+    description: string;
+    icon?: string; // Lucide icon name or emoji
+    isActive: boolean;
+    createdAt: string;
+}
+
+export interface AccoladeVote {
+    id: string;
+    orgId: string;
+    nominatorId: string;
+    nominatorName: string;
+    nomineeId: string;
+    nomineeName: string;
+    categoryId: string;
+    categoryTitle: string;
+    timestamp: string; // ISO string
+}

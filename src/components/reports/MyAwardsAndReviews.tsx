@@ -3,10 +3,10 @@
 import React, { useMemo } from "react"
 import { useFirestore, useCollection, useMemoFirebase } from "@/firebase"
 import { collection, query, where, orderBy } from "firebase/firestore"
-import type { UserProfile, Nomination, PerformanceReview, BadgeType } from "@/lib/types"
+import type { UserProfile, Nomination, PerformanceReview } from "@/lib/types"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Trophy, Star, MessageSquare, ShieldCheck, Target, Zap, Users, Sparkles, Heart, Medal, FileText, TrendingUp } from "lucide-react"
+import { Trophy, Star, MessageSquare, ShieldCheck, Target, Zap, Users, Sparkles, Heart, Medal, FileText, TrendingUp, Calendar } from "lucide-react"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
@@ -99,7 +99,6 @@ export function MyAwardsAndReviews({ userProfile }: { userProfile: UserProfile }
                             </div>
                         ) : (
                             Object.entries(stats?.badgeCounts || {}).map(([title, count]) => {
-                                // Fallback to a default if category title doesn't match known types
                                 const config = BADGE_CONFIG[title.toUpperCase().replace(/\s+/g, '_')] || { icon: Medal, color: "text-primary bg-primary/10", label: title }
                                 const Icon = config.icon
                                 return (
@@ -292,5 +291,3 @@ function SummaryBox({ title, content, color, textColor }: { title: string, conte
         </div>
     )
 }
-
-import { Calendar } from "lucide-react"

@@ -35,8 +35,121 @@ export function ReviewTemplateSelector({ orgId, onTemplateSelected }: ReviewTemp
     fetchTemplates();
   }, [firestore, orgId]);
 
+  const SYSTEM_TEMPLATES: ReviewTemplate[] = [
+    {
+      id: 'monthly_sync',
+      orgId: 'SYSTEM',
+      templateName: 'Standard Monthly Sync',
+      department: 'General',
+      businessTargets: [
+        'Attendance & Punctuality Standard',
+        'Task Velocity & Completion Rate',
+        'Lead Conversion & Follow-up',
+        'Quality Assurance / Error Rate',
+        'Platform Compliance'
+      ],
+      interpersonalSkills: [
+        'Team Collaboration & Support',
+        'Adaptability & Crisis Management',
+        'Initiative & Problem Solving',
+        'Receptiveness to Feedback',
+        'Peer Recognition'
+      ],
+      createdBy: 'SYSTEM',
+      createdAt: new Date().toISOString()
+    },
+    {
+      id: 'probationary',
+      orgId: 'SYSTEM',
+      templateName: 'New Hire Probationary Review (30/60/90 Days)',
+      department: 'Onboarding',
+      businessTargets: [
+        'Learning Curve & Tool Adoption',
+        'Onboarding Speed (SLA)',
+        'Initial Error Rates',
+        'Platform Compliance'
+      ],
+      interpersonalSkills: [
+        'Cultural Fit & Values Alignment',
+        'Receptiveness to Feedback',
+        'Team Collaboration & Support'
+      ],
+      createdBy: 'SYSTEM',
+      createdAt: new Date().toISOString()
+    },
+    {
+      id: 'pip',
+      orgId: 'SYSTEM',
+      templateName: 'Performance Improvement Plan (PIP)',
+      department: 'Remedial',
+      businessTargets: [
+        'Attendance & Punctuality Standard',
+        'Required Turnaround Times (SLAs)',
+        'Task Velocity & Completion Rate',
+        'Quality Assurance / Error Rate'
+      ],
+      interpersonalSkills: [
+        'Receptiveness to Feedback',
+        'Initiative & Problem Solving',
+        'Professional Integrity'
+      ],
+      createdBy: 'SYSTEM',
+      createdAt: new Date().toISOString()
+    },
+    {
+      id: 'leadership',
+      orgId: 'SYSTEM',
+      templateName: 'Leadership & Management Evaluation',
+      department: 'Management',
+      businessTargets: [
+        'Team Output & Performance',
+        'Strategic Planning Execution',
+        'Task Velocity & Completion Rate',
+        'Operational Bottleneck Handling'
+      ],
+      interpersonalSkills: [
+        'Team Collaboration & Support',
+        'Initiative & Problem Solving',
+        'Adaptability & Crisis Management'
+      ],
+      createdBy: 'SYSTEM',
+      createdAt: new Date().toISOString()
+    },
+    {
+      id: 'post_project',
+      orgId: 'SYSTEM',
+      templateName: 'Post-Project / Peak Season Debrief',
+      department: 'Operations',
+      businessTargets: [
+        'Task Velocity & Completion Rate',
+        'Lead Conversion & Follow-up',
+        'Quality Assurance / Error Rate'
+      ],
+      interpersonalSkills: [
+        'Adaptability & Crisis Management',
+        'Team Collaboration & Support',
+        'Peer Recognition'
+      ],
+      createdBy: 'SYSTEM',
+      createdAt: new Date().toISOString()
+    }
+  ];
+
   const handleValueChange = (id: string) => {
-    const template = templates.find(t => t.id === id);
+    if (id === 'blank') {
+        onTemplateSelected({
+            id: 'blank',
+            orgId: '',
+            templateName: 'Blank Form',
+            businessTargets: [],
+            interpersonalSkills: [],
+            createdBy: '',
+            createdAt: ''
+        } as any);
+        return;
+    }
+
+    const template = [...SYSTEM_TEMPLATES, ...templates].find(t => t.id === id);
     if (template) onTemplateSelected(template);
   };
 
@@ -50,8 +163,17 @@ export function ReviewTemplateSelector({ orgId, onTemplateSelected }: ReviewTemp
           <SelectTrigger className="w-full bg-black/20 border-white/10 rounded-xl h-12 text-xs font-bold uppercase tracking-tight">
             <SelectValue placeholder={isLoading ? "Syncing Templates..." : "Select Template / Blank Form"} />
           </SelectTrigger>
-          <SelectContent className="apple-glass-darker border-none rounded-2xl">
+          <SelectContent className="apple-glass-darker border-none rounded-2xl max-h-[400px]">
             <SelectItem value="blank" className="font-bold text-xs uppercase p-3">-- Blank Review Form --</SelectItem>
+
+            <div className="px-3 py-2 text-[8px] font-black text-primary uppercase tracking-[0.2em] opacity-40">System Presets</div>
+            {SYSTEM_TEMPLATES.map(t => (
+              <SelectItem key={t.id} value={t.id} className="font-bold text-xs uppercase p-3">
+                {t.templateName}
+              </SelectItem>
+            ))}
+
+            <div className="px-3 py-2 text-[8px] font-black text-primary uppercase tracking-[0.2em] opacity-40 border-t border-white/5 mt-2">Custom Templates</div>
             {templates.map(t => (
               <SelectItem key={t.id} value={t.id} className="font-bold text-xs uppercase p-3">
                 {t.templateName} {t.department ? `(${t.department})` : ''}

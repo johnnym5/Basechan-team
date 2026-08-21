@@ -113,9 +113,10 @@ export function MyBriefingDashboard({
         attendanceLogs,
         tasks,
         leaveRequests,
-        []
+        [],
+        nominations
     );
-  }, [userProfile, attendanceLogs, tasks, leaveRequests]);
+  }, [userProfile, attendanceLogs, tasks, leaveRequests, nominations]);
 
 
   // --- UI RENDER (Slim-Card Layout) ---
