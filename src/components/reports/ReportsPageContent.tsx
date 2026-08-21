@@ -5,26 +5,17 @@ import { doc, collection, query, where, getDocs } from 'firebase/firestore';
 import type { UserProfile, DailyReport, Attendance, Requisition, Task, LeaveRequest, Nomination, PulseCheck } from '@/lib/types';
 import { usePermissions } from '@/hooks/usePermissions';
 import { Skeleton } from '@/components/ui/skeleton';
-import { FinancialReport } from '@/components/reports/FinancialReport';
-import { AttendanceReport } from "@/components/reports/AttendanceReport";
-import { KPIAnalytics } from "@/components/reports/KPIAnalytics";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SubmitDailyReport } from "@/components/reports/SubmitDailyReport";
 import { MyDailyReports } from "@/components/reports/MyDailyReports";
 import { TeamDailyReports } from "@/components/reports/TeamDailyReports";
-import { TeamHealthTab } from "@/components/reports/TeamHealthTab";
-import { PeerNominationForm } from "@/components/reports/PeerNominationForm";
-import { PerformanceDashboard } from "@/components/reports/PerformanceDashboard";
-import { MyAwardsAndReviews } from "@/components/reports/MyAwardsAndReviews";
-import { TeamDashboard } from "@/components/reports/TeamDashboard";
-import { IntelligentSummaryCenter } from "@/components/reports/IntelligentSummaryCenter";
+import { TeamInsightHub } from "@/components/reports/TeamInsightHub";
 import { MyBriefingDashboard } from "@/components/reports/MyBriefingDashboard";
-import { TeamPerformanceMasterView } from "@/components/reports/TeamPerformanceMasterView";
-import { AdminCommandBriefing } from "@/components/reports/AdminCommandBriefing";
 import { PeerRecognitionHub } from "@/components/reports/PeerRecognitionHub";
+import { AlertArchive } from "@/components/reports/AlertArchive";
 import { useState, useEffect, useMemo } from "react";
 import { Button } from "../ui/button";
-import { Download, FileSpreadsheet, Loader2, Trophy, BarChart3, UserCheck, Heart, ShieldAlert, Award, Zap } from "lucide-react";
+import { Download, FileSpreadsheet, Loader2, Trophy, BarChart3, UserCheck, Heart, ShieldAlert, Award, Zap, History as HistoryIcon } from "lucide-react";
 import * as XLSX from 'xlsx';
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
@@ -191,7 +182,7 @@ export function ReportsPageContent({ initialPayload, noWrapper = false }: { init
       leaveRequests: allLeaveData || undefined
   });
 
-  const staffList = useMemo(() =>
+  const staffListShort = useMemo(() =>
     activeStaff?.filter(s => s.id !== authUser?.uid).map(s => ({ id: s.id, name: s.fullName })) || []
   , [activeStaff, authUser?.uid]);
 
@@ -204,17 +195,19 @@ export function ReportsPageContent({ initialPayload, noWrapper = false }: { init
             nominatorId: payload.nominatorId,
             nominatorName: payload.nominatorName,
             timestamp: payload.date,
-            status: 'PENDING',
-            additionalNotes: payload.additionalNotes
+            status: nom.status || 'PENDING',
+            additionalNotes: payload.additionalNotes || ""
         }));
 
         const { addDocumentNonBlocking } = await import('@/firebase');
+        const { removeUndefined } = await import('@/lib/utils');
+
         for (const nomination of nominationBatch) {
-            await addDocumentNonBlocking(collection(firestore, 'nominations'), nomination);
+            const cleanNomination = removeUndefined(nomination);
+            await addDocumentNonBlocking(collection(firestore, 'nominations'), cleanNomination);
         }
 
-        toast({ title: "Nominations Submitted", description: "Thank you for recognizing your teammates!" });
-        setActiveTab('submit');
+        toast({ title: "Recognition Recorded", description: "Your daily recognition star has been dispatched!" });
     } catch (e: any) {
         toast({ variant: 'destructive', title: "Submission Failed", description: e.message });
     }
@@ -224,131 +217,82 @@ export function ReportsPageContent({ initialPayload, noWrapper = false }: { init
     return <div className="space-y-8 p-4 md:p-10"><Skeleton className="h-10 w-1/3" /><Skeleton className="h-[400px] md:h-[600px] w-full rounded-3xl" /></div>;
   }
 
-  const renderContent = () => (
-    <div className="flex flex-col h-full gap-4 md:gap-6 overflow-x-hidden">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between shrink-0 gap-4">
-          <div>
-              <h2 className="text-lg font-black font-headline tracking-tighter uppercase">Operations Intelligence</h2>
-              <p className="text-[9px] md:text-[10px] font-bold text-muted-foreground uppercase tracking-widest opacity-60">Performance Metrics, Activity Logs & Team Health</p>
+  const renderContent = () => {
+    if (permissions.canManageStaff && userProfile && activeStaff && activeAttendance && activeTasks && activeLeaveRequests && activeNominations) {
+        return (
+            <TeamInsightHub
+                userProfile={userProfile}
+                staffList={activeStaff}
+                attendanceLogs={activeAttendance}
+                tasks={activeTasks}
+                leaveRequests={activeLeaveRequests}
+                nominations={activeNominations}
+                pulseFeed={allPulseData || []}
+                onExport={handleMasterExport}
+                onSubmitNomination={handleNominationSubmit}
+                isExporting={isExporting}
+            />
+        );
+    }
+
+    return (
+        <div className="flex flex-col h-full gap-4 md:gap-6 overflow-x-hidden">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between shrink-0 gap-4">
+              <div>
+                  <h2 className="text-lg font-black font-headline tracking-tighter uppercase">Operations Intelligence</h2>
+                  <p className="text-[9px] md:text-[10px] font-bold text-muted-foreground uppercase tracking-widest opacity-60">Performance Metrics, Activity Logs & Team Health</p>
+              </div>
           </div>
-          {permissions.canManageStaff && (
-              <Button variant="outline" onClick={handleMasterExport} disabled={isExporting} className="rounded-xl border-primary/20 hover:bg-primary/10 hover:border-primary transition-all active:scale-95 group h-10 font-black uppercase text-[10px] tracking-widest shadow-xl shadow-primary/20 w-fit">
-                  {isExporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileSpreadsheet className="mr-2 h-4 w-4 group-hover:rotate-12 transition-transform text-primary" />}
-                  Export Master Data
-              </Button>
-          )}
-      </div>
 
-      <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar">
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full flex flex-col min-h-0 h-full">
-            <div className="w-full overflow-x-auto no-scrollbar mb-6 md:mb-8 shrink-0">
-                <TabsList className="bg-secondary/20 rounded-2xl p-1 w-max border border-white/5 flex gap-1">
-                    {permissions.canManageStaff ? (
-                        <>
-                            <TabsTrigger value="team-reports" className="rounded-xl px-4 md:px-6 font-black uppercase text-[9px] md:text-[10px] tracking-widest data-[state=active]:bg-background transition-all">
-                                <Zap className="h-3.5 w-3.5 mr-2 text-amber-500" /> Team Insight
-                            </TabsTrigger>
-                            <TabsTrigger value="team-performance" className="rounded-xl px-4 md:px-6 font-black uppercase text-[9px] md:text-[10px] tracking-widest data-[state=active]:bg-background transition-all">
-                                <Trophy className="h-3.5 w-3.5 mr-2 text-primary" /> Team Performance
-                            </TabsTrigger>
-                            <TabsTrigger value="recognition" className="rounded-xl px-4 md:px-6 font-black uppercase text-[9px] md:text-[10px] tracking-widest data-[state=active]:bg-background transition-all">
-                                <Award className="h-3.5 w-3.5 mr-2 text-amber-500" /> Recognition Hub
-                            </TabsTrigger>
-                        </>
-                    ) : (
-                        permissions.canSubmitReport && (
-                            <>
-                                <TabsTrigger value="submit" className="rounded-xl px-4 md:px-6 font-black uppercase text-[9px] md:text-[10px] tracking-widest data-[state=active]:bg-background transition-all">
-                                    Submit Daily Report
-                                </TabsTrigger>
-                                <TabsTrigger value="recognition" className="rounded-xl px-4 md:px-6 font-black uppercase text-[9px] md:text-[10px] tracking-widest data-[state=active]:bg-background transition-all">
-                                    <Award className="h-3.5 w-3.5 mr-2 text-amber-500" /> Recognition Hub
-                                </TabsTrigger>
-                                <TabsTrigger value="intelligent-brief" className="rounded-xl px-4 md:px-6 font-black uppercase text-[9px] md:text-[10px] tracking-widest data-[state=active]:bg-background transition-all">
-                                    <Zap className="h-3.5 w-3.5 mr-2 text-amber-500" /> Personal Insight
-                                </TabsTrigger>
-                            </>
-                        )
-                    )}
-                </TabsList>
-            </div>
+          <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar">
+              <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full flex flex-col min-h-0 h-full">
+                <div className="w-full overflow-x-auto no-scrollbar mb-6 md:mb-8 shrink-0">
+                    <TabsList className="bg-secondary/20 rounded-2xl p-1 w-max border border-white/5 flex gap-1">
+                        <TabsTrigger value="submit" className="rounded-xl px-4 md:px-6 font-black uppercase text-[9px] md:text-[10px] tracking-widest data-[state=active]:bg-background transition-all">
+                            Submit Daily Report
+                        </TabsTrigger>
+                        <TabsTrigger value="recognition" className="rounded-xl px-4 md:px-6 font-black uppercase text-[9px] md:text-[10px] tracking-widest data-[state=active]:bg-background transition-all">
+                            <Award className="h-3.5 w-3.5 mr-2 text-amber-500" /> Recognition Hub
+                        </TabsTrigger>
+                        <TabsTrigger value="intelligent-brief" className="rounded-xl px-4 md:px-6 font-black uppercase text-[9px] md:text-[10px] tracking-widest data-[state=active]:bg-background transition-all">
+                            <Zap className="h-3.5 w-3.5 mr-2 text-amber-500" /> Personal Insight
+                        </TabsTrigger>
+                    </TabsList>
+                </div>
 
-            <div className="flex-1 min-h-0">
-                {permissions.canManageStaff && (
-                    <>
-                        <TabsContent value="team-reports" className="m-0 space-y-8 focus-visible:ring-0 outline-none animate-in fade-in duration-500">
-                            {userProfile && activeStaff && activeAttendance && activeTasks && activeLeaveRequests && activeNominations && (
-                                <AdminCommandBriefing
-                                    staffList={activeStaff}
-                                    attendanceLogs={activeAttendance}
-                                    tasks={activeTasks}
-                                    leaveRequests={activeLeaveRequests}
-                                    nominations={activeNominations}
-                                />
-                            )}
-                            {userProfile && <TeamDailyReports userProfile={userProfile} />}
-                        </TabsContent>
-
-                        <TabsContent value="team-performance" className="m-0 space-y-8 focus-visible:ring-0 outline-none animate-in fade-in duration-500">
-                            {userProfile && activeStaff && activeAttendance && activeTasks && activeNominations && allPulseData && (
-                                <TeamPerformanceMasterView
-                                    staffList={activeStaff}
-                                    attendanceLogs={activeAttendance}
-                                    tasks={activeTasks}
-                                    nominations={activeNominations}
-                                    pulseFeed={allPulseData}
-                                />
-                            )}
-                        </TabsContent>
-
-                        <TabsContent value="recognition" className="m-0 focus-visible:ring-0 outline-none animate-in fade-in duration-500">
-                            {userProfile && staffList && activeNominations && (
-                                <PeerRecognitionHub
-                                    currentUser={userProfile}
-                                    staffList={staffList}
-                                    recognitionData={activeNominations}
-                                    onSubmitNomination={handleNominationSubmit}
-                                />
-                            )}
-                        </TabsContent>
-                    </>
-                )}
-
-                {!permissions.canManageStaff && permissions.canSubmitReport && (
-                    <>
-                        <TabsContent value="submit" className="m-0 space-y-8 focus-visible:ring-0 outline-none animate-in fade-in duration-500">
-                            {userProfile && <SubmitDailyReport userProfile={userProfile} />}
-                            {userProfile && <MyDailyReports userProfile={userProfile} />}
-                        </TabsContent>
-                        <TabsContent value="recognition" className="m-0 focus-visible:ring-0 outline-none animate-in fade-in duration-500">
-                            {userProfile && staffList && activeNominations && (
-                                <PeerRecognitionHub
-                                    currentUser={userProfile}
-                                    staffList={staffList}
-                                    recognitionData={activeNominations}
-                                    onSubmitNomination={handleNominationSubmit}
-                                />
-                            )}
-                        </TabsContent>
-                        <TabsContent value="intelligent-brief" className="m-0 focus-visible:ring-0 outline-none animate-in fade-in duration-500">
-                            {userProfile && activeStaff && activeAttendance && activeTasks && activeLeaveRequests && activeNominations && (
-                                <MyBriefingDashboard
-                                    userProfile={userProfile}
-                                    staffList={activeStaff}
-                                    attendanceLogs={activeAttendance}
-                                    tasks={activeTasks}
-                                    leaveRequests={activeLeaveRequests}
-                                    nominations={activeNominations}
-                                />
-                            )}
-                        </TabsContent>
-                    </>
-                )}
-            </div>
-          </Tabs>
-      </div>
-    </div>
-  );
+                <div className="flex-1 min-h-0">
+                    <TabsContent value="submit" className="m-0 space-y-8 focus-visible:ring-0 outline-none animate-in fade-in duration-500">
+                        {userProfile && <SubmitDailyReport userProfile={userProfile} />}
+                        {userProfile && <MyDailyReports userProfile={userProfile} />}
+                    </TabsContent>
+                    <TabsContent value="recognition" className="m-0 focus-visible:ring-0 outline-none animate-in fade-in duration-500">
+                        {userProfile && staffListShort && activeNominations && (
+                            <PeerRecognitionHub
+                                currentUser={userProfile}
+                                staffList={staffListShort}
+                                recognitionData={activeNominations}
+                                onSubmitNomination={handleNominationSubmit}
+                            />
+                        )}
+                    </TabsContent>
+                    <TabsContent value="intelligent-brief" className="m-0 focus-visible:ring-0 outline-none animate-in fade-in duration-500">
+                        {userProfile && activeStaff && activeAttendance && activeTasks && activeLeaveRequests && activeNominations && (
+                            <MyBriefingDashboard
+                                userProfile={userProfile}
+                                staffList={activeStaff}
+                                attendanceLogs={activeAttendance}
+                                tasks={activeTasks}
+                                leaveRequests={activeLeaveRequests}
+                                nominations={activeNominations}
+                            />
+                        )}
+                    </TabsContent>
+                </div>
+              </Tabs>
+          </div>
+        </div>
+    );
+  };
 
   if (noWrapper) return renderContent();
 

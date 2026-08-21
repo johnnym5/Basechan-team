@@ -218,7 +218,7 @@ export function MyAwardsAndReviews({ userProfile }: { userProfile: UserProfile }
                                             <Calendar className="h-6 w-6" />
                                         </div>
                                         <div>
-                                            <h4 className="font-black text-lg tracking-tight uppercase">{review.period} Final Review</h4>
+                                            <h4 className="font-black text-lg tracking-tight uppercase">{review.cycle} Final Review</h4>
                                             <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest opacity-60">
                                                 Conducted by {review.reviewerName} on {format(new Date(review.reviewDate), 'PP')}
                                             </p>
@@ -231,11 +231,9 @@ export function MyAwardsAndReviews({ userProfile }: { userProfile: UserProfile }
                                         <div className="space-y-6">
                                             <h5 className="text-[10px] font-black uppercase tracking-[0.3em] text-indigo-400/80 border-b border-white/5 pb-2">Business Target Nodes</h5>
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-6">
-                                                <MetricBar label="Application Fee" value={review.businessTargets.applicationFee} />
-                                                <MetricBar label="Deposits" value={review.businessTargets.deposits} />
-                                                <MetricBar label="POF (Proof of Funds)" value={review.businessTargets.pof} />
-                                                <MetricBar label="Visa Application" value={review.businessTargets.visaApplication} />
-                                                <MetricBar label="Accommodation" value={review.businessTargets.accommodation} />
+                                                {review.businessTargets.map((target, idx) => (
+                                                    <MetricBar key={idx} label={target.metricName} value={target.score} />
+                                                ))}
                                             </div>
                                         </div>
 
@@ -243,25 +241,18 @@ export function MyAwardsAndReviews({ userProfile }: { userProfile: UserProfile }
                                         <div className="space-y-6">
                                             <h5 className="text-[10px] font-black uppercase tracking-[0.3em] text-emerald-400/80 border-b border-white/5 pb-2">Interpersonal Matrix</h5>
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-6">
-                                                <MetricBar label="Engagement & Positive Attitude" value={review.interpersonalSkills.engagementAndAttitude} />
-                                                <MetricBar label="Communication & Collaboration" value={review.interpersonalSkills.communicationAndCollaboration} />
-                                                <MetricBar label="Demonstrate Core Values" value={review.interpersonalSkills.demonstrateValues} />
-                                                <MetricBar label="Ability to Meet Deadlines" value={review.interpersonalSkills.meetDeadlines} />
-                                                <MetricBar label="Proactive Initiatives" value={review.interpersonalSkills.initiatives} />
-                                                <MetricBar label="Consistency" value={review.interpersonalSkills.consistency} />
-                                                <MetricBar label="Quality of Work Output" value={review.interpersonalSkills.qualityOfWork} />
-                                                <MetricBar label="Punctuality & Attendance" value={review.interpersonalSkills.punctualityAndAttendance} />
-                                                <MetricBar label="Adaptability & Flexibility" value={review.interpersonalSkills.adaptabilityAndFlexibility} />
-                                                <MetricBar label="Resourcefulness" value={review.interpersonalSkills.resourceful} />
+                                                {review.interpersonalSkills.map((skill, idx) => (
+                                                    <MetricBar key={idx} label={skill.skillName} value={skill.score} />
+                                                ))}
                                             </div>
                                         </div>
 
                                         {/* Summaries */}
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-white/5">
-                                            <SummaryBox title="Success Areas" content={review.summary.successAreas} color="border-emerald-500/20 bg-emerald-500/5" textColor="text-emerald-400" />
-                                            <SummaryBox title="Areas for Improvement" content={review.summary.improvementAreas} color="border-rose-500/20 bg-rose-500/5" textColor="text-rose-400" />
-                                            <SummaryBox title="Focus for Next Review" content={review.summary.focusAreasNext} color="border-blue-500/20 bg-blue-500/5" textColor="text-blue-400" />
-                                            <SummaryBox title="Overall achievements" content={review.summary.overallAchievements} color="border-amber-500/20 bg-amber-500/5" textColor="text-amber-400" />
+                                            <SummaryBox title="Success Areas" content={review.qualitative.successAreas} color="border-emerald-500/20 bg-emerald-500/5" textColor="text-emerald-400" />
+                                            <SummaryBox title="Areas for Improvement" content={review.qualitative.areasForImprovement} color="border-rose-500/20 bg-rose-500/5" textColor="text-rose-400" />
+                                            <SummaryBox title="Focus for Next Review" content={review.qualitative.focusAreasNextReview} color="border-blue-500/20 bg-blue-500/5" textColor="text-blue-400" />
+                                            <SummaryBox title="Overall achievements" content={review.qualitative.overallAchievements} color="border-amber-500/20 bg-amber-500/5" textColor="text-amber-400" />
                                         </div>
                                     </div>
                                 </AccordionContent>

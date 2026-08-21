@@ -47,6 +47,7 @@ import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/hooks/use-toast"
 import { useStaffWeeklyHistory } from "@/hooks/useStaffWeeklyHistory"
 import { useStaffWeeklyReports } from "@/hooks/useStaffWeeklyReports"
+import { FileSearch } from "lucide-react"
 import {
     startOfWeek,
     endOfWeek,
@@ -518,6 +519,16 @@ export function StaffActionMenu({ staff, currentLog, orgId: propOrgId }: StaffAc
           >
             <FileText className="mr-3 h-4 w-4 shrink-0 opacity-40 group-focus:opacity-100" />
             <span className="uppercase tracking-tighter">Review Reports</span>
+          </DropdownMenuItem>
+
+          <DropdownMenuSeparator className="bg-white/5 mx-1" />
+
+          <DropdownMenuItem
+            onSelect={() => router.push(`/reports?tab=culture&sub=builder&userId=${staff?.id}`)}
+            className="flex items-center px-3 py-2 text-xs font-bold text-primary focus:bg-primary/10 focus:text-primary cursor-pointer rounded-xl transition-colors group"
+          >
+            <FileSearch className="mr-3 h-4 w-4 shrink-0" />
+            <span className="uppercase tracking-tighter">Issue Performance Review</span>
           </DropdownMenuItem>
 
           <DropdownMenuSeparator className="bg-white/5 mx-1" />

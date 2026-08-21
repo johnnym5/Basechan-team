@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useState, useMemo } from "react"
+import { Badge as UiBadge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
@@ -168,9 +169,9 @@ export function ProfileAttendanceTab({ staffId, attendanceLogs = [], reportsData
                       </span>
                     </div>
                     {dailyData.log.status && (
-                        <span className="ml-auto border border-primary/20 text-primary text-[8px] font-black uppercase tracking-widest mr-4 px-2 py-0.5 rounded-full">
+                        <UiBadge variant="outline" className="ml-auto border-primary/20 text-primary text-[8px] font-black uppercase tracking-widest mr-4">
                             {dailyData.log.status}
-                        </span>
+                        </UiBadge>
                     )}
                   </div>
                 </AccordionTrigger>

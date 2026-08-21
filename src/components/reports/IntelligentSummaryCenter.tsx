@@ -3,7 +3,8 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { useUser, useDoc, useMemoFirebase, useFirestore } from "@/firebase"
-import { doc } from "firebase/firestore"
+import { doc, addDoc, collection, serverTimestamp, query, where, getDocs, orderBy, limit } from "firebase/firestore"
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
@@ -13,6 +14,7 @@ import {
   Clock,
   Info,
   UserX,
+  Users,
   Zap,
   Activity,
   ShieldAlert,
@@ -33,10 +35,12 @@ import {
   ShieldQuestion,
   Gift,
   FileText,
-  AlertCircle
+  AlertCircle,
+  Loader2,
+  Radar
 } from "lucide-react"
 import { cn } from "@/lib/utils"
-import type { UserProfile, Attendance, Task, LeaveRequest, Nomination } from "@/lib/types"
+import type { UserProfile, Attendance, Task, LeaveRequest, Nomination, PulseCheck } from "@/lib/types"
 import {
     isToday,
     isWithinInterval,
@@ -57,44 +61,81 @@ import {
     addDays,
     differenceInYears,
     startOfWeek,
-    endOfWeek
+    endOfWeek,
+    startOfMonth,
+    endOfMonth
 } from "date-fns"
 import { Button } from "@/components/ui/button"
 import { usePermissions } from "@/hooks/usePermissions"
+import { type TimeFilterState } from "../shared/AdvancedTimeFilter"
+import { TrendInsightCard } from "../dashboard/TrendInsightCard"
+import { InsightEngine, type Insight } from "@/lib/InsightEngine"
 
 interface IntelligentSummaryCenterProps {
   staffList: UserProfile[];
   attendanceLogs: Attendance[];
   tasks: Task[];
   leaveRequests: LeaveRequest[];
+  pulseFeed?: PulseCheck[];
   nominations?: Nomination[];
   isAdminOverride?: boolean;
+  timeFilter?: TimeFilterState;
+  variant?: 'default' | 'compact';
 }
 
-export function CriticalAlertRotator({ alerts = [] }: { alerts: any[] }) {
+export function CriticalAlertRotator({
+  alerts = [],
+  userProfile,
+  onAcknowledge
+}: {
+  alerts: any[],
+  userProfile: UserProfile | null,
+  onAcknowledge: (alert: any) => void
+}) {
   const router = useRouter()
   const [currentIndex, setCurrentIndex] = useState(0)
 
+  // Local optimistic state for INSTANT hiding
+  const [optimisticallyHidden, setOptimisticallyHidden] = useState<string[]>([])
+
+  // Filter against BOTH DB (passed from parent) and Local Optimistic state
+  const visibleAlerts = useMemo(() =>
+    alerts.filter(alert => !optimisticallyHidden.includes(alert.id)),
+  [alerts, optimisticallyHidden])
+
   useEffect(() => {
-    if (alerts.length <= 1) return
+    if (currentIndex >= visibleAlerts.length && visibleAlerts.length > 0) {
+      setCurrentIndex(0)
+    }
+  }, [visibleAlerts.length, currentIndex])
+
+  useEffect(() => {
+    if (visibleAlerts.length <= 1) return
     const timer = setInterval(() => {
-      setCurrentIndex((prev) => (prev + 1) % alerts.length)
+      setCurrentIndex((prev) => (prev + 1) % visibleAlerts.length)
     }, 5000)
     return () => clearInterval(timer)
-  }, [alerts.length])
+  }, [visibleAlerts.length])
 
-  if (alerts.length === 0) return null
+  if (visibleAlerts.length === 0) return null
 
-  const currentAlert = alerts[currentIndex]
+  const currentAlert = visibleAlerts[currentIndex] || visibleAlerts[0]
+  if (!currentAlert) return null
+
+  const handleAcknowledgeInternal = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    setOptimisticallyHidden(prev => [...prev, currentAlert.id])
+    onAcknowledge(currentAlert)
+  }
 
   return (
     <div className="flex flex-col gap-3 w-full animate-in slide-in-from-top-4 duration-700">
         <div
-            className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 md:p-5 rounded-2xl md:rounded-[1.5rem] border border-rose-500/30 bg-rose-500/10 shadow-2xl backdrop-blur-xl relative overflow-hidden group gap-4"
+            className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 md:p-5 rounded-2xl md:rounded-[1.5rem] border border-rose-500/30 bg-rose-500/10 shadow-2xl backdrop-blur-xl relative overflow-hidden group gap-4 transition-all"
         >
             {/* Progress bar indicator for rotation */}
-            {alerts.length > 1 && (
-                <div key={currentIndex} className="absolute bottom-0 left-0 h-1 bg-rose-500/50 animate-progress w-full" style={{ animationDuration: '5000ms' }} />
+            {visibleAlerts.length > 1 && (
+                <div key={`${currentIndex}-${visibleAlerts.length}`} className="absolute bottom-0 left-0 h-1 bg-rose-500/50 animate-progress w-full" style={{ animationDuration: '5000ms' }} />
             )}
 
             <div className="flex items-center gap-4 md:gap-5 z-10">
@@ -103,13 +144,21 @@ export function CriticalAlertRotator({ alerts = [] }: { alerts: any[] }) {
                 </div>
                 <div className="min-w-0">
                     <h4 className="text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] text-rose-500 mb-0.5">
-                        Critical Alerts {alerts.length > 1 && `(${currentIndex + 1}/${alerts.length})`}
+                        Critical Alerts {visibleAlerts.length > 1 && `(${currentIndex + 1}/${visibleAlerts.length})`}
                     </h4>
                     <p className="text-xs md:text-sm font-black tracking-tight text-white leading-tight break-words">{currentAlert.text}</p>
                 </div>
             </div>
 
             <div className="flex items-center gap-2 md:gap-3 w-full sm:w-auto justify-end z-10">
+                <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleAcknowledgeInternal}
+                    className="h-8 md:h-9 px-3 md:px-4 text-[8px] md:text-[9px] font-black uppercase tracking-widest text-rose-500/60 hover:text-rose-500 hover:bg-rose-500/10 rounded-lg md:rounded-xl"
+                >
+                    Acknowledge
+                </Button>
                 <Button
                     onClick={() => {
                         if (currentAlert.actionType === 'ROUTE') router.push(currentAlert.actionTarget)
@@ -129,12 +178,16 @@ export function IntelligentSummaryCenter({
   attendanceLogs = [],
   tasks = [],
   leaveRequests = [],
+  pulseFeed = [],
   nominations = [],
-  isAdminOverride
+  isAdminOverride,
+  timeFilter,
+  variant = 'default'
 }: IntelligentSummaryCenterProps) {
   const router = useRouter()
   const { user: authUser } = useUser()
   const firestore = useFirestore()
+  const queryClient = useQueryClient()
 
   const userProfileRef = useMemoFirebase(() =>
     firestore && authUser ? doc(firestore, 'users', authUser.uid) : null,
@@ -144,7 +197,50 @@ export function IntelligentSummaryCenter({
 
   const isAdmin = isAdminOverride ?? (permissions.canManageStaff || permissions.canManageCompany)
 
-  const [timeframe, setTimeframe] = useState<"TODAY" | "WEEK" | "MONTH">("WEEK")
+  // 1. Fetch persistent acknowledgments (CENTRALIZED)
+  const { data: acknowledgedAlertIds = [] } = useQuery({
+    queryKey: ['acknowledgedAlerts', userProfile?.orgId],
+    queryFn: async () => {
+      if (!firestore || !userProfile?.orgId) return []
+      try {
+        const q = query(
+          collection(firestore, 'acknowledged_alerts'),
+          where('orgId', '==', userProfile.orgId)
+        )
+        const snap = await getDocs(q)
+        return snap.docs.map(doc => doc.data().alertId)
+      } catch (e) {
+        console.error("Critical Alert suppression query failed:", e)
+        return []
+      }
+    },
+    enabled: !!firestore && !!userProfile?.orgId
+  })
+
+  // 2. Persistent Acknowledge Mutation
+  const { mutate: acknowledgeAlert } = useMutation({
+    mutationFn: async (alert: any) => {
+      if (!firestore || !userProfile) return
+      await addDoc(collection(firestore, 'acknowledged_alerts'), {
+        alertId: alert.id,
+        title: alert.title,
+        text: alert.text,
+        orgId: userProfile.orgId,
+        acknowledgedBy: userProfile.id,
+        acknowledgedByName: userProfile.fullName,
+        acknowledgedAt: serverTimestamp()
+      })
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['acknowledgedAlerts'] })
+      queryClient.invalidateQueries({ queryKey: ['acknowledgedAlertsHistory'] })
+    }
+  })
+
+  const [internalTimeframe, setInternalTimeframe] = useState<"TODAY" | "WEEK" | "MONTH">("WEEK")
+  const timeframe = timeFilter?.mode || internalTimeframe
+
+  const [viewMode, setViewMode] = useState<'RADAR' | 'TRENDS'>('RADAR')
   const [selectedStaffId, setSelectedStaffId] = useState("ALL")
   const [currentIndex, setCurrentIndex] = useState(0)
   const [isPaused, setIsPaused] = useState(false)
@@ -152,398 +248,83 @@ export function IntelligentSummaryCenter({
   const [activeModal, setActiveModal] = useState<string | null>(null)
   const [modalData, setModalData] = useState<any>(null)
 
+  // --- ENGINE: Strategic Trends ---
+  const trends = useMemo(() => {
+    const today = startOfToday()
+    const currentPeriod = { start: startOfDay(subDays(today, 6)), end: endOfDay(today) }
+    const lastPeriod = { start: startOfDay(subDays(today, 13)), end: startOfDay(subDays(today, 7)) }
+
+    // Trend 1: Attendance
+    const curAtt = attendanceLogs.filter(l => isWithinInterval(parseISO(l.date + 'T00:00:00'), currentPeriod)).length
+    const lastAtt = attendanceLogs.filter(l => isWithinInterval(parseISO(l.date + 'T00:00:00'), lastPeriod)).length
+    const attTrend = lastAtt > 0 ? Math.round(((curAtt - lastAtt) / lastAtt) * 100) : 0
+
+    // Trend 2: Missions
+    const curTasks = tasks.filter(t => t.status === 'ARCHIVED' && isWithinInterval(parseISO(t.createdAt), currentPeriod)).length
+    const lastTasks = tasks.filter(t => t.status === 'ARCHIVED' && isWithinInterval(parseISO(t.createdAt), lastPeriod)).length
+    const taskTrend = lastTasks > 0 ? Math.round(((curTasks - lastTasks) / lastTasks) * 100) : 0
+
+    return {
+        attendance: {
+            metric: `${curAtt} Logs`,
+            trend: attTrend,
+            data: eachDayOfInterval(currentPeriod).map(day => ({
+                value: attendanceLogs.filter(l => l.date === format(day, 'yyyy-MM-dd')).length
+            }))
+        },
+        missions: {
+            metric: `${curTasks} Done`,
+            trend: taskTrend,
+            data: eachDayOfInterval(currentPeriod).map(day => ({
+                value: tasks.filter(t => t.status === 'ARCHIVED' && format(parseISO(t.createdAt), 'yyyy-MM-dd') === format(day, 'yyyy-MM-dd')).length
+            }))
+        }
+    }
+  }, [attendanceLogs, tasks])
+
   // --- ENGINE: Strategic Insight Generation (30 RULES) ---
   const allInsights = useMemo(() => {
-    const generated: any[] = []
-    if (!userProfile) return generated
+    if (!userProfile) return []
 
-    const now = new Date()
-    const todayStr = format(now, 'yyyy-MM-dd')
-    const yesterdayStr = format(subDays(now, 1), 'yyyy-MM-dd')
+    // Use the New Tactical Engine
+    const teamInsights = InsightEngine.generateTeamInsights(
+        staffList,
+        attendanceLogs,
+        tasks,
+        leaveRequests,
+        pulseFeed
+    );
 
-    // Period calculation
-    const lookbackDays = timeframe === 'MONTH' ? 30 : timeframe === 'WEEK' ? 7 : 1
-    const interval = { start: startOfDay(subDays(now, lookbackDays - 1)), end: endOfDay(now) }
+    // Map Engine output to the UI format expected by the Rotator
+    return teamInsights.map(insight => ({
+        id: insight.id,
+        type: insight.type === 'CRITICAL' ? 'action' :
+              insight.type === 'WARNING' ? 'warning' :
+              insight.type === 'POSITIVE' ? 'success' : 'info',
+        severity: insight.type === 'CRITICAL' ? 'CRITICAL' : 'STANDARD',
+        icon: insight.type === 'POSITIVE' ? CheckCircle :
+              insight.type === 'CRITICAL' ? AlertTriangle : Activity,
+        title: insight.category === 'TEAM' ? "Organization Pulse" : "Personnel Alert",
+        text: insight.message,
+        actionLabel: "Investigate",
+        actionType: "ROUTE",
+        actionTarget: "/staff/attendance"
+    }));
+  }, [attendanceLogs, tasks, staffList, leaveRequests, userProfile])
 
-    const isAuthorizedWeekend = (userId: string) => false
+  const criticalAlerts = useMemo(() =>
+    allInsights.filter(i =>
+      i.severity === 'CRITICAL' &&
+      !acknowledgedAlertIds.includes(i.id)
+    ),
+  [allInsights, acknowledgedAlertIds])
 
-    // --- 1. PERSONAL (STAFF) MICRO ENGINE ---
-    const myLogs = attendanceLogs.filter(log => log.userId === userProfile.id)
-    const myTasks = tasks.filter(t => t.assignedTo === userProfile.id)
-    const myLeaves = leaveRequests.filter(req => req.userId === userProfile.id)
-    const personalPeriodLogs = myLogs.filter(l => isWithinInterval(parseISO(l.date + 'T00:00:00'), interval))
-
-    // 1. Time Analytics
-    const totalHrs = personalPeriodLogs.reduce((acc, l) => acc + ((l.duration || 0) / 3600), 0)
-    const earliest = personalPeriodLogs.map(l => l.clockIn ? format(new Date(l.clockIn), 'HH:mm') : '00:00').sort()[0]
-    generated.push({
-      id: `staff_time_${todayStr}`, type: "info", severity: "STANDARD", icon: Clock, title: "Personal Analytics",
-      text: personalPeriodLogs.length > 0
-        ? `You've logged ${totalHrs.toFixed(1)} hours this cycle. Earliest arrival: ${earliest}.`
-        : "Operational profile inactive. No hours detected in current timeframe.",
-      actionLabel: "Full Ledger", actionType: "ROUTE", actionTarget: "/staff/attendance"
-    })
-
-    // 2. Perfect Attendance (Streak)
-    const sortedLogs = [...myLogs].sort((a, b) => b.date.localeCompare(a.date))
-    let streak = 0
-    for (const log of sortedLogs) {
-      if (log.status === 'APPROVED' && !log.remarks?.includes('LATE')) streak++
-      else break
-    }
-    generated.push({
-      id: `staff_streak_${todayStr}`, type: streak >= 3 ? "success" : "info", severity: "STANDARD", icon: Sparkles, title: "Perfect Attendance",
-      text: streak >= 3
-        ? `Excellence: Perfect on-time streak of ${streak} days confirmed.`
-        : `Personal streak currently at ${streak} days. Performance optimization in progress.`,
-      actionLabel: "View Standing", actionType: "ROUTE", actionTarget: "/staff/reports"
-    })
-
-    // 3. Overtime Tracker
-    const otShifts = personalPeriodLogs.filter(l => (l.duration || 0) > 30600).length // > 8.5h
-    generated.push({
-        id: `staff_ot_${todayStr}`, type: otShifts > 0 ? "warning" : "success", severity: otShifts > 3 ? "CRITICAL" : "STANDARD", icon: Zap, title: "Overtime Tracker",
-        text: otShifts > 0
-            ? `High Intensity: ${otShifts} overtime sessions detected this cycle.`
-            : "Stable Intensity: No excessive workload detected.",
-        actionLabel: "Check Stats", actionType: "ROUTE", actionTarget: "/staff/attendance"
-    })
-
-    // 4. Punctuality
-    const recentLates = personalPeriodLogs.filter(l => l.remarks?.includes('LATE')).length
-    generated.push({
-      id: `staff_late_trend_${todayStr}`, type: recentLates >= 2 ? "warning" : "success", severity: "STANDARD", icon: Clock, title: "Arrival Punctuality",
-      text: recentLates >= 2
-        ? `Warning: Punctuality issues flagged ${recentLates} times. Improvement required.`
-        : "Standard: Zero arrival issues in recent cycles.",
-      actionLabel: "View Records", actionType: "ROUTE", actionTarget: "/staff/attendance"
-    })
-
-    // 5. Workload Capacity
-    const activePersonalTasks = myTasks.filter(t => t.status === 'ACTIVE' || t.status === 'QUEUED')
-    generated.push({
-      id: `staff_idle_${todayStr}`, type: activePersonalTasks.length === 0 ? "action" : "info", severity: "STANDARD", icon: UserX, title: "Workload Status",
-      text: activePersonalTasks.length === 0
-        ? "Capacity Available: You have zero active task assignments."
-        : `Active: ${activePersonalTasks.length} tasks currently in progress.`,
-      actionLabel: "Task Center", actionType: "ROUTE", actionTarget: "/tasks"
-    })
-
-    // 6. Task Progress
-    const stagnant = activePersonalTasks.find(t => {
-        const lastActivity = t.activity && t.activity.length > 0
-            ? new Date(t.activity[t.activity.length - 1].timestamp)
-            : new Date(t.createdAt)
-        return (now.getTime() - lastActivity.getTime()) > 172800000 // 48h
-    })
-    generated.push({
-        id: `staff_stagnant_${todayStr}`, type: stagnant ? "warning" : "success", severity: "STANDARD", icon: Hourglass, title: "Task Velocity",
-        text: stagnant
-            ? `Update Required: '${stagnant.title}' has stalled for > 48h.`
-            : "Flow Optimal: All personal tasks are progressing normally.",
-        actionLabel: "Sync Status", actionType: "ROUTE", actionTarget: "/tasks"
-    })
-
-    // 7. New Assignments
-    const newPersonalTasks = myTasks.filter(t => t.status === 'QUEUED' && (now.getTime() - new Date(t.createdAt).getTime()) < 86400000)
-    generated.push({
-        id: `staff_new_task_${todayStr}`, type: newPersonalTasks.length > 0 ? "success" : "info", severity: "STANDARD", icon: Activity, title: "New Tasks",
-        text: newPersonalTasks.length > 0
-            ? `Notice: ${newPersonalTasks.length} new task assignments added today.`
-            : "No new task assignments detected in recent hours.",
-        actionLabel: "Start Work", actionType: "ROUTE", actionTarget: "/tasks"
-    })
-
-    // 8. Attendance Sync
-    const yesterdayLog = myLogs.find(l => l.date === yesterdayStr)
-    const ghostSync = yesterdayLog && !yesterdayLog.clockOut
-    generated.push({
-      id: `staff_ghost_personal_${todayStr}`, type: ghostSync ? "warning" : "success", severity: ghostSync ? "CRITICAL" : "STANDARD", icon: AlertTriangle, title: "Record Sync",
-      text: ghostSync
-        ? "Action Needed: Failed to finalize clock-out for the previous work day."
-        : "Verified: All attendance records are up to date.",
-      actionLabel: "Resolve Sync", actionType: "ROUTE", actionTarget: "/staff/attendance"
-    })
-
-    // 9. Leave Schedule
-    const upcomingLeave = myLeaves.find(req => req.status === 'APPROVED' && isWithinInterval(parseISO(req.startDate), { start: now, end: addDays(now, 7) }))
-    generated.push({
-        id: `staff_upcoming_leave_${todayStr}`, type: upcomingLeave ? "info" : "info", severity: "STANDARD", icon: Calendar, title: "Leave Schedule",
-        text: upcomingLeave
-            ? `Notice: Your scheduled leave starts on ${format(parseISO(upcomingLeave.startDate), 'MMM dd')}.`
-            : "No scheduled absences detected in the next 7-day window.",
-        actionLabel: "Manage Leave", actionType: "ROUTE", actionTarget: "/staff/leave"
-    })
-
-    // 10. Daily Reporting
-    const yesterdayWorkDay = !isWeekend(subDays(now, 1))
-    const missingEOD = yesterdayWorkDay && yesterdayLog && !yesterdayLog.eodReport
-    generated.push({
-        id: `staff_missing_eod_${todayStr}`, type: missingEOD ? "warning" : "success", severity: "STANDARD", icon: FileText, title: "Reporting Status",
-        text: missingEOD
-            ? "Missing Report: Your previous Daily Report is missing."
-            : "Complete: All daily reports submitted for recent work days.",
-        actionLabel: "Submit Report", actionType: "ROUTE", actionTarget: "/staff/reports"
-    })
-
-    // --- 2. ADMINISTRATIVE MACRO ENGINE (20 Admin Rules) ---
-    if (isAdmin) {
-      const todaysLogs = attendanceLogs.filter(l => l.date === todayStr)
-      const expectedStaff = staffList.filter(s => !['SUPERADMIN', 'ORG_ADMIN', 'MANAGING_DIRECTOR', 'HR_MANAGER'].includes(s.role))
-      const activeStaffPool = selectedStaffId === "ALL" ? expectedStaff : expectedStaff.filter(s => s.id === selectedStaffId)
-      const activeStaffIds = activeStaffPool.map(s => s.id)
-
-      // 11. Real-time Attendance
-      const lateToday = todaysLogs.filter(l => l.remarks?.includes('LATE') && activeStaffIds.includes(l.userId))
-      generated.push({
-          id: `admin_late_today_${todayStr}`, type: lateToday.length > 0 ? "warning" : "success", severity: "STANDARD", icon: Clock, title: "Company Attendance",
-          text: lateToday.length > 0
-            ? `${lateToday.length} staff member(s) arrived with attendance latency today.`
-            : "Team Synced: Zero arrival performance flags detected today.",
-          actionLabel: "View Roster", actionType: "ROUTE", actionTarget: "/staff/attendance"
-      })
-
-      // 12. Missing Personnel (CRITICAL)
-      const missingToday = activeStaffPool.filter(s => !todaysLogs.some(l => l.userId === s.id))
-      if (missingToday.length > 0 && !isWeekend(now)) {
-        generated.push({
-          id: `admin_missing_${todayStr}`, type: "action", severity: "CRITICAL", icon: UserX, title: "Missing Personnel",
-          text: `Critical Gap: ${missingToday.length} staff members failed to initialize today's attendance.`,
-          actionLabel: "Investigate", actionType: "ROUTE", actionTarget: "/staff/attendance"
-        })
-      }
-
-      // 13. Attendance Gaps (CRITICAL)
-      const ghosts = attendanceLogs.filter(l => l.date === yesterdayStr && !l.clockOut && activeStaffIds.includes(l.userId))
-      if (ghosts.length > 0) {
-        generated.push({
-          id: `admin_ghosts_${todayStr}`, type: "warning", severity: "CRITICAL", icon: AlertTriangle, title: "Attendance Gaps",
-          text: `System Alert: ${ghosts.length} employees failed to clock-out yesterday.`,
-          actionLabel: "Fix Records", actionType: "MODAL", actionTarget: "VERIFY_SHIFT"
-        })
-      }
-
-      // 14. Review Queue
-      const pendingCount = tasks.filter(t => t.status === 'AWAITING_REVIEW' && activeStaffIds.includes(t.assignedTo)).length
-      generated.push({
-        id: `admin_reviews_${todayStr}`, type: pendingCount > 0 ? "action" : "success", severity: "STANDARD", icon: Activity, title: "Review Queue",
-        text: pendingCount > 0
-            ? `Action Required: ${pendingCount} tasks awaiting administrative review.`
-            : "Flow Optimal: The task authorization queue is currently clear.",
-        actionLabel: "Process Queue", actionType: "ROUTE", actionTarget: "/tasks"
-      })
-
-      // 15. Team Capacity
-      const idleStaff = activeStaffPool.filter(s => !tasks.some(t => t.assignedTo === s.id && t.status !== 'ARCHIVED'))
-      generated.push({
-          id: `admin_idle_${todayStr}`, type: idleStaff.length > 0 ? "action" : "success", severity: "STANDARD", icon: UserX, title: "Team Capacity",
-          text: idleStaff.length > 0
-            ? `Unutilized Capacity: ${idleStaff.length} staff currently have zero active tasks.`
-            : "Utilization High: All available employees have active assignments.",
-          actionLabel: "Assign Tasks", actionType: "ROUTE", actionTarget: "/tasks"
-      })
-
-      // 16. Chronic Absenteeism
-      const monthStart = startOfToday()
-      monthStart.setDate(1)
-      const chronicAbsent = activeStaffPool.map(s => {
-          const logs = attendanceLogs.filter(l => l.userId === s.id && isAfter(parseISO(l.date + 'T00:00:00'), monthStart))
-          return { id: s.id, name: s.fullName, count: 22 - logs.length }
-      }).sort((a, b) => b.count - a.count)[0]
-      generated.push({
-        id: `admin_chronic_absent_${todayStr}`, type: (chronicAbsent && chronicAbsent.count > 5) ? "warning" : "info", severity: "STANDARD", icon: ShieldAlert, title: "Team Stability",
-        text: (chronicAbsent && chronicAbsent.count > 5)
-            ? `Performance Flag: ${chronicAbsent.name} missed ${chronicAbsent.count} shifts this month.`
-            : "Resilience High: No chronic absenteeism patterns detected.",
-        actionLabel: "Audit History", actionType: "ROUTE", actionTarget: "/reports"
-      })
-
-      // 17. High Performance
-      const weekStart = startOfWeek(now, { weekStartsOn: 1 })
-      const topVelocity = activeStaffPool.map(s => ({
-          name: s.fullName,
-          count: tasks.filter(t => t.assignedTo === s.id && t.status === 'ARCHIVED' && isAfter(parseISO(t.createdAt), weekStart)).length
-      })).sort((a, b) => b.count - a.count)[0]
-      generated.push({
-        id: `admin_velocity_top_${todayStr}`, type: (topVelocity && topVelocity.count > 3) ? "success" : "info", severity: "STANDARD", icon: Zap, title: "Top Performance",
-        text: (topVelocity && topVelocity.count > 3)
-            ? `Excellent Velocity: ${topVelocity.name} completed ${topVelocity.count} tasks this week.`
-            : "Status: Team performance is at standard levels.",
-        actionLabel: "Send Recognition", actionType: "MODAL", actionTarget: "SEND_KUDOS"
-      })
-
-      // 18. Leave Balances
-      const depletedLeave = activeStaffPool.find(s => (s.leaveEntitlements?.ANNUAL || 21) <= 2)
-      generated.push({
-          id: `admin_leave_low_${todayStr}`, type: depletedLeave ? "info" : "success", severity: "STANDARD", icon: Calendar, title: "Leave Balances",
-          text: depletedLeave
-            ? `Balance Alert: ${depletedLeave.fullName} has low leave reserves (< 2 days).`
-            : "Reserves Stable: Team leave balances are within standard limits.",
-          actionLabel: "Review Records", actionType: "ROUTE", actionTarget: "/reports"
-      })
-
-      // 19. Workflow Friction
-      const revisionLoop = tasks.find(t => t.status === 'ACTIVE' && (t.activity?.filter(a => a.toStatus === 'AWAITING_REVIEW').length || 0) > 1)
-      generated.push({
-          id: `admin_rev_loop_${todayStr}`, type: revisionLoop ? "warning" : "success", severity: "STANDARD", icon: Repeat, title: "Workflow Friction",
-          text: revisionLoop
-            ? `Performance Flag: Task '${revisionLoop.title}' is stuck in a revision loop.`
-            : "Workflow Cohesion: No task fragmentation detected.",
-          actionLabel: "Audit Flow", actionType: "ROUTE", actionTarget: "/tasks"
-      })
-
-      // 20. Team Availability
-      const massLeaveDate = leaveRequests.filter(req => req.status === 'APPROVED' && isAfter(parseISO(req.startDate), now)).map(r => r.startDate)
-      const dateCounts = massLeaveDate.reduce((acc, d) => { acc[d] = (acc[d] || 0) + 1; return acc; }, {} as Record<string, number>)
-      const peakDate = Object.entries(dateCounts).find(([_, count]) => count > (expectedStaff.length * 0.15))
-      generated.push({
-          id: `admin_mass_leave_${todayStr}`, type: peakDate ? "warning" : "success", severity: "STANDARD", icon: AlertTriangle, title: "Team Availability",
-          text: peakDate
-            ? `Capacity Alert: Over 15% of the team is scheduled for leave on ${format(parseISO(peakDate[0]), 'MMM dd')}.`
-            : "Availability High: No overlapping team-wide leaves scheduled.",
-          actionLabel: "View Roster", actionType: "ROUTE", actionTarget: "/staff/attendance"
-      })
-
-      // 21. Workday Compliance
-      const truncationNodes = activeStaffPool.filter(s => {
-          const logs = attendanceLogs.filter(l => l.userId === s.id && l.remarks?.includes('UNDERTIME'))
-          return logs.length >= 3
-      })
-      generated.push({
-          id: `admin_trunc_crit_${todayStr}`, type: truncationNodes.length > 0 ? "warning" : "success", severity: truncationNodes.length > 0 ? "CRITICAL" : "STANDARD", icon: Clock, title: "Workday Compliance",
-          text: truncationNodes.length > 0
-            ? `Performance Flag: ${truncationNodes.length} staff members show repeated early clock-outs.`
-            : "Compliance High: Attendance patterns within established policies.",
-          actionLabel: "Review Attendance", actionType: "ROUTE", actionTarget: "/staff/attendance"
-      })
-
-      // 22. Recognition Pulse
-      const sortedNominations = [...nominations].sort((a, b) => b.timestamp.localeCompare(a.timestamp))
-      const lastKudoDays = sortedNominations[0] ? differenceInDays(now, new Date(sortedNominations[0].timestamp)) : 99
-      generated.push({
-        id: `admin_culture_${todayStr}`, type: lastKudoDays > 14 ? "info" : "success", severity: "STANDARD", icon: Heart, title: "Recognition Pulse",
-        text: lastKudoDays > 14
-            ? `Culture Alert: No recognition awards issued in the last 14 days.`
-            : `Culture High: Team member recognized ${lastKudoDays} days ago.`,
-        actionLabel: "Issue Award", actionType: "ROUTE", actionTarget: "/reports"
-      })
-
-      // 23. Schedule Integrity
-      const weekendGhost = attendanceLogs.find(l => {
-          const day = getDay(parseISO(l.date))
-          return (day === 0 || day === 6) && !isAuthorizedWeekend(l.userId)
-      })
-      generated.push({
-          id: `admin_weekend_${todayStr}`, type: weekendGhost ? "warning" : "success", severity: "STANDARD", icon: ShieldQuestion, title: "Schedule Integrity",
-          text: weekendGhost
-            ? `Warning: Unscheduled activity detected during the weekend.`
-            : "Integrity Verified: All attendance records match scheduled work days.",
-          actionLabel: "Audit Security", actionType: "ROUTE", actionTarget: "/reports"
-      })
-
-      // 24. Workload Balance
-      const overloaded = activeStaffPool.find(s => tasks.filter(t => t.assignedTo === s.id && t.status !== 'ARCHIVED').length > 10)
-      generated.push({
-          id: `admin_overload_${todayStr}`, type: overloaded ? "warning" : "success", severity: "STANDARD", icon: ShieldAlert, title: "Workload Balance",
-          text: overloaded
-            ? `Overload Alert: ${overloaded.fullName} is managing over 10 active tasks.`
-            : "Balance Optimal: All team members have manageable task loads.",
-          actionLabel: "Balance Workload", actionType: "ROUTE", actionTarget: "/tasks"
-      })
-
-      // 25. HR Authorization Flow
-      const staleLeave = leaveRequests.find(req => req.status === 'PENDING' && differenceInHours(now, new Date(req.createdAt)) > 48)
-      generated.push({
-          id: `admin_leave_stale_${todayStr}`, type: staleLeave ? "action" : "success", severity: "STANDARD", icon: Hourglass, title: "Management Hub",
-          text: staleLeave
-            ? "Workflow Alert: Leave requests are pending for more than 48 hours."
-            : "Response Optimal: Leave authorization queue is up to date.",
-          actionLabel: "Clear Queue", actionType: "ROUTE", actionTarget: "/staff/leave"
-      })
-
-      // 26. Exceptional Performance
-      const topStreak = activeStaffPool.map(s => {
-          const sLogs = [...attendanceLogs.filter(l => l.userId === s.id)].sort((a, b) => b.date.localeCompare(a.date))
-          let sCount = 0
-          for (const l of sLogs) { if (l.status === 'APPROVED' && !l.remarks?.includes('LATE')) sCount++; else break; }
-          return { name: s.fullName, sCount }
-      }).sort((a, b) => b.sCount - a.sCount)[0]
-      generated.push({
-        id: `admin_elite_${todayStr}`, type: "success", severity: "STANDARD", icon: Trophy, title: "Team Excellence",
-        text: topStreak
-            ? `Excellence: ${topStreak.name} has a perfect ${topStreak.sCount}-day attendance streak.`
-            : "Performance Tracking: Analyzing team punctuality metrics.",
-        actionLabel: "Review Awards", actionType: "MODAL", actionTarget: "SEND_KUDOS"
-      })
-
-      // 27. Reporting Timelines
-      const lateEOD = attendanceLogs.find(l => l.eodReport && l.clockOut && new Date(l.clockOut).getHours() >= 23)
-      generated.push({
-          id: `admin_late_eod_${todayStr}`, type: lateEOD ? "info" : "success", severity: "STANDARD", icon: Clock, title: "Reporting Timeline",
-          text: lateEOD
-            ? "Timeline Delay: Daily reports are being submitted very late in the evening."
-            : "Reporting Integrity: All reports submitted within standard business hours.",
-          actionLabel: "View Ledger", actionType: "ROUTE", actionTarget: "/reports"
-      })
-
-      // 28. Employee Wellbeing
-      const burnoutRisk = expectedStaff.find(s => {
-          const logs = attendanceLogs.filter(l => l.userId === s.id && isAfter(parseISO(l.date + 'T00:00:00'), subDays(now, 21)))
-          const hours = logs.reduce((acc, l) => acc + ((l.duration || 0) / 3600), 0)
-          return hours > 135
-      })
-      generated.push({
-          id: `admin_burnout_risk_${todayStr}`, type: burnoutRisk ? "warning" : "success", severity: "STANDARD", icon: Heart, title: "Employee Wellbeing",
-          text: burnoutRisk
-            ? `Burnout Risk: High intensity hours detected for ${burnoutRisk.fullName}.`
-            : "Wellbeing Stable: Employee workloads appear within healthy limits.",
-          actionLabel: "Check Pulse", actionType: "ROUTE", actionTarget: "/reports"
-      })
-
-      // 29. Project Momentum
-      const globalStagnant = tasks.find(t =>
-          t.status === 'ACTIVE' &&
-          activeStaffIds.includes(t.assignedTo) &&
-          t.activity?.length > 0 &&
-          (now.getTime() - new Date(t.activity[t.activity.length-1].timestamp).getTime()) > 259200000
-      )
-      generated.push({
-          id: `admin_stagnant_fleet_${todayStr}`, type: globalStagnant ? "warning" : "success", severity: "STANDARD", icon: Hourglass, title: "Project Momentum",
-          text: globalStagnant
-            ? `Momentum Flag: Certain projects have had zero updates in 72 hours.`
-            : "Momentum High: All team projects are moving forward optimally.",
-          actionLabel: "Sync Projects", actionType: "ROUTE", actionTarget: "/tasks"
-      })
-
-      // 30. Anniversary Milestones
-      const anniversaryNode = expectedStaff.find(s => {
-          if (!s.joinedDate) return false
-          const join = parseISO(s.joinedDate)
-          return isThisWeek(join) && differenceInYears(now, join) >= 1
-      })
-      generated.push({
-          id: `admin_anniversary_${todayStr}`, type: anniversaryNode ? "success" : "info", severity: "STANDARD", icon: Gift, title: "Work Anniversaries",
-          text: anniversaryNode
-            ? `Milestone: Celebrating a work anniversary for ${anniversaryNode.fullName}.`
-            : "Status: No upcoming staff anniversaries in this window.",
-          actionLabel: "Send Message", actionType: "MODAL", actionTarget: "MESSAGE_STAFF"
-      })
-    }
-
-    // Fallback
-    if (generated.length === 0) {
-      generated.push({
-        id: "empty", type: "success", severity: "STANDARD", icon: CheckCircle, title: "Status Normal",
-        text: "Company operations are running efficiently. No flags detected.",
-        actionLabel: "Dashboard", actionType: "ROUTE", actionTarget: "/"
-      })
-    }
-
-    return generated
-  }, [attendanceLogs, tasks, staffList, timeframe, isAdmin, userProfile, nominations, selectedStaffId])
-
-  const criticalAlerts = useMemo(() => allInsights.filter(i => i.severity === 'CRITICAL' && !(userProfile?.dismissedAlertIds || []).includes(i.id)), [allInsights, userProfile?.dismissedAlertIds])
-  const standardBriefings = useMemo(() => allInsights.filter(i => i.severity !== 'CRITICAL' && !(userProfile?.dismissedAlertIds || []).includes(i.id)), [allInsights, userProfile?.dismissedAlertIds])
+  const standardBriefings = useMemo(() =>
+    allInsights.filter(i =>
+      i.severity !== 'CRITICAL' &&
+      !acknowledgedAlertIds.includes(i.id)
+    ),
+  [allInsights, acknowledgedAlertIds])
 
   // --- ROTATION LOGIC ---
   const handleNext = useCallback(() => {
@@ -607,114 +388,80 @@ export function IntelligentSummaryCenter({
   const activeInsight = standardBriefings[currentIndex]
   const Icon = activeInsight?.icon || CheckCircle
 
+  if (variant === 'compact') {
+      return (
+        <div className="w-full">
+            <CriticalAlertRotator
+                alerts={criticalAlerts}
+                userProfile={userProfile || null}
+                onAcknowledge={acknowledgeAlert}
+            />
+        </div>
+      );
+  }
+
   return (
-    <div className="w-full flex flex-col h-full gap-4 md:gap-6 overflow-x-hidden">
+    <div className="w-full flex flex-col h-full gap-4 md:gap-6 overflow-hidden">
 
       {/* 1. CRITICAL ALERT SECTION */}
-      <CriticalAlertRotator alerts={criticalAlerts} />
+      <CriticalAlertRotator
+        alerts={criticalAlerts}
+        userProfile={userProfile || null}
+        onAcknowledge={acknowledgeAlert}
+      />
 
-      {/* 2. INSIGHTS ROTATOR */}
-      <Card
-        onClick={() => router.push(isAdmin ? '/reports?tab=team-reports' : '/reports?tab=intelligent-brief')}
-        className="bg-card border-border shadow-2xl rounded-[1.5rem] md:rounded-[2rem] overflow-hidden flex flex-col h-full transition-all duration-500 cursor-pointer hover:border-primary/30 group/card"
-      >
-        <CardHeader className="border-b border-border/50 pb-3 md:pb-4 flex flex-row justify-between items-center bg-secondary/10 shrink-0 px-4 md:px-8">
-            <div className="flex items-center gap-2 md:gap-3">
-                <div className="p-1.5 md:p-2 rounded-lg md:rounded-xl bg-primary/10 group-hover/card:scale-110 transition-transform">
-                    <Sparkles className="h-4 w-4 md:h-5 md:w-5 text-amber-500 animate-pulse" />
-                </div>
-                <div>
-                    <CardTitle className="text-[10px] md:text-xs font-black uppercase tracking-[0.2em] text-primary">
-                        {isAdmin ? "Team Insights" : "Personal Insights"}
-                    </CardTitle>
-                    <CardDescription className="text-[7px] md:text-[8px] font-bold uppercase opacity-40">Performance & Trend Analytics</CardDescription>
-                </div>
-            </div>
-
-            <div className="flex gap-3 md:gap-4 items-center" onClick={(e) => e.stopPropagation()}>
-            <div className="flex flex-col items-end hidden xs:flex">
-                <span className="text-[9px] md:text-[10px] font-black text-primary font-mono leading-none">
-                    {currentIndex + 1} / {standardBriefings.length}
-                </span>
-                <span className="text-[6px] md:text-[7px] font-bold uppercase opacity-40 tracking-widest mt-1">Queue</span>
-            </div>
-            <div className="flex items-center gap-1">
-                <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={handlePrev}
-                    className="h-7 w-7 md:h-8 md:w-8 rounded-lg md:rounded-xl hover:bg-secondary text-muted-foreground transition-all active:scale-95 border border-white/5"
-                    title="Previous"
-                >
-                    <ChevronLeft className="w-3.5 h-3.5 md:w-4 md:h-4" />
-                </Button>
-                <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={handleNext}
-                    className="h-7 w-7 md:h-8 md:w-8 rounded-lg md:rounded-xl hover:bg-secondary text-muted-foreground transition-all active:scale-95 border border-white/5"
-                    title="Next"
-                >
-                    <ChevronRight className="w-3.5 h-3.5 md:w-4 md:h-4" />
-                </Button>
-            </div>
-            </div>
-        </CardHeader>
-
-        <CardContent
-            className="p-6 md:p-10 flex-1 flex flex-col justify-center relative group/content"
-            onMouseEnter={() => setIsPaused(true)}
-            onMouseLeave={() => setIsPaused(false)}
-        >
-            {activeInsight && (
-            <div key={activeInsight.id} className="w-full flex flex-col gap-6 md:gap-8 animate-in slide-in-from-right-8 fade-in duration-700">
-                <div className="flex flex-col md:flex-row items-center md:items-start gap-4 md:gap-8 text-center md:text-left">
-                    <div className={cn(
-                        "shrink-0 p-4 md:p-5 rounded-[1.5rem] md:rounded-[2rem] bg-opacity-10 shadow-2xl transition-all duration-500 group-hover/content:scale-110 group-hover/content:rotate-3",
-                        activeInsight.type === 'warning' ? 'text-amber-500 bg-amber-500 shadow-amber-500/10' :
-                        activeInsight.type === 'success' ? 'text-emerald-500 bg-emerald-500 shadow-emerald-500/10' :
-                        activeInsight.type === 'action' ? 'text-rose-500 bg-rose-500 shadow-rose-500/10' :
-                        activeInsight.type === 'info' ? 'text-blue-500 bg-blue-500 shadow-blue-500/10' :
-                        'text-primary bg-primary shadow-primary/10'
-                    )}>
-                        <Icon className="w-8 h-8 md:w-10 md:h-10" />
-                    </div>
-                    <div className="space-y-2 md:space-y-3 flex-1 min-w-0">
-                        <div className="flex items-center gap-2 md:gap-3 justify-center md:justify-start">
-                            <h4 className="text-[9px] md:text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground opacity-40 truncate">
-                            {activeInsight.title}
-                            </h4>
-                            <div className="h-px flex-1 bg-gradient-to-r from-white/5 to-transparent hidden md:block" />
-                        </div>
-                        <p className="text-xl md:text-2xl font-black font-headline tracking-tighter text-foreground leading-[1.1] md:max-w-xl break-words">
-                        {activeInsight.text}
-                        </p>
-                    </div>
-                </div>
-
-                {activeInsight.actionType !== 'NONE' && (
-                <div className="flex justify-center md:justify-end md:pr-4">
-                    <Button
-                    type="button"
-                    onClick={(e) => { e.stopPropagation(); handleInsightAction(activeInsight); }}
-                    className="h-10 md:h-12 px-6 md:px-8 rounded-xl md:rounded-2xl font-black uppercase tracking-[0.2em] text-[8px] md:text-[10px] shadow-2xl shadow-primary/20 transition-all hover:scale-105 active:scale-95 flex items-center gap-2 md:gap-3 group/btn"
-                    >
-                    {activeInsight.actionLabel}
-                    <ChevronRight className="w-3.5 h-3.5 md:w-4 md:h-4 group-hover/btn:translate-x-1 transition-transform" />
-                    </Button>
-                </div>
+      {/* 2. MODE SWITCHER */}
+      <div className="flex items-center justify-between px-2">
+        <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-primary">Intelligence Console</h3>
+        <div className="flex bg-black/20 border border-white/5 p-1 rounded-xl">
+            <button
+                onClick={() => setViewMode('RADAR')}
+                className={cn(
+                    "px-4 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all",
+                    viewMode === 'RADAR' ? "bg-primary text-white shadow-lg shadow-primary/20" : "text-muted-foreground hover:bg-white/5"
                 )}
-            </div>
-            )}
+            >
+                Personnel Radar
+            </button>
+            <button
+                onClick={() => setViewMode('TRENDS')}
+                className={cn(
+                    "px-4 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all",
+                    viewMode === 'TRENDS' ? "bg-primary text-white shadow-lg shadow-primary/20" : "text-muted-foreground hover:bg-white/5"
+                )}
+            >
+                Strategic Trends
+            </button>
+        </div>
+      </div>
 
-            {/* Progress Bar for Auto-Cycle */}
-            {!isPaused && standardBriefings.length > 1 && (
-                <div className="absolute bottom-0 left-0 h-1 bg-primary/20 w-full overflow-hidden">
-                    <div className="h-full bg-primary animate-progress duration-[5000ms] ease-linear" />
-                </div>
-            )}
-        </CardContent>
-      </Card>
+      {/* 3. DYNAMIC CONTENT AREA */}
+      {viewMode === 'RADAR' ? (
+        <PersonnelIntelligenceHub
+            staffList={staffList}
+            attendanceLogs={attendanceLogs}
+            tasks={tasks}
+            leaveRequests={leaveRequests}
+            pulseFeed={pulseFeed}
+        />
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-in fade-in slide-in-from-bottom-2 duration-500">
+            <TrendInsightCard
+                title="Operational Stability"
+                metric={trends.attendance.metric}
+                description="Cumulative unit check-ins across the organizational matrix."
+                trendPercentage={trends.attendance.trend}
+                sparklineData={trends.attendance.data}
+            />
+            <TrendInsightCard
+                title="Mission Velocity"
+                metric={trends.missions.metric}
+                description="Throughput of archived operational tasks this cycle."
+                trendPercentage={trends.missions.trend}
+                sparklineData={trends.missions.data}
+            />
+        </div>
+      )}
 
       {/* QUICK ACTION MODAL RENDERING ENGINE */}
       {activeModal && (
@@ -779,4 +526,246 @@ export function IntelligentSummaryCenter({
       )}
     </div>
   )
+}
+
+function PersonnelIntelligenceHub({
+    staffList,
+    attendanceLogs,
+    tasks,
+    leaveRequests,
+    pulseFeed
+}: {
+    staffList: UserProfile[],
+    attendanceLogs: Attendance[],
+    tasks: Task[],
+    leaveRequests: LeaveRequest[],
+    pulseFeed: PulseCheck[]
+}) {
+    const router = useRouter();
+    const [selectedStaffId, setSelectedStaffId] = useState<string | null>(null);
+
+    // Filter out admins for the hub roster
+    const displayStaff = useMemo(() => {
+        return staffList.filter(s => !['SUPERADMIN', 'ORG_ADMIN', 'MANAGING_DIRECTOR'].includes(s.role));
+    }, [staffList]);
+
+    // Initialize with first staff member if none selected
+    useEffect(() => {
+        if (!selectedStaffId && displayStaff.length > 0) {
+            setSelectedStaffId(displayStaff[0].id);
+        }
+    }, [displayStaff, selectedStaffId]);
+
+    const intel = useMemo(() => {
+        if (!selectedStaffId) return null;
+        const staff = staffList.find(s => s.id === selectedStaffId);
+        if (!staff) return null;
+
+        const now = new Date();
+        const today = format(now, 'yyyy-MM-dd');
+        const weekStart = startOfWeek(now, { weekStartsOn: 1 });
+
+        const staffLogs = attendanceLogs.filter(l => l.userId === staff.id);
+        const staffTasks = tasks.filter(t => t.assignedTo === staff.id);
+
+        const todayLog = staffLogs.find(l => l.date === today);
+        const weeklyLogs = staffLogs.filter(l => isAfter(parseISO(l.date), weekStart));
+
+        // 1. Determine Pulse status
+        let pulse: 'OPTIMAL' | 'FATIGUE_RISK' | 'DISENGAGED' = 'OPTIMAL';
+        const recentLates = weeklyLogs.filter(l => l.remarks?.includes('LATE')).length;
+
+        // Calculate expected working days so far this week
+        const expectedDays = eachDayOfInterval({ start: weekStart, end: now }).filter(d => !isWeekend(d)).length;
+        const recentAbsences = Math.max(0, expectedDays - weeklyLogs.length);
+
+        if (recentLates >= 2 || recentAbsences >= 1) pulse = 'FATIGUE_RISK';
+        if (recentAbsences >= 2 || staff.status === 'OFFLINE') pulse = 'DISENGAGED';
+
+        // 2. Derive Actions (Bottlenecks & Criticals)
+        const actionItems = staffTasks
+            .filter(t => t.status === 'AWAITING_REVIEW' || t.priority === 'LEVEL_3')
+            .map(t => t.title);
+
+        // 3. Situational Summaries
+        const dailySummary = todayLog?.eodReport
+            ? todayLog.eodReport
+            : "Personnel has not yet filed a Situation Report for the current cycle.";
+
+        const tasksDone = staffTasks.filter(t => t.status === 'ARCHIVED' && isAfter(parseISO(t.createdAt), weekStart)).length;
+        const weeklySummary = `Personnel has successfully executed ${tasksDone} operations this week. Overall attendance posture is ${pulse === 'OPTIMAL' ? 'nominal' : 'exhibiting friction'}.`;
+
+        // 4. Tactical Insights from Engine
+        const tacticalInsights = InsightEngine.generatePersonalInsights(
+            staff,
+            attendanceLogs,
+            tasks,
+            leaveRequests,
+            [] // reports placeholder
+        );
+
+        return {
+            staff,
+            pulse,
+            dailySummary,
+            weeklySummary,
+            actionItems,
+            tacticalInsights
+        };
+    }, [selectedStaffId, staffList, attendanceLogs, tasks, leaveRequests]);
+
+    const getPulseStyles = (pulse: string) => {
+        switch(pulse) {
+          case 'OPTIMAL': return 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20';
+          case 'FATIGUE_RISK': return 'text-amber-400 bg-amber-500/10 border-amber-500/20';
+          case 'DISENGAGED': return 'text-rose-400 bg-rose-500/10 border-rose-500/20';
+          default: return 'text-slate-400 bg-white/5 border-white/10';
+        }
+    };
+
+    return (
+        <div className="bg-black/20 border border-white/5 rounded-[2rem] overflow-hidden flex flex-col md:flex-row min-h-[500px] shadow-2xl">
+
+          {/* LEFT PANE: Personnel Roster */}
+          <div className="w-full md:w-1/3 border-r border-white/5 bg-black/20 overflow-y-auto max-h-[500px] custom-scrollbar">
+            <div className="p-6 border-b border-white/5 sticky top-0 bg-secondary/90 backdrop-blur-md z-10">
+              <h3 className="text-[10px] font-black text-primary uppercase tracking-[0.2em] flex items-center gap-2">
+                <Users className="w-3.5 h-3.5" /> Personnel Radar
+              </h3>
+            </div>
+            <div className="divide-y divide-white/5">
+              {displayStaff.map((staff) => (
+                <button
+                  key={staff.id}
+                  onClick={() => setSelectedStaffId(staff.id)}
+                  className={cn(
+                    "w-full text-left p-5 flex items-center justify-between transition-all group",
+                    selectedStaffId === staff.id ? 'bg-primary/10' : 'hover:bg-white/5'
+                  )}
+                >
+                  <div className="min-w-0">
+                    <div className={cn("font-black text-xs uppercase tracking-tight truncate transition-colors", selectedStaffId === staff.id ? 'text-primary' : 'text-slate-200')}>
+                        {staff.fullName}
+                    </div>
+                    <div className="text-[9px] font-bold text-muted-foreground mt-1 uppercase tracking-widest opacity-60 truncate">
+                        {staff.jobTitle || 'Unit Personnel'}
+                    </div>
+                  </div>
+                  <div className={cn(
+                    "p-2 rounded-xl border transition-all shrink-0",
+                    staff.status === 'ONLINE' ? 'text-emerald-400 border-emerald-500/20 bg-emerald-500/5' : 'text-slate-500 border-white/5 bg-white/5'
+                  )}>
+                    <Activity className={cn("w-3.5 h-3.5", staff.status === 'ONLINE' && "animate-pulse")} />
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* RIGHT PANE: Intel Dossier */}
+          <div className="w-full md:w-2/3 p-8 bg-black/10">
+            {intel ? (
+              <div className="animate-in fade-in slide-in-from-right-4 duration-500 h-full flex flex-col">
+                <div className="flex justify-between items-start mb-8 border-b border-white/5 pb-6">
+                  <div>
+                    <h2 className="text-2xl font-black font-headline tracking-tighter uppercase text-white">{intel.staff.fullName}</h2>
+                    <div className="flex items-center gap-3 mt-3">
+                      <span className={cn(
+                        "inline-flex items-center px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border",
+                        getPulseStyles(intel.pulse)
+                      )}>
+                        PULSE: {intel.pulse.replace('_', ' ')}
+                      </span>
+                      <span className="text-[9px] font-black text-muted-foreground uppercase tracking-[0.2em] opacity-40">Tactical Dossier</span>
+                    </div>
+                  </div>
+                  <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
+                </div>
+
+                <div className="space-y-8 flex-grow">
+                  {/* Daily SitRep */}
+                  <div className="animate-in fade-in slide-in-from-bottom-2 duration-700 delay-100">
+                    <h4 className="text-[10px] font-black text-primary uppercase tracking-[0.2em] mb-3 flex items-center">
+                      <Clock className="w-3.5 h-3.5 mr-2" /> 24-Hour SitRep
+                    </h4>
+                    <p className="text-sm font-medium text-slate-300 leading-relaxed bg-black/40 p-5 rounded-2xl border border-white/5 italic">
+                      "{intel.dailySummary}"
+                    </p>
+                  </div>
+
+                  {/* Weekly Aggregate */}
+                  <div className="animate-in fade-in slide-in-from-bottom-2 duration-700 delay-200">
+                    <h4 className="text-[10px] font-black text-emerald-400 uppercase tracking-[0.2em] mb-3 flex items-center">
+                      <TrendingUp className="w-3.5 h-3.5 mr-2" /> Weekly Aggregate
+                    </h4>
+                    <p className="text-sm font-medium text-slate-300 leading-relaxed bg-black/40 p-5 rounded-2xl border border-white/5">
+                      {intel.weeklySummary}
+                    </p>
+                  </div>
+
+                  {/* Pending Actions */}
+                  <div className="animate-in fade-in slide-in-from-bottom-2 duration-700 delay-300">
+                    <h4 className="text-[10px] font-black text-amber-400 uppercase tracking-[0.2em] mb-4 flex items-center">
+                      <AlertCircle className="w-3.5 h-3.5 mr-2" /> Required Actions
+                    </h4>
+                    <div className="grid grid-cols-1 gap-3">
+                      {intel.actionItems.length > 0 ? intel.actionItems.map((action, idx) => (
+                        <div key={idx} className="flex items-center gap-4 text-[11px] font-bold text-slate-200 bg-amber-500/5 p-4 rounded-xl border border-amber-500/10 hover:border-amber-500/30 transition-all">
+                          <div className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
+                          <span className="truncate">{action}</span>
+                        </div>
+                      )) : (
+                        <div className="flex items-center gap-4 text-[11px] font-bold text-emerald-400 bg-emerald-500/5 p-4 rounded-xl border border-emerald-500/10 italic">
+                            <CheckCircle className="w-3.5 h-3.5" />
+                            <span>No operational bottlenecks identified.</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Tactical Insights (NEW) */}
+                  <div className="animate-in fade-in slide-in-from-bottom-2 duration-700 delay-500 border-t border-white/5 pt-8">
+                    <h4 className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.2em] mb-4 flex items-center">
+                      <Zap className="w-3.5 h-3.5 mr-2" /> Pattern Recognition & Intelligence
+                    </h4>
+                    <div className="grid grid-cols-1 gap-2">
+                        {intel.tacticalInsights.length > 0 ? intel.tacticalInsights.map((insight) => (
+                            <div key={insight.id} className={cn(
+                                "flex items-center gap-3 p-3 rounded-xl border transition-all text-[11px] font-bold",
+                                insight.type === 'CRITICAL' ? "bg-rose-500/10 border-rose-500/20 text-rose-500" :
+                                insight.type === 'WARNING' ? "bg-amber-500/10 border-amber-500/20 text-amber-500" :
+                                insight.type === 'POSITIVE' ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-500" :
+                                "bg-white/5 border-white/10 text-slate-300"
+                            )}>
+                                {insight.type === 'POSITIVE' ? <CheckCircle className="w-3 h-3" /> : <Info className="w-3 h-3" />}
+                                <span>{insight.message}</span>
+                            </div>
+                        )) : (
+                            <p className="text-[10px] font-bold text-muted-foreground opacity-30 italic px-1">Insufficient data for behavioral pattern recognition.</p>
+                        )}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-8 pt-6 border-t border-white/5 flex justify-end">
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-[9px] font-black uppercase tracking-widest text-primary hover:bg-primary/10 gap-2"
+                        onClick={() => router.push(`/staff?userId=${intel.staff.id}`)}
+                    >
+                        Detailed 360 Insight <ChevronRight className="w-3 h-3" />
+                    </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="h-full flex flex-col items-center justify-center text-muted-foreground opacity-20">
+                <Users className="w-12 h-12 mb-4" />
+                <p className="text-[10px] font-black uppercase tracking-[0.3em] text-center max-w-[200px]">Select unit personnel to initialize intelligence dossier</p>
+              </div>
+            )}
+          </div>
+
+        </div>
+    );
 }

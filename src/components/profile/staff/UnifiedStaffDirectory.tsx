@@ -62,9 +62,18 @@ export function UnifiedStaffDirectory({ orgId, currentUserProfile, canManageStaf
   const [selectedStaffId, setSelectedStaffId] = useState<string | null>(null);
   const [isQuickViewOpen, setIsQuickViewOpen] = useState(false);
 
-  const filteredStaff = useMemo(() => {
+  // --- GHOST PROTOCOL: Scrub disabled/archived/terminated users ---
+  const activeStaffOnly = useMemo(() => {
     if (!staff) return [];
-    return staff.filter(person => {
+    return staff.filter(person =>
+      person.status !== 'DISABLED' &&
+      person.status !== 'TERMINATED' &&
+      person.isArchived !== true
+    );
+  }, [staff]);
+
+  const filteredStaff = useMemo(() => {
+    return activeStaffOnly.filter(person => {
       const searchStr = searchTerm.toLowerCase();
       const matchesSearch = person.fullName.toLowerCase().includes(searchStr) ||
                            person.email.toLowerCase().includes(searchStr) ||
@@ -75,13 +84,12 @@ export function UnifiedStaffDirectory({ orgId, currentUserProfile, canManageStaf
 
       return matchesSearch && matchesRole && matchesDept;
     });
-  }, [staff, searchTerm, roleFilter, deptFilter]);
+  }, [activeStaffOnly, searchTerm, roleFilter, deptFilter]);
 
   const departments = useMemo(() => {
-    if (!staff) return [];
-    const depts = new Set(staff.map(s => s.departmentName).filter(Boolean));
+    const depts = new Set(activeStaffOnly.map(s => s.departmentName).filter(Boolean));
     return Array.from(depts);
-  }, [staff]);
+  }, [activeStaffOnly]);
 
   if (isLoading) return <Skeleton className="h-[500px] w-full rounded-[2.5rem]" />;
 

@@ -685,37 +685,48 @@ export interface Nomination {
 
 export interface PerformanceReview {
   id: string;
-  userId: string;
-  reviewerId: string;
-  reviewerName: string;
   orgId: string;
-  reviewDate: string;
-  period: string;
-  businessTargets: {
-    applicationFee: number;
-    deposits: number;
-    pof: number;
-    visaApplication: number;
-    accommodation: number;
-  };
-  interpersonalSkills: {
-    engagementAndAttitude: number;
-    communicationAndCollaboration: number;
-    demonstrateValues: number;
-    meetDeadlines: number;
-    initiatives: number;
-    consistency: number;
-    qualityOfWork: number;
-    punctualityAndAttendance: number;
-    adaptabilityAndFlexibility: number;
-    resourceful: number;
-  };
-  summary: {
+  userId: string; // The employee being reviewed
+  userName: string;
+  reviewerId: string; // The manager performing the review
+  reviewerName: string;
+  cycle: 'WEEKLY' | 'MONTHLY' | 'QUARTERLY' | 'YEARLY';
+  reviewDate: string; // ISO string
+  createdAt: string; // ISO string
+  qualitative: {
     successAreas: string;
-    improvementAreas: string;
-    focusAreasNext: string;
+    areasForImprovement: string;
+    focusAreasNextReview: string;
     overallAchievements: string;
+    agreedActionPlan: string;
   };
+  // Dynamic Arrays instead of hardcoded fields
+  businessTargets: { metricName: string; score: number }[];
+  interpersonalSkills: { skillName: string; score: number }[];
+  signatures: {
+    manager?: {
+        signedAt: string;
+        signedBy: string;
+        name: string;
+    };
+    employee?: {
+        signedAt: string;
+        signedBy: string;
+        name: string;
+    };
+  };
+  status: 'DRAFT' | 'PUBLISHED' | 'COMPLETED';
+}
+
+export interface ReviewTemplate {
+  id: string;
+  orgId: string;
+  templateName: string;
+  department?: string;
+  businessTargets: string[]; // List of metric names
+  interpersonalSkills: string[]; // List of skill names
+  createdBy: string;
+  createdAt: string;
 }
 
 export interface AppRole {

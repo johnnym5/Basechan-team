@@ -18,7 +18,15 @@ export const attendanceService = {
    * Initiates a new work session.
    * Performs a deep scan to prevent duplicate records for the same operational cycle.
    */
-  async clockIn(db: Firestore, user: UserProfile, location: AttendanceLocation, today: string, systemConfig: SystemConfig | null, lateReason?: string) {
+  async clockIn(
+    db: Firestore,
+    user: UserProfile,
+    location: AttendanceLocation,
+    today: string,
+    systemConfig: SystemConfig | null,
+    lateReason?: string,
+    locationData?: { lat: number | null, lng: number | null }
+  ) {
     if (!user?.id) throw new Error("Personnel identity verification failed. Command aborted.");
 
     const deterministicId = `${user.id}_${today}`;
@@ -60,7 +68,7 @@ export const attendanceService = {
             const lastOut = new Date(data.clockOut);
             const gapSeconds = Math.max(0, differenceInSeconds(now, lastOut));
             
-            await updateDoc(activeRef, {
+            const updatePayload: any = {
                 clockOut: null,
                 onBreak: false,
                 breaks: arrayUnion({ start: data.clockOut, end: nowIso }),
@@ -68,7 +76,13 @@ export const attendanceService = {
                 location,
                 status: 'APPROVED',
                 lateReason: lateReason || data.lateReason || null
-            });
+            };
+
+            if (locationData) {
+                updatePayload.clockInLocation = locationData;
+            }
+
+            await updateDoc(activeRef, updatePayload);
             
             const userRef = doc(db, 'users', user.id);
             updateDocumentNonBlocking(userRef, { status: 'ONLINE', lastSeen: nowIso });
@@ -92,7 +106,8 @@ export const attendanceService = {
       totalBreak: 0,
       onBreak: false,
       breaks: [],
-      lateReason: lateReason || null
+      lateReason: lateReason || null,
+      clockInLocation: locationData || null
     };
     
     await setDoc(docRef, newRecord);
