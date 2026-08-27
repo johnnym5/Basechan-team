@@ -110,7 +110,7 @@ export function TaskList({ userProfile, permissions, onTaskSelect, searchTerm, s
                             </Avatar>
                             <div className="text-left">
                                 <h3 className="font-black text-sm tracking-tight">{userGroup.name}</h3>
-                                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{userGroup.tasks.length} Operational Units</p>
+                                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{userGroup.tasks.length} Active Tasks</p>
                             </div>
                         </div>
                     </AccordionTrigger>

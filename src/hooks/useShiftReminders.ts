@@ -1,99 +1,91 @@
-'use client';
-
-import { useEffect, useRef, useState } from 'react';
-import type { SystemConfig, Attendance, UserProfile } from '@/lib/types';
-import { format, parse, isAfter, isBefore, addMinutes, differenceInMinutes } from 'date-fns';
+"use client"
+import { useEffect, useRef } from 'react'
+import { useToast } from '@/hooks/use-toast'
+import type { UserProfile, SystemConfig, Attendance } from '@/lib/types'
 
 /**
- * Hook to manage deterministic shift reminders and escalating sign-out alerts.
+ * Tactical Audio Hook
+ * Monitors system time and triggers auditory chimes + visual toasts for key shift milestones.
  */
 export function useShiftReminders(
-    user: UserProfile | null,
-    systemConfig: SystemConfig | null,
-    attendance: Attendance | null
+  user: UserProfile | null,
+  systemConfig: SystemConfig | null,
+  attendance: Attendance | null
 ) {
-    const lastNotifiedRef = useRef<Record<string, string>>({});
-    const [escalationStep, setEscalationLevel] = useState(0);
+  const { toast } = useToast()
 
-    useEffect(() => {
-        if (!user || !systemConfig || typeof window === 'undefined') return;
+  // Track played state to prevent looping within the same minute
+  const playedFlags = useRef({
+    start: false,
+    warning: false,
+    end: false,
+    date: new Date().toDateString()
+  })
 
-        const interval = setInterval(() => {
-            const now = new Date();
+  useEffect(() => {
+    if (!user || !systemConfig) return
 
-            // 1. MORNING REMINDER (Starts at 08:45 AM)
-            if (systemConfig.work_hours?.start && !attendance) {
-                const startTime = parse(systemConfig.work_hours.start, 'HH:mm', now);
-                const reminderStartTime = parse('08:45', 'HH:mm', now);
-                const reminderEndTime = parse('09:15', 'HH:mm', now);
-                
-                if (isAfter(now, reminderStartTime) && isBefore(now, reminderEndTime)) {
-                    const isAdmin = user.role === 'ORG_ADMIN' || user.role === 'MANAGING_DIRECTOR';
-                    const actions = isAdmin ? [
-                        { action: 'clock-in', title: 'Clock In Now' },
-                        { action: 'dismiss', title: 'Dismiss' }
-                    ] : [];
+    const checkTime = () => {
+      const now = new Date()
+      const hours = now.getHours()
+      const minutes = now.getMinutes()
+      const todayStr = now.toDateString()
 
-                    triggerNotification(
-                        'Operational Readiness Required',
-                        `Unit ${user.fullName.split(' ')[0]}, system check indicates you are not yet active. Please initiate shift protocol.`,
-                        'morning-reminder',
-                        actions
-                    );
-                }
-            }
+      // Reset flags if it's a new day
+      if (playedFlags.current.date !== todayStr) {
+        playedFlags.current = { start: false, warning: false, end: false, date: todayStr }
+      }
 
-            // 2. ESCALATING SIGN-OUT REMINDERS
-            if (systemConfig.work_hours?.end && attendance && !attendance.clockOut) {
-                const endTime = parse(systemConfig.work_hours.end, 'HH:mm', now);
-                
-                if (isAfter(now, endTime)) {
-                    const minutesPast = differenceInMinutes(now, endTime);
-                    
-                    // Escalation Steps: 0m, 10m, 15m, 17m
-                    const thresholds = [0, 10, 15, 17];
-                    const targetThreshold = thresholds[escalationStep] || 20;
+      // 1. SHIFT START (e.g., 09:00 AM)
+      // Trigger if it's 09:00 and user hasn't clocked in yet today
+      if (hours === 9 && minutes === 0 && !playedFlags.current.start && !attendance) {
+        playChime('/audio/clock-in.mp3')
+        toast({
+            title: "Operational Readiness Required",
+            description: "Good morning! System check indicates you are not yet active. Don't forget to clock in.",
+        })
+        playedFlags.current.start = true
+      }
 
-                    if (minutesPast >= targetThreshold) {
-                        const urgency = escalationStep >= 2 ? 'CRITICAL' : 'Standard';
-                        triggerNotification(
-                            `[${urgency}] Sign-Out Required`,
-                            `Shift concluded at ${systemConfig.work_hours.end}. Submit your report and sign out now.`,
-                            `signout-escalation-${escalationStep}`,
-                            [{ action: 'sign-out', title: 'Sign Out' }]
-                        );
-                        setEscalationLevel(prev => Math.min(prev + 1, thresholds.length - 1));
-                    }
-                }
-            }
-        }, 30000); // Check every 30 seconds
+      // 2. 30-MINUTE WARNING (e.g., 04:30 PM)
+      // Trigger if it's 16:30 and user is currently clocked in
+      if (hours === 16 && minutes === 30 && !playedFlags.current.warning && (attendance && !attendance.clockOut)) {
+        playChime('/audio/warning.mp3')
+        toast({
+            title: "Shift Conclusion Warning",
+            description: "30 minutes remain in your duty cycle. Please begin preparing your EOD report.",
+            variant: "destructive"
+        })
+        playedFlags.current.warning = true
+      }
 
-        return () => clearInterval(interval);
-    }, [user, systemConfig, attendance, escalationStep]);
+      // 3. SHIFT END (e.g., 05:00 PM)
+      // Trigger if it's 17:00 and user is still clocked in
+      if (hours === 17 && minutes === 0 && !playedFlags.current.end && (attendance && !attendance.clockOut)) {
+        playChime('/audio/clock-out.mp3')
+        toast({
+            title: "End of Shift",
+            description: "Operational hours have concluded. Please clock out and have a great evening!",
+        })
+        playedFlags.current.end = true
+      }
+    }
 
-    const triggerNotification = async (title: string, body: string, tag: string, actions: any[] = []) => {
-        if (typeof window === 'undefined' || !('serviceWorker' in navigator) || !('Notification' in window)) return;
-        
-        // Ensure permission is granted before execution
-        if (Notification.permission !== 'granted') return;
+    // Check immediately, then every 30 seconds
+    checkTime()
+    const interval = setInterval(checkTime, 30000)
 
-        const key = `${tag}-${format(new Date(), 'yyyy-MM-dd')}`;
-        if (lastNotifiedRef.current[key]) return;
+    return () => clearInterval(interval)
+  }, [user, systemConfig, attendance, toast])
 
-        try {
-            const registration = await navigator.serviceWorker.ready;
-            await registration.showNotification(title, {
-                body,
-                tag,
-                actions,
-                requireInteraction: true,
-                vibrate: [200, 100, 200],
-                badge: '/favicon.ico'
-            } as any);
-
-            lastNotifiedRef.current[key] = new Date().toISOString();
-        } catch (e) {
-            console.warn("Shift reminder failed:", e);
-        }
-    };
+  // Helper to play audio safely
+  const playChime = (audioPath: string) => {
+    try {
+      const audio = new Audio(audioPath)
+      audio.volume = 0.5 // Keep it subtle and professional
+      audio.play().catch(e => console.warn("Browser blocked autoplay. Audio requires initial user interaction with the dashboard.", e))
+    } catch (error) {
+      console.error("Tactical audio failure:", error)
+    }
+  }
 }

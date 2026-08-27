@@ -8,16 +8,16 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDes
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Loader2, CalendarIcon, ShieldAlert } from "lucide-react";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useFirestore, addDocumentNonBlocking, useCollection, useMemoFirebase } from "@/firebase";
-import { collection, query, where } from "firebase/firestore";
+import { collection, query, where, getDoc, doc } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
-import type { LeaveRequest, LeaveType, UserProfile } from "@/lib/types";
+import type { LeaveRequest, LeaveType, UserProfile, SystemItem } from "@/lib/types";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { sanitizeInput, cn } from "@/lib/utils";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import { Calendar } from "../ui/calendar";
-import { format, isSameDay, eachDayOfInterval, isWithinInterval, addDays } from "date-fns";
+import { format, isSameDay, eachDayOfInterval, isWithinInterval, addDays, startOfMonth } from "date-fns";
 import { isHoliday, calculateWorkingDays } from "@/lib/holidays";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useOrganizationStaff } from "@/hooks/useStaff";
@@ -25,7 +25,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 
 const formSchema = z.object({
   targetUserId: z.string().optional(),
-  leaveType: z.enum(["ANNUAL", "SICK", "UNPAID", "MATERNITY", "PATERNITY"], { required_error: "Leave type is required."}),
+  leaveType: z.string({ required_error: "Leave type is required."}),
   startDate: z.date({ required_error: "Start date is required."}),
   endDate: z.date({ required_error: "End date is required."}),
   reason: z.string().min(10, { message: "Reason must be at least 10 characters." }),
@@ -36,7 +36,13 @@ const formSchema = z.object({
 
 type FormData = z.infer<typeof formSchema>;
 
-const LEAVE_TYPES: LeaveType[] = ["ANNUAL", "SICK", "UNPAID", "MATERNITY", "PATERNITY"];
+const DEFAULT_LEAVE_TYPES: SystemItem[] = [
+    { id: 'ANNUAL', label: 'Annual Leave', isActive: true },
+    { id: 'SICK', label: 'Sick Leave', isActive: true },
+    { id: 'UNPAID', label: 'Unpaid Leave', isActive: true },
+    { id: 'MATERNITY', label: 'Maternity Leave', isActive: true },
+    { id: 'PATERNITY', label: 'Paternity Leave', isActive: true },
+];
 
 interface RequestLeaveDialogProps {
   open: boolean;
@@ -46,12 +52,39 @@ interface RequestLeaveDialogProps {
 
 export function RequestLeaveDialog({ open, onOpenChange, userProfile }: RequestLeaveDialogProps) {
   const [isLoading, setIsLoading] = useState(false);
+  const [dynamicLeaveTypes, setDynamicLeaveTypes] = useState<SystemItem[]>([]);
   const firestore = useFirestore();
   const { toast } = useToast();
   const permissions = usePermissions(userProfile);
   const isAdmin = permissions.canManageStaff;
 
   const { data: staffList } = useOrganizationStaff(userProfile?.orgId || '');
+
+  // Fetch Dynamic Leave Types
+  useEffect(() => {
+    const fetchTypes = async () => {
+        if (!firestore || !userProfile?.orgId || !open) return;
+        try {
+            const snap = await getDoc(doc(firestore, 'system_configs', `${userProfile.orgId}_leave_types`));
+            if (snap.exists()) {
+                setDynamicLeaveTypes(snap.data().items || []);
+            }
+        } catch (e) {
+            console.error("Failed to fetch leave types:", e);
+        }
+    };
+    fetchTypes();
+  }, [firestore, userProfile?.orgId, open]);
+
+  const leaveTypes = useMemo(() => {
+    const combined = [...DEFAULT_LEAVE_TYPES];
+    dynamicLeaveTypes.forEach(dt => {
+        const idx = combined.findIndex(c => c.id === dt.id);
+        if (idx > -1) combined[idx] = dt;
+        else combined.push(dt);
+    });
+    return combined.filter(t => t.isActive);
+  }, [dynamicLeaveTypes]);
 
   const approvedLeavesQuery = useMemoFirebase(() => {
     if (!firestore || !userProfile) return null;
@@ -201,8 +234,8 @@ export function RequestLeaveDialog({ open, onOpenChange, userProfile }: RequestL
                         <FormLabel>Leave Type</FormLabel>
                          <Select onValueChange={field.onChange} value={field.value}>
                             <FormControl><SelectTrigger className="rounded-xl"><SelectValue placeholder="Select a type of leave" /></SelectTrigger></FormControl>
-                            <SelectContent>
-                                {LEAVE_TYPES.map(type => <SelectItem key={type} value={type} className="capitalize">{type.toLowerCase()}</SelectItem>)}
+                            <SelectContent className="apple-glass-darker border-none rounded-2xl">
+                                {leaveTypes.map(type => <SelectItem key={type.id} value={type.id} className="p-3 font-bold uppercase text-xs">{type.label}</SelectItem>)}
                             </SelectContent>
                          </Select>
                         <FormMessage />

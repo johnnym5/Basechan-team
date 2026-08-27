@@ -48,7 +48,22 @@ function AdminAttendanceDashboard({
     , [firestore, userProfile.orgId]);
     const { data: allUsers } = useCollection<UserProfile>(usersQuery);
 
-    if (!allUsers || !allAttendance) {
+    const leavesQuery = useMemoFirebase(() =>
+        firestore ? query(collection(firestore, 'leave_requests'), where('orgId', '==', userProfile.orgId), where('status', '==', 'APPROVED')) : null
+    , [firestore, userProfile.orgId]);
+    const { data: allLeaves } = useCollection<any>(leavesQuery);
+
+    const pulseQuery = useMemoFirebase(() =>
+        firestore ? query(collection(firestore, 'pulse_checks'), where('orgId', '==', userProfile.orgId)) : null
+    , [firestore, userProfile.orgId]);
+    const { data: allPulses } = useCollection<any>(pulseQuery);
+
+    const nominationsQuery = useMemoFirebase(() =>
+        firestore ? query(collection(firestore, 'nominations'), where('orgId', '==', userProfile.orgId), where('status', '==', 'APPROVED')) : null
+    , [firestore, userProfile.orgId]);
+    const { data: allNominations } = useCollection<any>(nominationsQuery);
+
+    if (!allUsers || !allAttendance || !allLeaves) {
         return <Skeleton className="h-[600px] w-full rounded-[2.5rem]" />;
     }
 
@@ -56,6 +71,9 @@ function AdminAttendanceDashboard({
         <AttendanceCenter
             staffList={allUsers}
             attendanceLogs={allAttendance}
+            leaveRequests={allLeaves}
+            pulseFeed={allPulses || []}
+            nominations={allNominations || []}
             currentUserProfile={userProfile}
         />
     );

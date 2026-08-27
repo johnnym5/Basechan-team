@@ -58,7 +58,7 @@ export function LeaveBalanceCard({ userProfile }: LeaveBalanceCardProps) {
   const { data: approvedLeave, isLoading } = useCollection<LeaveRequest>(leaveQuery);
   
   const balances = useMemo(() => {
-    const used = {
+    const used: Record<string, number> = {
         ANNUAL: 0,
         SICK: 0,
         UNPAID: 0,

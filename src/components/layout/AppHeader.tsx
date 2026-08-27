@@ -2,7 +2,7 @@
 'use client';
 import { UserNav } from "@/components/layout/UserNav";
 import { useState, useEffect, useRef } from 'react';
-import { useUser, useMemoFirebase, useCollection, updateDocumentNonBlocking, useFirestore } from '@/firebase';
+import { useUser, useMemoFirebase, useCollection, updateDocumentNonBlocking, useFirestore, useDoc } from '@/firebase';
 import { collection, query, where, orderBy, limit, doc } from 'firebase/firestore';
 import type { UserProfile, Notification, Attendance, SystemConfig, Announcement } from '@/lib/types';
 import { Bell, Sparkles } from 'lucide-react';
@@ -75,6 +75,11 @@ export default function AppHeader({
   
   const { data: notifications } = useCollection<Notification>(notificationsQuery);
 
+  const orgRef = useMemoFirebase(() =>
+    firestore && userProfile?.orgId ? doc(firestore, 'organizations', userProfile.orgId) : null
+  , [firestore, userProfile?.orgId]);
+  const { data: organization } = useDoc<any>(orgRef);
+
   const unreadNotifications = notifications?.filter(n => !n.isRead) || [];
   const unreadCount = unreadNotifications.length;
 
@@ -95,7 +100,7 @@ export default function AppHeader({
     router.push(n.href);
   };
 
-  const handleOpenIntelligence = () => {
+  const handleOpenAnalytics = () => {
     uiEmitter.emit('open-assistant-dialog');
   };
 
@@ -112,13 +117,13 @@ export default function AppHeader({
                   
                   {/* Daily Updates Button */}
                   <button 
-                    onClick={handleOpenIntelligence}
+                    onClick={handleOpenAnalytics}
                     className="relative text-muted-foreground hover:text-amber-500 transition-all p-2 rounded-2xl hover:bg-amber-500/10 group/btn m3-interactive"
                     title="Daily Updates"
                   >
                       <Sparkles className="w-6 h-6" />
                       <div className="absolute left-full ml-4 px-3 py-1.5 bg-amber-500 text-primary-foreground text-[9px] font-black uppercase tracking-widest rounded-lg opacity-0 group-hover/btn:opacity-100 transition-opacity whitespace-nowrap z-50 shadow-2xl">
-                          Intelligence
+                          Analytics
                       </div>
                   </button>
 
@@ -142,7 +147,7 @@ export default function AppHeader({
                             </div>
                             <ScrollArea className="h-96">
                                 {notifications?.length === 0 ? (
-                                    <div className="p-16 text-center text-[10px] text-muted-foreground uppercase font-black opacity-20 tracking-tighter">No Active Intel</div>
+                                    <div className="p-16 text-center text-[10px] text-muted-foreground uppercase font-black opacity-20 tracking-tighter">No recent updates</div>
                                 ) : notifications?.map(n => (
                                     <div key={n.id} className={cn("p-4 border-b border-border transition-all cursor-pointer hover:bg-primary/5", n.isRead ? "opacity-50" : "bg-primary/10")} onClick={() => handleNotificationClick(n)}>
                                         <p className="font-black text-xs leading-tight tracking-tight text-foreground">{n.title}</p>
@@ -164,7 +169,7 @@ export default function AppHeader({
             <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-primary opacity-50 mb-1">{greeting}</h3>
             <p className="text-xs font-black uppercase tracking-[0.1em] text-muted-foreground flex items-center gap-2">
                 <Clock className="h-3 w-3" />
-                {currentTime} <span className="opacity-30">—</span> Operations Center
+                {currentTime} <span className="opacity-30">—</span> {organization?.name || 'Workspace'}
             </p>
         </div>
 
@@ -188,7 +193,7 @@ export default function AppHeader({
                         </div>
                         <ScrollArea className="h-96">
                             {notifications?.length === 0 ? (
-                                <div className="p-16 text-center text-[10px] text-muted-foreground uppercase font-black opacity-20 tracking-tighter">No Active Intel</div>
+                                <div className="p-16 text-center text-[10px] text-muted-foreground uppercase font-black opacity-20 tracking-tighter">No recent updates</div>
                             ) : notifications?.map(n => (
                                 <div key={n.id} className={cn("p-4 border-b border-border transition-all cursor-pointer hover:bg-primary/5", n.isRead ? "opacity-50" : "bg-primary/10")} onClick={() => handleNotificationClick(n)}>
                                     <p className="font-black text-xs leading-tight tracking-tight text-foreground">{n.title}</p>
@@ -201,7 +206,7 @@ export default function AppHeader({
                 </Popover>
 
                 <button
-                    onClick={handleOpenIntelligence}
+                    onClick={handleOpenAnalytics}
                     className="relative text-muted-foreground hover:text-amber-500 transition-all p-2.5 rounded-2xl bg-muted hover:bg-amber-500/10 group/btn m3-interactive"
                     title="Daily Updates"
                 >

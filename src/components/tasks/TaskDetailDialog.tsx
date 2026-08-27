@@ -118,7 +118,7 @@ export function TaskDetailDialog({ task: initialTask, isOpen, onOpenChange, curr
     }
     const targetRef = doc(firestore, 'tasks', task.id);
     deleteDocumentNonBlocking(targetRef);
-    toast({ title: "Task Purged", description: `${task.serialNo} has been removed from the organizational grid.` });
+    toast({ title: "Task Deleted", description: `${task.serialNo} has been removed.` });
     setShowDeleteConfirm(false);
     onOpenChange(false);
   }
@@ -497,9 +497,9 @@ export function TaskDetailDialog({ task: initialTask, isOpen, onOpenChange, curr
                         <Trash2 className="h-8 w-8 text-destructive" />
                     </div>
                     <div className="text-center">
-                        <AlertDialogTitle className="text-2xl font-black font-headline tracking-tighter">Terminate Task?</AlertDialogTitle>
+                        <AlertDialogTitle className="text-2xl font-black font-headline tracking-tighter">Delete Task?</AlertDialogTitle>
                         <AlertDialogDescription className="text-xs font-bold uppercase tracking-widest mt-2 leading-relaxed">
-                            This action is irreversible. The record for <span className="text-foreground">{task.serialNo}</span> will be permanently purged from the organizational mainframe.
+                            This action is irreversible. The task <span className="text-foreground">{task.serialNo}</span> will be permanently deleted.
                         </AlertDialogDescription>
                     </div>
                 </AlertDialogHeader>
@@ -508,10 +508,10 @@ export function TaskDetailDialog({ task: initialTask, isOpen, onOpenChange, curr
                         className="w-full h-14 bg-destructive text-white rounded-2xl font-black uppercase tracking-[0.2em] shadow-xl shadow-destructive/20 hover:bg-destructive/90 transition-all active:scale-95" 
                         onClick={handleDeleteTask}
                     >
-                        Confirm Termination
+                        Confirm Delete
                     </AlertDialogAction>
                     <AlertDialogCancel className="w-full h-10 border-none text-[10px] font-black uppercase tracking-widest opacity-60 hover:opacity-100 hover:bg-transparent transition-all">
-                        Abort Command
+                        Cancel
                     </AlertDialogCancel>
                 </AlertDialogFooter>
             </AlertDialogContent>

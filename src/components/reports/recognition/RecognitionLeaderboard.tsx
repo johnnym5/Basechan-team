@@ -8,11 +8,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { format, startOfWeek, startOfMonth, isWithinInterval, parseISO, endOfDay, startOfDay } from "date-fns"
-import type { UserProfile, AccoladeVote, AccoladeCategory } from "@/lib/types"
+import type { UserProfile, AccoladeVote } from "@/lib/types"
 import { useFirestore, useCollection, useMemoFirebase } from "@/firebase"
 import { collection, query, where } from "firebase/firestore"
 import { VoteModal } from "./VoteModal"
 import { type TimeFilterState } from "../../shared/AdvancedTimeFilter"
+import { useSystemConfigs } from "@/hooks/useSystemConfigs"
 
 interface RecognitionLeaderboardProps {
     currentUser: UserProfile;
@@ -35,10 +36,20 @@ export function RecognitionLeaderboard({ currentUser, staffList, timeFilter }: R
     , [firestore, currentUser.orgId]);
     const { data: votes = [] } = useCollection<AccoladeVote>(votesQuery);
 
-    const categoriesQuery = useMemoFirebase(() =>
+    // Fetch dynamic award categories from system_configs
+    const { data: dynamicCategories, loading: isCategoriesLoading } = useSystemConfigs('award_categories', currentUser.orgId);
+
+    // Legacy Collection Fetching (Migration Support)
+    const legacyCategoriesQuery = useMemoFirebase(() =>
         firestore ? query(collection(firestore, 'accolade_categories'), where('orgId', '==', currentUser.orgId), where('isActive', '==', true)) : null
     , [firestore, currentUser.orgId]);
-    const { data: categories = [] } = useCollection<AccoladeCategory>(categoriesQuery);
+    const { data: legacyCategories } = useCollection<any>(legacyCategoriesQuery);
+
+    const categories = useMemo(() => {
+        const dynamic = (dynamicCategories || []).map(c => ({ id: c.id, title: c.name, icon: c.emoji }));
+        const legacy = (legacyCategories || []).map(c => ({ id: c.id, title: c.title, icon: c.icon }));
+        return [...dynamic, ...legacy];
+    }, [dynamicCategories, legacyCategories]);
 
     // 2. Tactical Data Aggregation
     const leaderboardData = useMemo(() => {
@@ -170,7 +181,7 @@ export function RecognitionLeaderboard({ currentUser, staffList, timeFilter }: R
                         <thead className="bg-secondary/40 text-[10px] font-black uppercase text-muted-foreground sticky top-0 backdrop-blur-md z-20">
                             <tr className="border-b border-white/5">
                                 <th className="px-8 py-5 tracking-[0.2em]">Rank & Personnel</th>
-                                <th className="px-8 py-5 text-center tracking-[0.2em] text-primary">Intelligence Stars</th>
+                                <th className="px-8 py-5 text-center tracking-[0.2em] text-primary">Award Count</th>
                                 <th className="px-8 py-5 text-center tracking-[0.2em]">Department</th>
                                 <th className="px-8 py-5 text-right tracking-[0.2em]">Accolade Feed</th>
                             </tr>

@@ -25,7 +25,8 @@ export const attendanceService = {
     today: string,
     systemConfig: SystemConfig | null,
     lateReason?: string,
-    locationData?: { lat: number | null, lng: number | null }
+    locationData?: { lat: number | null, lng: number | null },
+    branchName?: string | null
   ) {
     if (!user?.id) throw new Error("Personnel identity verification failed. Command aborted.");
 
@@ -78,9 +79,12 @@ export const attendanceService = {
                 lateReason: lateReason || data.lateReason || null
             };
 
+            const resolvedBranch = branchName || data.branchName || data.branchLocation || null;
             if (locationData) {
                 updatePayload.clockInLocation = locationData;
             }
+            updatePayload.branchName = resolvedBranch;
+            updatePayload.branchLocation = resolvedBranch;
 
             await updateDoc(activeRef, updatePayload);
             
@@ -93,6 +97,7 @@ export const attendanceService = {
     }
 
     // 2. NEW SESSION INITIALIZATION
+    const resolvedBranch = branchName || null;
     const newRecord: any = {
       userId: user.id,
       userName: user.fullName,
@@ -107,7 +112,9 @@ export const attendanceService = {
       onBreak: false,
       breaks: [],
       lateReason: lateReason || null,
-      clockInLocation: locationData || null
+      clockInLocation: locationData || null,
+      branchName: resolvedBranch,
+      branchLocation: resolvedBranch
     };
     
     await setDoc(docRef, newRecord);

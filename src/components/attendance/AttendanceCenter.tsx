@@ -5,6 +5,13 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Calendar } from "@/components/ui/calendar"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+} from "@/components/ui/sheet"
+import {
   Users,
   Activity,
   UserX,
@@ -19,28 +26,38 @@ import {
   Timer,
   ChevronRight,
   ArrowRight,
-  Loader2
+  Loader2,
+  Calendar as LucideCalendar,
+  Palmtree,
+  User,
+  LayoutGrid,
+  LogIn
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { format, isSameDay, startOfWeek, endOfWeek, eachDayOfInterval, isWeekend, addDays, startOfMonth, endOfMonth } from "date-fns"
-import type { UserProfile, Attendance } from "@/lib/types"
+import { format, isSameDay, startOfWeek, endOfWeek, eachDayOfInterval, isWeekend, addDays, startOfMonth, endOfMonth, parseISO } from "date-fns"
+import type { UserProfile, Attendance, LeaveRequest, OperationalStatus, PulseCheck, Nomination } from "@/lib/types"
 import { formatDuration } from "@/lib/formatters"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { attendanceService } from "@/services/attendance-service"
 import { useFirestore, useUser } from "@/firebase"
 import { useToast } from "@/hooks/use-toast"
 import { StaffActionMenu } from "@/components/shared/StaffActionMenu"
+import { calculateDailyStatus } from "@/lib/attendance-utils"
+import { InsightCalendarModal } from "../reports/recognition/InsightCalendarModal"
 
 interface AttendanceCenterProps {
   staffList: UserProfile[];
   attendanceLogs: Attendance[];
+  leaveRequests: LeaveRequest[];
+  pulseFeed?: PulseCheck[];
+  nominations?: Nomination[];
   currentUserProfile: UserProfile;
 }
 
-export function AttendanceCenter({ staffList, attendanceLogs, currentUserProfile }: AttendanceCenterProps) {
+export function AttendanceCenter({ staffList, attendanceLogs, leaveRequests, pulseFeed = [], nominations = [], currentUserProfile }: AttendanceCenterProps) {
   const firestore = useFirestore();
   const { toast } = useToast();
   const [verifyingId, setVerifyingId] = useState<string | null>(null);
@@ -48,6 +65,8 @@ export function AttendanceCenter({ staffList, attendanceLogs, currentUserProfile
   // States
   const [activeFilter, setActiveFilter] = useState<'ALL' | 'ACTIVE' | 'ABSENT' | 'PENDING'>('ALL')
   const [selectedDate, setSelectedDate] = useState<Date>(new Date())
+  const [isRosterOpen, setIsRosterOpen] = useState(false)
+  const [selectedStaffForHistory, setSelectedStaffForHistory] = useState<UserProfile | null>(null)
 
   const [historyTimeframe, setHistoryTimeframe] = useState<'DAILY' | 'WEEKLY' | 'MONTHLY' | 'QUARTERLY'>('WEEKLY')
   const [historyStaffId, setHistoryStaffId] = useState<string>('ALL')
@@ -68,23 +87,41 @@ export function AttendanceCenter({ staffList, attendanceLogs, currentUserProfile
     const total = nonAdminStaff.length;
     const active = dayLogs.filter(l => !l.clockOut && l.status === 'APPROVED').length;
     const pending = dayLogs.filter(l => l.status === 'PENDING').length;
-    const presentCount = dayLogs.filter(l => l.status === 'APPROVED').length;
-    const absent = Math.max(0, total - presentCount);
-    return { total, active, absent, pending };
-  }, [nonAdminStaff, dayLogs]);
+
+    let presentCount = 0;
+    let absentCount = 0;
+    let holidayCount = 0;
+    let onLeaveCount = 0;
+
+    nonAdminStaff.forEach(staff => {
+        const staffLogs = attendanceLogs.filter(l => l.userId === staff.id);
+        const staffLeaves = leaveRequests.filter(l => l.userId === staff.id);
+        const status = calculateDailyStatus(selectedDate, staffLogs, staffLeaves);
+
+        if (status === 'ON_TIME' || status === 'LATE') presentCount++;
+        else if (status === 'ABSENT') absentCount++;
+        else if (status === 'HOLIDAY') holidayCount++;
+        else if (status === 'ON_LEAVE') onLeaveCount++;
+    });
+
+    return { total, active, absent: absentCount, pending, holiday: holidayCount, onLeave: onLeaveCount };
+  }, [nonAdminStaff, dayLogs, attendanceLogs, leaveRequests, selectedDate]);
 
   const filteredRoster = useMemo(() => {
     return nonAdminStaff.map(staff => {
         const log = dayLogs.find(l => l.userId === staff.id);
-        return { staff, log };
+        const staffLogs = attendanceLogs.filter(l => l.userId === staff.id);
+        const staffLeaves = leaveRequests.filter(l => l.userId === staff.id);
+        const status = calculateDailyStatus(selectedDate, staffLogs, staffLeaves);
+        return { staff, log, status };
     }).filter(item => {
         if (activeFilter === 'ALL') return true;
-        if (activeFilter === 'ACTIVE') return item.log && !item.log.clockOut && item.log.status === 'APPROVED';
+        if (activeFilter === 'ACTIVE') return item.status === 'ON_TIME' || item.status === 'LATE' && item.log && !item.log.clockOut;
         if (activeFilter === 'PENDING') return item.log && item.log.status === 'PENDING';
-        if (activeFilter === 'ABSENT') return !item.log || item.log.status === 'REJECTED';
+        if (activeFilter === 'ABSENT') return item.status === 'ABSENT';
         return true;
     });
-  }, [nonAdminStaff, dayLogs, activeFilter]);
+  }, [nonAdminStaff, dayLogs, attendanceLogs, leaveRequests, selectedDate, activeFilter]);
 
   // Historical Deep Dive Data
   const historicalDisplayData = useMemo(() => {
@@ -146,9 +183,9 @@ export function AttendanceCenter({ staffList, attendanceLogs, currentUserProfile
     <div className="space-y-6 animate-in fade-in zoom-in-95 duration-700 overflow-x-hidden">
 
       {/* 1. INTERACTIVE KPI FILTERS */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 md:gap-4">
         <Card
-          onClick={() => setActiveFilter('ALL')}
+          onClick={() => { setActiveFilter('ALL'); setIsRosterOpen(true); }}
           className={cn(
             "cursor-pointer transition-all border-white/5 bg-secondary/5 hover:bg-secondary/10",
             activeFilter === 'ALL' && "ring-2 ring-primary border-primary bg-primary/5"
@@ -164,7 +201,7 @@ export function AttendanceCenter({ staffList, attendanceLogs, currentUserProfile
         </Card>
 
         <Card
-          onClick={() => setActiveFilter('ACTIVE')}
+          onClick={() => { setActiveFilter('ACTIVE'); setIsRosterOpen(true); }}
           className={cn(
             "cursor-pointer transition-all border-white/5 bg-secondary/5 hover:bg-emerald-500/5",
             activeFilter === 'ACTIVE' && "ring-2 ring-emerald-500 border-emerald-500 bg-emerald-500/5"
@@ -180,7 +217,7 @@ export function AttendanceCenter({ staffList, attendanceLogs, currentUserProfile
         </Card>
 
         <Card
-          onClick={() => setActiveFilter('ABSENT')}
+          onClick={() => { setActiveFilter('ABSENT'); setIsRosterOpen(true); }}
           className={cn(
             "cursor-pointer transition-all border-white/5 bg-secondary/5 hover:bg-rose-500/5",
             activeFilter === 'ABSENT' && "ring-2 ring-rose-500 border-rose-500 bg-rose-500/5"
@@ -196,7 +233,7 @@ export function AttendanceCenter({ staffList, attendanceLogs, currentUserProfile
         </Card>
 
         <Card
-          onClick={() => setActiveFilter('PENDING')}
+          onClick={() => { setActiveFilter('PENDING'); setIsRosterOpen(true); }}
           className={cn(
             "cursor-pointer transition-all border-white/5 bg-secondary/5 hover:bg-amber-500/5",
             activeFilter === 'PENDING' && "ring-2 ring-amber-500 border-amber-500 bg-amber-500/5"
@@ -208,6 +245,26 @@ export function AttendanceCenter({ staffList, attendanceLogs, currentUserProfile
                 <span className="text-[8px] md:text-[9px] font-black uppercase text-amber-500 tracking-widest">Pending</span>
             </div>
             <p className="text-xl md:text-2xl font-black font-headline tracking-tighter text-amber-500">{stats.pending}</p>
+          </CardContent>
+        </Card>
+
+        <Card className="border-white/5 bg-secondary/5">
+          <CardContent className="p-3 md:p-4">
+            <div className="flex items-center gap-2 mb-1">
+                <Calendar className="w-3 md:w-3.5 h-3 md:h-3.5 text-blue-500 opacity-60" />
+                <span className="text-[8px] md:text-[9px] font-black uppercase text-blue-500 tracking-widest">On Leave</span>
+            </div>
+            <p className="text-xl md:text-2xl font-black font-headline tracking-tighter text-blue-500">{stats.onLeave}</p>
+          </CardContent>
+        </Card>
+
+        <Card className="border-white/5 bg-secondary/5">
+          <CardContent className="p-3 md:p-4">
+            <div className="flex items-center gap-2 mb-1">
+                <ShieldAlert className="w-3 md:w-3.5 h-3 md:h-3.5 text-slate-400 opacity-60" />
+                <span className="text-[8px] md:text-[9px] font-black uppercase text-slate-400 tracking-widest">Holidays</span>
+            </div>
+            <p className="text-xl md:text-2xl font-black font-headline tracking-tighter text-slate-400">{stats.holiday}</p>
           </CardContent>
         </Card>
       </div>
@@ -248,7 +305,7 @@ export function AttendanceCenter({ staffList, attendanceLogs, currentUserProfile
                         </td>
                     </tr>
                 ) : (
-                    filteredRoster.map(({ staff, log }) => (
+                    filteredRoster.map(({ staff, log, status }) => (
                         <tr key={staff.id} className="hover:bg-white/5 transition-all group cursor-pointer">
                             <td className="px-6 py-4">
                                 <div className="flex items-center gap-4 min-w-[180px]">
@@ -257,17 +314,28 @@ export function AttendanceCenter({ staffList, attendanceLogs, currentUserProfile
                                     </Avatar>
                                     <div className="min-w-0">
                                         <p className="font-black text-sm text-white truncate leading-none">{staff.fullName}</p>
-                                        <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest opacity-60 mt-1 truncate">{staff.jobTitle || 'Unit Staff'}</p>
+                                        <div className="flex items-center gap-2 mt-1 min-w-0">
+                                            <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest opacity-60 truncate shrink-0">{staff.jobTitle || 'Unit Staff'}</p>
+                                            {log?.branchName && (
+                                                <Badge variant="outline" className="h-4 px-1.5 rounded-md border-primary/20 text-primary text-[7px] font-black uppercase truncate">
+                                                    {log.branchName}
+                                                </Badge>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
                             </td>
-                            <td className="px-6 py-4 text-center font-mono text-xs">
-                                {log ? (
-                                    <div className="flex flex-col items-center">
-                                        <span className="text-white font-bold">{format(new Date(log.clockIn), 'HH:mm')}</span>
-                                        {log.lateReason && <Badge className="mt-1 h-4 text-[7px] bg-amber-500 text-black border-none font-black px-1.5 uppercase">LATE</Badge>}
-                                    </div>
-                                ) : '--:--'}
+                            <td className="px-6 py-4 text-center">
+                                <div className="flex flex-col items-center gap-1.5">
+                                    {status === 'ON_TIME' && <Badge className="bg-emerald-500/20 text-emerald-500 border-none text-[8px] font-black uppercase">On Time</Badge>}
+                                    {status === 'LATE' && <Badge className="bg-amber-500/20 text-amber-500 border-none text-[8px] font-black uppercase">Late</Badge>}
+                                    {status === 'ABSENT' && <Badge className="bg-rose-500/20 text-rose-500 border-none text-[8px] font-black uppercase">Absent</Badge>}
+                                    {status === 'HOLIDAY' && <Badge className="bg-slate-500/20 text-slate-400 border-none text-[8px] font-black uppercase">Holiday</Badge>}
+                                    {status === 'ON_LEAVE' && <Badge className="bg-blue-500/20 text-blue-500 border-none text-[8px] font-black uppercase">On Leave</Badge>}
+                                    {status === 'WEEKEND' && <Badge className="bg-slate-500/10 text-slate-500 border-none text-[8px] font-black uppercase">Weekend</Badge>}
+
+                                    {log && <span className="font-mono text-[10px] font-bold text-white">{format(new Date(log.clockIn), 'HH:mm')}</span>}
+                                </div>
                             </td>
                             <td className="px-6 py-4 text-center font-mono text-xs">
                                 {log?.clockOut ? (
@@ -325,7 +393,7 @@ export function AttendanceCenter({ staffList, attendanceLogs, currentUserProfile
           </div>
         </Card>
 
-        {/* Right: Interactive Calendar */}
+        {/* Right: Side Monitors */}
         <div className="space-y-6">
             <Card className="bg-card border border-border shadow-sm rounded-2xl overflow-hidden">
                 <CardHeader className="p-4 md:p-6 pb-2">
@@ -480,6 +548,96 @@ export function AttendanceCenter({ staffList, attendanceLogs, currentUserProfile
           )}
         </div>
       </Card>
+
+      {/* ACTIVE ROSTER SHEET */}
+      <Sheet open={isRosterOpen} onOpenChange={setIsRosterOpen}>
+        <SheetContent className="w-[400px] sm:w-[500px] bg-[#0f172a] border-l border-white/5 p-0 flex flex-col overflow-hidden shadow-3xl">
+          <div className="h-full flex flex-col">
+            <SheetHeader className="p-8 border-b border-white/5 bg-white/5">
+                <div className="flex items-center gap-4">
+                    <div className="p-3 rounded-2xl bg-blue-500/10 text-blue-500 shadow-inner border border-blue-500/20">
+                        <User className="w-6 h-6" />
+                    </div>
+                    <div className="flex flex-col items-start">
+                        <SheetTitle className="text-2xl font-black font-headline tracking-tighter uppercase text-white leading-none mb-1">
+                            Active Roster
+                        </SheetTitle>
+                        <SheetDescription className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground opacity-60">
+                            Real-time operational drill-down for {format(new Date(), 'MMMM yyyy')}
+                        </SheetDescription>
+                    </div>
+                </div>
+            </SheetHeader>
+
+            <div className="flex-1 overflow-hidden">
+              <ScrollArea className="h-full px-8 py-6">
+                <div className="space-y-8">
+                  <div className="space-y-4">
+                    <h4 className="text-[11px] font-black uppercase tracking-[0.2em] text-amber-500 flex items-center gap-2 mb-6">
+                      <ArrowRight className="w-4 h-4 text-amber-500" /> Units Currently Signed In
+                    </h4>
+
+                    <div className="space-y-3">
+                      {filteredRoster.filter(item => item.status === 'ON_TIME' || item.status === 'LATE').length === 0 ? (
+                        <div className="py-20 text-center border border-dashed border-white/5 rounded-3xl opacity-20 italic text-xs uppercase tracking-widest">
+                            No units identified in this sector.
+                        </div>
+                      ) : (
+                        filteredRoster.filter(item => item.status === 'ON_TIME' || item.status === 'LATE').map(({ staff, log }) => (
+                          <div
+                            key={staff.id}
+                            onClick={() => setSelectedStaffForHistory(staff)}
+                            className="p-4 rounded-2xl bg-white/[0.03] border border-white/5 flex items-center justify-between group hover:bg-white/[0.08] transition-all cursor-pointer shadow-sm active:scale-[0.98]"
+                          >
+                            <div className="flex items-center gap-4">
+                                <Avatar className="h-10 w-10 rounded-full bg-[#334155] border border-white/10 flex items-center justify-center font-black text-xs text-white shadow-inner">
+                                    <AvatarFallback className="bg-transparent">{staff.fullName.charAt(0)}</AvatarFallback>
+                                </Avatar>
+                                <div>
+                                    <p className="text-sm font-black text-white uppercase tracking-wider">{staff.fullName}</p>
+                                    <p className="text-[9px] font-bold text-muted-foreground uppercase opacity-60 flex items-center gap-1.5 mt-0.5">
+                                        <LogIn className="w-3 h-3" /> {log ? format(new Date(log.clockIn), 'hh:mm aa') : '--:--'}
+                                    </p>
+                                </div>
+                            </div>
+                            <Badge className="bg-emerald-500/20 text-emerald-500 border-none text-[8px] font-black uppercase tracking-widest px-2 py-1 rounded-md">LIVE</Badge>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </ScrollArea>
+            </div>
+
+            <div className="p-8 border-t border-white/5 mt-auto">
+                <Button
+                    variant="ghost"
+                    className="w-full h-14 rounded-2xl bg-transparent border-none text-white font-black uppercase text-[11px] tracking-[0.2em] flex items-center justify-between px-6 hover:bg-white/5 transition-all group"
+                    onClick={() => setIsRosterOpen(false)}
+                >
+                    <span>Close Intelligence Drill-Down</span>
+                    <div className="h-10 w-10 rounded-full bg-amber-500 flex items-center justify-center text-black group-hover:scale-110 transition-transform shadow-lg shadow-amber-500/20">
+                        <LayoutGrid className="w-5 h-5" />
+                    </div>
+                </Button>
+            </div>
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      {/* HISTORY MODAL PORTAL */}
+      {selectedStaffForHistory && (
+          <InsightCalendarModal
+              isOpen={!!selectedStaffForHistory}
+              onClose={() => setSelectedStaffForHistory(null)}
+              staff={selectedStaffForHistory}
+              attendanceLogs={attendanceLogs}
+              pulseFeed={pulseFeed}
+              nominations={nominations}
+              leaveRequests={leaveRequests}
+          />
+      )}
     </div>
   )
 }

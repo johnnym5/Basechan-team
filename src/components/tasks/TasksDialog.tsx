@@ -18,8 +18,8 @@ export function TasksDialog({ open, onOpenChange, initialPayload, userProfile, p
     <Dialog open={open} onOpenChange={onOpenChange} modal={modal}>
       <DialogContent position={modal ? "center" : "left"} className="flex flex-col p-0 border-none apple-glass">
         <DialogHeader className="sr-only">
-            <DialogTitle>Mission Control: Task Manager</DialogTitle>
-            <DialogDescription>View and manage tactical missions and team tasks.</DialogDescription>
+            <DialogTitle>Task Manager</DialogTitle>
+            <DialogDescription>View and manage team tasks and projects.</DialogDescription>
         </DialogHeader>
         <div className="flex-1 min-h-0">
             <TasksPageContent 

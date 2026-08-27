@@ -3,100 +3,121 @@
 import { cn } from "@/lib/utils";
 import {
   Building2,
-  ShieldCheck,
-  Bell,
-  GitBranch,
-  Share2,
-  Database,
+  Shield,
+  Users,
+  MapPin,
+  GitMerge,
+  Mail,
+  Wallet,
+  Clock,
+  Fingerprint,
   ChevronRight,
-  Terminal
+  Database
 } from "lucide-react";
-import { useSuperAdmin } from "@/hooks/useSuperAdmin";
 
 export type SettingsSection =
   | 'general'
   | 'security'
-  | 'notifications'
+  | 'operations'
   | 'workflows'
-  | 'integrations'
-  | 'data'
-  | 'master-console';
+  | 'finance'
+  | 'communications'
+  | 'system-lists';
 
 interface SettingsSidebarProps {
   activeSection: SettingsSection;
   onSectionChange: (section: SettingsSection) => void;
 }
 
-interface NavItem {
-  id: SettingsSection;
-  label: string;
-  icon: any;
-  desc: string;
-  superAdminOnly?: boolean;
-}
-
-const navItems: NavItem[] = [
-  { id: 'general', label: 'General', icon: Building2, desc: 'Company profile & localization' },
-  { id: 'security', label: 'Security', icon: ShieldCheck, desc: 'Auth & infrastructure safety' },
-  { id: 'notifications', label: 'Notifications', icon: Bell, desc: 'System alerts & webhooks' },
-  { id: 'workflows', label: 'Workflows', icon: GitBranch, desc: 'Approvals & delegations' },
-  { id: 'integrations', label: 'Integrations', icon: Share2, desc: 'Third-party connections' },
-  { id: 'data', label: 'Data & Compliance', icon: Database, desc: 'Retention & exports' },
-  { id: 'master-console', label: 'Master Console', icon: Terminal, desc: 'Super Admin infrastructure tools', superAdminOnly: true },
+const SETTINGS_GROUPS = [
+  {
+    title: "Organization",
+    items: [
+      { id: 'general', label: 'Profile & Branding', icon: Building2, desc: 'Company identity & theme' },
+    ]
+  },
+  {
+    title: "Access & Security",
+    items: [
+      { id: 'security', label: 'Auth & Safety', icon: Shield, desc: '2FA & session policies' },
+    ]
+  },
+  {
+    title: "Operations & Logistics",
+    items: [
+      { id: 'operations', label: 'Facilities & Ops', icon: MapPin, desc: 'Geofencing, Time & Leave' },
+      { id: 'workflows', label: 'Workflows & Approvals', icon: GitMerge, desc: 'Request delegation flow' },
+    ]
+  },
+  {
+    title: "Infrastructure",
+    items: [
+      { id: 'finance', label: 'Finance Settings', icon: Wallet, desc: 'Currency & tax settings' },
+      { id: 'communications', label: 'Email & SMTP', icon: Mail, desc: 'System notifications' },
+    ]
+  },
+  {
+    title: "System Config",
+    items: [
+      { id: 'system-lists', label: 'Lists & Templates', icon: Database, desc: 'Dropdowns & categories' },
+    ]
+  }
 ];
 
 export function SettingsSidebar({ activeSection, onSectionChange }: SettingsSidebarProps) {
-  const { isSuperAdmin } = useSuperAdmin();
-
   return (
-    <div className="w-full flex flex-col h-full">
-      <div className="px-6 py-8">
-        <h2 className="text-2xl font-black font-headline tracking-tighter text-foreground">Admin Console</h2>
-        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest opacity-60 mt-1">Enterprise Configuration</p>
+    <div className="w-full flex flex-col bg-card/40 border border-white/5 backdrop-blur-xl rounded-[2rem] p-4 shadow-2xl overflow-hidden max-h-[80vh]">
+      <div className="px-4 py-6 border-b border-white/5 mb-4">
+        <h2 className="text-xl font-black font-headline tracking-tighter text-white">Console</h2>
+        <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest opacity-60">System Registry</p>
       </div>
 
-      <nav className="flex-1 px-4 space-y-1.5 overflow-y-auto custom-scrollbar">
-        {navItems.map((item) => {
-          if (item.superAdminOnly && !isSuperAdmin) return null;
+      <nav className="flex-1 space-y-8 overflow-y-auto custom-scrollbar pr-1 pb-6">
+        {SETTINGS_GROUPS.map((group) => (
+          <div key={group.title} className="space-y-3 px-2">
+            <h3 className="px-2 text-[9px] font-black uppercase tracking-[0.3em] text-primary opacity-50">
+              {group.title}
+            </h3>
+            <div className="space-y-1">
+              {group.items.map((item) => {
+                const isActive = activeSection === item.id;
+                const Icon = item.icon;
 
-          const isActive = activeSection === item.id;
-          const Icon = item.icon;
-
-          return (
-            <button
-              key={item.id}
-              onClick={() => onSectionChange(item.id as SettingsSection)}
-              className={cn(
-                "w-full flex items-center justify-between p-4 rounded-2xl transition-all duration-300 group",
-                isActive
-                  ? "bg-primary shadow-xl shadow-primary/20 text-white"
-                  : "text-muted-foreground hover:bg-white/5 hover:text-foreground"
-              )}
-            >
-              <div className="flex items-center gap-4">
-                <div className={cn(
-                  "p-2 rounded-xl transition-colors",
-                  isActive ? "bg-white/20" : "bg-white/5 group-hover:bg-primary/10"
-                )}>
-                  <Icon className={cn("h-5 w-5", isActive ? "text-white" : "text-primary")} />
-                </div>
-                <div className="text-left">
-                  <p className="text-sm font-black uppercase tracking-tight">{item.label}</p>
-                  <p className={cn(
-                    "text-[9px] font-medium leading-none mt-1 opacity-60",
-                    isActive ? "text-white" : "text-muted-foreground"
-                  )}>
-                    {item.desc}
-                  </p>
-                </div>
-              </div>
-              <ChevronRight className={cn(
-                "h-4 w-4 transition-transform duration-300",
-                isActive ? "translate-x-0 opacity-100" : "-translate-x-2 opacity-0 group-hover:translate-x-0 group-hover:opacity-100"
-              )} />
-            </button>
-          );
-        })}
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => onSectionChange(item.id as SettingsSection)}
+                    className={cn(
+                      "w-full flex items-center justify-between p-3 rounded-2xl transition-all duration-300 group",
+                      isActive
+                        ? "bg-primary text-white shadow-xl shadow-primary/20"
+                        : "text-muted-foreground hover:bg-white/5 hover:text-white"
+                    )}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className={cn(
+                        "p-2 rounded-xl transition-colors shrink-0",
+                        isActive ? "bg-white/20" : "bg-white/5 group-hover:bg-primary/10"
+                      )}>
+                        <Icon className={cn("h-4 w-4", isActive ? "text-white" : "text-primary")} />
+                      </div>
+                      <div className="text-left min-w-0">
+                        <p className="text-[11px] font-black uppercase tracking-tight truncate">{item.label}</p>
+                        <p className={cn(
+                          "text-[8px] font-medium leading-none mt-1 opacity-50 truncate",
+                          isActive ? "text-white" : "text-muted-foreground"
+                        )}>
+                          {item.desc}
+                        </p>
+                      </div>
+                    </div>
+                    {isActive && <ChevronRight className="h-3 w-3 text-white animate-in slide-in-from-left-2" />}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        ))}
       </nav>
     </div>
   );

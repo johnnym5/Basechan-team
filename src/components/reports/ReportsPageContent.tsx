@@ -192,7 +192,7 @@ export function ReportsPageContent({ initialPayload, noWrapper = false }: { init
   }
 
   const renderContent = () => {
-    if (userProfile && activeStaff && activeAttendance && activeTasks && activeLeaveRequests && activeNominations) {
+    if (userProfile && activeStaff?.length > 0 && activeAttendance && activeTasks && activeLeaveRequests && activeNominations) {
         return (
             <TeamInsightHub
                 userProfile={userProfile}

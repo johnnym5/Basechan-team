@@ -2,16 +2,17 @@
 
 import React from "react"
 import { Card, CardContent } from "@/components/ui/card"
-import { ArrowUpRight, ArrowDownRight, Minus } from "lucide-react"
+import { TrendingUp, TrendingDown, Minus } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { Area, AreaChart, ResponsiveContainer } from "recharts"
+import { Progress } from "@/components/ui/progress"
 
 interface TrendInsightCardProps {
     title: string
     metric: string
     description: string
-    trendPercentage?: number
-    sparklineData?: { value: number }[]
+    delta?: string // e.g. "+2" or "-1"
+    deltaType?: 'positive' | 'negative' | 'neutral'
+    type?: 'percentage' | 'number'
     status?: 'success' | 'warning' | 'danger' | 'info'
     onClick?: () => void
 }
@@ -20,14 +21,12 @@ export function TrendInsightCard({
     title,
     metric,
     description,
-    trendPercentage,
-    sparklineData,
+    delta,
+    deltaType = 'neutral',
+    type = 'number',
     status = 'info',
     onClick
 }: TrendInsightCardProps) {
-    const isPositive = trendPercentage && trendPercentage > 0
-    const isNegative = trendPercentage && trendPercentage < 0
-
     const statusColors = {
         success: "text-emerald-500 bg-emerald-500/10 border-emerald-500/20",
         warning: "text-amber-500 bg-amber-500/10 border-amber-500/20",
@@ -35,58 +34,59 @@ export function TrendInsightCard({
         info: "text-primary bg-primary/10 border-primary/20"
     }
 
+    const value = parseFloat(metric)
+
     return (
         <Card
             className={cn(
-                "apple-glass border-none shadow-xl overflow-hidden group transition-all duration-300",
+                "apple-glass border-none shadow-xl overflow-hidden group transition-all duration-300 flex flex-col justify-between",
                 onClick && "cursor-pointer hover:bg-white/5 active:scale-[0.98]"
             )}
             onClick={onClick}
         >
-            <CardContent className="p-5 flex flex-col h-full">
-                <div className="flex justify-between items-start mb-4">
-                    <div className="space-y-1">
-                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground opacity-60 group-hover:opacity-100 transition-opacity">
-                            {title}
-                        </p>
-                        <h4 className="text-2xl font-black font-headline tracking-tighter text-white">
+            <CardContent className="p-6 space-y-4">
+                <div className="space-y-1">
+                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground opacity-60 group-hover:opacity-100 transition-opacity">
+                        {title}
+                    </p>
+                    <div className="flex items-baseline gap-2">
+                        <h4 className="text-4xl font-black font-headline tracking-tighter text-white">
                             {metric}
                         </h4>
-                    </div>
 
-                    {trendPercentage !== undefined && (
-                        <div className={cn(
-                            "flex items-center gap-1 px-2 py-1 rounded-lg text-[9px] font-black",
-                            isPositive ? "bg-emerald-500/20 text-emerald-500" :
-                            isNegative ? "bg-rose-500/20 text-rose-500" :
-                            "bg-white/10 text-muted-foreground"
-                        )}>
-                            {isPositive ? <ArrowUpRight className="w-3 h-3" /> :
-                             isNegative ? <ArrowDownRight className="w-3 h-3" /> : <Minus className="w-3 h-3" />}
-                            {Math.abs(trendPercentage)}%
-                        </div>
-                    )}
+                        {delta && (
+                            <span className={cn(
+                                "text-[10px] font-black flex items-center gap-1",
+                                deltaType === 'positive' ? "text-emerald-500" :
+                                deltaType === 'negative' ? "text-rose-500" :
+                                "text-muted-foreground"
+                            )}>
+                                {deltaType === 'positive' && <TrendingUp className="w-3.5 h-3.5" />}
+                                {deltaType === 'negative' && <TrendingDown className="w-3.5 h-3.5" />}
+                                {deltaType === 'neutral' && <Minus className="w-3.5 h-3.5" />}
+                                {delta}
+                            </span>
+                        )}
+                    </div>
                 </div>
 
-                <div className="flex-1 min-h-[40px] w-full mb-3">
-                    {sparklineData && (
-                        <ResponsiveContainer width="100%" height="100%">
-                            <AreaChart data={sparklineData}>
-                                <Area
-                                    type="monotone"
-                                    dataKey="value"
-                                    stroke={status === 'success' ? '#10b981' : status === 'danger' ? '#f43f5e' : status === 'warning' ? '#f59e0b' : 'hsl(var(--primary))'}
-                                    fill={status === 'success' ? '#10b981' : status === 'danger' ? '#f43f5e' : status === 'warning' ? '#f59e0b' : 'hsl(var(--primary))'}
-                                    fillOpacity={0.1}
-                                    strokeWidth={2}
-                                />
-                            </AreaChart>
-                        </ResponsiveContainer>
+                {/* VISUAL DATA LAYER */}
+                <div className="min-h-[1.5px] w-full">
+                    {type === 'percentage' && (
+                        <Progress
+                            value={value}
+                            className="h-1.5 w-full bg-white/5"
+                            indicatorClassName={cn(
+                                status === 'success' ? "bg-emerald-500" :
+                                status === 'danger' ? "bg-rose-500" :
+                                status === 'warning' ? "bg-amber-500" : "bg-primary"
+                            )}
+                        />
                     )}
                 </div>
 
                 <div className={cn(
-                    "mt-auto p-2 rounded-lg border text-[8px] font-black uppercase tracking-widest",
+                    "p-2.5 rounded-xl border text-[9px] font-black uppercase tracking-widest text-center mt-auto",
                     statusColors[status]
                 )}>
                     {description}

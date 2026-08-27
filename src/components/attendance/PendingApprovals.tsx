@@ -7,7 +7,7 @@ import { useFirestore, useCollection, useMemoFirebase, updateDocumentNonBlocking
 import { collection, query, where, doc } from "firebase/firestore";
 import { format } from 'date-fns';
 import { Button } from "../ui/button";
-import { Check, X, MonitorPlay } from "lucide-react";
+import { Check, X, MonitorPlay, MapPin } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "../ui/badge";
 import { uiEmitter } from "@/lib/ui-emitter";
@@ -55,10 +55,10 @@ export function PendingApprovals({ userProfile, variant = 'full' }: PendingAppro
         
         toast({
             title: `Clock-in Approved`,
-            description: `Personnel ${record.userName} is now online. Oversight link activated.`,
+            description: `${record.userName} is now online.`,
             action: (
                 <Button size="sm" variant="outline" className="h-7 rounded-lg text-[8px] font-black uppercase" onClick={() => uiEmitter.emit('open-live-monitor-dialog', { targetUserId: record.userId, targetUserName: record.userName })}>
-                    Launch Monitor
+                    View Monitor
                 </Button>
             )
         });
@@ -89,7 +89,7 @@ export function PendingApprovals({ userProfile, variant = 'full' }: PendingAppro
                   <Skeleton className="h-20 w-full rounded-xl" />
               ) : !pendingRecords || pendingRecords.length === 0 ? (
                   <div className="text-center p-6 text-[10px] font-black uppercase tracking-widest text-muted-foreground border border-dashed border-white/10 rounded-xl opacity-30">
-                      Zero pending verifications.
+                      No pending approvals.
                   </div>
               ) : (
                   pendingRecords.map(req => (
@@ -100,6 +100,18 @@ export function PendingApprovals({ userProfile, variant = 'full' }: PendingAppro
                                   <p className="text-[9px] font-mono text-muted-foreground uppercase tracking-tighter mt-0.5">
                                       {format(new Date(req.clockIn), 'HH:mm')} • {req.location}
                                   </p>
+                                  {req.location === 'OFFICE' ? (
+                                      <span className="text-[8px] font-black flex items-center gap-1 mt-0.5 text-emerald-500">
+                                          <MapPin className="h-2.5 w-2.5" />
+                                          {req.branchName || req.branchLocation
+                                              ? `Working from ${req.branchName || req.branchLocation}`
+                                              : 'Office'}
+                                      </span>
+                                  ) : (
+                                      <span className="text-[8px] font-black flex items-center gap-1 mt-0.5 text-orange-400">
+                                          <MapPin className="h-2.5 w-2.5" /> Remote / Off-Site
+                                      </span>
+                                  )}
                               </div>
                               <Badge variant="outline" className="text-[8px] font-black border-amber-500/20 text-amber-500 bg-amber-500/5 uppercase">Pending</Badge>
                           </div>
@@ -110,7 +122,7 @@ export function PendingApprovals({ userProfile, variant = 'full' }: PendingAppro
                                   className="flex-1 h-8 rounded-xl bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500 hover:text-white text-[9px] font-black uppercase tracking-widest"
                                   onClick={() => handleDecision(req, 'APPROVED')}
                               >
-                                  Verify
+                                  Approve
                               </Button>
                               <Button
                                   variant="ghost"
@@ -132,7 +144,7 @@ export function PendingApprovals({ userProfile, variant = 'full' }: PendingAppro
     <Card className="border border-border/60 bg-muted/30 rounded-xl p-4 shadow-sm">
       <CardHeader className="pb-4">
         <CardTitle className="text-xl font-black font-headline tracking-tighter uppercase">Pending Clock-In Approvals</CardTitle>
-        <CardDescription className="text-[10px] font-black uppercase tracking-widest opacity-60">Review and verify operational node activations.</CardDescription>
+        <CardDescription className="text-[10px] font-black uppercase tracking-widest opacity-60">Review and verify staff clock-in requests.</CardDescription>
       </CardHeader>
       <CardContent>
         <Table>
@@ -153,7 +165,7 @@ export function PendingApprovals({ userProfile, variant = 'full' }: PendingAppro
             {!isLoading && pendingRecords?.length === 0 && (
               <TableRow className="border-none">
                   <TableCell colSpan={4} className="h-48 text-center text-muted-foreground italic text-xs uppercase tracking-widest">
-                      Zero pending shift verifications.
+                      No pending clock-in approvals.
                   </TableCell>
               </TableRow>
             )}

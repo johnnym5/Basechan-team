@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState } from 'react';
-import { Send, Info, CheckCircle2, ChevronRight, Zap, Star, Users, Heart, Lightbulb, Compass, GraduationCap } from 'lucide-react';
+import { Send, Info, CheckCircle2, ChevronRight, Zap, Star, Users, Heart, Lightbulb, Compass, GraduationCap, Loader2 } from 'lucide-react';
 import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { useFirestore } from '@/firebase';
 import { Button } from '@/components/ui/button';
@@ -10,15 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { cn } from '@/lib/utils';
 import type { UserProfile } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
-
-const CATEGORIES = [
-  { id: 'team_player', title: 'Team Player', icon: Users, emoji: '🤝', color: 'text-blue-400', desc: 'Consistently supports colleagues, collaborates well across teams, and puts shared success ahead of individual credit.' },
-  { id: 'resourceful', title: 'Resourceful Colleague', icon: Compass, emoji: '🧭', color: 'text-amber-400', desc: 'Finds practical solutions under pressure, adapts quickly, and gets things done with the resources at hand.' },
-  { id: 'mentor', title: 'Mentor', icon: GraduationCap, emoji: '🌱', color: 'text-emerald-400', desc: 'Invests time in developing others, shares knowledge generously, and helps colleagues grow in their roles.' },
-  { id: 'innovator', title: 'Innovator', icon: Lightbulb, emoji: '💡', color: 'text-purple-400', desc: 'Brings fresh ideas, challenges the status quo constructively, and drives improvement in how we work.' },
-  { id: 'culture', title: 'Culture Champion', icon: Heart, emoji: '🙌', color: 'text-rose-400', desc: 'Brings energy and positivity to the team, lifts morale, and helps create an inclusive, enjoyable place to work.' },
-  { id: 'above_beyond', title: 'Above & Beyond', icon: Zap, emoji: '🚀', color: 'text-orange-400', desc: 'Goes the extra mile, takes ownership beyond their role, and delivers exceptional results.' },
-];
+import { useSystemConfigs } from '@/hooks/useSystemConfigs';
 
 interface PeerNominationFormProps {
     currentUser: UserProfile;
@@ -32,6 +24,21 @@ export function PeerNominationForm({ currentUser, staffList }: PeerNominationFor
   const [formData, setFormData] = useState<Record<string, { nomineeId: string; reason: string }>>({});
   const [additionalComments, setAdditionalComments] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Fetch Dynamic Award Categories
+  const { data: dynamicCategories, loading: isCategoriesLoading } = useSystemConfigs('award_categories', currentUser.orgId);
+
+  // Legacy Collection Fetching (Migration Support)
+  const legacyCategoriesQuery = useMemoFirebase(() =>
+    firestore ? query(collection(firestore, 'accolade_categories'), where('orgId', '==', currentUser.orgId), where('isActive', '==', true)) : null
+  , [firestore, currentUser.orgId]);
+  const { data: legacyCategories } = useCollection<any>(legacyCategoriesQuery);
+
+  const CATEGORIES = useMemo(() => {
+    const dynamic = (dynamicCategories || []).map(c => ({ id: c.id, title: c.name, emoji: c.emoji, desc: c.description }));
+    const legacy = (legacyCategories || []).map(c => ({ id: c.id, title: c.title, emoji: c.icon, desc: c.description }));
+    return [...dynamic, ...legacy];
+  }, [dynamicCategories, legacyCategories]);
 
   const toggleCategory = (id: string) => {
     setSelectedCats(prev =>
@@ -56,7 +63,7 @@ export function PeerNominationForm({ currentUser, staffList }: PeerNominationFor
         const cat = CATEGORIES.find(c => c.id === catId);
         return {
           categoryId: catId,
-          categoryTitle: cat?.title,
+          categoryTitle: cat?.name || (cat as any).title,
           nomineeId: formData[catId]?.nomineeId || '',
           nomineeName: staffList.find(s => s.id === formData[catId]?.nomineeId)?.name || "Unknown",
           reason: formData[catId]?.reason || '',
@@ -116,8 +123,16 @@ export function PeerNominationForm({ currentUser, staffList }: PeerNominationFor
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {CATEGORIES.map(cat => {
-            const Icon = cat.icon;
+          {isCategoriesLoading ? (
+            <div className="col-span-full py-12 flex items-center justify-center">
+                <Loader2 className="w-6 h-6 animate-spin text-primary opacity-20" />
+            </div>
+          ) : CATEGORIES.length === 0 ? (
+            <div className="col-span-full py-20 text-center border border-dashed border-white/5 rounded-3xl opacity-20 italic text-xs uppercase tracking-widest">
+                No award categories identified.
+            </div>
+          ) : CATEGORIES.map(cat => {
+            const Icon = (cat as any).icon || Star;
             const isSelected = selectedCats.includes(cat.id);
             return (
                 <div
@@ -132,7 +147,7 @@ export function PeerNominationForm({ currentUser, staffList }: PeerNominationFor
                 >
                     <div className="flex items-center justify-between">
                         <div className={cn("p-2 rounded-xl bg-white/5", isSelected ? "text-primary" : "text-muted-foreground group-hover:text-white")}>
-                            <Icon className="w-5 h-5" />
+                            {typeof Icon === 'string' ? <span className="text-xl">{Icon}</span> : <Icon className="w-5 h-5" />}
                         </div>
                         <div className={cn(
                             "w-5 h-5 rounded-full border flex items-center justify-center transition-all",
@@ -142,8 +157,8 @@ export function PeerNominationForm({ currentUser, staffList }: PeerNominationFor
                         </div>
                     </div>
                     <div>
-                        <span className={cn("font-black text-xs uppercase tracking-tight", isSelected ? "text-white" : "text-slate-400 group-hover:text-slate-200")}>{cat.emoji} {cat.title}</span>
-                        <p className="text-[9px] font-medium leading-relaxed opacity-60 mt-1 line-clamp-2">{cat.desc}</p>
+                        <span className={cn("font-black text-xs uppercase tracking-tight", isSelected ? "text-white" : "text-slate-400 group-hover:text-slate-200")}>{(cat as any).emoji} {cat.name || (cat as any).title}</span>
+                        <p className="text-[9px] font-medium leading-relaxed opacity-60 mt-1 line-clamp-2">{cat.description || (cat as any).desc}</p>
                     </div>
                 </div>
             );
@@ -156,15 +171,16 @@ export function PeerNominationForm({ currentUser, staffList }: PeerNominationFor
         <div className="space-y-6 animate-in slide-in-from-bottom-4 duration-500">
           {selectedCats.map(catId => {
             const cat = CATEGORIES.find(c => c.id === catId);
+            const Icon = (cat as any).icon || Star;
             return (
               <div key={catId} className="bg-white/5 border border-white/5 p-8 rounded-[2rem] shadow-xl space-y-6 relative overflow-hidden">
                 <div className="absolute top-0 right-0 p-8 opacity-5">
-                    {cat && <cat.icon className="w-32 h-32" />}
+                    {cat && typeof Icon !== 'string' && <Icon className="w-32 h-32" />}
                 </div>
 
                 <div className="flex items-center gap-3">
                     <div className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
-                    <h3 className="text-sm font-black uppercase tracking-[0.2em] text-white">Nomination for {cat?.title}</h3>
+                    <h3 className="text-sm font-black uppercase tracking-[0.2em] text-white">Nomination for {cat?.name || (cat as any).title}</h3>
                 </div>
 
                 <div className="grid grid-cols-1 gap-6 relative z-10">

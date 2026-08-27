@@ -11,7 +11,7 @@ interface GlobalBroadcastTickerProps {
 
 /**
  * Global Ticker Bar that integrates with the Refactored Broadcast System.
- * Displays a marquee of tactical intelligence and acts as the trigger for the full broadcast feed.
+ * Displays a marquee of recent announcements and acts as the trigger for the full broadcast feed.
  */
 export function GlobalBroadcastTicker({ broadcasts = [], userProfile }: GlobalBroadcastTickerProps) {
     return (
@@ -30,7 +30,7 @@ export function GlobalBroadcastTicker({ broadcasts = [], userProfile }: GlobalBr
                     </div>
                 ) : (
                     <div className="px-12 text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground opacity-20">
-                        No active intelligence transmissions...
+                        No active system updates...
                     </div>
                 )}
             </div>

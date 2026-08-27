@@ -9,8 +9,8 @@ import { Calendar } from '@/components/ui/calendar';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { Clock, CalendarDays, AlertTriangle, Timer, ArrowRight, Settings2, Loader2 } from 'lucide-react';
-import type { Attendance, AttendanceSession, UserProfile } from '@/lib/types';
+import { Clock, CalendarDays, AlertTriangle, Timer, ArrowRight, Settings2, Loader2, Palmtree } from 'lucide-react';
+import type { Attendance, AttendanceSession, UserProfile, LeaveRequest } from '@/lib/types';
 import { Button } from '../ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '../ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
@@ -19,6 +19,8 @@ import { leaveService } from "@/services/leave-service";
 import { useToast } from "@/hooks/use-toast";
 import { useUser, useDoc } from '@/firebase';
 import { doc as firestoreDoc } from 'firebase/firestore';
+import { calculateDailyStatus } from '@/lib/attendance-utils';
+import { cn } from "@/lib/utils"
 
 interface StaffAttendanceAnalyticsProps {
     staffId: string;
@@ -66,6 +68,11 @@ export function StaffAttendanceAnalytics({ staffId }: StaffAttendanceAnalyticsPr
     }, [firestore, staffId, currentMonth]);
 
     const { data: attendanceRecords } = useCollection<Attendance>(attendanceQuery);
+
+    const leaveQuery = useMemoFirebase(() =>
+        firestore ? query(collection(firestore, 'leave_requests'), where('userId', '==', staffId), where('status', '==', 'APPROVED')) : null
+    , [firestore, staffId]);
+    const { data: userLeaves } = useCollection<LeaveRequest>(leaveQuery);
 
     const metrics = useMemo(() => {
         if (!attendanceRecords || attendanceRecords.length === 0) {
@@ -235,17 +242,37 @@ export function StaffAttendanceAnalytics({ staffId }: StaffAttendanceAnalyticsPr
                         <h3 className="text-lg font-black font-headline tracking-tighter uppercase text-foreground">
                             {selectedDate ? format(selectedDate, 'MMMM dd, yyyy') : 'Select a date'}
                         </h3>
-                        {selectedDayRecord && (
-                            <Badge variant="outline" className="border-primary/20 text-primary font-black text-[10px] uppercase tracking-widest">
-                                {selectedDayRecord.status}
+                        {selectedDate && (
+                            <Badge variant="outline" className={cn(
+                                "border-primary/20 font-black text-[10px] uppercase tracking-widest",
+                                selectedDayRecord ? "text-primary border-primary/20" :
+                                calculateDailyStatus(selectedDate, attendanceRecords || [], userLeaves || []) === 'HOLIDAY' ? "text-slate-400 border-slate-500/20" :
+                                calculateDailyStatus(selectedDate, attendanceRecords || [], userLeaves || []) === 'ON_LEAVE' ? "text-blue-400 border-blue-500/20" :
+                                "text-muted-foreground"
+                            )}>
+                                {selectedDayRecord ? selectedDayRecord.status : calculateDailyStatus(selectedDate, attendanceRecords || [], userLeaves || [])}
                             </Badge>
                         )}
                     </div>
 
                     {!selectedDayRecord ? (
                         <div className="h-full min-h-[300px] flex flex-col items-center justify-center border border-dashed border-border rounded-[2.5rem] bg-secondary/50 opacity-40">
-                            <Clock className="h-12 w-12 mb-4 opacity-20 text-muted-foreground" />
-                            <p className="text-xs font-black uppercase tracking-[0.2em] text-muted-foreground">No attendance logged for this date</p>
+                            {calculateDailyStatus(selectedDate!, attendanceRecords || [], userLeaves || []) === 'HOLIDAY' ? (
+                                <>
+                                    <CalendarDays className="h-12 w-12 mb-4 opacity-20 text-slate-400" />
+                                    <p className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">Public Holiday Observed</p>
+                                </>
+                            ) : calculateDailyStatus(selectedDate!, attendanceRecords || [], userLeaves || []) === 'ON_LEAVE' ? (
+                                <>
+                                    <Palmtree className="h-12 w-12 mb-4 opacity-20 text-blue-400" />
+                                    <p className="text-xs font-black uppercase tracking-[0.2em] text-blue-400">Personnel on Approved Leave</p>
+                                </>
+                            ) : (
+                                <>
+                                    <Clock className="h-12 w-12 mb-4 opacity-20 text-muted-foreground" />
+                                    <p className="text-xs font-black uppercase tracking-[0.2em] text-muted-foreground">No attendance logged for this date</p>
+                                </>
+                            )}
                         </div>
                     ) : (
                         <Accordion collapsible type="single" className="space-y-3">

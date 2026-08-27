@@ -169,7 +169,7 @@ export function WeeklyAttendanceLedger({
               <div className="bg-black/20 border border-white/5 p-4 rounded-xl space-y-2 shadow-inner">
                 <div className="flex items-center gap-2 mb-1">
                    <FileText className="w-3 h-3 text-primary" />
-                   <span className="text-[8px] uppercase font-black tracking-widest text-primary">Intelligence Report</span>
+                   <span className="text-[8px] uppercase font-black tracking-widest text-primary">Daily Report</span>
                 </div>
                 <p className="text-xs text-foreground/80 leading-relaxed italic font-medium">
                   {day.reportText ? `"${day.reportText}"` : "No report data filed for this cycle."}
@@ -210,7 +210,7 @@ export function StaffQuickViewSheet({ isOpen, onClose, userId, orgId, onViewFull
       <SheetContent className="w-full sm:max-w-md apple-glass-darker border-l border-white/10 p-0 flex flex-col overflow-hidden">
         <SheetHeader className="p-8 pb-4 shrink-0">
           <SheetTitle className="sr-only">Staff Quick View</SheetTitle>
-          <SheetDescription className="sr-only">Rapid overview of personnel metrics and active missions.</SheetDescription>
+          <SheetDescription className="sr-only">Rapid overview of personnel metrics and active tasks.</SheetDescription>
 
           <div className="flex flex-col gap-4">
             {isLoading ? (
@@ -265,7 +265,7 @@ export function StaffQuickViewSheet({ isOpen, onClose, userId, orgId, onViewFull
           <section className="space-y-4">
              <div className="flex items-center gap-2 text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground opacity-40">
                 <Activity className="h-3 w-3" />
-                Operational Status
+                Activity Status
              </div>
              <div className="grid grid-cols-2 gap-4">
                 <div className="bg-white/5 border border-white/5 rounded-2xl p-4 space-y-1">
@@ -287,12 +287,12 @@ export function StaffQuickViewSheet({ isOpen, onClose, userId, orgId, onViewFull
              </div>
           </section>
 
-          {/* Active Missions */}
+          {/* Active Tasks */}
           <section className="space-y-4">
              <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground opacity-40">
                     <ListTodo className="h-3 w-3" />
-                    Active Missions
+                    Active Tasks
                 </div>
                 <span className="inline-flex items-center rounded-full border px-2 py-0.5 text-[8px] font-black bg-primary/10 border-primary/20 text-primary uppercase">
                     {activeTasks.length} In Progress

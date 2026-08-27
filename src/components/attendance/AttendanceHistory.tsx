@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils";
 import { formatDuration } from "@/lib/formatters";
 
 import { useState } from "react";
-import { Download, History, ArrowRight, ChevronLeft, ChevronRight, Clock } from "lucide-react";
+import { Download, History, ArrowRight, ChevronLeft, ChevronRight, Clock, MapPin } from "lucide-react";
 import { Button } from "../ui/button";
 import { ScrollArea } from "../ui/scroll-area";
 
@@ -78,19 +78,29 @@ export function AttendanceHistory({ userProfile }: AttendanceHistoryProps) {
                       {format(new Date(record.date + 'T00:00:00'), 'dd')}
                     </div>
                     <div>
-                      <p className="font-black text-sm text-white">{format(new Date(record.date + 'T00:00:00'), 'MMMM do, yyyy')}</p>
-                      <div className="flex items-center gap-3 mt-1.5">
-                        <Badge variant="outline" className={cn(
-                            "text-[8px] font-black uppercase px-2 py-0 border-none",
-                            record.status === 'APPROVED' ? "bg-emerald-500/10 text-emerald-500" : "bg-primary/10 text-primary"
-                        )}>
-                            {record.status}
-                        </Badge>
-                        <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest opacity-40 flex items-center gap-1">
-                            <Clock className="h-2.5 w-2.5" /> {record.location}
-                        </span>
-                      </div>
-                    </div>
+                       <p className="font-black text-sm text-white">{format(new Date(record.date + 'T00:00:00'), 'MMMM do, yyyy')}</p>
+                       <div className="flex flex-wrap items-center gap-2 mt-1.5">
+                         <Badge variant="outline" className={cn(
+                             "text-[8px] font-black uppercase px-2 py-0 border-none",
+                             record.status === 'APPROVED' ? "bg-emerald-500/10 text-emerald-500" : "bg-primary/10 text-primary"
+                         )}>
+                             {record.status}
+                         </Badge>
+                         <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest opacity-40 flex items-center gap-1">
+                             <Clock className="h-2.5 w-2.5" /> {record.location}
+                         </span>
+                         {record.location === 'OFFICE' ? (
+                           <span className="text-[9px] font-black flex items-center gap-1 text-emerald-500">
+                             <MapPin className="h-2.5 w-2.5" />
+                             {record.branchName || record.branchLocation ? `Working from ${record.branchName || record.branchLocation}` : 'Office'}
+                           </span>
+                         ) : (
+                           <span className="text-[9px] font-black flex items-center gap-1 text-orange-400">
+                             <MapPin className="h-2.5 w-2.5" /> Remote / Off-Site
+                           </span>
+                         )}
+                       </div>
+                     </div>
                   </div>
 
                   <div className="flex items-center gap-6">

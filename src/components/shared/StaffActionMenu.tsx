@@ -263,7 +263,7 @@ export function StaffActionMenu({ staff, currentLog, orgId: propOrgId }: StaffAc
               <div className="flex items-center justify-between">
                 <div className="space-y-1">
                     <DialogTitle className="flex items-center gap-2 font-black uppercase tracking-tighter">
-                        <FileText className="w-5 h-5 text-primary" /> Tactical Reports
+                        <FileText className="w-5 h-5 text-primary" /> Daily Reports
                     </DialogTitle>
                     <DialogDescription className="text-[10px] font-bold uppercase tracking-widest opacity-60">Week of {format(rStart, 'MMM dd')} - {format(rEnd, 'MMM dd, yyyy')}</DialogDescription>
                 </div>
@@ -314,7 +314,7 @@ export function StaffActionMenu({ staff, currentLog, orgId: propOrgId }: StaffAc
 
             <DialogFooter className="mt-4 pt-4 border-t border-white/5">
                <Button variant="ghost" onClick={() => router.push(`/reports?tab=team-reports&userId=${staff?.id}`)} className="w-full rounded-xl h-10 font-black uppercase text-[9px] tracking-widest hover:bg-primary/10 hover:text-primary transition-all">
-                  Audit Tactical Intelligence Feed ↗
+                  Audit Activity Feed ↗
                </Button>
             </DialogFooter>
           </>

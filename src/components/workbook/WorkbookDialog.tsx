@@ -390,7 +390,7 @@ export function WorkbookDialog({ open, onOpenChange, initialPayload, modal = fal
       <DialogContent position={modal ? "center" : "left"} className="flex flex-col p-0">
         <div className="sr-only">
           <DialogHeader>
-            <DialogTitle>Data Grid Workstation</DialogTitle>
+            <DialogTitle>Workbook Data Sheet</DialogTitle>
             <DialogDescription>
               Analyze and manage organizational data units.
             </DialogDescription>

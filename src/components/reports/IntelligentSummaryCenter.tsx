@@ -7,7 +7,7 @@ import { doc, addDoc, collection, serverTimestamp, query, where, getDocs } from 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
 import {
   AlertTriangle,
   CheckCircle,
@@ -40,15 +40,14 @@ import {
     isAfter,
     startOfToday,
     format,
-    startOfWeek
+    startOfWeek,
+    isSameWeek
 } from "date-fns"
 import { Button } from "@/components/ui/button"
 import { usePermissions } from "@/hooks/usePermissions"
 import { type TimeFilterState } from "../shared/AdvancedTimeFilter"
-import { TrendInsightCard } from "../dashboard/TrendInsightCard"
 import { InsightEngine, type Insight } from "@/lib/InsightEngine"
 import { Badge } from "@/components/ui/badge"
-import { StrategicTrendsView } from "./views/StrategicTrendsView"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { InsightCalendarModal } from "./recognition/InsightCalendarModal"
@@ -184,7 +183,6 @@ export function IntelligentSummaryCenter({
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['acknowledgedAlerts'] }) }
   })
 
-  const [viewMode, setViewMode] = useState<'RADAR' | 'TRENDS'>('RADAR')
 
   const trends = useMemo(() => {
     const today = startOfToday()
@@ -232,24 +230,9 @@ export function IntelligentSummaryCenter({
     <div className="w-full flex flex-col h-full gap-4 md:gap-6 overflow-hidden">
       <CriticalAlertRotator alerts={criticalAlerts} userProfile={userProfile || null} onAcknowledge={acknowledgeAlert} />
       <div className="flex items-center justify-between px-2">
-        <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-primary">Intelligence Console</h3>
-        <div className="flex bg-black/20 border border-white/5 p-1 rounded-xl">
-            <button onClick={() => setViewMode('RADAR')} className={cn("px-4 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all", viewMode === 'RADAR' ? "bg-primary text-white shadow-lg shadow-primary/20" : "text-muted-foreground hover:bg-white/5")}>Personnel Radar</button>
-            <button onClick={() => setViewMode('TRENDS')} className={cn("px-4 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all", viewMode === 'TRENDS' ? "bg-primary text-white shadow-lg shadow-primary/20" : "text-muted-foreground hover:bg-white/5")}>Strategic Trends</button>
-        </div>
+        <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-primary">Analytics Console</h3>
       </div>
-      {viewMode === 'RADAR' ? (
-        <PersonnelIntelligenceHub staffList={staffList} attendanceLogs={attendanceLogs} tasks={tasks} leaveRequests={leaveRequests} pulseFeed={pulseFeed} isAdmin={isAdmin} currentUser={userProfile || undefined} nominations={nominations} allInsights={allInsights} />
-      ) : (
-        <div className="flex-1 overflow-y-auto custom-scrollbar p-4 md:p-6">
-            <StrategicTrendsView
-                staffList={staffList}
-                attendanceLogs={attendanceLogs}
-                tasks={tasks}
-                timeFilter={timeFilter}
-            />
-        </div>
-      )}
+      <PersonnelIntelligenceHub staffList={staffList} attendanceLogs={attendanceLogs} tasks={tasks} leaveRequests={leaveRequests} pulseFeed={pulseFeed} isAdmin={isAdmin} currentUser={userProfile || undefined} nominations={nominations} allInsights={allInsights} />
     </div>
   )
 }
@@ -292,11 +275,47 @@ function PersonnelIntelligenceHub({
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
     const [isTeamMode, setIsTeamMode] = useState(false);
     const [activeCalendarStaff, setActiveCalendarStaff] = useState<UserProfile | null>(null);
+    const [activeDrillDown, setActiveDrillDown] = useState<any | null>(null);
+
+    const drillDownData = useMemo(() => {
+        if (!activeDrillDown) return null;
+        const now = new Date();
+        const todayStr = format(now, 'yyyy-MM-dd');
+        const weeklyLogs = attendanceLogs.filter(l => isSameWeek(parseISO(l.date), now, { weekStartsOn: 1 }));
+
+        switch(activeDrillDown.id) {
+            case 'team_early_today':
+                return attendanceLogs
+                    .filter(l => l.date === todayStr && l.clockIn && !l.remarks?.includes('LATE'))
+                    .map(l => ({ name: l.userName, value: l.clockIn ? format(new Date(l.clockIn), 'HH:mm') : '--:--' }));
+            case 'team_late_today':
+                return attendanceLogs
+                    .filter(l => l.date === todayStr && l.remarks?.includes('LATE'))
+                    .map(l => ({ name: l.userName, value: l.clockIn ? format(new Date(l.clockIn), 'HH:mm') : '--:--' }));
+            case 'team_chronic_lates':
+                return staffList.filter(s => s.role !== 'SUPERADMIN').map(s => {
+                    const sLogs = weeklyLogs.filter(l => l.userId === s.id && l.remarks?.includes('LATE'));
+                    if (sLogs.length < 3) return null;
+                    return { name: s.fullName, days: sLogs.map(l => format(parseISO(l.date), 'EEEE')) };
+                }).filter(Boolean);
+            case 'team_pending_reviews':
+                const awaiting = tasks.filter(t => t.status === 'AWAITING_REVIEW');
+                const staffWithTasks = Array.from(new Set(awaiting.map(t => t.assignedTo)));
+                return staffWithTasks.map(id => {
+                    const s = staffList.find(st => st.id === id);
+                    const count = awaiting.filter(t => t.assignedTo === id).length;
+                    return { id, name: s?.fullName || 'Unknown', value: `${count} task(s)` };
+                });
+            default: return null;
+        }
+    }, [activeDrillDown, attendanceLogs, staffList, tasks]);
 
     // Ensure staff list is available for filtering
     const displayStaff = useMemo(() => {
         const list = staffList || [];
+        // If not Admin, they only see themselves
         if (!isAdmin && currentUser) return [currentUser];
+        // For management oversight, show ALL users in the organization
         return list;
     }, [staffList, isAdmin, currentUser]);
 
@@ -325,7 +344,7 @@ function PersonnelIntelligenceHub({
 
     const intelItems = useMemo((): PersonnelIntel[] => {
         if (isTeamMode) {
-            return [{ isTeam: true, fullName: "Team Tactical Overview", insights: allInsights.filter(i => i.category === 'TEAM'), staff: null, pulse: 'NEUTRAL', dailySummary: "", weeklySummary: "", actionItems: [], tacticalInsights: [] }];
+            return [{ isTeam: true, fullName: "Team Overview", insights: allInsights.filter(i => i.category === 'TEAM'), staff: null, pulse: 'NEUTRAL', dailySummary: "", weeklySummary: "", actionItems: [], tacticalInsights: [] }];
         }
         return selectedIds.map(id => {
             const staff = staffList.find(s => s.id === id);
@@ -358,7 +377,7 @@ function PersonnelIntelligenceHub({
         <div className="bg-black/20 border border-white/5 rounded-[2rem] overflow-hidden flex flex-col h-[320px] shadow-2xl">
           {isAdmin && (
             <div className="w-full border-b border-white/5 bg-secondary/90 backdrop-blur-md z-10 p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
-                <div className="flex items-center gap-4"><div className="p-3 rounded-2xl bg-primary/10 text-primary"><Radar className="w-5 h-5" /></div><div><h3 className="text-sm font-black text-white uppercase tracking-widest">Team Insight</h3><p className="text-[9px] font-bold text-muted-foreground uppercase tracking-tighter opacity-60">{isTeamMode ? 'Organizational Health Mode' : `${selectedIds.length} Personnel Selected`}</p></div></div>
+                <div className="flex items-center gap-4"><div className="p-3 rounded-2xl bg-primary/10 text-primary"><Radar className="w-5 h-5" /></div><div><h3 className="text-sm font-black text-white uppercase tracking-widest">Team Overview</h3><p className="text-[9px] font-bold text-muted-foreground uppercase tracking-tighter opacity-60">{isTeamMode ? 'Organizational Health Mode' : `${selectedIds.length} Personnel Selected`}</p></div></div>
                 <div className="flex items-center gap-3 w-full sm:w-[320px]">
                     <Popover>
                         <PopoverTrigger asChild>
@@ -375,10 +394,18 @@ function PersonnelIntelligenceHub({
                                 </button>
                                 <div className="h-px bg-white/5 my-2" />
                                 <ScrollArea className="h-64">
-                                    {displayStaff.map(staff => (
+                                    {displayStaff.length === 0 ? (
+                                        <div className="py-10 text-center opacity-20 text-[10px] font-black uppercase">No personnel detected in roster.</div>
+                                    ) : displayStaff.map(staff => (
                                         <button key={staff.id} onClick={() => toggleStaffSelection(staff.id)} className={cn("w-full flex items-center justify-between p-3 rounded-xl transition-all group mb-1", selectedIds.includes(staff.id) ? "bg-white/10 text-primary" : "hover:bg-white/5 text-slate-400")}>
-                                            <div className="flex flex-col items-start"><span className="text-xs font-bold uppercase tracking-tight">{staff.fullName}</span><span className="text-[8px] font-black uppercase opacity-40">{staff.departmentName}</span></div>
-                                            <div className={cn("w-4 h-4 rounded border flex items-center justify-center transition-all", selectedIds.includes(staff.id) ? "bg-primary border-primary" : "border-white/20 group-hover:border-white/40")}>{selectedIds.includes(staff.id) && <Check className="w-3 h-3 text-white" />}</div>
+                                            <div className="flex flex-col items-start min-w-0">
+                                                <span className="text-xs font-bold uppercase tracking-tight truncate w-full">{staff.fullName}</span>
+                                                <div className="flex items-center gap-2 mt-0.5">
+                                                    <span className="text-[7px] font-black uppercase px-1.5 py-0.5 rounded-md bg-white/5 text-muted-foreground">{staff.role}</span>
+                                                    <span className="text-[8px] font-black uppercase opacity-40 truncate">{staff.departmentName}</span>
+                                                </div>
+                                            </div>
+                                            <div className={cn("w-4 h-4 rounded border flex items-center justify-center transition-all shrink-0", selectedIds.includes(staff.id) ? "bg-primary border-primary" : "border-white/20 group-hover:border-white/40")}>{selectedIds.includes(staff.id) && <Check className="w-3 h-3 text-white" />}</div>
                                         </button>
                                     ))}
                                 </ScrollArea>
@@ -407,7 +434,17 @@ function PersonnelIntelligenceHub({
                                 <div className="grid grid-cols-1 gap-2 h-full overflow-y-auto custom-scrollbar pr-1">
                                     <h4 className="text-[10px] font-black text-primary uppercase tracking-[0.2em] mb-1 flex items-center sticky top-0 bg-secondary/80 backdrop-blur-md py-2 z-10"><Zap className="w-3.5 h-3.5 mr-2" /> Global Organizational Insights</h4>
                                     {intel.insights.length > 0 ? intel.insights.map((insight: any) => (
-                                        <div key={insight.id} className={cn("flex items-center gap-3 p-3 rounded-xl border transition-all text-[11px] font-bold", insight.type === 'action' ? "bg-rose-500/10 border-rose-500/20 text-rose-500" : insight.type === 'warning' ? "bg-amber-500/10 border-amber-500/20 text-amber-500" : insight.type === 'success' ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-500" : "bg-white/5 border-white/10 text-slate-300")}>
+                                        <div
+                                            key={insight.id}
+                                            onClick={() => setActiveDrillDown(insight)}
+                                            className={cn(
+                                                "flex items-center gap-3 p-3 rounded-xl border transition-all text-[11px] font-bold cursor-pointer hover:brightness-110 active:scale-[0.99]",
+                                                insight.type === 'action' ? "bg-rose-500/10 border-rose-500/20 text-rose-500 hover:bg-rose-500/20" :
+                                                insight.type === 'warning' ? "bg-amber-500/10 border-amber-500/20 text-amber-500 hover:bg-amber-500/20" :
+                                                insight.type === 'success' ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-500 hover:bg-emerald-500/20" :
+                                                "bg-white/5 border-white/10 text-slate-300 hover:bg-white/10"
+                                            )}
+                                        >
                                             <insight.icon className="w-4 h-4 shrink-0" /><span>{insight.text}</span>
                                         </div>
                                     )) : <div className="py-10 text-center opacity-20"><Info className="h-10 w-10 mx-auto mb-4" /><p className="text-[10px] font-black uppercase tracking-widest">Awaiting organizational telemetry...</p></div>}
@@ -447,6 +484,90 @@ function PersonnelIntelligenceHub({
                     pulseFeed={pulseFeed}
                     nominations={nominations}
                 />
+            )}
+
+            {activeDrillDown && (
+                <Dialog open={!!activeDrillDown} onOpenChange={(open) => !open && setActiveDrillDown(null)}>
+                    <DialogContent className="sm:max-w-[450px] apple-glass-darker border-none rounded-[2rem] p-8 shadow-3xl">
+                        <DialogHeader>
+                            <DialogTitle className="text-xl font-black font-headline tracking-tighter uppercase text-white flex items-center gap-3">
+                                {activeDrillDown.id === 'team_early_today' && <CheckCircle className="w-5 h-5 text-emerald-500" />}
+                                {activeDrillDown.id === 'team_late_today' && <Clock className="w-5 h-5 text-amber-500" />}
+                                {activeDrillDown.id === 'team_chronic_lates' && <AlertTriangle className="w-5 h-5 text-rose-500" />}
+                                {activeDrillDown.id === 'team_pending_reviews' && <Zap className="w-5 h-5 text-primary" />}
+
+                                {activeDrillDown.id === 'team_early_today' && "Early Arrivals Today"}
+                                {activeDrillDown.id === 'team_late_today' && "Late Arrivals Today"}
+                                {activeDrillDown.id === 'team_chronic_lates' && "Behavioral Pattern Details"}
+                                {activeDrillDown.id === 'team_pending_reviews' && "Review Bottlenecks"}
+                                {activeDrillDown.id !== 'team_early_today' && activeDrillDown.id !== 'team_late_today' && activeDrillDown.id !== 'team_chronic_lates' && activeDrillDown.id !== 'team_pending_reviews' && "Intelligence Drill-Down"}
+                            </DialogTitle>
+                            <DialogDescription className="text-[10px] font-black uppercase tracking-widest opacity-60">
+                                Actionable breakdown of the selected operational insight.
+                            </DialogDescription>
+                        </DialogHeader>
+
+                        <div className="flex flex-col gap-3 py-4 max-h-[60vh] overflow-y-auto custom-scrollbar">
+                            {!drillDownData || (Array.isArray(drillDownData) && drillDownData.length === 0) ? (
+                                <div className="py-12 text-center flex flex-col items-center gap-4 opacity-30">
+                                    <Info className="h-12 w-12" />
+                                    <p className="font-black uppercase text-[10px] tracking-widest">No specific data points detected</p>
+                                </div>
+                            ) : (
+                                drillDownData.map((item: any, i: number) => (
+                                    <div key={i} className="p-4 rounded-2xl bg-white/5 border border-white/5 flex flex-col gap-3 transition-all hover:bg-white/10 group">
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-3">
+                                                <div className="h-8 w-8 rounded-full bg-secondary flex items-center justify-center font-black text-[10px] uppercase shadow-inner">
+                                                    {item.name.charAt(0)}
+                                                </div>
+                                                <span className="font-bold text-sm text-white uppercase tracking-tight">{item.name}</span>
+                                            </div>
+                                            {item.value && (
+                                                <Badge variant="outline" className={cn(
+                                                    "text-[10px] font-black uppercase px-2 py-0.5 rounded-lg border",
+                                                    activeDrillDown.id === 'team_late_today' ? "text-rose-400 border-rose-500/30 bg-rose-500/10" : "text-primary border-primary/30 bg-primary/10"
+                                                )}>
+                                                    {item.value}
+                                                </Badge>
+                                            )}
+                                        </div>
+                                        {item.days && (
+                                            <div className="flex flex-wrap gap-1 pl-11">
+                                                {item.days.map((day: string) => (
+                                                    <span key={day} className="text-[9px] uppercase font-black text-rose-400 bg-rose-500/10 px-2 py-0.5 rounded-lg border border-rose-500/20">
+                                                        {day}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        )}
+                                        {activeDrillDown.id === 'team_pending_reviews' && (
+                                            <div className="flex justify-end mt-1">
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    className="h-8 text-[9px] font-black uppercase tracking-widest text-primary hover:bg-primary/10 gap-2 px-3 rounded-xl"
+                                                    onClick={() => {
+                                                        setActiveDrillDown(null);
+                                                        router.push('/tasks');
+                                                    }}
+                                                >
+                                                    Triage Node <ChevronRight className="w-3 h-3" />
+                                                </Button>
+                                            </div>
+                                        )}
+                                    </div>
+                                ))
+                            )}
+                        </div>
+
+                        <DialogFooter className="mt-4 pt-4 border-t border-white/5">
+                            <Button variant="ghost" onClick={() => setActiveDrillDown(null)} className="rounded-xl font-black uppercase text-[10px] tracking-widest opacity-40 w-full h-12">
+                                Close Intelligence
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
             )}
           </div>
         </div>

@@ -9,6 +9,7 @@ import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
 import { collection, query, where, orderBy } from "firebase/firestore";
 import { format, startOfMonth, endOfMonth, isSameDay } from 'date-fns';
 import { Badge } from "@/components/ui/badge";
+import { MapPin } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import { useState, useMemo } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -154,6 +155,7 @@ export function UserAttendanceModal({ userId, userName, isOpen, onClose }: UserA
                           <TableHead className="text-xs h-9 py-0">Date</TableHead>
                           <TableHead className="text-xs h-9 py-0">Times</TableHead>
                           <TableHead className="text-xs h-9 py-0">Duration</TableHead>
+                          <TableHead className="text-xs h-9 py-0">Location</TableHead>
                           <TableHead className="text-xs h-9 py-0">Details</TableHead>
                         </TableRow>
                       </TableHeader>
@@ -174,6 +176,20 @@ export function UserAttendanceModal({ userId, userName, isOpen, onClose }: UserA
                             </TableCell>
                             <TableCell className="text-xs py-2 font-mono">
                               {record.clockOut ? formatDuration(record.duration) : '—'}
+                            </TableCell>
+                            <TableCell className="text-xs py-2">
+                              {record.location === 'OFFICE' ? (
+                                <span className="text-[10px] font-bold flex items-center gap-1 text-emerald-500">
+                                  <MapPin className="h-3 w-3" />
+                                  {record.branchName || record.branchLocation
+                                    ? `${record.branchName || record.branchLocation}`
+                                    : 'Office'}
+                                </span>
+                              ) : (
+                                <span className="text-[10px] font-bold flex items-center gap-1 text-orange-400">
+                                  <MapPin className="h-3 w-3" /> Remote
+                                </span>
+                              )}
                             </TableCell>
                             <TableCell className="text-xs py-2 space-y-1">
                               <div className="flex gap-1 flex-wrap">

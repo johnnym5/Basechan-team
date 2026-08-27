@@ -68,7 +68,7 @@ export function RecognitionCultureView({
       {/* The Grid Layout as per blueprint to force components to show */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full">
 
-        {/* LEFT COLUMN: The Form (Nomination Station) */}
+        {/* LEFT COLUMN: The Form (Give an Award) */}
         <div className="lg:col-span-1 h-full">
           <NominationStation
             currentUser={currentUser}

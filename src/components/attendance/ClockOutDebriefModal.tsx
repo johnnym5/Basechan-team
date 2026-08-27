@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2, ClipboardList, ListTodo } from "lucide-react";
 import type { Task } from "@/lib/types";
+import { OptionalEODVotingNudge } from "../reports/OptionalEODVotingNudge";
 
 interface ClockOutDebriefModalProps {
   isOpen: boolean;
@@ -89,6 +90,8 @@ export function ClockOutDebriefModal({
             </Select>
           </div>
         </div>
+
+        <OptionalEODVotingNudge onCloseModal={() => onOpenChange(false)} />
 
         <DialogFooter className="flex-col sm:flex-col gap-3 mt-2">
           <Button

@@ -59,11 +59,7 @@ export function TeamInsightHub({
   // Dynamic initialization for comparison roster
   React.useEffect(() => {
     if (staffList.length > 0 && selectedStaffIds.length === 0) {
-        setSelectedStaffIds(
-            staffList
-                .filter(s => !['SUPERADMIN', 'ORG_ADMIN', 'MANAGING_DIRECTOR', 'HR_MANAGER'].includes(s.role))
-                .map(s => s.id)
-        );
+        setSelectedStaffIds(staffList.map(s => s.id));
     }
   }, [staffList, selectedStaffIds.length]);
 

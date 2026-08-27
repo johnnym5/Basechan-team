@@ -4,11 +4,11 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useFirestore, useMemoFirebase, useCollection } from '@/firebase';
 import { query, collection, where, orderBy, limit, doc, deleteDoc, updateDoc } from 'firebase/firestore';
-import type { UserProfile, Chat, Task, Announcement } from '@/lib/types';
+import type { UserProfile, Chat, Task, Announcement, Attendance, LeaveRequest } from '@/lib/types';
 import { ResponsiveDialog } from '@/components/shared/ResponsiveDialog';
 import { Button } from '@/components/ui/button';
-import { MessageSquare, ListTodo, AlertCircle, Sparkles, Clock, ArrowRight, Megaphone, ChevronRight, LayoutDashboard, Edit2, Trash2, Loader2 } from 'lucide-react';
-import { format, isToday, isTomorrow, parseISO } from 'date-fns';
+import { MessageSquare, ListTodo, AlertCircle, Sparkles, Clock, ArrowRight, Megaphone, ChevronRight, LayoutDashboard, Edit2, Trash2, Loader2, Users, FileWarning, Activity } from 'lucide-react';
+import { format, isToday, isTomorrow, parseISO, isWithinInterval, startOfDay, endOfDay } from 'date-fns';
 import { uiEmitter } from '@/lib/ui-emitter';
 import { cn } from '@/lib/utils';
 import { usePermissions } from '@/hooks/usePermissions';
@@ -86,6 +86,41 @@ export function DebriefModal({ userProfile }: { userProfile: UserProfile }) {
     , [firestore, userProfile.orgId]);
     const { data: announcements } = useCollection<Announcement>(announcementQuery);
     const latestAnnouncement = announcements?.[0];
+
+    const isAdmin = permissions.canManageStaff || permissions.canManageCompany;
+
+    // Admin Daily Briefing Queries
+    const attTodayQuery = useMemoFirebase(() =>
+        (firestore && isAdmin) ? query(collection(firestore, 'attendance'), where('orgId', '==', userProfile.orgId), where('date', '==', format(new Date(), 'yyyy-MM-dd'))) : null
+    , [firestore, userProfile.orgId, isAdmin]);
+    const { data: attToday } = useCollection<Attendance>(attTodayQuery);
+
+    const leavesQuery = useMemoFirebase(() =>
+        (firestore && isAdmin) ? query(collection(firestore, 'leave_requests'), where('orgId', '==', userProfile.orgId)) : null
+    , [firestore, userProfile.orgId, isAdmin]);
+    const { data: allLeaves } = useCollection<LeaveRequest>(leavesQuery);
+
+    const pendingTasksReviewQuery = useMemoFirebase(() =>
+        (firestore && isAdmin) ? query(collection(firestore, 'tasks'), where('orgId', '==', userProfile.orgId), where('status', '==', 'AWAITING_REVIEW')) : null
+    , [firestore, userProfile.orgId, isAdmin]);
+    const { data: pendingReviewTasks } = useCollection<Task>(pendingTasksReviewQuery);
+
+    const adminStats = useMemo(() => {
+        if (!isAdmin) return null;
+
+        const lateToday = attToday?.filter(log => log.remarks?.includes('LATE')).length || 0;
+        const onLeaveToday = allLeaves?.filter(req =>
+            req.status === 'APPROVED' &&
+            isWithinInterval(new Date(), {
+                start: startOfDay(parseISO(req.startDate)),
+                end: endOfDay(parseISO(req.endDate))
+            })
+        ).length || 0;
+        const pendingLeaveCount = allLeaves?.filter(req => req.status === 'PENDING').length || 0;
+        const totalPending = pendingLeaveCount + (pendingReviewTasks?.length || 0);
+
+        return { lateToday, onLeaveToday, pendingApprovals: totalPending };
+    }, [isAdmin, attToday, allLeaves, pendingReviewTasks]);
 
     // Auto-open effect when announcements change
     useEffect(() => {
@@ -168,6 +203,41 @@ export function DebriefModal({ userProfile }: { userProfile: UserProfile }) {
             className="sm:max-w-lg"
         >
             <div className="py-4 space-y-6">
+                {/* NEW ADMIN BRIEFING SECTION */}
+                {isAdmin && adminStats && (
+                    <div className="bg-primary/5 border border-primary/20 rounded-3xl p-5 space-y-4 animate-in fade-in slide-in-from-top-2 duration-500">
+                        <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-primary flex items-center gap-2">
+                            <Activity className="h-3.5 w-3.5" /> Daily Operational Briefing
+                        </h3>
+                        <div className="grid grid-cols-3 gap-3">
+                            <div className="flex flex-col gap-1 p-3 bg-black/20 rounded-2xl border border-white/5 text-center">
+                                <span className={cn("text-2xl font-black font-headline", adminStats.lateToday > 0 ? "text-rose-500" : "text-emerald-500")}>
+                                    {adminStats.lateToday}
+                                </span>
+                                <span className="text-[9px] uppercase font-bold text-muted-foreground flex items-center justify-center gap-1">
+                                    <Clock className="w-2.5 h-2.5"/> Late
+                                </span>
+                            </div>
+                            <div className="flex flex-col gap-1 p-3 bg-black/20 rounded-2xl border border-white/5 text-center">
+                                <span className="text-2xl font-black font-headline text-blue-500">
+                                    {adminStats.onLeaveToday}
+                                </span>
+                                <span className="text-[9px] uppercase font-bold text-muted-foreground flex items-center justify-center gap-1">
+                                    <Users className="w-2.5 h-2.5"/> On Leave
+                                </span>
+                            </div>
+                            <div className="flex flex-col gap-1 p-3 bg-black/20 rounded-2xl border border-white/5 text-center">
+                                <span className={cn("text-2xl font-black font-headline", adminStats.pendingApprovals > 0 ? "text-amber-500" : "text-muted-foreground")}>
+                                    {adminStats.pendingApprovals}
+                                </span>
+                                <span className="text-[9px] uppercase font-bold text-muted-foreground flex items-center justify-center gap-1">
+                                    <FileWarning className="w-2.5 h-2.5"/> Pending
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
                 {/* Daily Status Section */}
                 <div className="p-5 rounded-3xl bg-primary/10 border border-primary/20 relative overflow-hidden group">
                     <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">

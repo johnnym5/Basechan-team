@@ -124,7 +124,7 @@ export function AdminDashboard({ userProfile, permissions, systemConfig }: Admin
 
   const quickActions = [
     { label: "Assign Task", icon: Plus, action: () => uiEmitter.emit('open-assign-task-dialog') },
-    { label: "Broadcast", icon: Megaphone, action: () => uiEmitter.emit('open-new-announcement-dialog') },
+    { label: "Post Announcement", icon: Megaphone, action: () => uiEmitter.emit('open-new-announcement-dialog') },
     { label: "Staff Directory", icon: Users, route: "/staff" },
     { label: "Leave Management", icon: Calendar, route: "/staff/leave" },
     { label: "Financial Hub", icon: Receipt, route: "/finance" },
@@ -133,7 +133,7 @@ export function AdminDashboard({ userProfile, permissions, systemConfig }: Admin
     { label: "Knowledge Base", icon: BookOpen, route: "/library" },
     { label: "Timesheet", icon: Clock, route: "/staff/attendance" },
     { label: "Team Roster", icon: Users, route: "/staff" },
-    { label: "Book Workspace", icon: Building, route: "/livedisplay" },
+    { label: "Workspaces", icon: Building, route: "/livedisplay" },
     { label: "Policies", icon: Shield, route: "/library" },
     { label: "HR Helpdesk", icon: HelpCircle, action: () => uiEmitter.emit('open-it-support-dialog') },
     { label: "Payroll", icon: CreditCard, route: "/finance" },
@@ -221,16 +221,17 @@ export function AdminDashboard({ userProfile, permissions, systemConfig }: Admin
                 <LiveTeamRadar
                     staffList={activeStaff}
                     attendanceLogs={activeAttendance}
+                    leaveRequests={activeLeaveRequests}
                 />
             </div>
         </div>
       {/* 3. MANAGEMENT GRID */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 md:gap-6 items-start">
 
-            {/* Action Queue (Span 4) */}
+            {/* Pending Actions (Span 4) */}
             <Card className="lg:col-span-4 apple-glass border-none shadow-2xl flex flex-col h-fit max-h-[600px] overflow-hidden">
                 <CardHeader className="border-b border-white/5 pb-3 md:pb-4 bg-orange-500/5 shrink-0 px-4 md:px-8 pt-5 md:pt-6">
-                    <CardTitle className="text-[10px] font-black uppercase tracking-[0.2em] text-orange-500">Action Queue</CardTitle>
+                    <CardTitle className="text-[10px] font-black uppercase tracking-[0.2em] text-orange-500">Pending Actions</CardTitle>
                 </CardHeader>
                 <CardContent className="p-3 md:p-4 overflow-y-auto custom-scrollbar space-y-3 bg-black/10">
                     {actionQueue.length === 0 ? (
@@ -288,12 +289,12 @@ export function AdminDashboard({ userProfile, permissions, systemConfig }: Admin
             </Card>
         </div>
 
-        {/* 4. BROADCAST & COMMS STACK */}
+        {/* ANNOUNCEMENTS & COMMS STACK */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 items-start">
             <Card className="apple-glass border-none shadow-xl overflow-hidden">
                 <CardHeader className="border-b border-white/5 px-4 md:px-8 pt-5 md:pt-6 pb-3 md:pb-4 bg-white/5">
                     <div className="flex items-center justify-between">
-                        <CardTitle className="text-[10px] font-black uppercase tracking-[0.2em]">Broadcast Message</CardTitle>
+                        <CardTitle className="text-[10px] font-black uppercase tracking-[0.2em]">Announcements</CardTitle>
                         <Button variant="ghost" className="h-8 text-[9px] font-black text-primary hover:underline uppercase" onClick={() => uiEmitter.emit('open-new-announcement-dialog')}>New Post</Button>
                     </div>
                 </CardHeader>
@@ -304,7 +305,7 @@ export function AdminDashboard({ userProfile, permissions, systemConfig }: Admin
 
             <Card className="apple-glass border-none shadow-xl overflow-hidden">
                 <CardHeader className="border-b border-white/5 px-4 md:px-8 pt-5 md:pt-6 pb-3 md:pb-4 bg-white/5">
-                    <CardTitle className="text-[10px] font-black uppercase tracking-[0.2em]">Staff Communications</CardTitle>
+                    <CardTitle className="text-[10px] font-black uppercase tracking-[0.2em]">Team Communications</CardTitle>
                 </CardHeader>
                 <CardContent className="p-0 max-h-[250px] overflow-y-auto custom-scrollbar">
                     <DashboardRecentChats />

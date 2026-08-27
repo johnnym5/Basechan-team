@@ -6,10 +6,11 @@ import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { Star, Loader2, Trophy, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import type { UserProfile, AccoladeCategory, AccoladeVote } from '@/lib/types';
+import type { UserProfile, AccoladeVote } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { startOfDay } from 'date-fns';
+import { useSystemConfigs } from '@/hooks/useSystemConfigs';
 
 interface VoteModalProps {
     isOpen: boolean;
@@ -29,11 +30,20 @@ export function VoteModal({ isOpen, onClose, currentUser, nominee }: VoteModalPr
     const [isInitialLoading, setIsInitialLoading] = useState(true);
     const [isVotingId, setIsVotingId] = useState<string | null>(null);
 
-    // 1. Fetch Active Accolade Categories
-    const categoriesQuery = useMemoFirebase(() =>
+    // 1. Fetch Active Accolade Categories from Dynamic System Configs
+    const { data: dynamicCategories, loading: isCategoriesLoading } = useSystemConfigs('award_categories', currentUser.orgId);
+
+    // Legacy Collection Fetching (Migration Support)
+    const legacyCategoriesQuery = useMemoFirebase(() =>
         firestore ? query(collection(firestore, 'accolade_categories'), where('orgId', '==', currentUser.orgId), where('isActive', '==', true)) : null
     , [firestore, currentUser.orgId]);
-    const { data: categories } = useCollection<AccoladeCategory>(categoriesQuery);
+    const { data: legacyCategories } = useCollection<any>(legacyCategoriesQuery);
+
+    const categories = useMemo(() => {
+        const dynamic = (dynamicCategories || []).map(c => ({ id: c.id, title: c.name, icon: c.emoji }));
+        const legacy = (legacyCategories || []).map(c => ({ id: c.id, title: c.title, icon: c.icon }));
+        return [...dynamic, ...legacy];
+    }, [dynamicCategories, legacyCategories]);
 
     // 2. Sync Daily Voting State
     useEffect(() => {
@@ -60,7 +70,7 @@ export function VoteModal({ isOpen, onClose, currentUser, nominee }: VoteModalPr
         if (isOpen) fetchTodayVotes();
     }, [firestore, currentUser.id, isOpen]);
 
-    const handleVote = async (category: AccoladeCategory) => {
+    const handleVote = async (category: any) => {
         if (!firestore || todayVotes.includes(category.id)) return;
 
         setIsVotingId(category.id);
@@ -72,7 +82,7 @@ export function VoteModal({ isOpen, onClose, currentUser, nominee }: VoteModalPr
                 nomineeId: nominee.id,
                 nomineeName: nominee.name,
                 categoryId: category.id,
-                categoryTitle: category.title,
+                categoryTitle: category.name || category.title,
                 timestamp: new Date().toISOString()
             };
 
@@ -103,7 +113,7 @@ export function VoteModal({ isOpen, onClose, currentUser, nominee }: VoteModalPr
                 </DialogHeader>
 
                 <div className="space-y-3">
-                    {isInitialLoading ? (
+                    {isInitialLoading || isCategoriesLoading ? (
                         <div className="py-12 flex items-center justify-center"><Loader2 className="w-6 h-6 animate-spin text-primary opacity-20" /></div>
                     ) : !categories || categories.length === 0 ? (
                         <div className="py-10 text-center opacity-20"><Info className="w-10 h-10 mx-auto mb-3" /><p className="text-[10px] font-black uppercase tracking-widest">No active accolade categories defined.</p></div>
@@ -127,8 +137,8 @@ export function VoteModal({ isOpen, onClose, currentUser, nominee }: VoteModalPr
                                         )}
                                     >
                                         <div className="flex items-center gap-3">
-                                            <span className="text-xl">{cat.icon || '⭐'}</span>
-                                            <span className="text-[11px] font-black uppercase tracking-tight text-white group-hover:text-primary transition-colors">{cat.title}</span>
+                                            <span className="text-xl">{cat.icon || (cat as any).emoji || '⭐'}</span>
+                                            <span className="text-[11px] font-black uppercase tracking-tight text-white group-hover:text-primary transition-colors">{cat.name || (cat as any).title}</span>
                                         </div>
                                         {isBusy ? <Loader2 className="w-4 h-4 animate-spin text-primary" /> : <Star className={cn("w-4 h-4", hasVoted ? "fill-muted-foreground" : "text-amber-500 group-hover:scale-110 transition-transform")} />}
                                     </Button>

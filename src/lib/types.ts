@@ -7,6 +7,14 @@ export type UserStatus = "ONLINE" | "OFFLINE" | "ON_LEAVE" | "ACTIVE" | "SUSPEND
 export type EmploymentType = "FULL_TIME" | "PART_TIME" | "CONTRACT" | "INTERN";
 export type ModuleOverrideState = "default" | "restricted" | "unlocked";
 
+export interface BranchLocation {
+  id: string;
+  name: string;
+  lat: number;
+  lng: number;
+  radius: number; // meters
+}
+
 export interface Organization {
   id: string;
   name: string;
@@ -28,6 +36,7 @@ export interface SystemConfig {
     lat: number;
     lng: number;
   } | null;
+  branches?: BranchLocation[];
   work_hours?: {
     start: string;
     end: string;
@@ -196,7 +205,9 @@ export interface UserProfile {
 
 export type AttendanceStatus = "PENDING" | "APPROVED" | "REJECTED";
 export type AttendanceLocation = "OFFICE" | "REMOTE";
-export type AttendanceRemark = 'EARLY' | 'LATE' | 'OVERTIME' | 'UNDERTIME';
+export type AttendanceRemark = 'EARLY' | 'LATE' | 'OVERTIME' | 'UNDERTIME' | 'FORCED_CLOCKOUT_BY_ADMIN' | 'AUTO_CLOCKED_OUT';
+
+export type OperationalStatus = 'ON_TIME' | 'LATE' | 'ABSENT' | 'HOLIDAY' | 'ON_LEAVE' | 'WEEKEND' | 'PENDING';
 
 export interface AttendanceSession {
     clockIn: string;
@@ -230,6 +241,8 @@ export interface Attendance {
     sessions?: AttendanceSession[];
     eodReport?: string | null;
     linkedTaskIds?: string[];
+    branchName?: string | null;
+    branchLocation?: string | null;
 }
 
 export type ShiftType = "MORNING" | "AFTERNOON" | "NIGHT" | "ON_CALL";
@@ -549,7 +562,7 @@ export interface Permissions {
   canSubmitReport: boolean;
 }
 
-export type LeaveType = "ANNUAL" | "SICK" | "UNPAID" | "MATERNITY" | "PATERNITY";
+export type LeaveType = string; // Transitioned to dynamic string IDs from system_configs
 export type LeaveStatus = "PENDING" | "APPROVED" | "REJECTED";
 
 export interface LeaveRequest {
@@ -761,4 +774,19 @@ export interface AccoladeVote {
     categoryId: string;
     categoryTitle: string;
     timestamp: string; // ISO string
+}
+
+export interface SystemItem {
+    id: string;
+    label: string;
+    description?: string;
+    isActive: boolean;
+    [key: string]: any;
+}
+
+export interface SystemConfigDocument {
+    id: string;
+    orgId: string;
+    type: 'leave' | 'workload' | 'requisition';
+    items: SystemItem[];
 }

@@ -18,6 +18,8 @@ import {
     endOfMonth
 } from "date-fns";
 import type { UserProfile, Attendance, Task, LeaveRequest, DailyReport, PulseCheck, Nomination } from "./types";
+import { calculateDailyStatus } from "./attendance-utils";
+import { isHoliday } from "./holidays";
 
 export type InsightType = 'POSITIVE' | 'WARNING' | 'CRITICAL' | 'NEUTRAL';
 
@@ -115,7 +117,9 @@ export class InsightEngine {
         }
 
         const yesterdayLog = myLogs.find(l => l.date === yesterdayStr);
-        if (!yesterdayLog && !isWeekend(yesterdayDate)) {
+        const yesterdayStatus = calculateDailyStatus(yesterdayDate, myLogs, myLeaves);
+
+        if (yesterdayStatus === 'ABSENT') {
              insights.push({
                 id: `absent_yesterday_${targetUser.id}`,
                 type: 'WARNING',
@@ -126,7 +130,7 @@ export class InsightEngine {
                     type: 'ABSENCE'
                 }
             });
-        } else if (yesterdayLog?.remarks?.includes('LATE')) {
+        } else if (yesterdayStatus === 'LATE') {
              insights.push({
                 id: `late_yesterday_${targetUser.id}`,
                 type: 'WARNING',
@@ -136,6 +140,13 @@ export class InsightEngine {
                     dates: [yesterdayStr],
                     type: 'LATENESS'
                 }
+            });
+        } else if (yesterdayStatus === 'ON_LEAVE') {
+            insights.push({
+                id: `on_leave_yesterday_${targetUser.id}`,
+                type: 'NEUTRAL',
+                message: `Was on approved leave yesterday.`,
+                category: 'PERSONAL'
             });
         }
 
@@ -153,15 +164,14 @@ export class InsightEngine {
             });
         }
 
-        // --- DYNAMIC ABSENCE CALCULATION (Business Days Only) ---
+        // --- DYNAMIC ABSENCE CALCULATION (Context-Aware) ---
         const monthStart = startOfMonth(now);
         const monthEnd = isAfter(endOfMonth(now), now) ? now : endOfMonth(now);
-        const businessDaysThisMonth = eachDayOfInterval({ start: monthStart, end: monthEnd })
-            .filter(d => !isWeekend(d));
 
-        const absenceDatesThisMonth = businessDaysThisMonth
-            .map(d => format(d, 'yyyy-MM-dd'))
-            .filter(dateStr => !monthLogs.some(l => l.date === dateStr));
+        const daysThisMonth = eachDayOfInterval({ start: monthStart, end: monthEnd });
+        const absenceDatesThisMonth = daysThisMonth
+            .filter(d => calculateDailyStatus(d, myLogs, myLeaves) === 'ABSENT')
+            .map(d => format(d, 'yyyy-MM-dd'));
 
         const absencesThisMonth = absenceDatesThisMonth.length;
         if (absencesThisMonth > 0) {
@@ -184,13 +194,13 @@ export class InsightEngine {
                 message: `Operational Excellence: Has not missed work all week.`,
                 category: 'PERSONAL'
             });
-        } else if (!isWeekend(now)) {
-            const daysIntoWeek = eachDayOfInterval({ start: startOfWeek(now, { weekStartsOn: 1 }), end: now })
-                .filter(d => !isWeekend(d));
+        } else if (!isWeekend(now) && !isHoliday(now)) {
+            const weekStart = startOfWeek(now, { weekStartsOn: 1 });
+            const daysIntoWeek = eachDayOfInterval({ start: weekStart, end: now });
 
             const absenceDatesThisWeek = daysIntoWeek
-                .map(d => format(d, 'yyyy-MM-dd'))
-                .filter(dateStr => !weekLogs.some(l => l.date === dateStr));
+                .filter(d => calculateDailyStatus(d, myLogs, myLeaves) === 'ABSENT')
+                .map(d => format(d, 'yyyy-MM-dd'));
 
             if (absenceDatesThisWeek.length > 0) {
                 insights.push({
@@ -342,7 +352,7 @@ export class InsightEngine {
         const todayStr = format(now, 'yyyy-MM-dd');
 
         const todaysLogs = logs.filter(l => l.date === todayStr);
-        const expectedStaff = staff.filter(s => !['SUPERADMIN', 'ORG_ADMIN'].includes(s.role));
+        const expectedStaff = staff.filter(s => s.role !== 'SUPERADMIN');
         const todaysPulses = pulses.filter(p => p.date === todayStr);
 
         // 1. Daily Team Posture

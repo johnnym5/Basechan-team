@@ -31,12 +31,12 @@ export function FirebaseErrorListener() {
 
       // Extract the collection name for clearer user feedback
       const pathParts = error.request.path.split('/');
-      const nodeName = pathParts[pathParts.length - 1] || 'Mainframe';
+      const resourceName = pathParts[pathParts.length - 1] || 'Database';
 
       toast({
         variant: 'destructive',
         title: 'Action Denied',
-        description: `Authorization failed for node: ${nodeName.toUpperCase()}. Please check organizational permissions.`,
+        description: `Authorization failed for resource: ${resourceName.toUpperCase()}. Please check your permissions.`,
       });
     };
 
@@ -56,7 +56,7 @@ export function FirebaseErrorListener() {
         toast({
           variant: 'destructive',
           title: 'Database Index Required',
-          description: 'This operational query requires a specialized index. Click below to initialize.',
+          description: 'This query requires a database index. Click below to initialize.',
           duration: 15000,
           action: (
             <ToastAction 

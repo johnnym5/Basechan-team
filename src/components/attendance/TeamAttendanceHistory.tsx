@@ -10,7 +10,7 @@ import { Calendar } from "../ui/calendar";
 import { useState, useMemo } from "react";
 import { ScrollArea } from "../ui/scroll-area";
 import { Button } from "../ui/button";
-import { Download, ArrowRight } from "lucide-react";
+import { Download, ArrowRight, MapPin } from "lucide-react";
 import * as XLSX from 'xlsx';
 import { useToast } from "@/hooks/use-toast";
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -192,7 +192,7 @@ export function TeamAttendanceHistory({ userProfile }: TeamAttendanceHistoryProp
                                                             const isRecordActive = !record.clockOut;
                                                             return (
                                                                 <div key={record.id} className="flex items-center justify-between gap-4 bg-white/5 rounded-2xl p-2.5 text-xs border border-white/5">
-                                                                    <div className="flex flex-col">
+                                                                    <div className="flex flex-col gap-0.5">
                                                                         <div className="flex items-center gap-2">
                                                                             <span className="text-emerald-400 font-black font-mono">{format(new Date(record.clockIn), 'p')}</span>
                                                                             <span className="text-muted-foreground opacity-30 text-[10px]">→</span>
@@ -202,6 +202,18 @@ export function TeamAttendanceHistory({ userProfile }: TeamAttendanceHistoryProp
                                                                                 <Badge variant="outline" className="text-[8px] text-primary border-primary/30 bg-primary/10 py-0.5 px-2 font-black animate-pulse rounded-lg">ACTIVE</Badge>
                                                                             )}
                                                                         </div>
+                                                                        {record.location === 'OFFICE' ? (
+                                                                            <span className="text-[8px] font-black flex items-center gap-1 text-emerald-500">
+                                                                                <MapPin className="h-2.5 w-2.5" />
+                                                                                {record.branchName || record.branchLocation
+                                                                                    ? `Working from ${record.branchName || record.branchLocation}`
+                                                                                    : 'Office'}
+                                                                            </span>
+                                                                        ) : (
+                                                                            <span className="text-[8px] font-black flex items-center gap-1 text-orange-400">
+                                                                                <MapPin className="h-2.5 w-2.5" /> Remote / Off-Site
+                                                                            </span>
+                                                                        )}
                                                                     </div>
 
                                                                     {isRecordActive && (

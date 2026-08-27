@@ -61,7 +61,7 @@ export function DebriefModal({ userProfile }: { userProfile: UserProfile }) {
         }).length;
     }, [chats, userProfile.id]);
 
-    // Query Active Missions
+    // Query Active Tasks
     const tasksQuery = useMemoFirebase(() => 
         firestore ? query(collection(firestore, 'tasks'), where('orgId', '==', userProfile.orgId), where('assignedTo', '==', userProfile.id), where('status', 'in', ['QUEUED', 'ACTIVE'])) : null
     , [firestore, userProfile.id, userProfile.orgId]);
@@ -138,7 +138,7 @@ export function DebriefModal({ userProfile }: { userProfile: UserProfile }) {
                                 <ChevronRight className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
                             </div>
                             <p className="text-2xl font-black font-headline">{unreadCount}</p>
-                            <p className="text-[9px] font-bold text-muted-foreground uppercase">Unread Units</p>
+                            <p className="text-[9px] font-bold text-muted-foreground uppercase">Unread Messages</p>
                         </div>
                         <div 
                             onClick={handleJumpToTasks}

@@ -129,7 +129,7 @@ export function LiveDisplays({ initialPayload }: { initialPayload?: { displayId?
                         <Globe className="h-8 w-8 text-primary" />
                         Live Displays
                     </h1>
-                    <p className="text-sm text-muted-foreground font-medium">Monitor real-time documents, dashboards, and web-based telemetry nodes.</p>
+                    <p className="text-sm text-muted-foreground font-medium">Monitor real-time documents, dashboards, and shared displays.</p>
                 </div>
 
                 {/* ACTION TOOLBAR */}

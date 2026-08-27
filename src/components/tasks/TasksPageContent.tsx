@@ -62,8 +62,8 @@ export function TasksPageContent({ initialPayload, currentUserProfile, permissio
 
   return (
     <ModuleContainer
-        title="Mission Control"
-        subtitle={permissions.canManageStaff ? "Team Tactical Oversight & Tasking" : "Active Personal Missions"}
+        title="Tasks Dashboard"
+        subtitle={permissions.canManageStaff ? "Team Tasks & Operations Overview" : "My Active Tasks"}
         noScroll={true}
         actions={
             <div className="flex items-center gap-3">
@@ -87,7 +87,7 @@ export function TasksPageContent({ initialPayload, currentUserProfile, permissio
               <div className="relative flex-1 w-full">
                   <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
-                      placeholder="Identify tactical node..."
+                      placeholder="Search tasks by title or assignee..."
                       className="pl-12 h-12 bg-background/50 border-white/5 rounded-2xl text-sm font-medium"
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}

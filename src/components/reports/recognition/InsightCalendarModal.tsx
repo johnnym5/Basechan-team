@@ -1,12 +1,13 @@
 "use client"
 
 import React, { useState, useMemo } from "react"
-import { format, isSameDay, parseISO } from "date-fns"
+import { format, isSameDay, parseISO, isWeekend, startOfDay, isBefore } from "date-fns"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Calendar } from "@/components/ui/calendar"
-import { Clock, Briefcase, Info, Trophy, Calendar as CalendarIcon } from "lucide-react"
-import type { UserProfile, Attendance, PulseCheck, Nomination } from "@/lib/types"
+import { Clock, Briefcase, Info, Trophy, Calendar as CalendarIcon, UserX } from "lucide-react"
+import type { UserProfile, Attendance, PulseCheck, Nomination, LeaveRequest } from "@/lib/types"
 import { cn } from "@/lib/utils"
+import { calculateDailyStatus } from "@/lib/attendance-utils"
 
 interface InsightCalendarModalProps {
     isOpen: boolean;
@@ -15,6 +16,7 @@ interface InsightCalendarModalProps {
     attendanceLogs: Attendance[];
     pulseFeed: PulseCheck[];
     nominations: Nomination[];
+    leaveRequests?: LeaveRequest[];
 }
 
 export function InsightCalendarModal({
@@ -23,25 +25,46 @@ export function InsightCalendarModal({
     staff,
     attendanceLogs,
     pulseFeed,
-    nominations
+    nominations,
+    leaveRequests = []
 }: InsightCalendarModalProps) {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date())
 
   // 1. Extract dates for the Calendar Modifiers
-  const { lateDates, onTimeDates, heavyDates, nominationDates } = useMemo(() => {
-    if (!staff) return { lateDates: [], onTimeDates: [], heavyDates: [], nominationDates: [] }
+  const { lateDates, onTimeDates, absentDates, leaveDates, heavyDates, nominationDates } = useMemo(() => {
+    if (!staff) return { lateDates: [], onTimeDates: [], absentDates: [], leaveDates: [], heavyDates: [], nominationDates: [] }
 
     const userLogs = attendanceLogs.filter(l => l.userId === staff.id)
     const userPulses = pulseFeed.filter(p => p.userId === staff.id)
     const userNominations = nominations.filter(n => n.nomineeId === staff.id && n.status === 'APPROVED')
 
-    const late = userLogs.filter(l => l.remarks?.includes('LATE')).map(l => parseISO(l.date + 'T00:00:00'))
-    const onTime = userLogs.filter(l => !l.remarks?.includes('LATE')).map(l => parseISO(l.date + 'T00:00:00'))
+    const late: Date[] = []
+    const onTime: Date[] = []
+    const absent: Date[] = []
+    const leave: Date[] = []
+
+    // We need to check a range of dates to determine absence
+    const now = new Date()
+    const userLeaves = leaveRequests.filter(l => l.userId === staff.id)
+
+    // Let's iterate through the last 90 days.
+    for (let i = 0; i < 90; i++) {
+        const d = startOfDay(new Date())
+        d.setDate(d.getDate() - i)
+
+        const status = calculateDailyStatus(d, userLogs, userLeaves)
+
+        if (status === 'ON_TIME') onTime.push(d)
+        else if (status === 'LATE') late.push(d)
+        else if (status === 'ABSENT') absent.push(d)
+        else if (status === 'ON_LEAVE') leave.push(d)
+    }
+
     const heavy = userPulses.filter(p => p.mood === 'HEAVY' || p.mood === 'OVERWHELMED').map(p => parseISO(p.date + 'T00:00:00'))
     const noms = userNominations.map(n => parseISO(n.timestamp.split('T')[0] + 'T00:00:00'))
 
-    return { lateDates: late, onTimeDates: onTime, heavyDates: heavy, nominationDates: noms }
-  }, [staff, attendanceLogs, pulseFeed, nominations])
+    return { lateDates: late, onTimeDates: onTime, absentDates: absent, leaveDates: leave, heavyDates: heavy, nominationDates: noms }
+  }, [staff, attendanceLogs, pulseFeed, nominations, leaveRequests])
 
   // 2. Get details for the specifically clicked day
   const selectedDayDetails = useMemo(() => {
@@ -50,8 +73,11 @@ export function InsightCalendarModal({
     const dayLog = attendanceLogs.find(l => l.userId === staff.id && l.date === dateStr)
     const dayPulse = pulseFeed.find(p => p.userId === staff.id && p.date === dateStr)
     const dayNoms = nominations.filter(n => n.nomineeId === staff.id && n.status === 'APPROVED' && n.timestamp.startsWith(dateStr))
-    return { dayLog, dayPulse, dayNoms }
-  }, [selectedDate, staff, attendanceLogs, pulseFeed, nominations])
+
+    const status = calculateDailyStatus(selectedDate, attendanceLogs.filter(l => l.userId === staff.id), leaveRequests.filter(l => l.userId === staff.id))
+
+    return { dayLog, dayPulse, dayNoms, status }
+  }, [selectedDate, staff, attendanceLogs, pulseFeed, nominations, leaveRequests])
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -66,7 +92,7 @@ export function InsightCalendarModal({
                       Personnel History: {staff?.fullName}
                   </DialogTitle>
                   <DialogDescription className="text-[10px] font-black uppercase tracking-widest opacity-60 truncate">
-                      Behavioral Heatmap & Operational Logs
+                      Attendance Heatmap & Activity Logs
                   </DialogDescription>
               </div>
           </div>
@@ -82,12 +108,16 @@ export function InsightCalendarModal({
                 modifiers={{
                     late: lateDates,
                     onTime: onTimeDates,
+                    absent: absentDates,
+                    leave: leaveDates,
                     heavy: heavyDates,
                     nomination: nominationDates
                 }}
                 modifiersClassNames={{
-                    late: "bg-rose-500/20 text-rose-500 font-bold hover:bg-rose-500/30 rounded-lg",
+                    late: "bg-amber-500/20 text-amber-500 font-bold hover:bg-amber-500/30 rounded-lg",
                     onTime: "bg-emerald-500/20 text-emerald-500 font-bold hover:bg-emerald-500/30 rounded-lg",
+                    absent: "bg-rose-500/20 text-rose-500 font-bold hover:bg-rose-500/30 rounded-lg",
+                    leave: "bg-blue-500/20 text-blue-400 font-bold hover:bg-blue-500/30 rounded-lg",
                     heavy: "border-2 border-amber-500 text-amber-500 rounded-lg",
                     nomination: "after:content-['★'] after:absolute after:-top-1 after:-right-1 after:text-[8px] after:text-yellow-500"
                 }}
@@ -104,15 +134,24 @@ export function InsightCalendarModal({
             {!selectedDayDetails ? (
               <div className="flex flex-col items-center justify-center py-4 opacity-20">
                   <Info className="w-8 h-8 mb-2" />
-                  <p className="text-[10px] font-black uppercase tracking-widest italic">No operational data logged.</p>
+                  <p className="text-[10px] font-black uppercase tracking-widest italic">No activity logged.</p>
               </div>
-            ) : !selectedDayDetails.dayLog && !selectedDayDetails.dayPulse && selectedDayDetails.dayNoms.length === 0 ? (
+            ) : !selectedDayDetails.dayLog && !selectedDayDetails.dayPulse && selectedDayDetails.dayNoms.length === 0 && selectedDayDetails.status !== 'ABSENT' ? (
                 <div className="flex flex-col items-center justify-center py-4 opacity-20">
                     <Info className="w-8 h-8 mb-2" />
-                    <p className="text-[10px] font-black uppercase tracking-widest italic">No operational data logged.</p>
+                    <p className="text-[10px] font-black uppercase tracking-widest italic">No activity logged.</p>
                 </div>
             ) : (
               <div className="flex flex-col gap-4">
+                {selectedDayDetails.status === 'ABSENT' && !selectedDayDetails.dayLog && (
+                  <div className="flex items-center gap-3 p-3 rounded-xl bg-rose-500/10 border border-rose-500/20">
+                    <UserX className="w-4 h-4 text-rose-500" />
+                    <div className="flex flex-col">
+                        <span className="text-xs font-bold text-rose-500 uppercase tracking-tight">Personnel Absent</span>
+                        <span className="text-[8px] font-black uppercase tracking-widest text-rose-400/60">No clock-in record identified</span>
+                    </div>
+                  </div>
+                )}
                 {selectedDayDetails.dayLog && (
                   <div className="flex items-center gap-3 p-3 rounded-xl bg-black/20 border border-white/5">
                     <Clock className="w-4 h-4 text-primary" />
@@ -122,7 +161,7 @@ export function InsightCalendarModal({
                         </span>
                         <span className={cn(
                             "text-[8px] font-black uppercase tracking-widest",
-                            selectedDayDetails.dayLog.remarks?.includes('LATE') ? "text-rose-500" : "text-emerald-500"
+                            selectedDayDetails.dayLog.remarks?.includes('LATE') ? "text-amber-500" : "text-emerald-500"
                         )}>
                             Status: {selectedDayDetails.dayLog.remarks?.includes('LATE') ? 'LATE ARRIVAL' : 'ON TIME'}
                         </span>
@@ -159,10 +198,10 @@ export function InsightCalendarModal({
         </div>
 
         <div className="mt-4 flex flex-wrap justify-center gap-4 text-[8px] font-black uppercase tracking-[0.2em] opacity-40">
-            <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-emerald-500/50" /> On Time</div>
-            <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-rose-500/50" /> Late</div>
-            <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded border border-amber-500" /> Heavy</div>
-            <div className="flex items-center gap-1.5"><div className="w-2 h-2 text-yellow-500">★</div> Star Earned</div>
+            <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-emerald-500/50" /> Present</div>
+            <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-amber-500/50" /> Late</div>
+            <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-rose-500/50" /> Absent</div>
+            <div className="flex items-center gap-1.5"><div className="w-2 h-2 text-yellow-500">★</div> Award</div>
         </div>
       </DialogContent>
     </Dialog>

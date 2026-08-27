@@ -15,12 +15,13 @@ import {
 } from '@/components/ui/form';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Loader2, Send, Rocket, ThumbsUp, Meh, Construction, ListTodo, AlertCircle, Target, Sparkles } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { Loader2, Send, Rocket, ThumbsUp, Meh, Construction, ListTodo, AlertCircle, Target, Sparkles, Tag } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
 import { useFirestore, useCollection, addDocumentNonBlocking, useMemoFirebase } from '@/firebase';
-import { collection, query, where } from 'firebase/firestore';
+import { collection, query, where, getDoc, doc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
-import type { DailyReport, UserProfile, Task } from '@/lib/types';
+import type { DailyReport, UserProfile, Task, SystemItem } from '@/lib/types';
+import { OptionalEODVotingNudge } from './OptionalEODVotingNudge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { format } from 'date-fns';
 import { ScrollArea } from '../ui/scroll-area';
@@ -41,6 +42,7 @@ const formSchema = z.object({
       title: z.string(),
       notes: z.string().optional(),
   })).optional(),
+  tags: z.array(z.string()).default([]),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -59,8 +61,23 @@ const PULSE_OPTIONS = [
 
 export function SubmitDailyReport({ userProfile, onSuccess }: SubmitDailyReportProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [workloadTags, setWorkloadTags] = useState<SystemItem[]>([]);
   const firestore = useFirestore();
   const { toast } = useToast();
+
+  // Fetch Dynamic Tags
+  useEffect(() => {
+    const fetchTags = async () => {
+        if (!firestore || !userProfile.orgId) return;
+        try {
+            const snap = await getDoc(doc(firestore, 'system_configs', `${userProfile.orgId}_workload_tags`));
+            if (snap.exists()) setWorkloadTags(snap.data().items || []);
+        } catch (e) {
+            console.error("Failed to fetch workload tags:", e);
+        }
+    };
+    fetchTags();
+  }, [firestore, userProfile.orgId]);
 
   const today = format(new Date(), 'yyyy-MM-dd');
   const DRAFT_KEY = `report-draft-${userProfile.id}`;
@@ -114,6 +131,8 @@ export function SubmitDailyReport({ userProfile, onSuccess }: SubmitDailyReportP
         // Consolidate into the legacy 'content' field for backwards compatibility while storing structured fields
         const consolidatedContent = `
 DAILY PULSE: ${values.pulse}
+
+TAGS: ${values.tags.length > 0 ? values.tags.join(', ') : 'None'}
 
 ACCOMPLISHMENTS:
 ${values.accomplishments}
@@ -225,6 +244,37 @@ ${values.nextFocus}
                     )}
                 />
             </div>
+
+            {/* 1b. Tactical Tags */}
+            {workloadTags.length > 0 && (
+                <div className="space-y-4">
+                    <FormLabel className="text-[10px] font-black uppercase tracking-widest opacity-50 flex items-center gap-2">
+                        <Tag className="h-3 w-3" /> Mission Categories (Workload Tags)
+                    </FormLabel>
+                    <div className="flex flex-wrap gap-2">
+                        {workloadTags.filter(t => t.isActive).map((tag) => {
+                            const isSelected = form.watch('tags').includes(tag.label);
+                            return (
+                                <Badge
+                                    key={tag.id}
+                                    variant="outline"
+                                    onClick={() => {
+                                        const current = form.getValues('tags');
+                                        if (isSelected) form.setValue('tags', current.filter(t => t !== tag.label));
+                                        else form.setValue('tags', [...current, tag.label]);
+                                    }}
+                                    className={cn(
+                                        "h-8 px-4 rounded-full cursor-pointer transition-all font-black text-[9px] uppercase tracking-wider",
+                                        isSelected ? "bg-primary text-white border-primary shadow-lg shadow-primary/20" : "bg-black/20 border-white/5 text-muted-foreground hover:bg-white/5"
+                                    )}
+                                >
+                                    {tag.label}
+                                </Badge>
+                            );
+                        })}
+                    </div>
+                </div>
+            )}
 
             {/* 2. Structured Summaries */}
             <div className="grid grid-cols-1 gap-6">
@@ -341,6 +391,8 @@ ${values.nextFocus}
                     </ScrollArea>
                 </div>
             </div>
+
+            <OptionalEODVotingNudge />
 
             <Button type="submit" disabled={isSubmitting} className="w-full h-14 rounded-2xl font-black uppercase tracking-[0.2em] shadow-xl shadow-primary/20 m3-interactive">
               {isSubmitting ? <Loader2 className="animate-spin mr-2" /> : <Send className="mr-2 h-5 w-5" />}
