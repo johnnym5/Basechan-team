@@ -10,7 +10,7 @@ import {
 } from '@/components/ui/dialog';
 import type { Task, UserProfile, ActivityEntry, SubTask, TaskStatus, Notification, Permissions } from '@/lib/types';
 import { format, differenceInHours } from 'date-fns';
-import { Calendar, CheckSquare, History, Info, BookOpenCheck, User, Plus, Trash2, Share2, Pencil, Check, Loader2, Hourglass, LifeBuoy, Paperclip, ArrowRight } from 'lucide-react';
+import { Calendar, CheckSquare, History, Info, BookOpenCheck, User, Plus, Trash2, Share2, Pencil, Check, Loader2, Hourglass, LifeBuoy, Paperclip, ArrowRight, Archive, Send, RotateCcw, CheckCircle2 } from 'lucide-react';
 import { TaskPriorityBadge } from './TaskPriorityBadge';
 import { Badge } from '../ui/badge';
 import Link from 'next/link';
@@ -393,10 +393,10 @@ export function TaskDetailDialog({ task: initialTask, isOpen, onOpenChange, curr
             <section className="p-6 rounded-xl bg-primary/5 border border-primary/20 space-y-4">
                 <div className="flex items-center gap-2 text-primary">
                     <Info className="h-4 w-4" />
-                    <span className="text-[10px] font-black uppercase tracking-widest">Protocol Node</span>
+                    <span className="text-[10px] font-black uppercase tracking-widest">TASK TRACKING</span>
                 </div>
                 <p className="text-[10px] leading-relaxed text-muted-foreground uppercase font-bold italic">
-                    Task status and activity logs are monitored for performance analytics and mission fulfillment tracking.
+                    All status changes and completion logs are recorded for performance analytics.
                 </p>
             </section>
           </div>
@@ -471,20 +471,45 @@ export function TaskDetailDialog({ task: initialTask, isOpen, onOpenChange, curr
                         Start Task
                     </Button>
                 )}
+
                 {task.assignedTo === currentUserProfile.id && task.status === 'ACTIVE' && (
-                    <Button onClick={() => setIsCompletionBriefOpen(true)} className="rounded-xl px-6 font-black uppercase tracking-widest shadow-xl shadow-primary/20">
-                        Signal Completion
-                    </Button>
-                )}
-                
-                {permissions.canManageStaff && task.status === 'AWAITING_REVIEW' && (
                     <>
-                        <Button variant="outline" onClick={() => handleStatusChange('ACTIVE', 'Revisions requested.')} disabled={isSubmitting} className="rounded-xl px-4 font-black uppercase tracking-widest">Reject Brief</Button>
-                        <Button className="bg-emerald-600 hover:bg-emerald-700 rounded-xl px-6 font-black uppercase tracking-widest shadow-xl shadow-emerald-500/20" onClick={() => handleStatusChange('ARCHIVED')} disabled={isSubmitting}>
-                            {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Check className="mr-2 h-4 w-4" />}
-                            Approve & Archive
-                        </Button>
+                        {/* Logic: Did the staff create this task for themselves? */}
+                        {((task.creatorId || task.createdBy) === currentUserProfile.id) ? (
+                            <Button
+                                onClick={() => handleStatusChange('ARCHIVED', 'Completed and self-archived.')}
+                                disabled={isSubmitting}
+                                className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl px-6 font-black uppercase tracking-widest shadow-xl shadow-emerald-500/20"
+                            >
+                                {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Archive className="mr-2 h-4 w-4" />}
+                                Complete & Archive Task
+                            </Button>
+                        ) : (
+                            <Button onClick={() => setIsCompletionBriefOpen(true)} className="rounded-xl px-6 font-black uppercase tracking-widest shadow-xl shadow-primary/20">
+                                <Send className="mr-2 h-4 w-4" />
+                                Submit for Admin Review
+                            </Button>
+                        )}
                     </>
+                )}
+
+                {task.status === 'AWAITING_REVIEW' && (
+                    permissions.canManageStaff ? (
+                        <>
+                            <Button variant="outline" onClick={() => handleStatusChange('ACTIVE', 'Revisions requested.')} disabled={isSubmitting} className="rounded-xl px-4 font-black uppercase tracking-widest text-orange-500 border-orange-500/30">
+                                <RotateCcw className="mr-2 h-4 w-4" />
+                                Request Revisions
+                            </Button>
+                            <Button className="bg-emerald-600 hover:bg-emerald-700 rounded-xl px-6 font-black uppercase tracking-widest shadow-xl shadow-emerald-500/20" onClick={() => handleStatusChange('ARCHIVED')} disabled={isSubmitting}>
+                                {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle2 className="mr-2 h-4 w-4" />}
+                                Approve & Archive
+                            </Button>
+                        </>
+                    ) : (
+                        <span className="text-[10px] font-black uppercase tracking-widest text-amber-500 bg-amber-500/10 px-4 py-2 rounded-xl border border-amber-500/20 flex items-center gap-2">
+                            <Hourglass className="h-3 w-3" /> Awaiting Admin Approval
+                        </span>
+                    )
                 )}
             </div>
         </DialogFooter>

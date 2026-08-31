@@ -357,6 +357,9 @@ export interface Task {
   status: TaskStatus;
   dueDate?: string | null;
   createdBy: string;
+  creatorId?: string;
+  creatorRole?: 'ADMIN' | 'STAFF';
+  assigneeId?: string;
   activity: ActivityEntry[];
   createdAt: string;
   workbookId?: string | null;
@@ -707,6 +710,8 @@ export interface PerformanceReview {
   reviewerId: string; // The manager performing the review
   reviewerName: string;
   cycle: 'WEEKLY' | 'MONTHLY' | 'QUARTERLY' | 'YEARLY';
+  templateId?: string;
+  templateName?: string;
   reviewDate: string; // ISO string
   createdAt: string; // ISO string
   qualitative: {

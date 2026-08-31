@@ -6,11 +6,11 @@ import { Badge } from "@/components/ui/badge"
 import { AlertTriangle, CheckCircle2, FileText, TrendingUp, Activity, Zap, Clock, UserCheck, ShieldAlert, ArrowRight, Check, X, ClipboardList, LogIn } from "lucide-react"
 import type { UserProfile, Attendance, Task, LeaveRequest, PulseCheck } from "@/lib/types"
 import { cn } from "@/lib/utils"
-import { format, parseISO, isWithinInterval, startOfDay, endOfDay, startOfMonth, endOfMonth, addDays, isAfter } from "date-fns"
+import { format, parseISO, isWithinInterval, startOfDay, endOfDay, startOfMonth, endOfMonth, addDays, isAfter, startOfWeek, endOfWeek } from "date-fns"
 import { IntelligentSummaryCenter } from "../IntelligentSummaryCenter"
 import { TrendInsightCard } from "../TrendInsightCard"
 import { StaffActionMenu } from "@/components/shared/StaffActionMenu"
-import { type TimeFilterState } from "@/components/shared/AdvancedTimeFilter"
+import { type ViewScope } from "@/components/shared/DateScopePicker"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
@@ -18,7 +18,7 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { useRouter } from "next/navigation"
 
 interface OperationalHealthViewProps {
-    timeFilter: TimeFilterState;
+    timeFilter: { mode: ViewScope, referenceDate: Date };
     staffList: UserProfile[];
     attendanceLogs: Attendance[];
     tasks: Task[];
@@ -47,12 +47,8 @@ export function OperationalHealthView({
       startDate = startOfMonth(timeFilter.referenceDate)
       endDate = endOfMonth(timeFilter.referenceDate)
     } else if (timeFilter.mode === 'WEEK') {
-      const monthStart = startOfMonth(timeFilter.referenceDate)
-      startDate = addDays(monthStart, (timeFilter.weekIndex! - 1) * 7)
-      endDate = endOfDay(addDays(startDate, 6))
-      if (isAfter(endDate, endOfMonth(timeFilter.referenceDate))) {
-        endDate = endOfMonth(timeFilter.referenceDate)
-      }
+      startDate = startOfWeek(timeFilter.referenceDate, { weekStartsOn: 1 })
+      endDate = endOfWeek(timeFilter.referenceDate, { weekStartsOn: 1 })
     } else {
       startDate = startOfDay(timeFilter.referenceDate)
       endDate = endOfDay(timeFilter.referenceDate)

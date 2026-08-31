@@ -12,13 +12,13 @@ import type { UserProfile, AccoladeVote } from "@/lib/types"
 import { useFirestore, useCollection, useMemoFirebase } from "@/firebase"
 import { collection, query, where } from "firebase/firestore"
 import { VoteModal } from "./VoteModal"
-import { type TimeFilterState } from "../../shared/AdvancedTimeFilter"
+import { type ViewScope } from "../../shared/DateScopePicker"
 import { useSystemConfigs } from "@/hooks/useSystemConfigs"
 
 interface RecognitionLeaderboardProps {
     currentUser: UserProfile;
     staffList: UserProfile[];
-    timeFilter: TimeFilterState;
+    timeFilter: { mode: ViewScope, referenceDate: Date };
 }
 
 /**

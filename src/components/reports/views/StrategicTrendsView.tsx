@@ -9,14 +9,14 @@ import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { useRouter } from "next/navigation"
 import { Badge } from "@/components/ui/badge"
-import { type TimeFilterState } from "@/components/shared/AdvancedTimeFilter"
+import { type ViewScope } from "@/components/shared/DateScopePicker"
 import { parseISO, startOfMonth, endOfMonth, eachDayOfInterval, format, startOfWeek, endOfWeek, isWithinInterval, startOfDay, endOfDay, addDays } from "date-fns"
 
 interface StrategicTrendsViewProps {
   staffList: UserProfile[];
   attendanceLogs: Attendance[];
   tasks: Task[];
-  timeFilter?: TimeFilterState;
+  timeFilter?: { mode: ViewScope, referenceDate: Date };
 }
 
 export function StrategicTrendsView({ staffList, attendanceLogs, tasks, timeFilter }: StrategicTrendsViewProps) {
@@ -34,10 +34,8 @@ export function StrategicTrendsView({ staffList, attendanceLogs, tasks, timeFilt
         start = startOfDay(timeFilter.referenceDate)
         end = endOfDay(timeFilter.referenceDate)
     } else if (timeFilter.mode === 'WEEK') {
-        const monthStart = startOfMonth(timeFilter.referenceDate)
-        start = addDays(monthStart, ((timeFilter.weekIndex || 1) - 1) * 7)
-        start = startOfWeek(start, { weekStartsOn: 1 })
-        end = endOfWeek(start, { weekStartsOn: 1 })
+        start = startOfWeek(timeFilter.referenceDate, { weekStartsOn: 1 })
+        end = endOfWeek(timeFilter.referenceDate, { weekStartsOn: 1 })
     } else {
         start = startOfMonth(timeFilter.referenceDate)
         end = endOfMonth(timeFilter.referenceDate)
@@ -59,8 +57,7 @@ export function StrategicTrendsView({ staffList, attendanceLogs, tasks, timeFilt
     if (timeFilter.mode === 'DAY') {
         days = [timeFilter.referenceDate]
     } else if (timeFilter.mode === 'WEEK') {
-        const monthStart = startOfMonth(timeFilter.referenceDate)
-        const weekStart = startOfWeek(addDays(monthStart, ((timeFilter.weekIndex || 1) - 1) * 7), { weekStartsOn: 1 })
+        const weekStart = startOfWeek(timeFilter.referenceDate, { weekStartsOn: 1 })
         days = eachDayOfInterval({ start: weekStart, end: endOfWeek(weekStart, { weekStartsOn: 1 }) })
     } else {
         days = eachDayOfInterval({

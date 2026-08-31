@@ -417,7 +417,7 @@ export function TeamDailyReports({ userProfile }: TeamDailyReportsProps) {
                       </div>
                   </DialogHeader>
 
-                  <div className="space-y-6 py-4 md:py-6 overflow-y-auto max-h-[60vh] custom-scrollbar pr-2">
+                  <div className="space-y-6 py-4 md:py-6 overflow-y-auto max-h-[60vh] custom-scrollbar [scrollbar-gutter:stable] pr-2">
                       <div className="space-y-2">
                           <h4 className="text-[10px] font-black uppercase tracking-widest text-primary flex items-center gap-2">
                               <ExternalLink className="h-3 w-3" />

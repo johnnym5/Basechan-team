@@ -55,8 +55,10 @@ import { uiEmitter } from '@/lib/ui-emitter';
 import { EditStaffProfileForm } from './EditStaffProfileForm';
 import { StaffDocumentUpload } from './StaffDocumentUpload';
 import { UserAccessEditor } from '@/components/settings/security/UserAccessEditor';
-import type { UserProfile, Kudos, Permissions } from '@/lib/types';
+import type { UserProfile, Kudos, Permissions, Attendance, Task, LeaveRequest } from '@/lib/types';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { PerformanceRecapCard } from '@/components/reports/PerformanceRecapCard';
+import { useEmployee360 } from '@/hooks/useEmployee360';
 
 interface StaffProfileViewProps {
   userId: string;
@@ -95,6 +97,12 @@ export function StaffProfileView({ userId, onBack, onViewProfile, currentUserPro
     firestore && userId && profile?.orgId ? query(collection(firestore, 'kudos'), where('orgId', '==', profile.orgId), where('toUserId', '==', userId), orderBy('timestamp', 'desc')) : null
   , [firestore, userId, profile?.orgId]);
   const { data: kudos, isLoading: isKudosLoading } = useCollection<Kudos>(kudosQuery);
+
+  const { data: employeeData } = useEmployee360(userId, profile?.orgId);
+  const leaveRequestsQuery = useMemoFirebase(() =>
+    firestore && userId && profile?.orgId ? query(collection(firestore, 'leave_requests'), where('orgId', '==', profile.orgId), where('userId', '==', userId)) : null
+  , [firestore, userId, profile?.orgId]);
+  const { data: leaveRequests } = useCollection<LeaveRequest>(leaveRequestsQuery);
 
   useEffect(() => {
     if (!profile?.timezone) return;
@@ -252,9 +260,11 @@ export function StaffProfileView({ userId, onBack, onViewProfile, currentUserPro
         </div>
 
         {canEditBasic && (
-          <Button onClick={() => setIsEditing(true)} className="rounded-2xl h-12 px-6 gap-2 font-black uppercase text-[10px] tracking-widest shadow-xl shadow-primary/20 m3-interactive">
-            <Edit3 className="h-4 w-4" /> Edit Profile
-          </Button>
+          <div className="flex flex-col sm:flex-row gap-3">
+              <Button onClick={() => setIsEditing(true)} className="rounded-2xl h-12 px-6 gap-2 font-black uppercase text-[10px] tracking-widest shadow-xl shadow-primary/20 m3-interactive">
+                <Edit3 className="h-4 w-4" /> Edit Profile
+              </Button>
+          </div>
         )}
       </div>
 
@@ -273,6 +283,16 @@ export function StaffProfileView({ userId, onBack, onViewProfile, currentUserPro
 
         <div className="flex-1 overflow-y-auto custom-scrollbar pr-2">
           <TabsContent value="overview" className="mt-0 focus-visible:outline-none space-y-6">
+
+            {/* PERFORMANCE RECAP SECTION */}
+            <PerformanceRecapCard
+                currentUser={profile}
+                attendanceLogs={employeeData?.attendance || []}
+                tasks={employeeData?.tasks || []}
+                reports={[]}
+                leaveRequests={leaveRequests || []}
+            />
+
             {profile.bio && (
               <Card className="border border-border/60 bg-muted/30 rounded-xl p-4 shadow-sm overflow-hidden relative">
                 <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none"><Quote className="h-20 w-20" /></div>

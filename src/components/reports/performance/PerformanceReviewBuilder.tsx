@@ -40,6 +40,8 @@ export function PerformanceReviewBuilder({ userProfile, staffList }: Performance
   // --- FORM STATE ---
   const [employeeId, setEmployeeId] = useState("");
   const [cycle, setCycle] = useState<PerformanceReview['cycle']>("MONTHLY");
+  const [templateId, setTemplateId] = useState<string | undefined>(undefined);
+  const [templateName, setTemplateName] = useState<string | undefined>(undefined);
 
   // Dynamic Metric Arrays
   const [businessTargets, setBusinessTargets] = useState<{ metricName: string; score: number }[]>([]);
@@ -87,10 +89,14 @@ export function PerformanceReviewBuilder({ userProfile, staffList }: Performance
     if (!template || (template as any) === 'blank') {
         setBusinessTargets([]);
         setInterpersonalSkills([]);
+        setTemplateId(undefined);
+        setTemplateName(undefined);
         return;
     }
     setBusinessTargets(template.businessTargets.map(name => ({ metricName: name, score: 3 })));
     setInterpersonalSkills(template.interpersonalSkills.map(name => ({ skillName: name, score: 3 })));
+    setTemplateId(template.id);
+    setTemplateName(template.templateName);
     toast({ title: "Template Hydrated", description: `Performance matrix loaded from '${template.templateName}'.` });
   };
 
@@ -108,6 +114,8 @@ export function PerformanceReviewBuilder({ userProfile, staffList }: Performance
             reviewerId: userProfile.id,
             reviewerName: userProfile.fullName,
             cycle,
+            templateId,
+            templateName,
             reviewDate: new Date().toISOString(),
             createdAt: new Date().toISOString(),
             qualitative,

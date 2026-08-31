@@ -2,16 +2,19 @@
 
 import React, { useMemo } from "react"
 import type { UserProfile, Nomination } from "@/lib/types"
-import { type TimeFilterState } from "@/components/shared/AdvancedTimeFilter"
-import { startOfMonth, endOfMonth, addDays, isAfter, startOfDay, endOfDay, isWithinInterval, parseISO } from "date-fns"
+import { type ViewScope } from "@/components/shared/DateScopePicker"
+import { startOfMonth, endOfMonth, addDays, isAfter, startOfDay, endOfDay, isWithinInterval, parseISO, startOfWeek, endOfWeek } from "date-fns"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { FileText } from "lucide-react"
 
 // BLUEPRINT COMPONENTS
 import { NominationStation } from "../recognition/NominationStation"
 import { MyTrophies } from "../recognition/MyTrophies"
 import { MonthlyLeaderboard } from "../recognition/MonthlyLeaderboard"
+import { PerformanceReviewList } from "../performance/PerformanceReviewList"
 
 interface RecognitionCultureViewProps {
-    timeFilter: TimeFilterState;
+    timeFilter: { mode: ViewScope, referenceDate: Date };
     staffList: UserProfile[];
     nominations: Nomination[];
     currentUser: UserProfile;
@@ -41,12 +44,8 @@ export function RecognitionCultureView({
       startDate = startOfMonth(timeFilter.referenceDate)
       endDate = endOfMonth(timeFilter.referenceDate)
     } else if (timeFilter.mode === 'WEEK') {
-      const monthStart = startOfMonth(timeFilter.referenceDate)
-      startDate = addDays(monthStart, (timeFilter.weekIndex! - 1) * 7)
-      endDate = endOfDay(addDays(startDate, 6))
-      if (isAfter(endDate, endOfMonth(timeFilter.referenceDate))) {
-        endDate = endOfMonth(timeFilter.referenceDate)
-      }
+      startDate = startOfWeek(timeFilter.referenceDate, { weekStartsOn: 1 })
+      endDate = endOfWeek(timeFilter.referenceDate, { weekStartsOn: 1 })
     } else {
       startDate = startOfDay(timeFilter.referenceDate)
       endDate = endOfDay(timeFilter.referenceDate)
@@ -93,6 +92,23 @@ export function RecognitionCultureView({
             currentUser={currentUser}
             timeFilter={timeFilter}
           />
+
+          {/* My Performance Reviews Section */}
+          <Card className="apple-glass-darker border-white/5 shadow-xl rounded-[2.5rem] overflow-hidden">
+            <CardHeader className="p-8 pb-4 border-b border-white/5 bg-primary/5">
+                <CardTitle className="text-xl font-black font-headline tracking-tighter uppercase flex items-center gap-3">
+                    <FileText className="w-6 h-6 text-primary" /> My Performance Reviews
+                </CardTitle>
+                <p className="text-[10px] font-black uppercase tracking-widest opacity-60">Formal feedback and evaluations from management</p>
+            </CardHeader>
+            <CardContent className="p-6">
+                <PerformanceReviewList
+                    userProfile={currentUser}
+                    isAdmin={false}
+                    hideHeader={true}
+                />
+            </CardContent>
+          </Card>
 
         </div>
 

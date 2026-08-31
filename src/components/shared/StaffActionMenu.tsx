@@ -28,6 +28,7 @@ import {
   Clock,
   UserCog,
   Award,
+  Trophy,
   Target,
   Calendar,
   FileText,
@@ -60,8 +61,11 @@ import {
     isWeekend
 } from "date-fns"
 import { formatDuration } from "@/lib/formatters"
-import type { UserProfile, Attendance } from "@/lib/types"
+import type { UserProfile, Attendance, Task, LeaveRequest } from "@/lib/types"
 import { useQuery } from "@tanstack/react-query"
+
+import { useRecapSummary, RecapMode } from "@/hooks/useRecapSummary"
+import { PerformanceRecapModal } from "../reports/PerformanceRecapModal"
 
 interface StaffActionMenuProps {
     staff: {
@@ -74,7 +78,7 @@ interface StaffActionMenuProps {
     orgId?: string;
 }
 
-type ModalType = 'LATENESS' | 'HISTORY' | 'POINTS' | 'LEAVE' | 'REPORTS' | 'DISABLE' | 'REMOVE';
+type ModalType = 'LATENESS' | 'HISTORY' | 'POINTS' | 'LEAVE' | 'REPORTS' | 'DISABLE' | 'REMOVE' | 'PERFORMANCE_RECAP';
 
 /**
  * Reusable Action Menu for staff-related operations.
@@ -115,6 +119,67 @@ export function StaffActionMenu({ staff, currentLog, orgId: propOrgId }: StaffAc
     },
     enabled: activeModal === 'HISTORY' && !!staff?.id && !!orgId,
   })
+
+  const [recapMode, setRecapMode] = useState<RecapMode>('MONTHLY');
+  const [recapDate, setRecapDate] = useState<Date>(new Date());
+
+  // FETCH DATA FOR RECAP
+  const { data: recapAttendance } = useQuery({
+    queryKey: ['staffRecapAttendance', staff?.id, orgId, recapMode, recapDate.toISOString()],
+    queryFn: async () => {
+      if (!firestore || !staff?.id || !orgId) return [];
+      const q = query(
+        collection(firestore, 'attendance'),
+        where('orgId', '==', orgId),
+        where('userId', '==', staff.id)
+        // We'll filter by date client-side in the hook for now to keep it simple,
+        // or we could add more specific queries here.
+      );
+      const snap = await getDocs(q);
+      return snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Attendance));
+    },
+    enabled: activeModal === 'PERFORMANCE_RECAP' && !!staff?.id && !!orgId,
+  });
+
+  const { data: recapTasks } = useQuery({
+    queryKey: ['staffRecapTasks', staff?.id, orgId],
+    queryFn: async () => {
+      if (!firestore || !staff?.id || !orgId) return [];
+      const q = query(
+        collection(firestore, 'tasks'),
+        where('orgId', '==', orgId),
+        where('assignedTo', '==', staff.id)
+      );
+      const snap = await getDocs(q);
+      return snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as any));
+    },
+    enabled: activeModal === 'PERFORMANCE_RECAP' && !!staff?.id && !!orgId,
+  });
+
+  const { data: recapLeaves } = useQuery({
+    queryKey: ['staffRecapLeaves', staff?.id, orgId],
+    queryFn: async () => {
+      if (!firestore || !staff?.id || !orgId) return [];
+      const q = query(
+        collection(firestore, 'leave_requests'),
+        where('orgId', '==', orgId),
+        where('userId', '==', staff.id)
+      );
+      const snap = await getDocs(q);
+      return snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as LeaveRequest));
+    },
+    enabled: activeModal === 'PERFORMANCE_RECAP' && !!staff?.id && !!orgId,
+  });
+
+  const performanceRecapData = useRecapSummary(
+      staff.id,
+      recapMode,
+      recapDate,
+      recapAttendance || [],
+      recapTasks || [],
+      [], // reports are in attendanceLogs
+      recapLeaves || []
+  );
 
   // Failsafe for Radix UI body-lock freeze
   React.useEffect(() => {
@@ -281,7 +346,7 @@ export function StaffActionMenu({ staff, currentLog, orgId: propOrgId }: StaffAc
               </div>
             </DialogHeader>
 
-            <div className="py-4 space-y-4 max-h-[50vh] overflow-y-auto custom-scrollbar pr-2">
+            <div className="py-4 space-y-4 max-h-[50vh] overflow-y-auto custom-scrollbar [scrollbar-gutter:stable] pr-2">
                {/* Note: In a real app, this should probably also be lazy-loaded via react-query if reports are many */}
                <div className="space-y-3">
                    {rDays.map((day, idx) => {
@@ -467,6 +532,17 @@ export function StaffActionMenu({ staff, currentLog, orgId: propOrgId }: StaffAc
           <DropdownMenuItem
             onSelect={(e) => {
               e.preventDefault();
+              setActiveModal('PERFORMANCE_RECAP');
+            }}
+            className="flex items-center px-3 py-2.5 text-xs font-bold text-foreground focus:bg-primary/10 focus:text-primary cursor-pointer rounded-xl transition-colors group"
+          >
+            <Trophy className="mr-3 h-4 w-4 shrink-0 opacity-40 group-focus:opacity-100" />
+            <span className="uppercase tracking-tighter">Performance Recap</span>
+          </DropdownMenuItem>
+
+          <DropdownMenuItem
+            onSelect={(e) => {
+              e.preventDefault();
               handleOpenProfile();
             }}
             className="flex items-center px-3 py-2.5 text-xs font-bold text-foreground focus:bg-primary/10 focus:text-primary cursor-pointer rounded-xl transition-colors group"
@@ -561,7 +637,7 @@ export function StaffActionMenu({ staff, currentLog, orgId: propOrgId }: StaffAc
       </DropdownMenu>
 
       {/* THE UNIFIED MODAL COMPONENT */}
-      <Dialog open={!!activeModal} onOpenChange={(isOpen) => {
+      <Dialog open={!!activeModal && activeModal !== 'PERFORMANCE_RECAP'} onOpenChange={(isOpen) => {
         if (!isOpen) {
           setActiveModal(null);
           setConfirmName("");
@@ -571,6 +647,15 @@ export function StaffActionMenu({ staff, currentLog, orgId: propOrgId }: StaffAc
           {renderModalContent()}
         </DialogContent>
       </Dialog>
+
+      <PerformanceRecapModal
+          isOpen={activeModal === 'PERFORMANCE_RECAP'}
+          onClose={() => setActiveModal(null)}
+          staffName={staff.name}
+          summaryData={performanceRecapData}
+          mode={recapMode}
+          periodLabel={recapMode === 'WEEKLY' ? `Week of ${format(performanceRecapData.dateInterval.start, 'MMM dd, yyyy')}` : format(recapDate, 'MMMM yyyy')}
+      />
     </>
   )
 }

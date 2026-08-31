@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo } from "react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { AdvancedTimeFilter, type TimeFilterState } from "../shared/AdvancedTimeFilter"
+import { DateScopePicker, type ViewScope } from "../shared/DateScopePicker"
 import { Activity, Trophy, Download, FileSpreadsheet, Loader2, FileText, Zap } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { OperationalHealthView } from "./views/OperationalHealthView"
@@ -11,7 +11,7 @@ import { ManagementTools } from "./views/ManagementTools"
 import { SubmitDailyReport } from "./SubmitDailyReport"
 import { MyDailyReports } from "./MyDailyReports"
 import { MyBriefingDashboard } from "./MyBriefingDashboard"
-import type { UserProfile, Attendance, Task, LeaveRequest, Nomination, PulseCheck } from "@/lib/types"
+import type { UserProfile, Attendance, Task, LeaveRequest, Nomination, PulseCheck, DailyReport } from "@/lib/types"
 import { usePermissions } from "@/hooks/usePermissions"
 
 interface TeamInsightHubProps {
@@ -20,6 +20,7 @@ interface TeamInsightHubProps {
     attendanceLogs: Attendance[];
     tasks: Task[];
     leaveRequests: LeaveRequest[];
+    reportsData: DailyReport[];
     nominations: Nomination[];
     pulseFeed: PulseCheck[];
     onExport: () => void;
@@ -37,6 +38,7 @@ export function TeamInsightHub({
     attendanceLogs,
     tasks,
     leaveRequests,
+    reportsData,
     nominations,
     pulseFeed,
     onExport,
@@ -47,14 +49,23 @@ export function TeamInsightHub({
   const isAdmin = permissions.canManageStaff || permissions.canManageCompany
 
   // 1. Master Time Filter controls ALL tabs
-  const [timeFilter, setTimeFilter] = useState<TimeFilterState>({
-    mode: 'WEEK',
-    referenceDate: new Date(),
-    weekIndex: Math.min(5, Math.ceil(new Date().getDate() / 7))
-  })
+  const [activeDate, setActiveDate] = useState<Date>(new Date())
+  const [activeScope, setActiveScope] = useState<ViewScope>('WEEK')
+
+  // Compatible state for children that still expect TimeFilterState
+  const timeFilter = useMemo(() => ({
+    mode: activeScope as any,
+    referenceDate: activeDate,
+  }), [activeDate, activeScope])
 
   const [activeTab, setActiveTab] = useState("operations")
   const [selectedStaffIds, setSelectedStaffIds] = useState<string[]>([])
+
+  // Derived logged dates for the calendar heatmap
+  const loggedDates = useMemo(() => {
+    const dates = new Set(attendanceLogs.map(l => l.date))
+    return Array.from(dates)
+  }, [attendanceLogs])
 
   // Dynamic initialization for comparison roster
   React.useEffect(() => {
@@ -83,7 +94,13 @@ export function TeamInsightHub({
         <div className="flex flex-wrap gap-3 relative z-10">
           <div className="flex flex-col gap-1.5">
               <span className="text-[9px] font-black uppercase tracking-widest text-primary ml-1 opacity-50 text-right mr-2">Cycle Control</span>
-              <AdvancedTimeFilter value={timeFilter} onChange={setTimeFilter} />
+              <DateScopePicker
+                activeDate={activeDate}
+                activeScope={activeScope}
+                onDateChange={setActiveDate}
+                onScopeChange={setActiveScope}
+                loggedDates={loggedDates}
+              />
           </div>
 
           <Button
@@ -183,6 +200,7 @@ export function TeamInsightHub({
                         attendanceLogs={attendanceLogs}
                         tasks={tasks}
                         leaveRequests={leaveRequests}
+                        reports={reportsData}
                         nominations={nominations}
                     />
                 </TabsContent>

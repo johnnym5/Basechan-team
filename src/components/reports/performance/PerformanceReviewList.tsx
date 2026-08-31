@@ -16,21 +16,39 @@ import {
     Search,
     Filter,
     Target,
-    Users
+    Users,
+    Loader2
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { ReviewSignatures } from './ReviewSignatures';
+import { doc, deleteDoc } from 'firebase/firestore';
+import { useToast } from '@/hooks/use-toast';
+import { Trash2 } from 'lucide-react';
 
 interface PerformanceReviewListProps {
     userProfile: UserProfile;
     isAdmin: boolean;
+    hideHeader?: boolean;
 }
 
-export function PerformanceReviewList({ userProfile, isAdmin }: PerformanceReviewListProps) {
+export function PerformanceReviewList({ userProfile, isAdmin, hideHeader = false }: PerformanceReviewListProps) {
   const firestore = useFirestore();
+  const { toast } = useToast();
   const [selectedReview, setSelectedReview] = useState<PerformanceReview | null>(null);
+  const [reviewToDelete, setReviewToDelete] = useState<PerformanceReview | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // 1. Fetch Reviews
   // Admins see all for organization, Staff only see their own
@@ -45,21 +63,37 @@ export function PerformanceReviewList({ userProfile, isAdmin }: PerformanceRevie
 
   const { data: reviews, isLoading } = useCollection<PerformanceReview>(reviewsQuery);
 
+  const handleDeleteReview = async () => {
+    if (!firestore || !reviewToDelete) return;
+    setIsDeleting(true);
+    try {
+      await deleteDoc(doc(firestore, 'performance_reviews', reviewToDelete.id));
+      toast({ title: "Review Deleted", description: `Performance record for ${reviewToDelete.userName} has been removed.` });
+      setReviewToDelete(null);
+    } catch (e: any) {
+      toast({ variant: 'destructive', title: "Delete Failed", description: e.message });
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
 
       {/* 1. FILTER HEADER */}
-      <div className="flex items-center justify-between gap-4 px-2">
-          <div className="flex items-center gap-3">
-              <div className="p-2 rounded-xl bg-primary/10 text-primary">
-                  <FileText className="w-4 h-4" />
-              </div>
-              <div>
-                  <h3 className="text-sm font-black uppercase tracking-tight text-white">Review Archives</h3>
-                  <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest opacity-60">Verified performance records</p>
-              </div>
-          </div>
-      </div>
+      {!hideHeader && (
+        <div className="flex items-center justify-between gap-4 px-2">
+            <div className="flex items-center gap-3">
+                <div className="p-2 rounded-xl bg-primary/10 text-primary">
+                    <FileText className="w-4 h-4" />
+                </div>
+                <div>
+                    <h3 className="text-sm font-black uppercase tracking-tight text-white">Review Archives</h3>
+                    <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest opacity-60">Verified performance records</p>
+                </div>
+            </div>
+        </div>
+      )}
 
       {/* 2. LIST FEED */}
       <div className="grid grid-cols-1 gap-4">
@@ -103,6 +137,21 @@ export function PerformanceReviewList({ userProfile, isAdmin }: PerformanceRevie
                                   {review.signatures.employee && review.signatures.manager ? "Fully Authorized" : "Pending Sign-off"}
                               </span>
                           </div>
+
+                          {isAdmin && (
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-9 w-9 text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10 rounded-xl transition-all"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    setReviewToDelete(review);
+                                }}
+                            >
+                                <Trash2 className="w-4 h-4" />
+                            </Button>
+                          )}
+
                           <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
                       </div>
                   </div>
@@ -214,6 +263,30 @@ export function PerformanceReviewList({ userProfile, isAdmin }: PerformanceRevie
               </DialogContent>
           </Dialog>
       )}
+
+      {/* DELETE CONFIRMATION */}
+      <AlertDialog open={!!reviewToDelete} onOpenChange={(open) => !open && setReviewToDelete(null)}>
+        <AlertDialogContent className="apple-glass-darker border-none rounded-[2rem] p-8 shadow-3xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-xl font-black font-headline tracking-tighter uppercase text-white">
+                Delete Performance Record?
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-sm font-medium text-slate-400 leading-relaxed">
+              Are you sure you want to permanently delete the performance review for <span className="text-white font-bold">{reviewToDelete?.userName}</span>? This action is destructive and cannot be reversed by system personnel.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="mt-8 gap-3">
+            <AlertDialogCancel disabled={isDeleting} className="rounded-xl font-black uppercase text-[10px] tracking-widest border-white/10 hover:bg-white/5">Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteReview}
+              disabled={isDeleting}
+              className="bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-black uppercase text-[10px] tracking-widest shadow-xl shadow-rose-600/20"
+            >
+              {isDeleting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Authorize Deletion"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

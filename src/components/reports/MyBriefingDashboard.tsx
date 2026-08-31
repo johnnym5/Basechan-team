@@ -6,19 +6,23 @@ import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine, CartesianGrid } from "recharts"
 import { IntelligentSummaryCenter } from "./IntelligentSummaryCenter"
-import type { UserProfile, Attendance, Task, LeaveRequest, Nomination } from "@/lib/types"
+import type { UserProfile, Attendance, Task, LeaveRequest, Nomination, DailyReport } from "@/lib/types"
 import { startOfWeek, endOfWeek, format, eachDayOfInterval, parseISO } from "date-fns"
 import { cn } from "@/lib/utils"
-import { TrendingUp, Info, CheckCircle2, Zap, Clock, ListTodo, Calendar, ShieldAlert } from "lucide-react"
+import { TrendingUp, Info, CheckCircle2, Zap, Clock, ListTodo, Calendar, ShieldAlert, Award } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { InsightEngine } from "@/lib/InsightEngine"
+import { PerformanceRecapCard } from "./PerformanceRecapCard"
+import { Button } from "@/components/ui/button"
+import { isLastDayOfMonth } from "date-fns"
 
 interface MyBriefingDashboardProps {
     userProfile: UserProfile;
     attendanceLogs: Attendance[];
     tasks: Task[];
     leaveRequests: LeaveRequest[];
+    reports: DailyReport[];
     staffList: UserProfile[];
     nominations?: Nomination[];
 }
@@ -28,10 +32,12 @@ export function MyBriefingDashboard({
     attendanceLogs = [],
     tasks = [],
     leaveRequests = [],
+    reports = [],
     staffList = [],
     nominations = []
 }: MyBriefingDashboardProps) {
   const router = useRouter()
+  const isEndOfMonth = useMemo(() => isLastDayOfMonth(new Date()), [])
 
   // --- DATA ENGINE (REAL DATA ONLY) ---
 
@@ -122,6 +128,24 @@ export function MyBriefingDashboard({
   // --- UI RENDER (Slim-Card Layout) ---
   return (
     <div className="flex flex-col gap-6 w-full animate-in fade-in zoom-in-95 duration-700">
+
+      {/* PERFORMANCE RECAP COMMAND CENTER */}
+      <PerformanceRecapCard
+          currentUser={userProfile}
+          attendanceLogs={attendanceLogs}
+          tasks={tasks}
+          reports={reports}
+          leaveRequests={leaveRequests}
+      />
+
+      {isEndOfMonth && (
+        <div className="bg-amber-500/10 border border-amber-500/20 p-4 rounded-2xl flex items-center justify-between animate-pulse">
+            <p className="text-[10px] font-black uppercase tracking-widest text-amber-500">
+                Your monthly performance summary is ready to review! Confirm all reports are filed.
+            </p>
+            <div className="h-2 w-2 rounded-full bg-amber-500" />
+        </div>
+      )}
 
       <Accordion type="multiple" className="space-y-6">
 

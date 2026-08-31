@@ -19,7 +19,9 @@ import {
     startOfMonth,
     endOfMonth,
     addDays,
-    differenceInDays
+    differenceInDays,
+    startOfWeek,
+    endOfWeek
 } from "date-fns"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -39,7 +41,7 @@ import {
   ChevronRight
 } from "lucide-react"
 import { useRouter } from "next/navigation"
-import { AdvancedTimeFilter, type TimeFilterState } from "../shared/AdvancedTimeFilter"
+import { DateScopePicker, type ViewScope } from "../shared/DateScopePicker"
 import { StaffGroupMultiSelect } from "../shared/StaffGroupMultiSelect"
 import { TrendInsightCard } from "./TrendInsightCard"
 import { StaffActionMenu } from "../shared/StaffActionMenu"
@@ -64,11 +66,14 @@ export function TeamInsightDashboard({
     onExport
 }: TeamInsightDashboardProps) {
   const router = useRouter()
-  const [timeFilter, setTimeFilter] = useState<TimeFilterState>({
-    mode: 'WEEK',
-    referenceDate: new Date(),
-    weekIndex: Math.min(5, Math.ceil(new Date().getDate() / 7))
-  })
+  const [activeDate, setActiveDate] = useState<Date>(new Date())
+  const [activeScope, setActiveScope] = useState<ViewScope>('WEEK')
+
+  // Compatible state for children
+  const timeFilter = useMemo(() => ({
+    mode: activeScope as any,
+    referenceDate: activeDate,
+  }), [activeDate, activeScope])
 
   const expectedStaff = useMemo(() =>
     staffList.filter(s => !['SUPERADMIN', 'ORG_ADMIN', 'MANAGING_DIRECTOR', 'HR_MANAGER'].includes(s.role)),
@@ -95,12 +100,8 @@ export function TeamInsightDashboard({
       startDate = startOfMonth(timeFilter.referenceDate)
       endDate = endOfMonth(timeFilter.referenceDate)
     } else if (timeFilter.mode === 'WEEK') {
-      const monthStart = startOfMonth(timeFilter.referenceDate)
-      startDate = addDays(monthStart, (timeFilter.weekIndex! - 1) * 7)
-      endDate = endOfDay(addDays(startDate, 6))
-      if (isAfter(endDate, endOfMonth(timeFilter.referenceDate))) {
-        endDate = endOfMonth(timeFilter.referenceDate)
-      }
+      startDate = startOfWeek(timeFilter.referenceDate, { weekStartsOn: 1 })
+      endDate = endOfWeek(timeFilter.referenceDate, { weekStartsOn: 1 })
     } else {
       startDate = startOfDay(timeFilter.referenceDate)
       endDate = endOfDay(timeFilter.referenceDate)
@@ -215,7 +216,13 @@ export function TeamInsightDashboard({
 
           <div className="flex flex-col gap-1.5">
               <span className="text-[9px] font-black uppercase tracking-widest text-primary ml-1 opacity-50 text-right mr-2">Timeframe Control</span>
-              <AdvancedTimeFilter value={timeFilter} onChange={setTimeFilter} />
+              <DateScopePicker
+                activeDate={activeDate}
+                activeScope={activeScope}
+                onDateChange={setActiveDate}
+                onScopeChange={setActiveScope}
+                loggedDates={attendanceLogs.map(l => l.date)}
+              />
           </div>
 
           <Button
@@ -326,7 +333,7 @@ export function TeamInsightDashboard({
                     <FileText className="w-4 h-4 text-primary"/> Activity Feed (Recent EODs)
                 </CardTitle>
             </CardHeader>
-            <CardContent className="p-6 overflow-y-auto custom-scrollbar flex-1">
+            <CardContent className="p-6 overflow-y-auto custom-scrollbar [scrollbar-gutter:stable] flex-1">
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                     {analytics.recentEODs.map(log => {
                         const pulse = pulseFeed.find(p => p.userId === log.userId && p.date === log.date)
@@ -364,7 +371,7 @@ export function TeamInsightDashboard({
                     <TrendingUp className="w-4 h-4"/> Performance Leaders
                 </CardTitle>
             </CardHeader>
-            <CardContent className="p-0 overflow-y-auto custom-scrollbar flex-1 bg-black/5">
+            <CardContent className="p-0 overflow-y-auto custom-scrollbar [scrollbar-gutter:stable] flex-1 bg-black/5">
                 <div className="divide-y divide-white/5">
                     {staffRankings.map((staff, idx) => (
                         <div key={staff.id} className="p-4 hover:bg-white/5 transition-all flex items-center justify-between group">

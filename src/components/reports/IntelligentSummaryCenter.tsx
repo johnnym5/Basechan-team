@@ -45,7 +45,7 @@ import {
 } from "date-fns"
 import { Button } from "@/components/ui/button"
 import { usePermissions } from "@/hooks/usePermissions"
-import { type TimeFilterState } from "../shared/AdvancedTimeFilter"
+import { type ViewScope } from "../shared/DateScopePicker"
 import { InsightEngine, type Insight } from "@/lib/InsightEngine"
 import { Badge } from "@/components/ui/badge"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
@@ -60,7 +60,7 @@ interface IntelligentSummaryCenterProps {
   pulseFeed?: PulseCheck[];
   nominations?: Nomination[];
   isAdminOverride?: boolean;
-  timeFilter?: TimeFilterState;
+  timeFilter?: { mode: ViewScope, referenceDate: Date };
   variant?: 'default' | 'compact';
 }
 
@@ -242,7 +242,6 @@ interface PersonnelIntel {
     fullName: string;
     insights: any[];
     staff: UserProfile | null;
-    pulse: string;
     dailySummary: string;
     lastReportDate?: string;
     weeklySummary: string;
@@ -344,7 +343,16 @@ function PersonnelIntelligenceHub({
 
     const intelItems = useMemo((): PersonnelIntel[] => {
         if (isTeamMode) {
-            return [{ isTeam: true, fullName: "Team Overview", insights: allInsights.filter(i => i.category === 'TEAM'), staff: null, pulse: 'NEUTRAL', dailySummary: "", weeklySummary: "", actionItems: [], tacticalInsights: [] }];
+            return [{
+                isTeam: true,
+                fullName: "Team Overview",
+                insights: allInsights.filter(i => i.category === 'TEAM'),
+                staff: null,
+                dailySummary: "",
+                weeklySummary: "",
+                actionItems: [],
+                tacticalInsights: []
+            }];
         }
         return selectedIds.map(id => {
             const staff = staffList.find(s => s.id === id);
@@ -352,26 +360,22 @@ function PersonnelIntelligenceHub({
             const now = new Date(), weekStart = startOfWeek(now, { weekStartsOn: 1 });
             const staffLogs = attendanceLogs.filter(l => l.userId === staff.id), staffTasks = tasks.filter(t => t.assignedTo === staff.id);
             const weeklyLogs = staffLogs.filter(l => isAfter(parseISO(l.date), weekStart));
-            let pulse: 'OPTIMAL' | 'FATIGUE_RISK' | 'DISENGAGED' = 'OPTIMAL';
-            const recentLates = weeklyLogs.filter(l => l.remarks?.includes('LATE')).length;
-            const expectedDays = eachDayOfInterval({ start: weekStart, end: now }).filter(d => !isWeekend(d)).length;
-            const recentAbsences = Math.max(0, expectedDays - weeklyLogs.length);
-            if (recentLates >= 2 || recentAbsences >= 1) pulse = 'FATIGUE_RISK';
-            if (recentAbsences >= 2 || staff.status === 'OFFLINE') pulse = 'DISENGAGED';
+
             const lastReportLog = [...staffLogs].sort((a, b) => b.date.localeCompare(a.date)).find(l => !!l.eodReport);
             const tacticalInsights = InsightEngine.generatePersonalInsights(staff, attendanceLogs, tasks, leaveRequests, pulseFeed, nominations);
-            return { isTeam: false, staff, fullName: staff.fullName, pulse, dailySummary: lastReportLog?.eodReport || "No Situation Report filed.", lastReportDate: lastReportLog?.date, weeklySummary: `Personnel has executed ${staffTasks.filter(t => t.status === 'ARCHIVED' && isAfter(parseISO(t.createdAt), weekStart)).length} operations this week.`, actionItems: staffTasks.filter(t => t.status === 'AWAITING_REVIEW' || t.priority === 'LEVEL_3').map(t => t.title), tacticalInsights, insights: [] };
+            return {
+                isTeam: false,
+                staff,
+                fullName: staff.fullName,
+                dailySummary: lastReportLog?.eodReport || "No Situation Report filed.",
+                lastReportDate: lastReportLog?.date,
+                weeklySummary: `Personnel has executed ${staffTasks.filter(t => t.status === 'ARCHIVED' && isAfter(parseISO(t.createdAt), weekStart)).length} operations this week.`,
+                actionItems: staffTasks.filter(t => t.status === 'AWAITING_REVIEW' || t.priority === 'LEVEL_3').map(t => t.title),
+                tacticalInsights,
+                insights: []
+            };
         }).filter(Boolean) as PersonnelIntel[];
     }, [selectedIds, isTeamMode, staffList, attendanceLogs, tasks, leaveRequests, pulseFeed, nominations, allInsights]);
-
-    const getPulseStyles = (pulse: string) => {
-        switch(pulse) {
-          case 'OPTIMAL': return 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20';
-          case 'FATIGUE_RISK': return 'text-amber-400 bg-amber-500/10 border-amber-500/20';
-          case 'DISENGAGED': return 'text-rose-400 bg-rose-500/10 border-rose-500/20';
-          default: return 'text-slate-400 bg-white/5 border-white/10';
-        }
-    };
 
     return (
         <div className="bg-black/20 border border-white/5 rounded-[2rem] overflow-hidden flex flex-col h-[320px] shadow-2xl">
@@ -416,7 +420,7 @@ function PersonnelIntelligenceHub({
                 </div>
             </div>
           )}
-          <div className="w-full p-4 bg-black/10 flex-1 overflow-x-auto custom-scrollbar">
+          <div className="w-full p-4 bg-black/10 flex-1 overflow-x-auto custom-scrollbar [scrollbar-gutter:stable]">
             <div className={cn("h-full flex gap-8", intelItems.length > 1 ? "min-w-max items-start" : "flex-col")}>
                 {intelItems.length === 0 ? (
                     <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground opacity-20"><Users className="w-12 h-12 mb-4" /><p className="text-[10px] font-black uppercase tracking-[0.3em] text-center max-w-[200px]">Select units to initialize comparison</p></div>
@@ -426,7 +430,16 @@ function PersonnelIntelligenceHub({
                         intelItems.length > 1 ? "w-[400px] bg-black/20 p-4 rounded-3xl border border-white/5 shadow-inner" : "w-full"
                     )}>
                         <div className="flex justify-between items-start mb-4 border-b border-white/5 pb-3">
-                            <div><h2 className={cn("font-black font-headline tracking-tighter uppercase text-white", intelItems.length > 1 ? "text-xl" : "text-2xl")}>{intel.fullName}</h2><div className="flex items-center gap-3 mt-3">{intel.isTeam ? (<Badge variant="outline" className="bg-primary/10 text-primary border-primary/20 text-[9px] font-black uppercase tracking-widest px-3 py-1">Mode: All Units</Badge>) : (<span className={cn("inline-flex items-center px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border", getPulseStyles(intel.pulse))}>PULSE: {intel.pulse.replace('_', ' ')}</span>)}</div></div>
+                            <div>
+                                <h2 className={cn("font-black font-headline tracking-tighter uppercase text-white", intelItems.length > 1 ? "text-xl" : "text-2xl")}>{intel.fullName}</h2>
+                                <div className="flex items-center gap-3 mt-3">
+                                    {intel.isTeam && (
+                                        <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20 text-[9px] font-black uppercase tracking-widest px-3 py-1">
+                                            Mode: All Units
+                                        </Badge>
+                                    )}
+                                </div>
+                            </div>
                             {intelItems.length === 1 && <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />}
                         </div>
                         <div className="space-y-4 flex-grow">
@@ -507,7 +520,7 @@ function PersonnelIntelligenceHub({
                             </DialogDescription>
                         </DialogHeader>
 
-                        <div className="flex flex-col gap-3 py-4 max-h-[60vh] overflow-y-auto custom-scrollbar">
+                        <div className="flex flex-col gap-3 py-4 max-h-[60vh] overflow-y-auto custom-scrollbar [scrollbar-gutter:stable]">
                             {!drillDownData || (Array.isArray(drillDownData) && drillDownData.length === 0) ? (
                                 <div className="py-12 text-center flex flex-col items-center gap-4 opacity-30">
                                     <Info className="h-12 w-12" />

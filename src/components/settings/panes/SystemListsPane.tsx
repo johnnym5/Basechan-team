@@ -13,6 +13,16 @@ import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 import { PerformanceReviewBuilder } from "../../reports/performance/PerformanceReviewBuilder"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { collection, query, where } from "firebase/firestore"
 import { useFirestore, useCollection, useMemoFirebase } from "@/firebase"
 import type { UserProfile, ReviewTemplate } from "@/lib/types"
@@ -23,6 +33,7 @@ interface SystemListsPaneProps {
 
 export function SystemListsPane({ userProfile }: SystemListsPaneProps) {
   const [activeTab, setActiveTab] = useState("reviews")
+  const [itemToDelete, setItemToDelete] = useState<{ item: any, onRemove: (item: any) => void, label: string } | null>(null)
   const firestore = useFirestore();
 
   const staffQuery = useMemoFirebase(() =>
@@ -92,7 +103,7 @@ export function SystemListsPane({ userProfile }: SystemListsPaneProps) {
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => { if(confirm(`Purge ${item.name} from system definitions?`)) onRemove(item) }}
+                onClick={() => setItemToDelete({ item, onRemove, label })}
                 className="h-10 w-10 rounded-xl hover:bg-rose-500/10 text-muted-foreground hover:text-rose-500 transition-colors"
               >
                 <Trash2 className="w-4 h-4" />
@@ -218,7 +229,7 @@ export function SystemListsPane({ userProfile }: SystemListsPaneProps) {
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={() => { if(confirm(`Remove ${holiday.name} from global holiday list?`)) removeHoliday(holiday) }}
+                      onClick={() => setItemToDelete({ item: holiday, onRemove: removeHoliday, label: "Global Holiday" })}
                       className="h-10 w-10 rounded-xl hover:bg-rose-500/10 text-muted-foreground hover:text-rose-500 transition-colors"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -234,6 +245,34 @@ export function SystemListsPane({ userProfile }: SystemListsPaneProps) {
           {renderList(assetCategories, loadingAssets, removeAsset, "Asset Category", "asset_categories")}
         </TabsContent>
       </Tabs>
+
+      {/* DELETE CONFIRMATION */}
+      <AlertDialog open={!!itemToDelete} onOpenChange={(open) => !open && setItemToDelete(null)}>
+        <AlertDialogContent className="apple-glass-darker border-none rounded-[2rem] p-8 shadow-3xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-xl font-black font-headline tracking-tighter uppercase text-white">
+                Authorize Purge: {itemToDelete?.label}
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-sm font-medium text-slate-400 leading-relaxed">
+              Are you sure you want to remove <span className="text-white font-bold">{itemToDelete?.item.name || itemToDelete?.item.templateName}</span> from the system matrix? This action will impact linked operational nodes and cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="mt-8 gap-3">
+            <AlertDialogCancel className="rounded-xl font-black uppercase text-[10px] tracking-widest border-white/10 hover:bg-white/5">Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (itemToDelete) {
+                    itemToDelete.onRemove(itemToDelete.item);
+                    setItemToDelete(null);
+                }
+              }}
+              className="bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-black uppercase text-[10px] tracking-widest shadow-xl shadow-rose-600/20"
+            >
+              Permanently Purge
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

@@ -144,6 +144,11 @@ export function ReportsPageContent({ initialPayload, noWrapper = false }: { init
   , [firestore, userProfile?.orgId]);
   const { data: allPulseData } = useCollection<PulseCheck>(allPulseQuery);
 
+  const allReportsQuery = useMemoFirebase(() =>
+    firestore ? query(collection(firestore, 'daily_reports'), where('orgId', '==', userProfile?.orgId || '')) : null
+  , [firestore, userProfile?.orgId]);
+  const { data: allReportsData } = useCollection<DailyReport>(allReportsQuery);
+
   // --- SCRUB DATA ---
   const {
       activeStaff,
@@ -154,7 +159,7 @@ export function ReportsPageContent({ initialPayload, noWrapper = false }: { init
   } = useScrubbedData({
       staffList: rawStaff || undefined,
       attendanceLogs: allAttendance || undefined,
-      reportsData: [],
+      reportsData: allReportsData || undefined,
       nominations: allNominations || undefined,
       tasks: allTasksData || undefined,
       leaveRequests: allLeaveData || undefined
@@ -200,6 +205,7 @@ export function ReportsPageContent({ initialPayload, noWrapper = false }: { init
                 attendanceLogs={activeAttendance}
                 tasks={activeTasks}
                 leaveRequests={activeLeaveRequests}
+                reportsData={allReportsData || []}
                 nominations={activeNominations}
                 pulseFeed={allPulseData || []}
                 onExport={handleMasterExport}

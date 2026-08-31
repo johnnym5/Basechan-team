@@ -126,7 +126,7 @@ export function InsightCalendarModal({
           </div>
 
           {/* DAY DETAILS PANEL */}
-          <div className="w-full min-h-[120px] p-6 rounded-[1.5rem] bg-white/5 border border-white/10 shadow-xl overflow-y-auto max-h-[250px] custom-scrollbar">
+          <div className="w-full min-h-[120px] p-6 rounded-[1.5rem] bg-white/5 border border-white/10 shadow-xl overflow-y-auto max-h-[250px] custom-scrollbar [scrollbar-gutter:stable]">
             <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-4 border-b border-white/5 pb-2">
               {selectedDate ? format(selectedDate, 'EEEE, MMM do, yyyy') : 'Select a date'}
             </h4>
