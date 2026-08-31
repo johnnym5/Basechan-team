@@ -9,19 +9,23 @@ import { format, differenceInSeconds } from 'date-fns';
 import { Badge } from "../ui/badge";
 import { cn } from "@/lib/utils";
 import { formatDuration } from "@/lib/formatters";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
+import { Info } from "lucide-react";
 
 import { useState } from "react";
-import { Download, History, ArrowRight, ChevronLeft, ChevronRight, Clock, MapPin } from "lucide-react";
+import { Download, History, ArrowRight, ChevronLeft, ChevronRight, Clock, MapPin, Edit2 } from "lucide-react";
 import { Button } from "../ui/button";
 import { ScrollArea } from "../ui/scroll-area";
 
 interface AttendanceHistoryProps {
   userProfile: UserProfile | null;
+  canEdit?: boolean;
+  onEdit?: (log: Attendance) => void;
 }
 
 const ITEMS_PER_PAGE = 5;
 
-export function AttendanceHistory({ userProfile }: AttendanceHistoryProps) {
+export function AttendanceHistory({ userProfile, canEdit, onEdit }: AttendanceHistoryProps) {
   const firestore = useFirestore();
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -111,15 +115,40 @@ export function AttendanceHistory({ userProfile }: AttendanceHistoryProps) {
                         <span className={cn(record.clockOut ? "text-rose-400" : "text-primary animate-pulse")}>
                             OUT: {record.clockOut ? format(new Date(record.clockOut), 'HH:mm') : 'ACTIVE'}
                         </span>
+                        {record.editedByAdmin && (
+                            <TooltipProvider>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <Info className="h-3 w-3 text-primary cursor-help opacity-40 hover:opacity-100 transition-opacity" />
+                                    </TooltipTrigger>
+                                    <TooltipContent className="apple-glass-darker border-none p-3 rounded-xl max-w-[200px]">
+                                        <p className="text-[10px] font-bold uppercase tracking-widest text-primary mb-1">Admin Override</p>
+                                        <p className="text-[9px] font-medium leading-relaxed italic">"{record.editReason}"</p>
+                                    </TooltipContent>
+                                </Tooltip>
+                            </TooltipProvider>
+                        )}
                       </div>
                       <div className="flex items-center justify-end gap-1 mt-1.5">
                         {record.lateReason && <Badge variant="outline" className="h-4 text-[7px] bg-amber-500/10 text-amber-500 border-none font-black px-1.5 uppercase tracking-tighter">Lateness Case</Badge>}
                         {record.eodReport && <Badge variant="outline" className="h-4 text-[7px] bg-primary/10 text-primary border-none font-black px-1.5 uppercase tracking-tighter">Report Filed</Badge>}
                       </div>
                     </div>
-                    <Button variant="ghost" size="sm" className="h-9 rounded-xl text-rose-500 hover:bg-rose-500/10 hover:text-rose-400 border border-transparent hover:border-rose-500/20 font-black text-[9px] uppercase tracking-widest px-4 transition-all opacity-0 group-hover:opacity-100">
-                      Force Close
-                    </Button>
+                    <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-all">
+                        {canEdit && (
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-9 w-9 rounded-xl text-primary hover:bg-primary/10"
+                                onClick={() => onEdit?.(record)}
+                            >
+                                <Edit2 className="h-4 w-4" />
+                            </Button>
+                        )}
+                        <Button variant="ghost" size="sm" className="h-9 rounded-xl text-rose-500 hover:bg-rose-500/10 hover:text-rose-400 border border-transparent hover:border-rose-500/20 font-black text-[9px] uppercase tracking-widest px-4 transition-all">
+                            Force Close
+                        </Button>
+                    </div>
                   </div>
                 </div>
               ))

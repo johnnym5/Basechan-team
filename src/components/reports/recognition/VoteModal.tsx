@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { collection, query, where, getDocs, addDoc, serverTimestamp } from 'firebase/firestore';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { Star, Loader2, Trophy, Info } from 'lucide-react';
@@ -138,7 +138,7 @@ export function VoteModal({ isOpen, onClose, currentUser, nominee }: VoteModalPr
                                     >
                                         <div className="flex items-center gap-3">
                                             <span className="text-xl">{cat.icon || (cat as any).emoji || '⭐'}</span>
-                                            <span className="text-[11px] font-black uppercase tracking-tight text-white group-hover:text-primary transition-colors">{cat.name || (cat as any).title}</span>
+                                            <span className="text-[11px] font-black uppercase tracking-tight text-white group-hover:text-primary transition-colors">{cat.title}</span>
                                         </div>
                                         {isBusy ? <Loader2 className="w-4 h-4 animate-spin text-primary" /> : <Star className={cn("w-4 h-4", hasVoted ? "fill-muted-foreground" : "text-amber-500 group-hover:scale-110 transition-transform")} />}
                                     </Button>

@@ -189,7 +189,7 @@ export function GlobalCommandPalette() {
               {staffList.map((staff) => (
                 <CommandItem
                   key={staff.id}
-                  onSelect={() => runCommand(() => router.push(`/staff/profile?userId=${staff.id}`))}
+                  onSelect={() => runCommand(() => router.push(`/staff/profile?id=${staff.id}`))}
                 >
                   <Users className="mr-2 h-4 w-4" />
                   <span>{staff.fullName}</span>

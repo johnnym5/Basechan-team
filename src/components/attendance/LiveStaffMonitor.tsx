@@ -28,6 +28,7 @@ import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { AttendanceHistory } from '@/components/attendance/AttendanceHistory';
+import { EditAttendanceRecordDialog } from './EditAttendanceRecordDialog';
 import { RequestAssistanceDialog } from '../tasks/RequestAssistanceDialog';
 import { ShareTaskDialog } from '../tasks/ShareTaskDialog';
 import { ModuleContainer } from "@/components/layout/shell/ModuleContainer";
@@ -59,6 +60,9 @@ export function LiveStaffMonitor({ userProfile, variant = 'carousel', selectedDa
     const [assistanceUser, setAssistanceUser] = useState<UserProfile | null>(null);
     const [shareTargetUser, setShareTargetUser] = useState<UserProfile | null>(null);
     const [selectedTaskToShare, setSelectedTaskToShare] = useState<Task | null>(null);
+
+    const [isOverrideOpen, setIsOverrideOpen] = useState(false);
+    const [logToEdit, setLogToEdit] = useState<Attendance | null>(null);
 
     useEffect(() => {
         if (!api) return;
@@ -302,7 +306,16 @@ export function LiveStaffMonitor({ userProfile, variant = 'carousel', selectedDa
                     <Dialog open={!!historyUser} onOpenChange={() => setHistoryUser(null)}>
                         <DialogContent className="max-w-4xl border-none apple-glass">
                             <DialogHeader><DialogTitle>Attendance History: {historyUser.fullName}</DialogTitle></DialogHeader>
-                            <div className="max-h-[70vh] overflow-y-auto"><AttendanceHistory userProfile={historyUser} /></div>
+                            <div className="max-h-[70vh] overflow-y-auto">
+                            <AttendanceHistory
+                                userProfile={historyUser}
+                                canEdit={permissions.canManageStaff}
+                                onEdit={(log) => {
+                                    setLogToEdit(log);
+                                    setIsOverrideOpen(true);
+                                }}
+                            />
+                        </div>
                         </DialogContent>
                     </Dialog>
                 )}
@@ -396,7 +409,16 @@ export function LiveStaffMonitor({ userProfile, variant = 'carousel', selectedDa
                 <Dialog open={!!historyUser} onOpenChange={() => setHistoryUser(null)}>
                     <DialogContent className="max-w-4xl border-none apple-glass">
                         <DialogHeader><DialogTitle>Attendance History: {historyUser.fullName}</DialogTitle></DialogHeader>
-                        <div className="max-h-[70vh] overflow-y-auto"><AttendanceHistory userProfile={historyUser} /></div>
+                        <div className="max-h-[70vh] overflow-y-auto">
+                            <AttendanceHistory
+                                userProfile={historyUser}
+                                canEdit={permissions.canManageStaff}
+                                onEdit={(log) => {
+                                    setLogToEdit(log);
+                                    setIsOverrideOpen(true);
+                                }}
+                            />
+                        </div>
                     </DialogContent>
                 </Dialog>
             )}
@@ -417,6 +439,14 @@ export function LiveStaffMonitor({ userProfile, variant = 'carousel', selectedDa
                 </Dialog>
             )}
             {selectedTaskToShare && <ShareTaskDialog task={selectedTaskToShare} open={!!selectedTaskToShare} onOpenChange={(open) => !open && setSelectedTaskToShare(null)} currentUserProfile={userProfile} />}
+
+            <EditAttendanceRecordDialog
+                isOpen={isOverrideOpen}
+                onClose={() => { setIsOverrideOpen(false); setLogToEdit(null); }}
+                staffList={orgUsers || []}
+                existingLog={logToEdit}
+                currentUser={userProfile}
+            />
         </ModuleContainer>
     );
 }

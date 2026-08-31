@@ -243,6 +243,9 @@ export interface Attendance {
     linkedTaskIds?: string[];
     branchName?: string | null;
     branchLocation?: string | null;
+    editedByAdmin?: boolean;
+    editedAt?: string;
+    editReason?: string;
 }
 
 export type ShiftType = "MORNING" | "AFTERNOON" | "NIGHT" | "ON_CALL";

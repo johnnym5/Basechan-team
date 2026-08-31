@@ -11,8 +11,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { PendingApprovals } from "@/components/attendance/PendingApprovals";
 import { useSystemConfig } from "@/hooks/useSystemConfig";
 import { LiveStaffMonitor } from "@/components/attendance/LiveStaffMonitor";
-import { ProfileAttendanceTab } from "@/components/profile/staff/ProfileAttendanceTab";
-import { Calendar } from "@/components/ui/calendar";
+import { ProfileAttendanceTab } from "@/components/profile/staff/ProfileAttendanceTab"
+import { EditAttendanceRecordDialog } from "./EditAttendanceRecordDialog"
+import { Calendar } from "@/components/ui/calendar"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Users, Activity, CheckCircle2, ShieldAlert, CalendarDays, Timer } from "lucide-react";
@@ -92,6 +93,8 @@ function StaffAttendanceDashboard({
     systemConfig: any
 }) {
     const firestore = useFirestore();
+    const [isOverrideOpen, setIsOverrideOpen] = useState(false);
+    const [logToEdit, setLogToEdit] = useState<Attendance | null>(null);
 
     const attendanceQuery = useMemoFirebase(() =>
         firestore ? query(
@@ -130,9 +133,22 @@ function StaffAttendanceDashboard({
                 <div className="lg:col-span-8 h-full min-h-[400px]">
                     <AttendanceHistory
                         userProfile={userProfile}
+                        canEdit={permissions.canManageStaff}
+                        onEdit={(log) => {
+                            setLogToEdit(log);
+                            setIsOverrideOpen(true);
+                        }}
                     />
                 </div>
             </div>
+
+            <EditAttendanceRecordDialog
+                isOpen={isOverrideOpen}
+                onClose={() => { setIsOverrideOpen(false); setLogToEdit(null); }}
+                staffList={[userProfile]} // Only self in personal dashboard for simplicity, but admins use AttendanceCenter
+                existingLog={logToEdit}
+                currentUser={userProfile}
+            />
 
             {/* Weekly Summary Row / Analytics for Staff */}
             <section className="space-y-4">

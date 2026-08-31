@@ -31,7 +31,10 @@ import {
   Palmtree,
   User,
   LayoutGrid,
-  LogIn
+  LogIn,
+  Info as LucideInfo,
+  Plus,
+  Edit2
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
@@ -47,6 +50,8 @@ import { useToast } from "@/hooks/use-toast"
 import { StaffActionMenu } from "@/components/shared/StaffActionMenu"
 import { calculateDailyStatus } from "@/lib/attendance-utils"
 import { InsightCalendarModal } from "../reports/recognition/InsightCalendarModal"
+import { EditAttendanceRecordDialog } from "./EditAttendanceRecordDialog"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
 interface AttendanceCenterProps {
   staffList: UserProfile[];
@@ -67,6 +72,9 @@ export function AttendanceCenter({ staffList, attendanceLogs, leaveRequests, pul
   const [selectedDate, setSelectedDate] = useState<Date>(new Date())
   const [isRosterOpen, setIsRosterOpen] = useState(false)
   const [selectedStaffForHistory, setSelectedStaffForHistory] = useState<UserProfile | null>(null)
+
+  const [isOverrideOpen, setIsOverrideOpen] = useState(false)
+  const [logToEdit, setLogToEdit] = useState<Attendance | null>(null)
 
   const [historyTimeframe, setHistoryTimeframe] = useState<'DAILY' | 'WEEKLY' | 'MONTHLY' | 'QUARTERLY'>('WEEKLY')
   const [historyStaffId, setHistoryStaffId] = useState<string>('ALL')
@@ -282,9 +290,17 @@ export function AttendanceCenter({ staffList, attendanceLogs, leaveRequests, pul
                 </h2>
                 <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-tighter mt-1 opacity-60">Real-time Attendance Stream</p>
             </div>
-            <Badge variant="outline" className="h-7 px-3 rounded-full border-white/10 text-[9px] font-black uppercase tracking-widest bg-background/50">
-                {format(selectedDate, 'MMM dd, yyyy')}
-            </Badge>
+            <div className="flex items-center gap-3">
+                <Button
+                    onClick={() => { setLogToEdit(null); setIsOverrideOpen(true); }}
+                    className="h-9 px-4 rounded-xl bg-primary text-white font-black uppercase text-[9px] tracking-widest shadow-lg shadow-primary/20 hover:scale-105 active:scale-95 transition-all"
+                >
+                    <Plus className="w-3.5 h-3.5 mr-2" /> Manual Override
+                </Button>
+                <Badge variant="outline" className="h-9 px-4 rounded-xl border-white/10 text-[9px] font-black uppercase tracking-widest bg-background/50 flex items-center">
+                    {format(selectedDate, 'MMM dd, yyyy')}
+                </Badge>
+            </div>
           </div>
           <div className="p-0 overflow-x-auto w-full custom-scrollbar">
             <table className="w-full text-sm text-left border-collapse min-w-[600px]">
@@ -334,7 +350,22 @@ export function AttendanceCenter({ staffList, attendanceLogs, leaveRequests, pul
                                     {status === 'ON_LEAVE' && <Badge className="bg-blue-500/20 text-blue-500 border-none text-[8px] font-black uppercase">On Leave</Badge>}
                                     {status === 'WEEKEND' && <Badge className="bg-slate-500/10 text-slate-500 border-none text-[8px] font-black uppercase">Weekend</Badge>}
 
-                                    {log && <span className="font-mono text-[10px] font-bold text-white">{format(new Date(log.clockIn), 'HH:mm')}</span>}
+                                    <div className="flex items-center gap-1.5 mt-0.5">
+                                        {log && <span className="font-mono text-[10px] font-bold text-white">{format(new Date(log.clockIn), 'HH:mm')}</span>}
+                                        {log?.editedByAdmin && (
+                                            <TooltipProvider>
+                                                <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                        <LucideInfo className="h-2.5 w-2.5 text-primary cursor-help opacity-40 hover:opacity-100 transition-opacity" />
+                                                    </TooltipTrigger>
+                                                    <TooltipContent className="apple-glass-darker border-none p-3 rounded-xl max-w-[200px]">
+                                                        <p className="text-[10px] font-bold uppercase tracking-widest text-primary mb-1">Admin Override</p>
+                                                        <p className="text-[9px] font-medium leading-relaxed italic">"{log.editReason}"</p>
+                                                    </TooltipContent>
+                                                </Tooltip>
+                                            </TooltipProvider>
+                                        )}
+                                    </div>
                                 </div>
                             </td>
                             <td className="px-6 py-4 text-center font-mono text-xs">
@@ -377,11 +408,25 @@ export function AttendanceCenter({ staffList, attendanceLogs, leaveRequests, pul
                                             </Button>
                                         </div>
                                     )}
-                                    <div onClick={(e) => e.stopPropagation()}>
-                                        <StaffActionMenu
-                                            staff={{ id: staff.id, name: staff.fullName, status: staff.status, isArchived: staff.isArchived }}
-                                            currentLog={log}
-                                        />
+                                    <div className="flex items-center gap-1 sm:opacity-0 sm:group-hover:opacity-100 transition-all">
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="h-8 w-8 rounded-lg text-primary hover:bg-primary/10"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setLogToEdit(log || null);
+                                                setIsOverrideOpen(true);
+                                            }}
+                                        >
+                                            <Edit2 className="h-4 w-4" />
+                                        </Button>
+                                        <div onClick={(e) => e.stopPropagation()}>
+                                            <StaffActionMenu
+                                                staff={{ id: staff.id, name: staff.fullName, status: staff.status, isArchived: staff.isArchived }}
+                                                currentLog={log}
+                                            />
+                                        </div>
                                     </div>
                                 </div>
                             </td>
@@ -638,6 +683,15 @@ export function AttendanceCenter({ staffList, attendanceLogs, leaveRequests, pul
               leaveRequests={leaveRequests}
           />
       )}
+
+      <EditAttendanceRecordDialog
+        isOpen={isOverrideOpen}
+        onClose={() => { setIsOverrideOpen(false); setLogToEdit(null); }}
+        staffList={staffList}
+        existingLog={logToEdit}
+        selectedDate={selectedDate}
+        currentUser={currentUserProfile}
+      />
     </div>
   )
 }

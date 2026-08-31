@@ -347,7 +347,7 @@ export function StrategicTrendsView({ staffList, attendanceLogs, tasks, timeFilt
             <div className="p-8 bg-white/5 border-t border-white/5 mt-auto">
                 <Button
                     className="w-full h-12 rounded-xl bg-primary text-white font-black uppercase text-[10px] tracking-widest shadow-xl shadow-primary/20"
-                    onClick={() => router.push(`/staff?userId=${selectedStaffId}`)}
+                    onClick={() => router.push(`/staff/profile?id=${selectedStaffId}`)}
                 >
                     Detailed 360 Dossier <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>

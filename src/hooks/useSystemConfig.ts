@@ -36,6 +36,10 @@ export function useSystemConfig(orgId: string | null | undefined) {
         allow_self_edit: true,
         require_screen_share: true,
         office_coordinates: null,
+        branches: [
+          { id: 'abuja', name: 'Abuja Office', lat: 9.049688, lng: 7.481471, radius: 100 },
+          { id: 'benin', name: 'Benin Office', lat: 6.333300, lng: 5.622200, radius: 100 }
+        ],
         work_hours: { start: '09:00', end: '17:00' },
         reporting_schedule: { required: true, deadline: '17:30' },
         currency_symbol: '$',

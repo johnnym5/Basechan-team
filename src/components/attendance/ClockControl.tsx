@@ -76,9 +76,11 @@ export function ClockControl({ userProfile, permissions, systemConfig, className
 
     useEffect(() => {
         const isExempt = permissions.canBypassGeofence || userProfile?.role === 'ORG_ADMIN' || userProfile?.role === 'SUPERADMIN';
-        const shouldCheckGeofence = location === 'OFFICE' && (systemConfig?.attendance_strict || !isExempt);
+        // We always try to get the location if 'OFFICE' is selected, so we can track which branch they are at
+        // regardless of whether strict enforcement is active.
+        const shouldCaptureLocation = location === 'OFFICE';
 
-        if (shouldCheckGeofence && 'geolocation' in navigator) {
+        if (shouldCaptureLocation && 'geolocation' in navigator) {
             const watchId = navigator.geolocation.watchPosition((pos) => {
                 const activeBranch = getClosestValidBranch(pos.coords.latitude, pos.coords.longitude, systemConfig?.branches || BRANCHES);
                 const result = validateGeofence(pos.coords.latitude, pos.coords.longitude, systemConfig?.branches || BRANCHES);
@@ -96,7 +98,7 @@ export function ClockControl({ userProfile, permissions, systemConfig, className
             setDistanceFromOffice(null);
             setNearestBranch(null);
         }
-    }, [location, systemConfig, permissions.canBypassGeofence, userProfile?.role]);
+    }, [location, systemConfig?.branches, permissions.canBypassGeofence, userProfile?.role]);
 
     const attendanceQuery = useMemoFirebase(() => {
         if (!userProfile?.id || !userProfile?.orgId || !today || !firestore) return null;
@@ -209,12 +211,13 @@ export function ClockControl({ userProfile, permissions, systemConfig, className
 
                 const activeBranch = getClosestValidBranch(latitude, longitude, systemConfig?.branches || BRANCHES);
 
-                if (!isExempt && location === 'OFFICE' && !activeBranch) {
+                // GEOFENCE ENFORCEMENT: Only block if attendance_strict is ON and user is NOT exempt
+                if (systemConfig?.attendance_strict && !isExempt && location === 'OFFICE' && !activeBranch) {
                     const result = validateGeofence(latitude, longitude, systemConfig?.branches || BRANCHES);
                     toast({
                         variant: "destructive",
-                        title: "Clock-in Failed",
-                        description: `You are not within range of any authorized office. Nearest: ${result.nearestBranch} (${Math.round(result.distance)}m away).`
+                        title: "Clock-in Blocked",
+                        description: `Geofence enforcement is active. You must be within an authorized office radius. Nearest: ${result.nearestBranch} (${Math.round(result.distance)}m away).`
                     });
                     setIsSubmitting(false);
                     return;
@@ -224,7 +227,9 @@ export function ClockControl({ userProfile, permissions, systemConfig, className
                     activeBranchName = activeBranch.name;
                 }
             } catch (err: any) {
-                if (!isExempt && location === 'OFFICE') {
+                // Only block if strict enforcement is active.
+                // If not strict, we proceed with null location data.
+                if (systemConfig?.attendance_strict && !isExempt && location === 'OFFICE') {
                     let msg = "Unable to verify your location. Please ensure GPS is enabled and you have granted permission.";
                     if (err.code === 1) msg = "Location Access Denied. You must allow location access in your browser settings to clock in.";
 
@@ -232,6 +237,7 @@ export function ClockControl({ userProfile, permissions, systemConfig, className
                     setIsSubmitting(false);
                     return;
                 }
+                console.warn("Location capture failed, but continuing as strict enforcement is inactive:", err);
             }
         }
 
@@ -279,7 +285,7 @@ export function ClockControl({ userProfile, permissions, systemConfig, className
                 }
             }
 
-            await attendanceService.clockIn(firestore, userProfile, location, today, systemConfig, reason, locationData, activeBranchName || nearestBranch);
+            await attendanceService.clockIn(firestore, userProfile, location, today, systemConfig, reason, locationData, activeBranchName);
             toast({ title: 'Shift Started', description: screenShareActive ? "Workstation linked." : "Clock-in successful." });
             setShowLateDialog(false);
             setLateReason('');

@@ -14,6 +14,7 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form"
+import { BRANCHES } from "@/lib/geofence"
 import type { UserProfile, BranchLocation } from "@/lib/types"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
@@ -210,8 +211,18 @@ export function OperationsSettingsPane({ userProfile }: OperationsSettingsPanePr
         <CardContent className="p-8 space-y-6">
           <div className="grid grid-cols-1 gap-4">
               {branches.length === 0 ? (
-                  <div className="py-12 text-center opacity-30 italic text-[10px] font-black uppercase tracking-widest bg-black/10 rounded-3xl border border-dashed border-white/10">
-                      No branch locations defined.
+                  <div className="py-12 text-center bg-black/20 rounded-3xl border border-dashed border-white/10 flex flex-col items-center justify-center gap-4">
+                      <p className="opacity-30 italic text-[10px] font-black uppercase tracking-widest">
+                          No branch locations defined in database.
+                      </p>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => setBranches(BRANCHES)}
+                        className="h-9 px-4 rounded-xl border-primary/20 text-primary hover:bg-primary/10 text-[9px] font-black uppercase tracking-widest"
+                      >
+                        Seed Default Branches (Abuja & Benin)
+                      </Button>
                   </div>
               ) : branches.map(branch => (
                   <div key={branch.id} className="flex items-center justify-between p-6 rounded-3xl bg-black/20 border border-white/5 group hover:border-primary/30 transition-all shadow-inner">
@@ -321,9 +332,10 @@ export function OperationsSettingsPane({ userProfile }: OperationsSettingsPanePr
       </Dialog>
 
       <div className="flex justify-end gap-4 pt-6 border-t border-white/5 mt-4 pb-20">
-        <Button variant="ghost" className="font-black uppercase text-[10px] tracking-widest opacity-40 hover:opacity-100 transition-opacity">Discard Changes</Button>
-        <Button className="h-12 px-8 rounded-xl bg-primary text-white font-black uppercase text-[10px] tracking-[0.2em] shadow-xl shadow-primary/20">
-            <ShieldCheck className="w-4 h-4 mr-2" /> Commit Operational Matrix
+        <Button variant="ghost" type="button" className="font-black uppercase text-[10px] tracking-widest opacity-40 hover:opacity-100 transition-opacity">Discard Changes</Button>
+        <Button type="submit" disabled={isSubmitting} className="h-12 px-8 rounded-xl bg-primary text-white font-black uppercase text-[10px] tracking-[0.2em] shadow-xl shadow-primary/20">
+            {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <ShieldCheck className="w-4 h-4 mr-2" />}
+            Commit Operational Matrix
         </Button>
       </div>
       </form>

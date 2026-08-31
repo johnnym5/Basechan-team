@@ -465,7 +465,7 @@ function PersonnelIntelligenceHub({
                                     </div>
                                     {!intel.isTeam && intelItems.length === 1 && (
                                         <div className="mt-auto pt-6 border-t border-white/5 flex justify-end">
-                                            <Button variant="ghost" size="sm" className="text-[9px] font-black uppercase tracking-widest text-primary hover:bg-primary/10 gap-2" onClick={() => router.push(`/staff?userId=${(intel.staff as any).id}`)}>Detailed 360 Insight <ChevronRight className="w-3 h-3" /></Button>
+                                            <Button variant="ghost" size="sm" className="text-[9px] font-black uppercase tracking-widest text-primary hover:bg-primary/10 gap-2" onClick={() => router.push(`/staff/profile?id=${(intel.staff as any).id}`)}>Detailed 360 Insight <ChevronRight className="w-3 h-3" /></Button>
                                         </div>
                                     )}
                                 </div>

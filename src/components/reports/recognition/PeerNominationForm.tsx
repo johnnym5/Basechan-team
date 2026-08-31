@@ -2,8 +2,9 @@
 
 import React, { useState } from 'react';
 import { Send, Info, CheckCircle2, ChevronRight, Zap, Star, Users, Heart, Lightbulb, Compass, GraduationCap, Loader2 } from 'lucide-react';
-import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
-import { useFirestore } from '@/firebase';
+import { addDoc, collection, serverTimestamp, query, where } from 'firebase/firestore';
+import { useFirestore, useMemoFirebase, useCollection } from '@/firebase';
+import { useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -63,7 +64,7 @@ export function PeerNominationForm({ currentUser, staffList }: PeerNominationFor
         const cat = CATEGORIES.find(c => c.id === catId);
         return {
           categoryId: catId,
-          categoryTitle: cat?.name || (cat as any).title,
+          categoryTitle: cat?.title || "Unknown",
           nomineeId: formData[catId]?.nomineeId || '',
           nomineeName: staffList.find(s => s.id === formData[catId]?.nomineeId)?.name || "Unknown",
           reason: formData[catId]?.reason || '',
@@ -157,8 +158,8 @@ export function PeerNominationForm({ currentUser, staffList }: PeerNominationFor
                         </div>
                     </div>
                     <div>
-                        <span className={cn("font-black text-xs uppercase tracking-tight", isSelected ? "text-white" : "text-slate-400 group-hover:text-slate-200")}>{(cat as any).emoji} {cat.name || (cat as any).title}</span>
-                        <p className="text-[9px] font-medium leading-relaxed opacity-60 mt-1 line-clamp-2">{cat.description || (cat as any).desc}</p>
+                        <span className={cn("font-black text-xs uppercase tracking-tight", isSelected ? "text-white" : "text-slate-400 group-hover:text-slate-200")}>{(cat as any).emoji} {cat.title}</span>
+                        <p className="text-[9px] font-medium leading-relaxed opacity-60 mt-1 line-clamp-2">{cat.desc}</p>
                     </div>
                 </div>
             );
@@ -180,7 +181,7 @@ export function PeerNominationForm({ currentUser, staffList }: PeerNominationFor
 
                 <div className="flex items-center gap-3">
                     <div className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
-                    <h3 className="text-sm font-black uppercase tracking-[0.2em] text-white">Nomination for {cat?.name || (cat as any).title}</h3>
+                    <h3 className="text-sm font-black uppercase tracking-[0.2em] text-white">Nomination for {cat?.title}</h3>
                 </div>
 
                 <div className="grid grid-cols-1 gap-6 relative z-10">
