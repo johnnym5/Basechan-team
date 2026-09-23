@@ -1,5 +1,5 @@
 /**
- * Type definitions for the Pure Deterministic Insight Engine.
+ * Type definitions for the Pure Deterministic Insight Engine v2.0.
  */
 
 export interface OperationalMomentum {
@@ -58,6 +58,17 @@ export interface ActionableDirective {
   payload?: any;
 }
 
+export interface BehavioralPattern {
+  id: string; // e.g., 'BP-01', 'BP-05'
+  code: string;
+  title: string;
+  classification: 'POSITIVE' | 'NEUTRAL' | 'WARNING' | 'CRITICAL';
+  metric: string;
+  insightRendered: string;
+  category: 'ARRIVAL' | 'DURATION' | 'REPORTING' | 'VELOCITY' | 'SYNCHRONICITY';
+  priorityTier: 1 | 2 | 3;
+}
+
 export interface InsightEngineResult {
   momentum: OperationalMomentum;
   punctualitySlope: number; // beta (drift in mins/day)
@@ -66,5 +77,6 @@ export interface InsightEngineResult {
   fatigue: FatigueVector;
   sanitizedMemo: SanitizedMemo;
   directives: ActionableDirective[];
+  behavioralPatterns: BehavioralPattern[];
   totalOperations: number;
 }

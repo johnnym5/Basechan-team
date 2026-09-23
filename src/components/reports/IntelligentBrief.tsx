@@ -26,7 +26,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
 import { collection, query, where, limit } from "firebase/firestore";
-import type { UserProfile, Attendance, DailyReport, Task, LeaveRequest, PulseCheck } from "@/lib/types";
+import type { UserProfile, Attendance, DailyReport, Task, LeaveRequest, PulseCheck, Kudos } from "@/lib/types";
 import { InsightEngine } from "@/lib/InsightEngine";
 import { uiEmitter } from "@/lib/ui-emitter";
 import { subDays, format } from "date-fns";
@@ -83,15 +83,24 @@ export function IntelligentBrief({ userProfile }: IntelligentBriefProps) {
     ) : null
   , [firestore, userProfile.orgId]);
 
+  const kudosQuery = useMemoFirebase(() =>
+    firestore ? query(
+      collection(firestore, 'kudos'),
+      where('orgId', '==', userProfile.orgId),
+      limit(100)
+    ) : null
+  , [firestore, userProfile.orgId]);
+
   const { data: attendance, isLoading: isAttLoading } = useCollection<Attendance>(attendanceQuery);
   const { data: reports, isLoading: isReportsLoading } = useCollection<DailyReport>(reportsQuery);
   const { data: tasks, isLoading: isTasksLoading } = useCollection<Task>(tasksQuery);
   const { data: leaveRequests, isLoading: isLeaveLoading } = useCollection<LeaveRequest>(leaveQuery);
   const { data: pulses, isLoading: isPulseLoading } = useCollection<PulseCheck>(pulseQuery);
+  const { data: kudos, isLoading: isKudosLoading } = useCollection<Kudos>(kudosQuery);
 
-  const isLoading = isAttLoading || isReportsLoading || isTasksLoading || isLeaveLoading || isPulseLoading;
+  const isLoading = isAttLoading || isReportsLoading || isTasksLoading || isLeaveLoading || isPulseLoading || isKudosLoading;
 
-  // Pure Deterministic Insight Engine Evaluation
+  // Pure Deterministic Insight Engine Evaluation v2.0
   const engineResult = useMemo(() => {
     if (!userProfile || !attendance || !tasks || !reports || !leaveRequests || !pulses) return null;
 
@@ -102,8 +111,9 @@ export function IntelligentBrief({ userProfile }: IntelligentBriefProps) {
       reports,
       leaveRequests,
       pulses,
+      kudos: kudos || [],
     });
-  }, [userProfile, attendance, tasks, reports, leaveRequests, pulses]);
+  }, [userProfile, attendance, tasks, reports, leaveRequests, pulses, kudos]);
 
   const handleDirectiveClick = (directive: any) => {
     if (directive.actionType) {
@@ -125,7 +135,7 @@ export function IntelligentBrief({ userProfile }: IntelligentBriefProps) {
 
   if (!engineResult) return null;
 
-  const { momentum, punctualitySlope, punctualityStatus, absenceTriage, fatigue, sanitizedMemo, directives, totalOperations } = engineResult;
+  const { momentum, punctualitySlope, punctualityStatus, absenceTriage, fatigue, sanitizedMemo, directives, behavioralPatterns, totalOperations } = engineResult;
 
   return (
     <div className="space-y-6 animate-in fade-in zoom-in-95 duration-700">
@@ -135,7 +145,7 @@ export function IntelligentBrief({ userProfile }: IntelligentBriefProps) {
           <div className="flex items-center gap-3">
             <h2 className="text-2xl font-black uppercase tracking-wider text-foreground font-headline">Personal Intelligence Brief</h2>
             <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20 text-[10px] font-black uppercase tracking-widest px-3 py-1">
-              Deterministic Math Engine
+              Deterministic Math Engine v2.0
             </Badge>
           </div>
           <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground opacity-60 mt-1">
@@ -205,7 +215,57 @@ export function IntelligentBrief({ userProfile }: IntelligentBriefProps) {
             </CardContent>
           </Card>
 
-          {/* 2. SANITIZED OPERATIONAL MEMO */}
+          {/* 2. BEHAVIORAL TELEMETRY & PATTERN CATALOG (16-HEURISTIC ENGINE) */}
+          <Card className="border-border/50 shadow-lg bg-card/40 backdrop-blur-xl rounded-[2rem]">
+            <CardHeader className="bg-primary/5 border-b border-white/5 py-4">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-xs font-black uppercase tracking-widest text-primary flex items-center gap-2">
+                  <Sparkles className="w-4 h-4" /> Behavioral Telemetry & Pattern Catalog
+                </CardTitle>
+                <Badge variant="outline" className="text-[9px] font-black uppercase tracking-widest bg-primary/10 text-primary border-primary/20">
+                  {behavioralPatterns.length} Patterns Validated
+                </Badge>
+              </div>
+              <CardDescription className="text-[10px] font-bold uppercase opacity-60">
+                16-heuristic deterministic discrete pattern classification.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="p-6 space-y-3">
+              {behavioralPatterns.map(pattern => (
+                <div
+                  key={pattern.id}
+                  className="p-4 rounded-2xl bg-secondary/20 border border-white/5 space-y-2 transition-all hover:bg-secondary/30"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Badge
+                        variant={
+                          pattern.classification === 'CRITICAL' ? 'destructive' :
+                          pattern.classification === 'WARNING' ? 'secondary' :
+                          pattern.classification === 'POSITIVE' ? 'default' : 'outline'
+                        }
+                        className={cn(
+                          "text-[8px] font-black uppercase tracking-widest",
+                          pattern.classification === 'POSITIVE' && "bg-emerald-500/20 text-emerald-400 border-none",
+                          pattern.classification === 'WARNING' && "bg-amber-500/20 text-amber-400 border-none"
+                        )}
+                      >
+                        {pattern.code}
+                      </Badge>
+                      <p className="text-xs font-black uppercase tracking-tight text-foreground">{pattern.title}</p>
+                    </div>
+                    <span className="text-[9px] font-mono font-bold text-muted-foreground">{pattern.metric}</span>
+                  </div>
+
+                  <p className="text-[10px] text-muted-foreground leading-relaxed font-medium">
+                    {pattern.insightRendered}
+                  </p>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+
+          {/* 3. SANITIZED OPERATIONAL MEMO */}
           <Card className="border-border/50 shadow-lg bg-card/40 backdrop-blur-xl rounded-[2rem]">
             <CardHeader className="bg-secondary/10 border-b border-white/5 py-4">
               <div className="flex items-center justify-between">
@@ -244,7 +304,7 @@ export function IntelligentBrief({ userProfile }: IntelligentBriefProps) {
             </CardContent>
           </Card>
 
-          {/* 3. ATTENDANCE & LEAVE AUDIT */}
+          {/* 4. ATTENDANCE & LEAVE AUDIT */}
           <Card className="border-border/50 shadow-lg bg-card/40 backdrop-blur-xl rounded-[2rem]">
             <CardHeader className="bg-emerald-500/5 border-b border-white/5 py-4">
               <CardTitle className="text-xs font-black uppercase tracking-widest text-emerald-500 flex items-center gap-2">
@@ -293,7 +353,7 @@ export function IntelligentBrief({ userProfile }: IntelligentBriefProps) {
         {/* RIGHT PANEL (40% BEHAVIORAL TELEMETRY & DIRECTIVES) */}
         <div className="lg:col-span-5 space-y-6">
 
-          {/* 4. MOMENTUM & HEALTH MATRIX */}
+          {/* 5. MOMENTUM & HEALTH MATRIX */}
           <Card className="border-border/50 shadow-lg bg-card/40 backdrop-blur-xl rounded-[2rem]">
             <CardHeader className="bg-primary/5 border-b border-white/5 py-4">
               <CardTitle className="text-xs font-black uppercase tracking-widest text-primary flex items-center gap-2">
@@ -338,7 +398,7 @@ export function IntelligentBrief({ userProfile }: IntelligentBriefProps) {
             </CardContent>
           </Card>
 
-          {/* 5. ACTIONABLE RESOLUTION DIRECTIVES */}
+          {/* 6. ACTIONABLE RESOLUTION DIRECTIVES */}
           <Card className="border-border/50 shadow-lg bg-card/40 backdrop-blur-xl rounded-[2rem]">
             <CardHeader className="bg-amber-500/5 border-b border-white/5 py-4">
               <CardTitle className="text-xs font-black uppercase tracking-widest text-amber-500 flex items-center gap-2">
