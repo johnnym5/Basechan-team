@@ -1,20 +1,37 @@
 'use client';
-import { useUser } from '@/firebase';
 
-// Master identity for infrastructure oversight
+import { useUser } from '@/firebase';
+import { useState, useEffect } from 'react';
+
+// Master admin email reference for root recovery
 const SUPER_ADMIN_EMAIL = 'jegbase@gmail.com';
-const SUPER_ADMIN_UID = 'nM0bBwaybEQP95OPKUyQ97iAm3u2';
 
 export function useSuperAdmin() {
   const { user, isUserLoading: isLoading } = useUser();
-  const userEmail = user?.email?.toLowerCase();
-  
-  // Verify identity via Email, corrected UID, or secret 'johnmary' alias
-  const isSuperAdmin = 
-    userEmail === SUPER_ADMIN_EMAIL.toLowerCase() || 
-    user?.uid === SUPER_ADMIN_UID ||
-    userEmail?.includes('johnmary') ||
-    user?.displayName?.toLowerCase().includes('johnmary');
-  
-  return { isSuperAdmin, isLoading, superAdminEmail: SUPER_ADMIN_EMAIL };
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
+  const [checkingClaims, setCheckingClaims] = useState(true);
+
+  useEffect(() => {
+    if (!user) {
+      setIsSuperAdmin(false);
+      setCheckingClaims(false);
+      return;
+    }
+
+    user.getIdTokenResult(false)
+      .then((tokenResult) => {
+        const roleClaim = tokenResult.claims.role;
+        // Verify via Cryptographic Auth Token Claim or Master Admin Email
+        const isSuper = roleClaim === 'SUPERADMIN' || user.email?.toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase();
+        setIsSuperAdmin(isSuper);
+      })
+      .catch(() => {
+        setIsSuperAdmin(user.email?.toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase());
+      })
+      .finally(() => {
+        setCheckingClaims(false);
+      });
+  }, [user]);
+
+  return { isSuperAdmin, isLoading: isLoading || checkingClaims, superAdminEmail: SUPER_ADMIN_EMAIL };
 }

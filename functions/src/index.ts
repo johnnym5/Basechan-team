@@ -1,14 +1,22 @@
-import * as functions from "firebase-functions";
-import * as admin from "firebase-admin";
+import { initializeApp, getApps } from "firebase-admin/app";
+import { getFirestore, FieldValue } from "firebase-admin/firestore";
+import { pubsub } from "firebase-functions/v1";
 import { differenceInSeconds } from "date-fns";
 
-admin.initializeApp();
+if (!getApps().length) {
+  initializeApp();
+}
 
-export const autoClockOutDailyV1 = functions.pubsub
+export { createJournalEntry, postJournalEntry } from "./accounting";
+export { clockInSession, clockOutSession } from "./attendance";
+export { submitRequisition } from "./procurement";
+export { syncUserCustomClaimsOnWrite, setCustomClaimsAdmin, startImpersonationSession } from "./auth";
+
+export const autoClockOutDailyV1 = pubsub
   .schedule("30 18 * * *")
   .timeZone("Africa/Lagos")
-  .onRun(async (context) => {
-    const db = admin.firestore();
+  .onRun(async () => {
+    const db = getFirestore();
     const now = new Date();
 
     // Query all active attendance sessions where clockOut is null
@@ -53,7 +61,7 @@ export const autoClockOutDailyV1 = functions.pubsub
           const updatedBreaks = [...record.breaks];
           updatedBreaks[updatedBreaks.length - 1].end = clockOutIso;
           finalUpdate.breaks = updatedBreaks;
-          finalUpdate.totalBreak = admin.firestore.FieldValue.increment(breakSeconds);
+          finalUpdate.totalBreak = FieldValue.increment(breakSeconds);
           finalUpdate.duration = Math.max(0, duration - breakSeconds);
         }
       }

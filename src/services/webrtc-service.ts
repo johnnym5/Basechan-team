@@ -1,4 +1,4 @@
-import { collection, doc, setDoc, onSnapshot, addDoc } from 'firebase/firestore';
+import { collection, doc, setDoc, onSnapshot, addDoc, updateDoc } from 'firebase/firestore';
 import type { Firestore } from 'firebase/firestore';
 import { errorEmitter } from '@/firebase';
 
@@ -7,6 +7,7 @@ class WebRTCService {
   private localStream: MediaStream | null = null;
   private unsubscribeCall: (() => void) | null = null;
   private unsubscribeAnswer: (() => void) | null = null;
+  private currentCallDocRef: any = null;
 
   async startScreenShare(firestore: Firestore, userId: string, orgId: string, stream: MediaStream) {
     try {
@@ -26,6 +27,7 @@ class WebRTCService {
       });
 
       const callDoc = doc(firestore, 'webrtc-sessions', `${orgId}_${userId}`);
+      this.currentCallDocRef = callDoc;
       const offerCandidates = collection(callDoc, 'offerCandidates');
       const answerCandidates = collection(callDoc, 'answerCandidates');
 
@@ -74,6 +76,10 @@ class WebRTCService {
   }
 
   stopScreenShare() {
+    if (this.currentCallDocRef) {
+      updateDoc(this.currentCallDocRef, { status: 'ended', endedAt: new Date().toISOString() }).catch(() => {});
+      this.currentCallDocRef = null;
+    }
     if (this.localStream) {
       this.localStream.getTracks().forEach(track => track.stop());
       this.localStream = null;

@@ -1,48 +1,30 @@
 "use strict";
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || (function () {
-    var ownKeys = function(o) {
-        ownKeys = Object.getOwnPropertyNames || function (o) {
-            var ar = [];
-            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
-            return ar;
-        };
-        return ownKeys(o);
-    };
-    return function (mod) {
-        if (mod && mod.__esModule) return mod;
-        var result = {};
-        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
-        __setModuleDefault(result, mod);
-        return result;
-    };
-})();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.autoClockOutDailyV1 = void 0;
-const functions = __importStar(require("firebase-functions"));
-const admin = __importStar(require("firebase-admin"));
+exports.autoClockOutDailyV1 = exports.startImpersonationSession = exports.setCustomClaimsAdmin = exports.syncUserCustomClaimsOnWrite = exports.submitRequisition = exports.clockOutSession = exports.clockInSession = exports.postJournalEntry = exports.createJournalEntry = void 0;
+const app_1 = require("firebase-admin/app");
+const firestore_1 = require("firebase-admin/firestore");
+const v1_1 = require("firebase-functions/v1");
 const date_fns_1 = require("date-fns");
-admin.initializeApp();
-exports.autoClockOutDailyV1 = functions.pubsub
+if (!(0, app_1.getApps)().length) {
+    (0, app_1.initializeApp)();
+}
+var accounting_1 = require("./accounting");
+Object.defineProperty(exports, "createJournalEntry", { enumerable: true, get: function () { return accounting_1.createJournalEntry; } });
+Object.defineProperty(exports, "postJournalEntry", { enumerable: true, get: function () { return accounting_1.postJournalEntry; } });
+var attendance_1 = require("./attendance");
+Object.defineProperty(exports, "clockInSession", { enumerable: true, get: function () { return attendance_1.clockInSession; } });
+Object.defineProperty(exports, "clockOutSession", { enumerable: true, get: function () { return attendance_1.clockOutSession; } });
+var procurement_1 = require("./procurement");
+Object.defineProperty(exports, "submitRequisition", { enumerable: true, get: function () { return procurement_1.submitRequisition; } });
+var auth_1 = require("./auth");
+Object.defineProperty(exports, "syncUserCustomClaimsOnWrite", { enumerable: true, get: function () { return auth_1.syncUserCustomClaimsOnWrite; } });
+Object.defineProperty(exports, "setCustomClaimsAdmin", { enumerable: true, get: function () { return auth_1.setCustomClaimsAdmin; } });
+Object.defineProperty(exports, "startImpersonationSession", { enumerable: true, get: function () { return auth_1.startImpersonationSession; } });
+exports.autoClockOutDailyV1 = v1_1.pubsub
     .schedule("30 18 * * *")
     .timeZone("Africa/Lagos")
-    .onRun(async (context) => {
-    const db = admin.firestore();
+    .onRun(async () => {
+    const db = (0, firestore_1.getFirestore)();
     const now = new Date();
     // Query all active attendance sessions where clockOut is null
     const activeShiftsQuery = db.collection("attendance").where("clockOut", "==", null);
@@ -79,7 +61,7 @@ exports.autoClockOutDailyV1 = functions.pubsub
                 const updatedBreaks = [...record.breaks];
                 updatedBreaks[updatedBreaks.length - 1].end = clockOutIso;
                 finalUpdate.breaks = updatedBreaks;
-                finalUpdate.totalBreak = admin.firestore.FieldValue.increment(breakSeconds);
+                finalUpdate.totalBreak = firestore_1.FieldValue.increment(breakSeconds);
                 finalUpdate.duration = Math.max(0, duration - breakSeconds);
             }
         }

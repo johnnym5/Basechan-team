@@ -1,13 +1,15 @@
 'use client';
 
-import { Firestore, collection, doc, query, where, getDocs, writeBatch, increment } from 'firebase/firestore';
-import { addDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase';
-import type { Account, JournalEntry, UserProfile, JournalEntryStatus, JournalEntryLine } from '@/lib/types';
+import { Firestore, collection } from 'firebase/firestore';
+import { addDocumentNonBlocking, initializeFirebase } from '@/firebase';
+import { getFunctions, httpsCallable } from 'firebase/functions';
+import type { Account, JournalEntry, UserProfile } from '@/lib/types';
 import { sanitizeInput } from '@/lib/utils';
 import { auditService } from './audit-service';
 
 /**
  * Service to handle organization-wide financial accounting logic.
+ * Enforces server-authoritative double-entry ledger execution.
  */
 export const accountingService = {
   /**
@@ -28,58 +30,43 @@ export const accountingService = {
     };
     const docRef = await addDocumentNonBlocking(accountsRef, newAccount);
     if (docRef) {
-        auditService.logAction(db, user, 'ACCOUNT_CREATE', `Registered new GL account: ${values.code} - ${values.name}`, { id: docRef.id, type: 'ACCOUNT' });
+      auditService.logAction(db, user, 'ACCOUNT_CREATE', `Registered new GL account: ${values.code} - ${values.name}`, { id: docRef.id, type: 'ACCOUNT' });
     }
     return docRef;
   },
 
   /**
-   * Creates a draft journal entry.
+   * Creates a draft journal entry via Server-Authoritative Cloud Function.
    */
   async createJournalEntry(db: Firestore, user: UserProfile, values: any) {
-    const journalRef = collection(db, 'journal_entries');
-    const newEntry: Omit<JournalEntry, 'id'> = {
+    const { functions } = initializeFirebase();
+    const fnInstance = functions || getFunctions();
+    const createFn = httpsCallable(fnInstance, 'createJournalEntry');
+
+    const result = await createFn({
       orgId: user.orgId,
-      date: new Date(values.date).toISOString(),
+      date: values.date ? new Date(values.date).toISOString() : new Date().toISOString(),
       description: sanitizeInput(values.description),
-      reference: sanitizeInput(values.reference || ""),
-      status: 'DRAFT',
-      createdBy: user.id,
-      creatorName: user.fullName,
-      createdAt: new Date().toISOString(),
+      reference: sanitizeInput(values.reference || ''),
       lines: values.lines,
-    };
-    const docRef = await addDocumentNonBlocking(journalRef, newEntry);
-    if (docRef) {
-        auditService.logAction(db, user, 'JOURNAL_DRAFT', `Created draft journal entry: ${values.reference}`, { id: docRef.id, type: 'JOURNAL' });
-    }
-    return docRef;
+    });
+
+    return (result.data as any)?.id ? { id: (result.data as any).id } : null;
   },
 
   /**
-   * Atomically posts a journal entry to the ledger and updates account balances.
+   * Atomically posts a journal entry to the ledger and updates account balances
+   * via Server-Authoritative Double-Entry Transaction Cloud Function.
    */
   async postJournalEntry(db: Firestore, entry: JournalEntry, user: UserProfile) {
     if (entry.status === 'POSTED') return;
 
-    const batch = writeBatch(db);
-    const entryRef = doc(db, 'journal_entries', entry.id);
+    const { functions } = initializeFirebase();
+    const fnInstance = functions || getFunctions();
+    const postFn = httpsCallable(fnInstance, 'postJournalEntry');
 
-    // 1. Update entry status to POSTED
-    batch.update(entryRef, { status: 'POSTED' });
-
-    // 2. Update balances for each account involved
-    for (const line of entry.lines) {
-      const accountRef = doc(db, 'accounts', line.accountId);
-      
-      // Net change for the account (Debits - Credits)
-      const netChange = line.debit - line.credit;
-      
-      // Use increment to update balance in a single atomic operation
-      batch.update(accountRef, { balance: increment(netChange) });
-    }
-
-    await batch.commit();
-    auditService.logAction(db, user, 'JOURNAL_POST', `Posted journal entry ${entry.reference} to General Ledger.`, { id: entry.id, type: 'JOURNAL' });
+    await postFn({
+      entryId: entry.id,
+    });
   }
 };

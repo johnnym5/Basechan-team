@@ -2,10 +2,185 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    // FULLY OPEN RULES FOR DEVELOPMENT
-    // Security and Data Isolation are managed by the application logic
+
+    // --- HELPER FUNCTIONS ---
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function getUserRole() {
+      return request.auth.token.role;
+    }
+
+    function isSuperAdmin() {
+      return isAuthenticated() && (
+        getUserRole() == 'SUPERADMIN' ||
+        request.auth.token.email == 'jegbase@gmail.com'
+      );
+    }
+
+    function isOrgAdmin() {
+      return isAuthenticated() && (
+        isSuperAdmin() ||
+        getUserRole() == 'ORG_ADMIN' ||
+        getUserRole() == 'MANAGING_DIRECTOR'
+      );
+    }
+
+    function isHRManager() {
+      return isAuthenticated() && (
+        isOrgAdmin() ||
+        getUserRole() == 'HR_MANAGER'
+      );
+    }
+
+    function isFinanceManager() {
+      return isAuthenticated() && (
+        isOrgAdmin() ||
+        getUserRole() == 'FINANCE_MANAGER' ||
+        getUserRole() == 'ACCOUNTANT'
+      );
+    }
+
+    // --- TRANSACTIONAL LEDGERS & SERVER-AUTHORITATIVE COLLECTIONS ---
+    // Direct client SDK write access is STRICTLY DISALLOWED (allow write: if false).
+    // All writes MUST originate from authenticated Cloud Functions via Firebase Admin SDK.
+
+    match /journal_entries/{entryId} {
+      allow read: if isFinanceManager() || isSuperAdmin();
+      allow write: if false;
+    }
+
+    match /accounts/{accountId} {
+      allow read: if isFinanceManager() || isSuperAdmin();
+      allow write: if false;
+    }
+
+    match /attendance/{attendanceId} {
+      allow read: if isAuthenticated() && (
+        resource.data.userId == request.auth.uid ||
+        isHRManager()
+      );
+      allow write: if false;
+    }
+
+    match /purchase_orders/{poId} {
+      allow read: if isFinanceManager();
+      allow write: if false;
+    }
+
+    match /audit_logs/{logId} {
+      allow read: if isOrgAdmin();
+      allow write: if false;
+    }
+
+    match /idempotency_keys/{keyId} {
+      allow read, write: if false;
+    }
+
+    // --- USER PROFILES & ROLES ---
+
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      allow create: if isOwner(userId) || isOrgAdmin();
+      allow update: if isOwner(userId) || isHRManager();
+      allow delete: if isOrgAdmin();
+    }
+
+    match /roles/{roleId} {
+      allow read: if isAuthenticated();
+      allow write: if isOrgAdmin();
+    }
+
+    // --- REQUISITIONS & PROCUREMENT ---
+
+    match /requisitions/{reqId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated() && (
+        resource.data.createdBy == request.auth.uid ||
+        isHRManager() ||
+        isFinanceManager()
+      );
+      allow delete: if isOrgAdmin();
+    }
+
+    // --- TASKS, LEAVES, CHATS & NOTIFICATIONS ---
+
+    match /tasks/{taskId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    match /leave_requests/{leaveId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    match /chats/{chatId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    match /chat_messages/{messageId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    match /announcements/{announcementId} {
+      allow read: if isAuthenticated();
+      allow write: if isOrgAdmin() || isHRManager();
+    }
+
+    match /notifications/{notificationId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update, delete: if isOwner(resource.data.userId);
+    }
+
+    match /system_configs/{configId} {
+      allow read: if isAuthenticated();
+      allow write: if isOrgAdmin();
+    }
+
+    match /external_displays/{displayId} {
+      allow read: if isAuthenticated();
+      allow write: if isOrgAdmin();
+    }
+
+    match /accolade_categories/{catId} {
+      allow read: if isAuthenticated();
+      allow write: if isOrgAdmin();
+    }
+
+    match /nominations/{nomId} {
+      allow read, create: if isAuthenticated();
+      allow update, delete: if isOrgAdmin();
+    }
+
+    match /accolade_votes/{voteId} {
+      allow read, create: if isAuthenticated();
+      allow update, delete: if isOrgAdmin();
+    }
+
+    match /daily_reports/{reportId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated();
+    }
+
+    match /workbooks/{workbookId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    match /library_items/{itemId} {
+      allow read: if isAuthenticated();
+      allow write: if isOrgAdmin();
+    }
+
+    // Default deny all unhandled paths
     match /{document=**} {
-      allow read, write: if true;
+      allow read, write: if false;
     }
   }
 }

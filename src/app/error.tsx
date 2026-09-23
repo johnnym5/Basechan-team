@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -23,11 +22,13 @@ export default function Error({
   , [firestore, user]);
   const { data: userProfile } = useDoc<UserProfile>(userProfileRef);
 
+  const correlationId = error.digest || `ERR-${Math.random().toString(36).substring(2, 9).toUpperCase()}`;
+
   useEffect(() => {
     if (firestore) {
-        logErrorToFirestore(firestore, error, undefined, userProfile);
+      logErrorToFirestore(firestore, error, undefined, userProfile);
     } else {
-        console.error("Local Error Boundary:", error);
+      console.error("Local Error Boundary:", error);
     }
   }, [error, firestore, userProfile]);
 
@@ -36,9 +37,12 @@ export default function Error({
         <div className="bg-destructive/10 border border-destructive/20 p-4 rounded-full mb-6">
             <ShieldAlert className="h-12 w-12 text-destructive" />
         </div>
-        <h1 className="text-xl font-bold text-foreground">Something went wrong here.</h1>
+        <h1 className="text-xl font-bold text-foreground">Something went wrong.</h1>
         <p className="text-muted-foreground mt-2 max-w-md text-sm">
-            An error occurred in this part of the application. The issue has been logged. You can try to recover or return to the dashboard.
+            An error occurred in this module. The issue has been logged.
+        </p>
+        <p className="text-[10px] font-mono text-muted-foreground opacity-60 mt-1 uppercase">
+            Correlation ID: {correlationId}
         </p>
         
         <div className="mt-8 flex flex-wrap justify-center gap-4">

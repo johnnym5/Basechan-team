@@ -1,5 +1,8 @@
 'use client';
+
 import React, { createContext, useContext, useState, ReactNode, useMemo, useEffect } from 'react';
+import { initializeFirebase } from '@/firebase';
+import { getFunctions, httpsCallable } from 'firebase/functions';
 
 const IMPERSONATION_KEY = 'basechanstaff-impersonation-mode';
 const IMPERSONATION_TARGET_KEY = 'basechanstaff-impersonation-target-id';
@@ -19,7 +22,6 @@ export function ImpersonationProvider({ children }: { children: ReactNode }) {
   const [impersonatedUserId, setImpersonatedUserIdState] = useState<string | null>(null);
 
   useEffect(() => {
-    // Check if user has a preference, otherwise stay in Staff mode (Safe mode)
     const storedValue = localStorage.getItem(IMPERSONATION_KEY);
     if (storedValue !== null) {
       setIsImpersonatingState(storedValue === 'true');
@@ -31,21 +33,37 @@ export function ImpersonationProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  const triggerAuditImpersonation = async (targetId: string | null) => {
+    try {
+      const { functions } = initializeFirebase();
+      const fnInstance = functions || getFunctions();
+      const impersonateFn = httpsCallable(fnInstance, 'startImpersonationSession');
+      await impersonateFn({ targetUserId: targetId || null });
+    } catch (e) {
+      console.warn("Server impersonation audit notification:", e);
+    }
+  };
+
   const setIsImpersonating = (value: boolean) => {
     localStorage.setItem(IMPERSONATION_KEY, String(value));
     setIsImpersonatingState(value);
     if (!value) {
-        setImpersonatedUserId(null);
+      setImpersonatedUserId(null);
+    } else {
+      triggerAuditImpersonation(impersonatedUserId);
     }
   };
 
   const setImpersonatedUserId = (id: string | null) => {
     if (id) {
-        localStorage.setItem(IMPERSONATION_TARGET_KEY, id);
+      localStorage.setItem(IMPERSONATION_TARGET_KEY, id);
     } else {
-        localStorage.removeItem(IMPERSONATION_TARGET_KEY);
+      localStorage.removeItem(IMPERSONATION_TARGET_KEY);
     }
     setImpersonatedUserIdState(id);
+    if (id) {
+      triggerAuditImpersonation(id);
+    }
   };
   
   const value = useMemo(() => ({

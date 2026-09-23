@@ -1,3 +1,11 @@
+/**
+ * Client-Side Geofencing Helpers
+ *
+ * NOTE: These functions provide real-time UI status indicators for browser feedback.
+ * Authoritative geofence distance calculation and shift validation are enforced
+ * on server runtimes via Cloud Functions (`clockInSession`).
+ */
+
 import { getDistanceInMeters } from "./utils";
 import type { BranchLocation } from "./types";
 
@@ -47,7 +55,7 @@ export function isWithinBranchRadius(
 }
 
 /**
- * Validates if the user's coordinates are within the radius of any organizational branch.
+ * Client UI helper: Validates if the user's coordinates are within radius.
  */
 export function validateGeofence(
   userLat: number,
@@ -82,4 +90,3 @@ export function validateGeofence(
     branch: null
   };
 }
-

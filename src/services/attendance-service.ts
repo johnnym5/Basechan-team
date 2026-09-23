@@ -1,22 +1,21 @@
-
 'use client';
 
-import { Firestore, collection, doc, query, where, limit, getDocs, increment, arrayUnion, getDoc, setDoc, updateDoc, orderBy } from 'firebase/firestore';
-import { updateDocumentNonBlocking } from '@/firebase';
+import { Firestore, collection, doc, query, where, getDocs, increment, arrayUnion, getDoc, updateDoc } from 'firebase/firestore';
+import { updateDocumentNonBlocking, initializeFirebase } from '@/firebase';
+import { getFunctions, httpsCallable } from 'firebase/functions';
 import type { UserProfile, Attendance, AttendanceLocation, SystemConfig, AttendanceRemark } from '@/lib/types';
-import { differenceInSeconds, parse, isAfter, isBefore } from 'date-fns';
+import { differenceInSeconds, parse, isBefore } from 'date-fns';
 import { reportService } from './report-service';
 import { uiEmitter } from '@/lib/ui-emitter';
 import { auditService } from './audit-service';
 
 /**
  * Service to manage personnel shift lifecycle and automated reporting triggers.
- * Ensures one attendance record per user per day via deterministic IDs and proactive scans.
+ * Server-Authoritative geofencing & shift validation via Cloud Functions.
  */
 export const attendanceService = {
   /**
-   * Initiates a new work session.
-   * Performs a deep scan to prevent duplicate records for the same operational cycle.
+   * Initiates a new work session via Server-Authoritative Geofence & Attendance Cloud Function.
    */
   async clockIn(
     db: Firestore,
@@ -30,100 +29,21 @@ export const attendanceService = {
   ) {
     if (!user?.id) throw new Error("Personnel identity verification failed. Command aborted.");
 
-    const deterministicId = `${user.id}_${today}`;
-    const docRef = doc(db, 'attendance', deterministicId);
-    
-    // 1. PROACTIVE DUPLICATE SCAN
-    const q = query(
-        collection(db, 'attendance'),
-        where('orgId', '==', user.orgId),
-        where('userId', '==', user.id),
-        where('date', '==', today)
-    );
-    
-    const snap = await getDocs(q);
-    const now = new Date();
-    const nowIso = now.toISOString();
+    const { functions } = initializeFirebase();
+    const fnInstance = functions || getFunctions();
+    const clockInFn = httpsCallable(fnInstance, 'clockInSession');
 
-    // Calculate Late Remark
-    const remarks: AttendanceRemark[] = [];
-    if (systemConfig?.work_hours?.start) {
-        const startTime = parse(systemConfig.work_hours.start, 'HH:mm', now);
-        if (isAfter(now, startTime)) {
-            remarks.push('LATE');
-        }
-    }
-
-    if (!snap.empty) {
-        const sortedDocs = snap.docs.sort((a, b) => {
-             const tA = new Date(a.data().clockIn || 0).getTime();
-             const tB = new Date(b.data().clockIn || 0).getTime();
-             return tB - tA;
-        });
-        const existingDoc = sortedDocs[0];
-        const data = existingDoc.data() as Attendance;
-        const activeRef = doc(db, 'attendance', existingDoc.id);
-
-        if (data.clockOut) {
-            // RESUME SESSION: Treat the gap as a break segment
-            const lastOut = new Date(data.clockOut);
-            const gapSeconds = Math.max(0, differenceInSeconds(now, lastOut));
-            
-            const updatePayload: any = {
-                clockOut: null,
-                onBreak: false,
-                breaks: arrayUnion({ start: data.clockOut, end: nowIso }),
-                totalBreak: increment(gapSeconds),
-                location,
-                status: 'APPROVED',
-                lateReason: lateReason || data.lateReason || null
-            };
-
-            const resolvedBranch = branchName || data.branchName || data.branchLocation || null;
-            if (locationData) {
-                updatePayload.clockInLocation = locationData;
-            }
-            updatePayload.branchName = resolvedBranch;
-            updatePayload.branchLocation = resolvedBranch;
-
-            await updateDoc(activeRef, updatePayload);
-            
-            const userRef = doc(db, 'users', user.id);
-            updateDocumentNonBlocking(userRef, { status: 'ONLINE', lastSeen: nowIso });
-            return activeRef;
-        }
-        
-        return activeRef;
-    }
-
-    // 2. NEW SESSION INITIALIZATION
-    const resolvedBranch = branchName || null;
-    const newRecord: any = {
-      userId: user.id,
-      userName: user.fullName,
-      orgId: user.orgId,
-      date: today,
-      clockIn: nowIso,
-      status: 'PENDING',
-      location,
-      remarks,
-      idleTime: 0,
-      totalBreak: 0,
-      onBreak: false,
-      breaks: [],
+    const response = await clockInFn({
+      lat: locationData?.lat ?? null,
+      lng: locationData?.lng ?? null,
+      today,
       lateReason: lateReason || null,
-      clockInLocation: locationData || null,
-      branchName: resolvedBranch,
-      branchLocation: resolvedBranch
-    };
-    
-    await setDoc(docRef, newRecord);
-    
-    const userRef = doc(db, 'users', user.id);
-    // User is awaiting admin verification, do not set to ONLINE yet
-    updateDocumentNonBlocking(userRef, { status: 'PENDING', lastSeen: nowIso });
-    
-    return docRef;
+      branchName: branchName || null,
+    });
+
+    const data = response.data as any;
+    const recordId = data?.recordId || `${user.id}_${today}`;
+    return doc(db, 'attendance', recordId);
   },
 
   /**
@@ -155,7 +75,7 @@ export const attendanceService = {
   },
 
   /**
-   * Terminates the work session and triggers automated EOD reporting.
+   * Terminates the work session via Server-Authoritative Cloud Function.
    */
   async clockOut(
     db: Firestore,
@@ -164,62 +84,21 @@ export const attendanceService = {
     systemConfig: SystemConfig | null,
     debriefData?: { manualReport: string; attachedTaskId?: string }
   ) {
-    const now = new Date();
-    const attendanceRef = doc(db, 'attendance', record.id);
-    const userRef = doc(db, 'users', user.id);
+    const { functions } = initializeFirebase();
+    const fnInstance = functions || getFunctions();
+    const clockOutFn = httpsCallable(fnInstance, 'clockOutSession');
 
-    const remarks = [...(record.remarks || [])];
-    
-    // Analytics: Early Departure (UNDERTIME)
-    if (systemConfig?.work_hours?.end) {
-        const endTime = parse(systemConfig.work_hours.end, 'HH:mm', now);
-        if (isBefore(now, endTime)) {
-            remarks.push('UNDERTIME');
-        }
-    }
+    await clockOutFn({
+      recordId: record.id,
+      debriefReport: debriefData?.manualReport || null,
+      attachedTaskId: debriefData?.attachedTaskId || null,
+    });
 
-    // Analytics: Work Volume (OVERTIME)
-    const clockInTime = new Date(record.clockIn);
-    const totalDurationSec = differenceInSeconds(now, clockInTime);
-    if (totalDurationSec > 32400) { // More than 9 hours total (8h work + 1h break approx)
-        remarks.push('OVERTIME');
-    }
-
-    const finalUpdate: any = {
-      clockOut: now.toISOString(),
-      status: 'APPROVED',
-      onBreak: false,
-      remarks: Array.from(new Set(remarks)),
-      duration: totalDurationSec - (record.totalBreak || 0) - (record.idleTime || 0),
-      eodReport: debriefData?.manualReport || null,
-      linkedTaskIds: debriefData?.attachedTaskId ? [debriefData.attachedTaskId] : []
-    };
-
-    if (record.onBreak && record.breaks?.length) {
-        const lastBreak = record.breaks[record.breaks.length - 1];
-        if (!lastBreak.end) {
-            const breakSeconds = differenceInSeconds(now, new Date(lastBreak.start));
-            const updatedBreaks = [...record.breaks];
-            updatedBreaks[updatedBreaks.length - 1].end = now.toISOString();
-            finalUpdate.breaks = updatedBreaks;
-            finalUpdate.totalBreak = increment(breakSeconds);
-        }
-    }
-
-    try {
-        await reportService.generateAutomatedEODReport(db, user, { ...record, ...finalUpdate });
-    } catch (e) {
-        console.error("Automated EOD Report failure:", e);
-    }
-
-    updateDocumentNonBlocking(attendanceRef, finalUpdate);
-    updateDocumentNonBlocking(userRef, { status: 'OFFLINE', lastSeen: now.toISOString() });
-    
     uiEmitter.emit('open-pulse-check' as any);
   },
 
   /**
-   * Forces an active work session to end.
+   * Forces an active work session to end (Admin tool).
    */
   async forceClockOut(db: Firestore, recordId: string, adminUser: UserProfile) {
     const recordRef = doc(db, 'attendance', recordId);
@@ -293,7 +172,6 @@ export const attendanceService = {
       let clockOutDate = new Date(clockInDate);
       clockOutDate.setHours(17, 0, 0, 0);
 
-      // If clock-in happened after 17:00, use current time
       if (clockOutDate <= clockInDate) {
         clockOutDate = now;
       }
@@ -349,13 +227,11 @@ export const attendanceService = {
 
     const userRef = doc(db, 'users', record.userId);
     if (status === 'APPROVED') {
-        // If approved and not yet clocked out, set user to ONLINE
-        if (!record.clockOut) {
-            await updateDoc(userRef, { status: 'ONLINE' });
-        }
+      if (!record.clockOut) {
+        await updateDoc(userRef, { status: 'ONLINE' });
+      }
     } else {
-        // If rejected, set user to OFFLINE
-        await updateDoc(userRef, { status: 'OFFLINE' });
+      await updateDoc(userRef, { status: 'OFFLINE' });
     }
 
     await auditService.logAction(

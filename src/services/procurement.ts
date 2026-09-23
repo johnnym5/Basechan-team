@@ -1,7 +1,7 @@
-
 'use client';
 import { Firestore, doc, arrayUnion, collection, query, where, getDocs } from 'firebase/firestore';
-import { updateDocumentNonBlocking, addDocumentNonBlocking } from '@/firebase';
+import { updateDocumentNonBlocking, addDocumentNonBlocking, initializeFirebase } from '@/firebase';
+import { getFunctions, httpsCallable } from 'firebase/functions';
 import type { Requisition, UserProfile, ActivityEntry, RequisitionStatus, PurchaseOrder, Notification } from '@/lib/types';
 import { sanitizeInput } from '@/lib/utils';
 import { activityService } from './activity-service';
@@ -17,48 +17,34 @@ export const PROCUREMENT_WORKFLOW: Record<RequisitionStatus, { next: Requisition
 
 /**
  * Service to handle procurement lifecycle.
+ * Server-Authoritative requisition submission with idempotency protection.
  */
 export const procurementService = {
     async createRequisition(db: Firestore, user: UserProfile, values: any, attachmentUrl?: string) {
-        const reqsCollection = collection(db, 'requisitions');
-        const q = query(reqsCollection, where('orgId', '==', user.orgId));
-        const orgReqsSnapshot = await getDocs(q);
-        const newSerialNo = `REQ-${String(orgReqsSnapshot.size + 1).padStart(4, '0')}`;
-        const now = new Date().toISOString();
+        const idempotencyKey = values.idempotencyKey || `REQ_${user.id}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
-        const initialActivity: ActivityEntry = {
-            type: 'LOG',
-            actorId: user.id,
-            actorName: user.fullName,
-            timestamp: now,
-            text: `created the requisition and sent for HR approval.`,
-            fromStatus: 'N/A',
-            toStatus: 'PENDING_HR',
-        };
+        const { functions } = initializeFirebase();
+        const fnInstance = functions || getFunctions();
+        const submitFn = httpsCallable(fnInstance, 'submitRequisition');
 
-        const newRequisition: Omit<Requisition, 'id'> = {
-            serialNo: newSerialNo,
-            orgId: user.orgId,
-            createdBy: user.id,
-            creatorName: user.fullName,
+        const response = await submitFn({
+            idempotencyKey,
             title: sanitizeInput(values.title),
-            amount: values.amount,
-            vendorId: values.vendorId,
+            amount: Number(values.amount),
+            vendorId: values.vendorId || null,
             vendorName: values.vendorName || 'Unknown Vendor',
             description: sanitizeInput(values.description),
-            status: 'PENDING_HR',
-            createdAt: now,
-            activity: [initialActivity],
-            attachmentUrl: attachmentUrl || null,
             attachmentName: values.attachment ? values.attachment.name : null,
-        };
+            attachmentUrl: attachmentUrl || null,
+        });
 
-        const docRef = await addDocumentNonBlocking(reqsCollection, newRequisition);
-        
+        const data = response.data as any;
+        const reqId = data?.requisitionId;
+
         // Activity points: +3 for initiating requisition
         activityService.logActivity(db, user, 3);
-        
-        return docRef;
+
+        return reqId ? doc(db, 'requisitions', reqId) : null;
     },
 
     async advanceRequisition(

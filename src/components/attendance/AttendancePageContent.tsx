@@ -4,7 +4,7 @@ import React, { useState, useMemo } from "react";
 import { ClockControl } from "@/components/attendance/ClockControl";
 import { AttendanceHistory } from "@/components/attendance/AttendanceHistory";
 import { useUser, useDoc, useMemoFirebase, useFirestore, useCollection } from "@/firebase";
-import { doc, collection, query, where, orderBy } from "firebase/firestore";
+import { doc, collection, query, where, orderBy, limit } from "firebase/firestore";
 import type { UserProfile, Attendance } from "@/lib/types";
 import { usePermissions } from "@/hooks/usePermissions";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -40,12 +40,17 @@ function AdminAttendanceDashboard({
     const firestore = useFirestore();
 
     const attendanceQuery = useMemoFirebase(() =>
-        firestore ? query(collection(firestore, 'attendance'), where('orgId', '==', userProfile.orgId)) : null
+        firestore ? query(
+            collection(firestore, 'attendance'),
+            where('orgId', '==', userProfile.orgId),
+            orderBy('clockIn', 'desc'),
+            limit(100)
+        ) : null
     , [firestore, userProfile.orgId]);
     const { data: allAttendance } = useCollection<Attendance>(attendanceQuery);
 
     const usersQuery = useMemoFirebase(() =>
-        firestore ? query(collection(firestore, 'users'), where('orgId', '==', userProfile.orgId)) : null
+        firestore ? query(collection(firestore, 'users'), where('orgId', '==', userProfile.orgId), limit(100)) : null
     , [firestore, userProfile.orgId]);
     const { data: allUsers } = useCollection<UserProfile>(usersQuery);
 

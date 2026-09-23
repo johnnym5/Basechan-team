@@ -1,8 +1,8 @@
 'use client';
 
-import { usePathname, useSearchParams, useRouter } from "next/navigation";
-import { LogOut, BookCopy, User, ChevronRight, LayoutDashboard, CalendarCheck2, ListTodo, Landmark, Settings, Users, BarChart } from "lucide-react";
-import { mainNavItems } from "@/lib/nav-items";
+import { usePathname, useRouter } from "next/navigation";
+import { LogOut, BookCopy, User } from "lucide-react";
+import { mainNavItems, navGroups } from "@/lib/nav-items";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useAuth, useDoc, useMemoFirebase, useFirestore, useUser } from "@/firebase";
@@ -11,7 +11,6 @@ import type { UserProfile } from "@/lib/types";
 import { signOut } from "firebase/auth";
 import { Skeleton } from "@/components/ui/skeleton";
 import { usePermissions } from "@/hooks/usePermissions";
-import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
 import { uiEmitter } from "@/lib/ui-emitter";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -21,16 +20,8 @@ interface SidebarDockProps {
     isAuthLoading: boolean;
 }
 
-const groups = [
-    { label: 'Core Operations', items: ['Dashboard', 'Tasks', 'Workbooks', 'Live Dashboards'] },
-    { label: 'People & HR', items: ['Staff', 'Attendance', 'Leave'] },
-    { label: 'Finance & Analytics', items: ['Finance', 'Reports', 'Knowledge Base'] },
-    { label: 'System Admin', items: ['Admin Console', 'Chat'] },
-];
-
 export function SidebarDock({ isLoggedIn, isAuthLoading }: SidebarDockProps) {
   const pathname = usePathname();
-  const searchParams = useSearchParams();
   const router = useRouter();
   const auth = useAuth();
   const { user: authUser } = useUser();
@@ -102,15 +93,15 @@ export function SidebarDock({ isLoggedIn, isAuthLoading }: SidebarDockProps) {
 
       <ScrollArea className="flex-1 px-3">
         <nav className="space-y-8 mt-6">
-            {groups.map((group) => {
-                const groupItems = mainNavItems.filter(item => 'label' in item && group.items.includes(item.label as string));
+            {navGroups.map((group) => {
+                const groupItems = mainNavItems.filter(item => item.group === group.label);
 
                 if (groupItems.length === 0) return null;
 
-                const groupActive = groupItems.some((item: any) => pathname === item.href);
+                const groupActive = groupItems.some((item) => pathname === item.href);
 
                 return (
-                    <div key={group.label} className="space-y-2">
+                    <div key={group.id} className="space-y-2">
                         {isExpanded && (
                             <h4 className={cn(
                                 "px-4 text-[8px] font-black uppercase tracking-[0.25em] transition-colors duration-500",
@@ -120,8 +111,8 @@ export function SidebarDock({ isLoggedIn, isAuthLoading }: SidebarDockProps) {
                             </h4>
                         )}
                         <div className="space-y-1">
-                            {groupItems.map((item: any) => {
-                                if ('permission' in item && !permissions[item.permission as keyof typeof permissions]) return null;
+                            {groupItems.map((item) => {
+                                if (item.permission && !permissions[item.permission as keyof typeof permissions]) return null;
 
                                 const isActive = pathname === item.href;
 

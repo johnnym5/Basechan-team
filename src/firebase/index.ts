@@ -11,6 +11,7 @@ import {
 } from 'firebase/firestore';
 import { getStorage, FirebaseStorage } from 'firebase/storage';
 import { getDatabase, Database } from 'firebase/database';
+import { getFunctions, Functions } from 'firebase/functions';
 
 const isFirebaseConfigAvailable = !!(firebaseConfig.apiKey && firebaseConfig.projectId);
 
@@ -24,6 +25,7 @@ declare global {
   var _auth: Auth | undefined;
   var _storage: FirebaseStorage | undefined;
   var _database: Database | undefined;
+  var _functions: Functions | undefined;
 }
 
 /**
@@ -70,6 +72,7 @@ export function initializeFirebase() {
 
   if (!globalThis._storage) globalThis._storage = getStorage(app);
   if (!globalThis._database) globalThis._database = getDatabase(app);
+  if (!globalThis._functions) globalThis._functions = getFunctions(app, 'us-central1');
 
   return {
     firebaseApp: app,
@@ -77,6 +80,7 @@ export function initializeFirebase() {
     firestore: globalThis._firestore,
     storage: globalThis._storage,
     database: globalThis._database,
+    functions: globalThis._functions,
   };
 }
 

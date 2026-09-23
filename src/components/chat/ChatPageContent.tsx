@@ -66,7 +66,7 @@ function ChatMessages({ chat, currentUserProfile, onConvertTask }: { chat: Chat,
     const [showAll, setShowAll] = useState(false);
 
     const messagesQuery = useMemoFirebase(() =>
-        query(collection(firestore!, 'chats', chat.id, 'messages'), orderBy('timestamp', 'asc'))
+        query(collection(firestore!, 'chats', chat.id, 'messages'), orderBy('timestamp', 'asc'), limit(50))
     , [firestore, chat.id]);
     const { data: messages, isLoading } = useCollection<ChatMessage>(messagesQuery);
 
