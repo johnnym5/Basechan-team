@@ -11,6 +11,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useState } from "react";
 import { ScrollArea } from "../ui/scroll-area";
 
+import { FinancialBalanceRibbon } from "./FinancialBalanceRibbon";
+
 export function AccountingPageContent() {
   const { user: authUser } = useUser();
   const firestore = useFirestore();
@@ -28,8 +30,10 @@ export function AccountingPageContent() {
   }
 
   return (
-    <div className="flex flex-col h-full gap-8">
+    <div className="flex flex-col h-full gap-6">
       {userProfile && (
+        <>
+        <FinancialBalanceRibbon userProfile={userProfile} />
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
             <TabsList className="bg-secondary/20 rounded-2xl p-1 w-fit border border-white/5 flex-shrink-0">
                 <TabsTrigger value="coa" className="rounded-xl px-6 font-black uppercase text-[10px] tracking-widest data-[state=active]:bg-background transition-all">COA</TabsTrigger>
@@ -51,6 +55,7 @@ export function AccountingPageContent() {
                 </TabsContent>
             </div>
         </Tabs>
+        </>
       )}
     </div>
   );

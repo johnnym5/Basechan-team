@@ -1,468 +1,487 @@
-import {
-    format,
-    isToday,
-    isYesterday,
-    isSameMonth,
-    isSameWeek,
-    parseISO,
-    startOfToday,
-    subDays,
-    eachDayOfInterval,
-    isWeekend,
-    getDay,
-    differenceInDays,
-    isAfter,
-    startOfWeek,
-    endOfWeek,
-    startOfMonth,
-    endOfMonth
-} from "date-fns";
-import type { UserProfile, Attendance, Task, LeaveRequest, DailyReport, PulseCheck, Nomination } from "./types";
-import { calculateDailyStatus } from "./attendance-utils";
-import { isHoliday } from "./holidays";
-
-export type InsightType = 'POSITIVE' | 'WARNING' | 'CRITICAL' | 'NEUTRAL';
+import type { Attendance, DailyReport, Task, LeaveRequest, PulseCheck, UserProfile, Nomination } from "@/lib/types";
+import type {
+  InsightEngineResult,
+  OperationalMomentum,
+  AbsenceTriage,
+  FatigueVector,
+  SanitizedMemo,
+  ActionableDirective,
+  ApprovedRestItem,
+  PendingValidationItem,
+} from "@/types/insights";
+import { differenceInMinutes, parseISO, isWithinInterval, startOfDay, subDays, format } from "date-fns";
 
 export interface Insight {
-    id: string;
-    type: InsightType;
-    message: string;
-    targetUserIds?: string[];
-    category: 'PERSONAL' | 'TEAM';
-    metadata?: {
-        dates?: string[];
-        type?: 'ABSENCE' | 'LATENESS' | 'PULSE' | 'TASK';
-    };
+  id: string;
+  title: string;
+  description: string;
+  message: string;
+  type: 'CRITICAL' | 'WARNING' | 'POSITIVE' | 'INFO';
+  severity: 'CRITICAL' | 'WARNING' | 'INFO';
+  category: 'ATTENDANCE' | 'PERFORMANCE' | 'BURNOUT' | 'INTEGRITY' | 'TEAM';
+  timestamp: string;
+  targetUserId?: string;
+  actionText?: string;
+  actionType?: string;
 }
 
 /**
- * Tactical Insight Engine
- * Generates natural language intelligence from raw operational telemetry.
+ * UT Basechan Pure Deterministic Insight Engine
+ * High-performance, zero-LLM, multi-signal correlation engine.
  */
 export class InsightEngine {
 
-    /**
-     * Generates insights for a specific staff member (Individual Deep-Dive)
-     */
-    static generatePersonalInsights(
-        targetUser: UserProfile,
-        logs: Attendance[],
-        tasks: Task[],
-        leaves: LeaveRequest[],
-        pulses: PulseCheck[],
-        nominations: Nomination[]
-    ): Insight[] {
-        const insights: Insight[] = [];
-        const now = new Date();
-        const todayStr = format(now, 'yyyy-MM-dd');
-        const yesterdayDate = subDays(now, 1);
-        const yesterdayStr = format(yesterdayDate, 'yyyy-MM-dd');
+  /**
+   * Evaluates a complete multi-signal intelligence summary for a user.
+   */
+  public static evaluate(params: {
+    userProfile: UserProfile;
+    attendance: Attendance[];
+    tasks: Task[];
+    reports: DailyReport[];
+    leaveRequests: LeaveRequest[];
+    pulses: PulseCheck[];
+  }): InsightEngineResult {
+    const { userProfile, attendance, tasks, reports, leaveRequests, pulses } = params;
 
-        const myLogs = logs.filter(l => l.userId === targetUser.id).sort((a, b) => b.date.localeCompare(a.date));
-        const myTasks = tasks.filter(t => t.assignedTo === targetUser.id);
-        const myLeaves = leaves.filter(l => l.userId === targetUser.id);
-        const myPulses = pulses.filter(p => p.userId === targetUser.id).sort((a, b) => b.timestamp.localeCompare(a.timestamp));
-        const myNominations = nominations.filter(n => n.nomineeId === targetUser.id && n.status === 'APPROVED');
+    const userAtt = attendance.filter(a => a.userId === userProfile.id);
+    const userTasks = tasks.filter(t => t.assignedTo === userProfile.id);
+    const userReports = reports.filter(r => r.userId === userProfile.id);
+    const userLeaves = leaveRequests.filter(l => l.userId === userProfile.id);
+    const userPulses = pulses.filter(p => p.userId === userProfile.id);
 
-        const weekLogs = myLogs.filter(l => isSameWeek(parseISO(l.date), now, { weekStartsOn: 1 }));
-        const monthLogs = myLogs.filter(l => isSameMonth(parseISO(l.date), now));
+    const absenceTriage = this.triageAbsences(userAtt, userLeaves);
+    const momentum = this.calculateOMI(userAtt, userTasks, userReports, absenceTriage);
+    const slopeResult = this.calculatePunctualitySlope(userAtt);
+    const fatigue = this.detectFatigue(userAtt, userTasks, userReports, userPulses);
 
-        // 1. Punctuality & Absences
-        const lateLogsThisWeek = weekLogs.filter(l => l.remarks?.includes('LATE')).sort((a, b) => a.date.localeCompare(b.date));
-        const latesThisWeek = lateLogsThisWeek.length;
+    const latestReport = userReports.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime())[0];
+    const rawMemo = latestReport?.accomplishments || "";
+    const sanitizedMemo = this.extractMemoTelemetry(rawMemo);
 
-        // --- STREAK DETECTION (Lates) ---
-        // Sort all my logs to check for streaks across time
-        const sortedLogs = [...myLogs].sort((a, b) => a.date.localeCompare(b.date));
+    const totalOperations = this.computeUnifiedOperations(userTasks, userReports, userAtt);
+    const directives = this.generateDirectives(userTasks, userAtt, userReports, absenceTriage, fatigue);
 
-        // Only report current week streaks or significant recent streaks
-        let currentWeekConsecutive = 0;
-        for (let i = sortedLogs.length - 1; i >= 0; i--) {
-            if (isSameWeek(parseISO(sortedLogs[i].date), now, { weekStartsOn: 1 })) {
-                if (sortedLogs[i].remarks?.includes('LATE')) {
-                    currentWeekConsecutive++;
-                } else {
-                    break;
-                }
-            } else {
-                break;
-            }
+    return {
+      momentum,
+      punctualitySlope: slopeResult.slope,
+      punctualityStatus: slopeResult.status,
+      absenceTriage,
+      fatigue,
+      sanitizedMemo,
+      directives,
+      totalOperations,
+    };
+  }
+
+  /**
+   * Backward-compatible helper for personal tactical insights
+   */
+  public static generatePersonalInsights(
+    userProfile: UserProfile,
+    attendance: Attendance[],
+    tasks: Task[],
+    leaveRequests: LeaveRequest[],
+    pulses: PulseCheck[],
+    nominations?: Nomination[]
+  ): Insight[] {
+    const result = this.evaluate({
+      userProfile,
+      attendance,
+      tasks,
+      reports: [],
+      leaveRequests,
+      pulses,
+    });
+
+    const insights: Insight[] = [];
+
+    result.directives.forEach((d, idx) => {
+      const insightType: 'CRITICAL' | 'WARNING' | 'POSITIVE' | 'INFO' =
+        d.severity === 'CRITICAL' ? 'CRITICAL' : d.severity === 'WARNING' ? 'WARNING' : 'INFO';
+
+      insights.push({
+        id: d.id || `dir-${idx}`,
+        title: d.title,
+        description: d.description,
+        message: d.description,
+        type: insightType,
+        severity: d.severity,
+        category: 'PERFORMANCE',
+        timestamp: new Date().toISOString(),
+        targetUserId: userProfile.id,
+        actionText: d.actionText,
+        actionType: d.actionType,
+      });
+    });
+
+    return insights;
+  }
+
+  /**
+   * Backward-compatible helper for team insights
+   */
+  public static generateTeamInsights(
+    staffList: UserProfile[],
+    attendance: Attendance[],
+    tasks: Task[],
+    leaveRequests: LeaveRequest[],
+    pulses: PulseCheck[],
+    nominations?: Nomination[]
+  ): Insight[] {
+    const insights: Insight[] = [];
+
+    staffList.forEach((staff) => {
+      const personal = this.generatePersonalInsights(staff, attendance, tasks, leaveRequests, pulses, nominations);
+      insights.push(...personal);
+    });
+
+    return insights;
+  }
+
+  /**
+   * Calculates Operational Momentum Index (OMI)
+   * Formula: OMI = max(0, min(100, 0.35*Sv + 0.25*Sp + 0.20*Sr + 0.20*Sc - Pf))
+   */
+  private static calculateOMI(
+    attendance: Attendance[],
+    tasks: Task[],
+    reports: DailyReport[],
+    absenceTriage: AbsenceTriage
+  ): OperationalMomentum {
+    // 1. Task Velocity Score (Sv)
+    const assignedCount = tasks.length;
+    const completedCount = tasks.filter(t => t.status === 'ARCHIVED').length;
+    const overdueCount = tasks.filter(t => t.dueDate && new Date(t.dueDate) < new Date() && t.status !== 'ARCHIVED').length;
+
+    let baseSv = assignedCount > 0 ? (completedCount / assignedCount) * 100 : 75;
+    const taskVelocityScore = Math.max(0, Math.round(baseSv - (15 * overdueCount)));
+
+    // 2. Punctuality & Shift Integrity Score (Sp)
+    const validShifts = attendance.filter(a => a.clockIn);
+    let lateSum = 0;
+    for (const shift of validShifts) {
+      if (shift.clockIn) {
+        const clockInDate = new Date(shift.clockIn);
+        const expected = new Date(shift.clockIn);
+        expected.setHours(9, 15, 0, 0);
+        const lateMins = Math.max(0, differenceInMinutes(clockInDate, expected));
+        lateSum += Math.min(1, lateMins / 60);
+      }
+    }
+    const punctualityScore = validShifts.length > 0
+      ? Math.max(0, Math.round(100 * (1 - (lateSum / validShifts.length))))
+      : 85;
+
+    // 3. Debrief & Telemetry Reliability Score (Sr)
+    const workedDays = validShifts.length;
+    const debriefsCount = reports.length;
+    const verifiedGeofenceCount = validShifts.filter(a => a.location === 'OFFICE' || a.clockInLocation).length;
+
+    const debriefRatio = workedDays > 0 ? Math.min(1, debriefsCount / workedDays) : 1;
+    const geofenceRatio = workedDays > 0 ? Math.min(1, verifiedGeofenceCount / workedDays) : 1;
+    const reliabilityScore = Math.round(100 * (0.6 * debriefRatio + 0.4 * geofenceRatio));
+
+    // 4. Consistency Streak Factor (Sc)
+    let consecutiveOnTimeDays = 0;
+    const sortedAtt = [...validShifts].sort((a, b) => new Date(b.clockIn).getTime() - new Date(a.clockIn).getTime());
+    for (const shift of sortedAtt) {
+      if (!shift.remarks?.includes('LATE')) {
+        consecutiveOnTimeDays++;
+      } else {
+        break;
+      }
+    }
+    const streakScore = Math.min(100, Math.round(20 * Math.log(1 + consecutiveOnTimeDays)));
+
+    // 5. Friction Penalty (Pf)
+    const hasUnexcused = absenceTriage.unexcused.length > 0 ? 1 : 0;
+    const hasActiveBlocker = tasks.some(t => t.priority === 'LEVEL_1' && t.status !== 'ARCHIVED') ? 1 : 0;
+    const hasStaleOverdue = overdueCount > 0 ? 1 : 0;
+
+    const frictionPenalty = (20 * hasUnexcused) + (10 * hasActiveBlocker) + (5 * hasStaleOverdue);
+
+    // Composite OMI Calculation
+    const weightedSum = (0.35 * taskVelocityScore) + (0.25 * punctualityScore) + (0.20 * reliabilityScore) + (0.20 * streakScore);
+    const omi = Math.max(0, Math.min(100, Math.round(weightedSum - frictionPenalty)));
+
+    let trend: 'UPWARD' | 'STABLE' | 'DOWNWARD' = 'STABLE';
+    if (omi >= 80) trend = 'UPWARD';
+    else if (omi < 60) trend = 'DOWNWARD';
+
+    return {
+      omi,
+      taskVelocityScore,
+      punctualityScore,
+      reliabilityScore,
+      streakScore,
+      frictionPenalty,
+      trend,
+    };
+  }
+
+  /**
+   * Punctuality Drift Velocity (beta slope over last 10 shifts)
+   */
+  private static calculatePunctualitySlope(attendance: Attendance[]): { slope: number; status: 'DEGRADING' | 'CONSOLIDATING' | 'STABLE' } {
+    const validShifts = attendance
+      .filter(a => a.clockIn)
+      .sort((a, b) => new Date(a.clockIn).getTime() - new Date(b.clockIn).getTime())
+      .slice(-10);
+
+    if (validShifts.length < 3) {
+      return { slope: 0, status: 'STABLE' };
+    }
+
+    const n = validShifts.length;
+    const xValues = validShifts.map((_, i) => i + 1);
+    const yValues = validShifts.map(s => {
+      const c = new Date(s.clockIn);
+      const e = new Date(s.clockIn);
+      e.setHours(9, 15, 0, 0);
+      return Math.max(0, differenceInMinutes(c, e));
+    });
+
+    const xMean = xValues.reduce((a, b) => a + b, 0) / n;
+    const yMean = yValues.reduce((a, b) => a + b, 0) / n;
+
+    let numerator = 0;
+    let denominator = 0;
+    for (let i = 0; i < n; i++) {
+      numerator += (xValues[i] - xMean) * (yValues[i] - yMean);
+      denominator += Math.pow(xValues[i] - xMean, 2);
+    }
+
+    const slope = denominator !== 0 ? Math.round((numerator / denominator) * 10) / 10 : 0;
+
+    let status: 'DEGRADING' | 'CONSOLIDATING' | 'STABLE' = 'STABLE';
+    if (slope > 1.5) status = 'DEGRADING';
+    else if (slope < -1.0) status = 'CONSOLIDATING';
+
+    return { slope, status };
+  }
+
+  /**
+   * Differentiated Absence Triage
+   * Cross-references non-clocked dates against Leave Requests to eliminate false penalization.
+   */
+  private static triageAbsences(attendance: Attendance[], leaveRequests: LeaveRequest[]): AbsenceTriage {
+    const approvedRest: ApprovedRestItem[] = [];
+    const pendingValidation: PendingValidationItem[] = [];
+    const unexcused: string[] = [];
+
+    const today = startOfDay(new Date());
+    const clockedDates = new Set(attendance.map(a => a.date));
+
+    for (let i = 1; i <= 14; i++) {
+      const checkDate = subDays(today, i);
+      const dateStr = format(checkDate, 'yyyy-MM-dd');
+      const dayOfWeek = checkDate.getDay();
+
+      if (dayOfWeek === 0 || dayOfWeek === 6) continue;
+
+      if (!clockedDates.has(dateStr)) {
+        const approvedLeave = leaveRequests.find(l =>
+          l.status === 'APPROVED' &&
+          isWithinInterval(checkDate, { start: parseISO(l.startDate), end: parseISO(l.endDate) })
+        );
+
+        if (approvedLeave) {
+          approvedRest.push({ date: dateStr, type: approvedLeave.leaveType || 'Approved Rest' });
+          continue;
         }
 
-        if (currentWeekConsecutive >= 5) {
-            insights.push({
-                id: `streak_late_critical_${targetUser.id}`,
-                type: 'CRITICAL',
-                message: `New pattern recognized: This staff has been coming late consistently this week.`,
-                category: 'PERSONAL'
-            });
-        } else if (currentWeekConsecutive >= 2) {
-            insights.push({
-                id: `streak_late_warning_${targetUser.id}`,
-                type: 'WARNING',
-                message: `Behavioral Pattern: Has arrived late ${currentWeekConsecutive} days in a row.`,
-                category: 'PERSONAL'
-            });
-        } else if (latesThisWeek > 0) {
-            insights.push({
-                id: `late_week_${targetUser.id}`,
-                type: latesThisWeek >= 3 ? 'CRITICAL' : 'WARNING',
-                message: `${targetUser.fullName} has been late ${latesThisWeek} time${latesThisWeek > 1 ? 's' : '' } this week.`,
-                category: 'PERSONAL',
-                metadata: {
-                    dates: lateLogsThisWeek.map(l => l.date),
-                    type: 'LATENESS'
-                }
-            });
-        }
+        const pendingLeave = leaveRequests.find(l =>
+          l.status === 'PENDING' &&
+          isWithinInterval(checkDate, { start: parseISO(l.startDate), end: parseISO(l.endDate) })
+        );
 
-        const yesterdayLog = myLogs.find(l => l.date === yesterdayStr);
-        const yesterdayStatus = calculateDailyStatus(yesterdayDate, myLogs, myLeaves);
-
-        if (yesterdayStatus === 'ABSENT') {
-             insights.push({
-                id: `absent_yesterday_${targetUser.id}`,
-                type: 'WARNING',
-                message: `Was absent yesterday (${format(yesterdayDate, 'MMM dd')}).`,
-                category: 'PERSONAL',
-                metadata: {
-                    dates: [yesterdayStr],
-                    type: 'ABSENCE'
-                }
-            });
-        } else if (yesterdayStatus === 'LATE') {
-             insights.push({
-                id: `late_yesterday_${targetUser.id}`,
-                type: 'WARNING',
-                message: `Was late yesterday (${format(yesterdayDate, 'MMM dd')}).`,
-                category: 'PERSONAL',
-                metadata: {
-                    dates: [yesterdayStr],
-                    type: 'LATENESS'
-                }
-            });
-        } else if (yesterdayStatus === 'ON_LEAVE') {
-            insights.push({
-                id: `on_leave_yesterday_${targetUser.id}`,
-                type: 'NEUTRAL',
-                message: `Was on approved leave yesterday.`,
-                category: 'PERSONAL'
-            });
-        }
-
-        const todayLog = myLogs.find(l => l.date === todayStr);
-        if (todayLog?.remarks?.includes('LATE')) {
-             insights.push({
-                id: `late_today_${targetUser.id}`,
-                type: 'CRITICAL',
-                message: `Is late today.`,
-                category: 'PERSONAL',
-                metadata: {
-                    dates: [todayStr],
-                    type: 'LATENESS'
-                }
-            });
-        }
-
-        // --- DYNAMIC ABSENCE CALCULATION (Context-Aware) ---
-        const monthStart = startOfMonth(now);
-        const monthEnd = isAfter(endOfMonth(now), now) ? now : endOfMonth(now);
-
-        const daysThisMonth = eachDayOfInterval({ start: monthStart, end: monthEnd });
-        const absenceDatesThisMonth = daysThisMonth
-            .filter(d => calculateDailyStatus(d, myLogs, myLeaves) === 'ABSENT')
-            .map(d => format(d, 'yyyy-MM-dd'));
-
-        const absencesThisMonth = absenceDatesThisMonth.length;
-        if (absencesThisMonth > 0) {
-            insights.push({
-                id: `absent_month_${targetUser.id}`,
-                type: absencesThisMonth > 3 ? 'CRITICAL' : 'WARNING',
-                message: `Has been absent ${absencesThisMonth} time${absencesThisMonth > 1 ? 's' : ''} this month.`,
-                category: 'PERSONAL',
-                metadata: {
-                    dates: absenceDatesThisMonth,
-                    type: 'ABSENCE'
-                }
-            });
-        }
-
-        if (weekLogs.length >= 4 && latesThisWeek === 0) {
-            insights.push({
-                id: `perfect_week_${targetUser.id}`,
-                type: 'POSITIVE',
-                message: `Operational Excellence: Has not missed work all week.`,
-                category: 'PERSONAL'
-            });
-        } else if (!isWeekend(now) && !isHoliday(now)) {
-            const weekStart = startOfWeek(now, { weekStartsOn: 1 });
-            const daysIntoWeek = eachDayOfInterval({ start: weekStart, end: now });
-
-            const absenceDatesThisWeek = daysIntoWeek
-                .filter(d => calculateDailyStatus(d, myLogs, myLeaves) === 'ABSENT')
-                .map(d => format(d, 'yyyy-MM-dd'));
-
-            if (absenceDatesThisWeek.length > 0) {
-                insights.push({
-                    id: `absent_week_${targetUser.id}`,
-                    type: 'WARNING',
-                    message: `Has been absent ${absenceDatesThisWeek.length} time${absenceDatesThisWeek.length > 1 ? 's' : ''} this week.`,
-                    category: 'PERSONAL',
-                    metadata: {
-                        dates: absenceDatesThisWeek,
-                        type: 'ABSENCE'
-                    }
-                });
-            }
-        }
-
-        // 2. Pattern Recognition
-        const dayCounts: Record<number, number> = {};
-        myLogs.filter(l => l.remarks?.includes('LATE')).forEach(l => {
-            const day = getDay(parseISO(l.date));
-            dayCounts[day] = (dayCounts[day] || 0) + 1;
-        });
-        Object.entries(dayCounts).forEach(([day, count]) => {
-            if (count >= 3) {
-                const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-                insights.push({
-                    id: `pattern_late_${day}_${targetUser.id}`,
-                    type: 'WARNING',
-                    message: `Behavioral Pattern: Frequently arrives late on ${dayNames[Number(day)]}s.`,
-                    category: 'PERSONAL'
-                });
-            }
-        });
-
-        // 3. Workload & Mood
-        const heavyDaysThisMonth = myPulses.filter(p => isSameMonth(parseISO(p.timestamp), now) && (p.mood === 'HEAVY' || p.mood === 'OVERWHELMED')).length;
-        if (heavyDaysThisMonth > 0) {
-            insights.push({
-                id: `heavy_month_${targetUser.id}`,
-                type: 'WARNING',
-                message: `Has reported heavy workload ${heavyDaysThisMonth} day${heavyDaysThisMonth > 1 ? 's' : ''} this month.`,
-                category: 'PERSONAL'
-            });
-        }
-
-        let heavyStreak = 0;
-        for (const p of myPulses) {
-            if (p.mood === 'HEAVY' || p.mood === 'OVERWHELMED') heavyStreak++;
-            else break;
-        }
-        if (heavyStreak >= 3) {
-            insights.push({
-                id: `heavy_streak_${targetUser.id}`,
-                type: 'CRITICAL',
-                message: `Burnout Alert: Has reported heavy workload ${heavyStreak} days in a row.`,
-                category: 'PERSONAL'
-            });
-        }
-
-        const isSmoothWeek = weekLogs.length >= 3 && weekLogs.every(l => !l.remarks?.includes('LATE')) && myPulses.filter(p => isSameWeek(parseISO(p.timestamp), now)).every(p => p.mood === 'SMOOTH');
-        if (isSmoothWeek) {
-            insights.push({
-                id: `smooth_week_${targetUser.id}`,
-                type: 'POSITIVE',
-                message: `Unit is having a smooth week.`,
-                category: 'PERSONAL'
-            });
-        }
-
-        // 4. Streaks
-        let onTimeStreak = 0;
-        for (const log of myLogs) {
-            if (log.clockIn && !log.remarks?.includes('LATE')) onTimeStreak++;
-            else break;
-        }
-        if (onTimeStreak >= 3) {
-            insights.push({
-                id: `ontime_streak_${targetUser.id}`,
-                type: 'POSITIVE',
-                message: `High Consistency: On an active ${onTimeStreak}-day on-time streak.`,
-                category: 'PERSONAL'
-            });
-        }
-
-        // 5. Pending Actions
-        const pendingTasks = myTasks.filter(t => t.status === 'AWAITING_REVIEW').length;
-        if (pendingTasks > 0) {
-            insights.push({
-                id: `pending_tasks_${targetUser.id}`,
-                type: 'NEUTRAL',
-                message: `Has ${pendingTasks} pending task${pendingTasks > 1 ? 's' : ''} awaiting review.`,
-                category: 'PERSONAL'
-            });
-        }
-
-        const pendingLeave = myLeaves.find(l => l.status === 'PENDING');
         if (pendingLeave) {
-            insights.push({
-                id: `pending_leave_${targetUser.id}`,
-                type: 'WARNING',
-                message: `Requested a ${pendingLeave.totalDays}-day leave and is awaiting approval.`,
-                category: 'PERSONAL'
-            });
+          pendingValidation.push({ date: dateStr, leaveId: pendingLeave.id, type: pendingLeave.leaveType || 'Leave Request' });
+          continue;
         }
 
-        // 6. Recognition & Accolades
-        const weekNominations = myNominations.filter(n => isSameWeek(parseISO(n.timestamp), now, { weekStartsOn: 1 }));
-        const monthNominations = myNominations.filter(n => isSameMonth(parseISO(n.timestamp), now));
-
-        if (weekNominations.length > 0) {
-            const topCategory = weekNominations.reduce((acc, n) => {
-                acc[n.categoryTitle] = (acc[n.categoryTitle] || 0) + 1;
-                return acc;
-            }, {} as Record<string, number>);
-            const bestCat = Object.entries(topCategory).sort((a, b) => b[1] - a[1])[0];
-
-            insights.push({
-                id: `recognition_week_${targetUser.id}`,
-                type: 'POSITIVE',
-                message: `Excellence Recognized: Earned ${weekNominations.length} star${weekNominations.length > 1 ? 's' : ''} this week, primarily for "${bestCat[0]}".`,
-                category: 'PERSONAL'
-            });
-        }
-
-        if (monthNominations.length >= 3) {
-            insights.push({
-                id: `recognition_month_${targetUser.id}`,
-                type: 'POSITIVE',
-                message: `High Impact: Has secured ${monthNominations.length} total stars this month from peer units.`,
-                category: 'PERSONAL'
-            });
-        }
-
-        return insights;
+        unexcused.push(dateStr);
+      }
     }
 
-    /**
-     * Generates insights for the entire Organization (Team Dashboard)
-     */
-    static generateTeamInsights(
-        staff: UserProfile[],
-        logs: Attendance[],
-        tasks: Task[],
-        leaves: LeaveRequest[],
-        pulses: PulseCheck[],
-        nominations: Nomination[]
-    ): Insight[] {
-        const insights: Insight[] = [];
-        const now = new Date();
-        const todayStr = format(now, 'yyyy-MM-dd');
+    return { approvedRest, pendingValidation, unexcused };
+  }
 
-        const todaysLogs = logs.filter(l => l.date === todayStr);
-        const expectedStaff = staff.filter(s => s.role !== 'SUPERADMIN');
-        const todaysPulses = pulses.filter(p => p.date === todayStr);
+  /**
+   * Fatigue & Burnout Risk Detection
+   */
+  private static detectFatigue(
+    attendance: Attendance[],
+    tasks: Task[],
+    reports: DailyReport[],
+    pulses: PulseCheck[]
+  ): FatigueVector {
+    const recentShifts = attendance.filter(a => a.duration).slice(-5);
+    const totalHours = recentShifts.reduce((acc, s) => acc + ((s.duration || 0) / 3600), 0);
+    const avgDailyHours = recentShifts.length > 0 ? Math.round((totalHours / recentShifts.length) * 10) / 10 : 0;
 
-        // 1. Daily Team Posture
-        const earlyToday = todaysLogs.filter(l => l.clockIn && !l.remarks?.includes('LATE')).length;
-        if (earlyToday > 0) {
-            insights.push({
-                id: 'team_early_today',
-                type: 'POSITIVE',
-                message: `${earlyToday} staff members came early today.`,
-                category: 'TEAM'
-            });
-        }
-
-        const lateToday = todaysLogs.filter(l => l.remarks?.includes('LATE')).length;
-        if (lateToday > 0) {
-            insights.push({
-                id: 'team_late_today',
-                type: 'WARNING',
-                message: `${lateToday} staff member(s) came late today.`,
-                category: 'TEAM'
-            });
-        } else if (todaysLogs.length > 0) {
-            insights.push({
-                id: 'team_no_late_today',
-                type: 'POSITIVE',
-                message: `Tactical Excellence: No staff members came late today.`,
-                category: 'TEAM'
-            });
-        }
-
-        // 2. Team Workload
-        const heavyCount = todaysPulses.filter(p => p.mood === 'HEAVY' || p.mood === 'OVERWHELMED').length;
-        if (heavyCount >= 3) {
-            insights.push({
-                id: 'team_workload_rise',
-                type: 'CRITICAL',
-                message: `Rise in stress: ${heavyCount} staff members reported heavy workloads today.`,
-                category: 'TEAM'
-            });
-        }
-
-        const smoothCount = todaysPulses.filter(p => p.mood === 'SMOOTH').length;
-        if (smoothCount > 0) {
-            insights.push({
-                id: 'team_smooth_today',
-                type: 'POSITIVE',
-                message: `${smoothCount} staff members are having smooth workloads.`,
-                category: 'TEAM'
-            });
-        }
-
-        // 3. Operational Bottlenecks
-        const reviewStaffCount = new Set(tasks.filter(t => t.status === 'AWAITING_REVIEW').map(t => t.assignedTo)).size;
-        if (reviewStaffCount > 0) {
-            insights.push({
-                id: 'team_pending_reviews',
-                type: 'NEUTRAL',
-                message: `${reviewStaffCount} staff members have tasks awaiting administrative review.`,
-                category: 'TEAM'
-            });
-        }
-
-        const adminPendingLeaves = leaves.filter(l => l.status === 'PENDING');
-        if (adminPendingLeaves.length > 0) {
-            const earliestLeave = adminPendingLeaves.sort((a, b) => a.startDate.localeCompare(b.startDate))[0];
-            insights.push({
-                id: 'team_pending_leaves',
-                type: 'WARNING',
-                message: `You have a pending leave request from ${format(parseISO(earliestLeave.startDate), 'dd MMM')}.`,
-                category: 'TEAM'
-            });
-        }
-
-        // 4. Repeated Friction Patterns
-        const weeklyLogs = logs.filter(l => isSameWeek(parseISO(l.date), now, { weekStartsOn: 1 }));
-        const chronicLates = expectedStaff.filter(s => {
-            const sLogs = weeklyLogs.filter(l => l.userId === s.id && l.remarks?.includes('LATE'));
-            return sLogs.length >= 3;
-        });
-
-        if (chronicLates.length > 0) {
-            insights.push({
-                id: 'team_chronic_lates',
-                type: 'CRITICAL',
-                message: `Pattern Alert: ${chronicLates.length} personnel have been coming late repeatedly this week.`,
-                category: 'TEAM'
-            });
-        }
-
-        // 5. Global Capacity
-        const activeTasks = tasks.filter(t => t.status === 'ACTIVE' || t.status === 'QUEUED');
-        const avgTaskLoad = expectedStaff.length > 0 ? (activeTasks.length / expectedStaff.length).toFixed(1) : '0';
-        insights.push({
-            id: 'team_capacity',
-            type: 'NEUTRAL',
-            message: `Operational Capacity: Average team workload is ${avgTaskLoad} missions per unit.`,
-            category: 'TEAM'
-        });
-
-        // 6. Cultural Momentum
-        const weekNominations = nominations.filter(n => isSameWeek(parseISO(n.timestamp), now, { weekStartsOn: 1 })).length;
-        if (weekNominations > 5) {
-            insights.push({
-                id: 'team_culture_high',
-                type: 'POSITIVE',
-                message: `Strong Cultural Momentum: ${weekNominations} peer accolades recorded this week.`,
-                category: 'TEAM'
-            });
-        }
-
-        return insights;
+    let lateNightSubmissionsCount = 0;
+    for (const report of reports.slice(-5)) {
+      if (report.createdAt) {
+        const hour = new Date(report.createdAt).getHours();
+        if (hour >= 21 || hour < 5) lateNightSubmissionsCount++;
+      }
     }
+
+    let sentimentDelta = 0;
+    const sortedPulses = [...pulses].sort((a, b) => new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime());
+    if (sortedPulses.length >= 2) {
+      const moodVal = (m?: string) => m === 'SMOOTH' ? 5 : m === 'NEUTRAL' ? 3 : 1;
+      sentimentDelta = moodVal(sortedPulses[1]?.mood) - moodVal(sortedPulses[0]?.mood);
+    }
+
+    const isStrainDetected = avgDailyHours >= 9.5 || lateNightSubmissionsCount >= 2 || sentimentDelta >= 2;
+
+    let message = "Capacity balanced. Operational load is within sustainable limits.";
+    if (isStrainDetected) {
+      message = `Sustained overload: Clocked ${avgDailyHours}h/day average with ${lateNightSubmissionsCount} late-night submissions. High fatigue probability.`;
+    }
+
+    return {
+      isStrainDetected,
+      avgDailyHours,
+      lateNightSubmissionsCount,
+      sentimentDelta,
+      message,
+      ctaText: isStrainDetected ? "Request Off-Peak Rest" : undefined,
+      ctaAction: isStrainDetected ? "open-leave-dialog" : undefined,
+    };
+  }
+
+  /**
+   * EOD Memo Sanitization & Lexical Density Analysis
+   */
+  private static extractMemoTelemetry(rawText: string): SanitizedMemo {
+    if (!rawText || rawText.trim().length === 0) {
+      return {
+        rawText: "",
+        sanitizedText: "No daily operational memo submitted for this cycle.",
+        tags: [],
+        issueKeys: [],
+        quality: "POOR",
+        warningMessage: "Missing quantifiable metrics. Add EOD deliverables.",
+      };
+    }
+
+    const cleanText = rawText.trim().replace(/^["']|["']$/g, '');
+    const wordCount = cleanText.split(/\s+/).length;
+
+    let quality: 'GOOD' | 'FAIR' | 'POOR' = 'GOOD';
+    let warningMessage: string | undefined = undefined;
+
+    if (cleanText.length < 25 || wordCount <= 3) {
+      quality = 'POOR';
+      warningMessage = 'Low lexical density. Specify deliverables completed.';
+    } else if (cleanText.length < 50) {
+      quality = 'FAIR';
+      warningMessage = 'Summary brief. Consider adding task IDs or metrics.';
+    }
+
+    const moduleKeywords = [
+      'staff-app', 'accounting', 'webrtc', 'procurement',
+      'chat', 'attendance', 'leave', 'reports', 'tasks', 'auth'
+    ];
+    const tags: string[] = [];
+
+    const lower = cleanText.toLowerCase();
+    for (const kw of moduleKeywords) {
+      if (lower.includes(kw) || lower.includes(kw.replace('-', ' '))) {
+        tags.push(`#${kw}`);
+      }
+    }
+
+    const issueKeyRegex = /(?:[A-Z]{2,10}-\d+|REQ-\d+|PO-\d+)/gi;
+    const issueKeys = Array.from(new Set(cleanText.match(issueKeyRegex) || [])).map(k => k.toUpperCase());
+
+    return {
+      rawText,
+      sanitizedText: cleanText,
+      tags: tags.length > 0 ? tags : ['#general-operations'],
+      issueKeys,
+      quality,
+      warningMessage,
+    };
+  }
+
+  /**
+   * Unified Operations Index Calculation
+   */
+  private static computeUnifiedOperations(tasks: Task[], reports: DailyReport[], attendance: Attendance[]): number {
+    const completedTasks = tasks.filter(t => t.status === 'ARCHIVED').length;
+    const submittedReports = reports.length;
+    const completedShifts = attendance.filter(a => a.clockOut).length;
+
+    return completedTasks + submittedReports + completedShifts;
+  }
+
+  /**
+   * Generates Actionable Resolution Directives with CTAs
+   */
+  private static generateDirectives(
+    tasks: Task[],
+    attendance: Attendance[],
+    reports: DailyReport[],
+    absenceTriage: AbsenceTriage,
+    fatigue: FatigueVector
+  ): ActionableDirective[] {
+    const directives: ActionableDirective[] = [];
+
+    const overdueTasks = tasks.filter(t => t.dueDate && new Date(t.dueDate) < new Date() && t.status !== 'ARCHIVED');
+    if (overdueTasks.length > 0) {
+      directives.push({
+        id: 'dir-overdue-task',
+        title: `${overdueTasks.length} Task(s) Overdue`,
+        description: `Task "${overdueTasks[0].title}" has exceeded its deadline. Unblock or update status.`,
+        severity: 'CRITICAL',
+        actionText: 'Resolve Tasks',
+        actionType: 'open-tasks-dialog',
+        payload: { taskId: overdueTasks[0].id },
+      });
+    }
+
+    const todayStr = format(new Date(), 'yyyy-MM-dd');
+    const hasTodayClockIn = attendance.some(a => a.date === todayStr);
+    const hasTodayReport = reports.some(r => r.reportDate === todayStr);
+
+    if (hasTodayClockIn && !hasTodayReport) {
+      directives.push({
+        id: 'dir-missing-debrief',
+        title: 'EOD Operational Report Due',
+        description: 'Your shift is active. Submit daily debrief to log metrics and update OMI score.',
+        severity: 'WARNING',
+        actionText: 'Draft Debrief',
+        actionType: 'open-debrief-modal',
+      });
+    }
+
+    if (absenceTriage.pendingValidation.length > 0) {
+      directives.push({
+        id: 'dir-pending-leave',
+        title: `${absenceTriage.pendingValidation.length} Pending Leave Request(s)`,
+        description: 'Unresolved approval latency detected. HR verification required.',
+        severity: 'INFO',
+        actionText: 'View Leave Status',
+        actionType: 'open-leave-dialog',
+      });
+    }
+
+    if (fatigue.isStrainDetected) {
+      directives.push({
+        id: 'dir-fatigue-strain',
+        title: 'High Fatigue Probability',
+        description: fatigue.message,
+        severity: 'WARNING',
+        actionText: 'Request Off-Peak Rest',
+        actionType: 'open-leave-dialog',
+      });
+    }
+
+    return directives;
+  }
 }

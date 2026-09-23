@@ -238,6 +238,7 @@ export interface Attendance {
     }[];
     totalBreak?: number;
     lateReason?: string | null;
+    clockInLocation?: { lat: number | null, lng: number | null } | null;
     sessions?: AttendanceSession[];
     eodReport?: string | null;
     linkedTaskIds?: string[];

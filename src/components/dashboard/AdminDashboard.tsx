@@ -38,6 +38,7 @@ import { doc, collection, query, where, orderBy, limit } from "firebase/firestor
 import type { UserProfile, Task, Attendance, LeaveRequest, Nomination, SystemConfig, Permissions } from "@/lib/types"
 import { ClockControl } from "@/components/attendance/ClockControl"
 import { IntelligentSummaryCenter } from "@/components/reports/IntelligentSummaryCenter"
+import { HeroKpiStrip } from "./HeroKpiStrip"
 import { DashboardTaskList } from "./DashboardTaskList"
 import { DashboardRecentReports } from "./DashboardRecentReports"
 import { DashboardRecentChats } from "./DashboardRecentChats"
@@ -173,6 +174,14 @@ export function AdminDashboard({ userProfile, permissions, systemConfig }: Admin
 
   return (
     <div className="flex flex-col gap-6 w-full max-w-[1600px] mx-auto justify-start animate-in fade-in zoom-in-95 duration-700 pb-12 overflow-x-hidden">
+
+        {/* HERO KPI STRIP */}
+        <HeroKpiStrip
+            staffList={activeStaff}
+            attendanceLogs={activeAttendance}
+            tasks={activeTasks}
+            leaveRequests={activeLeaveRequests}
+        />
 
         {/* 1. STRATEGIC QUICK ACTIONS */}
         <div className="w-full relative px-1">

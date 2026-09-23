@@ -31,6 +31,7 @@ import { doc, collection, query, where, orderBy, limit } from "firebase/firestor
 import type { UserProfile, Task, Attendance, LeaveRequest, Nomination, SystemConfig, Permissions } from "@/lib/types"
 import { ClockControl } from "@/components/attendance/ClockControl"
 import { IntelligentSummaryCenter } from "@/components/reports/IntelligentSummaryCenter"
+import { HeroKpiStrip } from "./HeroKpiStrip"
 import { DashboardTaskList } from "./DashboardTaskList"
 import { DashboardRecentReports } from "./DashboardRecentReports"
 import { DashboardRecentChats } from "./DashboardRecentChats"
@@ -134,6 +135,14 @@ export function StaffDashboard({ userProfile, permissions, systemConfig }: Staff
 
   return (
     <div className="flex flex-col gap-6 w-full animate-in fade-in zoom-in-95 max-w-[1600px] mx-auto pb-10 overflow-x-hidden">
+
+      {/* HERO KPI STRIP */}
+      <HeroKpiStrip
+        staffList={allStaff || []}
+        attendanceLogs={attendanceLogs || []}
+        tasks={allTasks || []}
+        leaveRequests={leaveRequests || []}
+      />
 
       {/* 1. THE PILL CAROUSEL (Scrollable Quick Actions) */}
       <div className="w-full relative px-1">

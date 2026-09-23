@@ -80,21 +80,21 @@ export function AdminConsoleLayout() {
 
   return (
     <div className="flex flex-col h-full w-full animate-in fade-in duration-500 bg-background overflow-y-auto custom-scrollbar">
-      <div className="max-w-[1600px] mx-auto w-full px-6 md:px-10 py-10">
+      <div className="max-w-[1600px] mx-auto w-full px-4 md:px-8 py-6">
         {/* HEADER */}
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b border-white/5 pb-8 mb-10">
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b border-border pb-6 mb-8">
             <div>
-                <h1 className="text-3xl font-black font-headline uppercase tracking-tighter text-white">System Settings</h1>
-                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.2em] opacity-60 mt-1">System Settings</p>
+                <h1 className="text-2xl font-black font-headline uppercase tracking-tighter text-foreground">System Administration Console</h1>
+                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.2em] opacity-60 mt-1">Platform Control & Operational Policies</p>
             </div>
             <div className="flex items-center gap-4">
             </div>
         </div>
 
         {/* MAIN GRID */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start relative">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start relative">
             {/* LEFT: STICKY CAPSULE SIDEBAR */}
-            <aside className="lg:col-span-3 sticky top-10 h-fit max-h-[calc(100vh-8rem)]">
+            <aside className="lg:col-span-3 sticky top-6 h-fit max-h-[calc(100vh-8rem)]">
                 <SettingsSidebar
                     activeSection={activeSection}
                     onSectionChange={setActiveSection}
@@ -102,7 +102,7 @@ export function AdminConsoleLayout() {
             </aside>
 
             {/* RIGHT: CONTENT AREA */}
-            <main className="lg:col-span-9 space-y-10 pb-32">
+            <main className="lg:col-span-9 space-y-8 pb-24">
                 <Suspense fallback={
                     <div className="space-y-8">
                         <Skeleton className="h-12 w-1/3 rounded-2xl" />

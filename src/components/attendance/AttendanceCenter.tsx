@@ -52,6 +52,9 @@ import { calculateDailyStatus } from "@/lib/attendance-utils"
 import { InsightCalendarModal } from "../reports/recognition/InsightCalendarModal"
 import { EditAttendanceRecordDialog } from "./EditAttendanceRecordDialog"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { ClockControl } from "@/components/attendance/ClockControl"
+import { usePermissions } from "@/hooks/usePermissions"
+import { useSystemConfig } from "@/hooks/useSystemConfig"
 
 interface AttendanceCenterProps {
   staffList: UserProfile[];
@@ -65,6 +68,8 @@ interface AttendanceCenterProps {
 export function AttendanceCenter({ staffList, attendanceLogs, leaveRequests, pulseFeed = [], nominations = [], currentUserProfile }: AttendanceCenterProps) {
   const firestore = useFirestore();
   const { toast } = useToast();
+  const permissions = usePermissions(currentUserProfile);
+  const { config: systemConfig } = useSystemConfig(currentUserProfile?.orgId);
   const [verifyingId, setVerifyingId] = useState<string | null>(null);
 
   // States
@@ -79,7 +84,7 @@ export function AttendanceCenter({ staffList, attendanceLogs, leaveRequests, pul
   const [historyTimeframe, setHistoryTimeframe] = useState<'DAILY' | 'WEEKLY' | 'MONTHLY' | 'QUARTERLY'>('WEEKLY')
   const [historyStaffId, setHistoryStaffId] = useState<string>('ALL')
 
-  // Core Data Derivation (Ghost Protocol Enforced)
+  // Core Data Derivation
   const nonAdminStaff = useMemo(() =>
     staffList.filter(u =>
         !['SUPERADMIN', 'ORG_ADMIN', 'MANAGING_DIRECTOR', 'HR_MANAGER'].includes(u.role) &&
@@ -124,7 +129,7 @@ export function AttendanceCenter({ staffList, attendanceLogs, leaveRequests, pul
         return { staff, log, status };
     }).filter(item => {
         if (activeFilter === 'ALL') return true;
-        if (activeFilter === 'ACTIVE') return item.status === 'ON_TIME' || item.status === 'LATE' && item.log && !item.log.clockOut;
+        if (activeFilter === 'ACTIVE') return (item.status === 'ON_TIME' || item.status === 'LATE') && item.log && !item.log.clockOut;
         if (activeFilter === 'PENDING') return item.log && item.log.status === 'PENDING';
         if (activeFilter === 'ABSENT') return item.status === 'ABSENT';
         return true;
@@ -190,283 +195,275 @@ export function AttendanceCenter({ staffList, attendanceLogs, leaveRequests, pul
   return (
     <div className="space-y-6 animate-in fade-in zoom-in-95 duration-700 overflow-x-hidden">
 
-      {/* 1. INTERACTIVE KPI FILTERS */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 md:gap-4">
-        <Card
-          onClick={() => { setActiveFilter('ALL'); setIsRosterOpen(true); }}
-          className={cn(
-            "cursor-pointer transition-all border-white/5 bg-secondary/5 hover:bg-secondary/10",
-            activeFilter === 'ALL' && "ring-2 ring-primary border-primary bg-primary/5"
-          )}
-        >
-          <CardContent className="p-3 md:p-4">
-            <div className="flex items-center gap-2 mb-1">
-                <Users className="w-3 md:w-3.5 h-3 md:h-3.5 text-primary opacity-60" />
-                <span className="text-[8px] md:text-[9px] font-black uppercase text-muted-foreground tracking-widest">Total Staff</span>
-            </div>
-            <p className="text-xl md:text-2xl font-black font-headline tracking-tighter">{stats.total}</p>
-          </CardContent>
-        </Card>
+      {/* SPLIT WORKSPACE: Left Command Column + Right Ledger */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
 
-        <Card
-          onClick={() => { setActiveFilter('ACTIVE'); setIsRosterOpen(true); }}
-          className={cn(
-            "cursor-pointer transition-all border-white/5 bg-secondary/5 hover:bg-emerald-500/5",
-            activeFilter === 'ACTIVE' && "ring-2 ring-emerald-500 border-emerald-500 bg-emerald-500/5"
-          )}
-        >
-          <CardContent className="p-3 md:p-4">
-            <div className="flex items-center gap-2 mb-1">
-                <Activity className="w-3 md:w-3.5 h-3 md:h-3.5 text-emerald-500 opacity-60" />
-                <span className="text-[8px] md:text-[9px] font-black uppercase text-muted-foreground tracking-widest">Active</span>
-            </div>
-            <p className="text-xl md:text-2xl font-black font-headline tracking-tighter text-emerald-500">{stats.active}</p>
-          </CardContent>
-        </Card>
+        {/* LEFT COLUMN: Tactical Clock In/Out Command Card & KPI Overview */}
+        <div className="lg:col-span-4 flex flex-col gap-6">
+          <ClockControl
+            userProfile={currentUserProfile}
+            permissions={permissions}
+            systemConfig={systemConfig || null}
+            className="bg-card border border-border shadow-sm rounded-2xl p-6"
+          />
 
-        <Card
-          onClick={() => { setActiveFilter('ABSENT'); setIsRosterOpen(true); }}
-          className={cn(
-            "cursor-pointer transition-all border-white/5 bg-secondary/5 hover:bg-rose-500/5",
-            activeFilter === 'ABSENT' && "ring-2 ring-rose-500 border-rose-500 bg-rose-500/5"
-          )}
-        >
-          <CardContent className="p-3 md:p-4">
-            <div className="flex items-center gap-2 mb-1">
-                <UserX className="w-3 md:w-3.5 h-3 md:h-3.5 text-rose-500 opacity-60" />
-                <span className="text-[8px] md:text-[9px] font-black uppercase text-muted-foreground tracking-widest">Absent</span>
-            </div>
-            <p className="text-xl md:text-2xl font-black font-headline tracking-tighter text-rose-500">{stats.absent}</p>
-          </CardContent>
-        </Card>
-
-        <Card
-          onClick={() => { setActiveFilter('PENDING'); setIsRosterOpen(true); }}
-          className={cn(
-            "cursor-pointer transition-all border-white/5 bg-secondary/5 hover:bg-amber-500/5",
-            activeFilter === 'PENDING' && "ring-2 ring-amber-500 border-amber-500 bg-amber-500/5"
-          )}
-        >
-          <CardContent className="p-3 md:p-4">
-            <div className="flex items-center gap-2 mb-1">
-                <ShieldAlert className="w-3 md:w-3.5 h-3 md:h-3.5 text-amber-500 opacity-60" />
-                <span className="text-[8px] md:text-[9px] font-black uppercase text-amber-500 tracking-widest">Pending</span>
-            </div>
-            <p className="text-xl md:text-2xl font-black font-headline tracking-tighter text-amber-500">{stats.pending}</p>
-          </CardContent>
-        </Card>
-
-        <Card className="border-white/5 bg-secondary/5">
-          <CardContent className="p-3 md:p-4">
-            <div className="flex items-center gap-2 mb-1">
-                <Calendar className="w-3 md:w-3.5 h-3 md:h-3.5 text-blue-500 opacity-60" />
-                <span className="text-[8px] md:text-[9px] font-black uppercase text-blue-500 tracking-widest">On Leave</span>
-            </div>
-            <p className="text-xl md:text-2xl font-black font-headline tracking-tighter text-blue-500">{stats.onLeave}</p>
-          </CardContent>
-        </Card>
-
-        <Card className="border-white/5 bg-secondary/5">
-          <CardContent className="p-3 md:p-4">
-            <div className="flex items-center gap-2 mb-1">
-                <ShieldAlert className="w-3 md:w-3.5 h-3 md:h-3.5 text-slate-400 opacity-60" />
-                <span className="text-[8px] md:text-[9px] font-black uppercase text-slate-400 tracking-widest">Holidays</span>
-            </div>
-            <p className="text-xl md:text-2xl font-black font-headline tracking-tighter text-slate-400">{stats.holiday}</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* 2. ROSTER & CALENDAR GRID */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-
-        {/* Left: Filtered Roster */}
-        <Card className="lg:col-span-2 bg-card border border-border shadow-sm rounded-2xl overflow-hidden flex flex-col">
-          <div className="p-4 md:p-6 border-b border-white/5 bg-white/5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <div>
-                <h2 className="font-black uppercase tracking-widest text-xs text-primary flex items-center gap-2">
-                    <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
-                    Personnel Telemetry ({activeFilter})
-                </h2>
-                <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-tighter mt-1 opacity-60">Real-time Attendance Stream</p>
-            </div>
-            <div className="flex items-center gap-3">
-                <Button
-                    onClick={() => { setLogToEdit(null); setIsOverrideOpen(true); }}
-                    className="h-9 px-4 rounded-xl bg-primary text-white font-black uppercase text-[9px] tracking-widest shadow-lg shadow-primary/20 hover:scale-105 active:scale-95 transition-all"
-                >
-                    <Plus className="w-3.5 h-3.5 mr-2" /> Manual Override
-                </Button>
-                <Badge variant="outline" className="h-9 px-4 rounded-xl border-white/10 text-[9px] font-black uppercase tracking-widest bg-background/50 flex items-center">
-                    {format(selectedDate, 'MMM dd, yyyy')}
-                </Badge>
-            </div>
-          </div>
-          <div className="p-0 overflow-x-auto w-full custom-scrollbar">
-            <table className="w-full text-sm text-left border-collapse min-w-[600px]">
-              <thead className="bg-secondary/50 text-[9px] font-black uppercase tracking-widest sticky top-0 backdrop-blur-md z-10 border-b border-white/5">
-                <tr>
-                  <th className="px-6 py-4">Staff Member</th>
-                  <th className="px-6 py-4 text-center">Clock In</th>
-                  <th className="px-6 py-4 text-center">Clock Out</th>
-                  <th className="px-6 py-4 text-center">Total Time</th>
-                  <th className="px-6 py-4 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-white/5">
-                {filteredRoster.length === 0 ? (
-                    <tr>
-                        <td colSpan={5} className="px-6 py-20 text-center text-muted-foreground uppercase font-black text-[10px] tracking-widest opacity-20">
-                            No employees detected
-                        </td>
-                    </tr>
-                ) : (
-                    filteredRoster.map(({ staff, log, status }) => (
-                        <tr key={staff.id} className="hover:bg-white/5 transition-all group cursor-pointer">
-                            <td className="px-6 py-4">
-                                <div className="flex items-center gap-4 min-w-[180px]">
-                                    <Avatar className="h-9 w-9 md:h-10 md:w-10 rounded-2xl border border-white/10 shadow-lg">
-                                        <AvatarFallback className="bg-secondary font-black text-[10px] md:text-xs">{staff.fullName.split(' ').map(n=>n[0]).join('')}</AvatarFallback>
-                                    </Avatar>
-                                    <div className="min-w-0">
-                                        <p className="font-black text-sm text-white truncate leading-none">{staff.fullName}</p>
-                                        <div className="flex items-center gap-2 mt-1 min-w-0">
-                                            <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest opacity-60 truncate shrink-0">{staff.jobTitle || 'Unit Staff'}</p>
-                                            {log?.branchName && (
-                                                <Badge variant="outline" className="h-4 px-1.5 rounded-md border-primary/20 text-primary text-[7px] font-black uppercase truncate">
-                                                    {log.branchName}
-                                                </Badge>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
-                            </td>
-                            <td className="px-6 py-4 text-center">
-                                <div className="flex flex-col items-center gap-1.5">
-                                    {status === 'ON_TIME' && <Badge className="bg-emerald-500/20 text-emerald-500 border-none text-[8px] font-black uppercase">On Time</Badge>}
-                                    {status === 'LATE' && <Badge className="bg-amber-500/20 text-amber-500 border-none text-[8px] font-black uppercase">Late</Badge>}
-                                    {status === 'ABSENT' && <Badge className="bg-rose-500/20 text-rose-500 border-none text-[8px] font-black uppercase">Absent</Badge>}
-                                    {status === 'HOLIDAY' && <Badge className="bg-slate-500/20 text-slate-400 border-none text-[8px] font-black uppercase">Holiday</Badge>}
-                                    {status === 'ON_LEAVE' && <Badge className="bg-blue-500/20 text-blue-500 border-none text-[8px] font-black uppercase">On Leave</Badge>}
-                                    {status === 'WEEKEND' && <Badge className="bg-slate-500/10 text-slate-500 border-none text-[8px] font-black uppercase">Weekend</Badge>}
-
-                                    <div className="flex items-center gap-1.5 mt-0.5">
-                                        {log && <span className="font-mono text-[10px] font-bold text-white">{format(new Date(log.clockIn), 'HH:mm')}</span>}
-                                        {log?.editedByAdmin && (
-                                            <TooltipProvider>
-                                                <Tooltip>
-                                                    <TooltipTrigger asChild>
-                                                        <LucideInfo className="h-2.5 w-2.5 text-primary cursor-help opacity-40 hover:opacity-100 transition-opacity" />
-                                                    </TooltipTrigger>
-                                                    <TooltipContent className="apple-glass-darker border-none p-3 rounded-xl max-w-[200px]">
-                                                        <p className="text-[10px] font-bold uppercase tracking-widest text-primary mb-1">Admin Override</p>
-                                                        <p className="text-[9px] font-medium leading-relaxed italic">"{log.editReason}"</p>
-                                                    </TooltipContent>
-                                                </Tooltip>
-                                            </TooltipProvider>
-                                        )}
-                                    </div>
-                                </div>
-                            </td>
-                            <td className="px-6 py-4 text-center font-mono text-xs">
-                                {log?.clockOut ? (
-                                    <span className="text-white font-bold">{format(new Date(log.clockOut), 'HH:mm')}</span>
-                                ) : log ? (
-                                    <Badge variant="outline" className="h-5 px-2 rounded-lg text-[7px] font-black uppercase bg-emerald-500/10 text-emerald-500 border-none animate-pulse">ACTIVE</Badge>
-                                ) : '--:--'}
-                            </td>
-                            <td className="px-6 py-4 text-center font-mono font-black text-xs text-primary">
-                                {log?.duration ? formatDuration(log.duration) : '00:00:00'}
-                            </td>
-                            <td className="px-6 py-4 text-right">
-                                <div className="flex justify-end gap-2 sm:opacity-0 sm:group-hover:opacity-100 transition-all">
-                                    {log?.status === 'PENDING' && (
-                                        <div className="flex gap-2">
-                                            <Button
-                                                variant="outline"
-                                                size="sm"
-                                                disabled={verifyingId === log.id}
-                                                className="h-8 rounded-xl bg-amber-500/10 text-amber-500 border-amber-500/20 text-[9px] font-black uppercase hover:bg-amber-500 hover:text-white transition-all"
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    handleVerifyPunch(log.id, 'APPROVED');
-                                                }}
-                                            >
-                                                {verifyingId === log.id ? <Loader2 className="h-3 w-3 animate-spin" /> : "Verify Punch"}
-                                            </Button>
-                                            <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                disabled={verifyingId === log.id}
-                                                className="h-8 w-8 rounded-xl text-rose-500 hover:bg-rose-500/10"
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    handleVerifyPunch(log.id, 'REJECTED');
-                                                }}
-                                            >
-                                                <XCircle className="h-4 w-4" />
-                                            </Button>
-                                        </div>
-                                    )}
-                                    <div className="flex items-center gap-1 sm:opacity-0 sm:group-hover:opacity-100 transition-all">
-                                        <Button
-                                            variant="ghost"
-                                            size="icon"
-                                            className="h-8 w-8 rounded-lg text-primary hover:bg-primary/10"
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                setLogToEdit(log || null);
-                                                setIsOverrideOpen(true);
-                                            }}
-                                        >
-                                            <Edit2 className="h-4 w-4" />
-                                        </Button>
-                                        <div onClick={(e) => e.stopPropagation()}>
-                                            <StaffActionMenu
-                                                staff={{ id: staff.id, name: staff.fullName, status: staff.status, isArchived: staff.isArchived }}
-                                                currentLog={log}
-                                            />
-                                        </div>
-                                    </div>
-                                </div>
-                            </td>
-                        </tr>
-                    ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        </Card>
-
-        {/* Right: Side Monitors */}
-        <div className="space-y-6">
-            <Card className="bg-card border border-border shadow-sm rounded-2xl overflow-hidden">
-                <CardHeader className="p-4 md:p-6 pb-2">
-                    <CardTitle className="text-[10px] font-black uppercase tracking-widest text-primary opacity-70">Operational Calendar</CardTitle>
-                </CardHeader>
-                <div className="flex justify-center p-2">
-                    <Calendar
-                        mode="single"
-                        selected={selectedDate}
-                        onSelect={(date) => date && setSelectedDate(date)}
-                        className="rounded-2xl border border-white/5 bg-background shadow-xl w-full"
-                    />
+          {/* Quick Telemetry KPI Grid */}
+          <div className="grid grid-cols-2 gap-3">
+            <Card
+              onClick={() => { setActiveFilter('ALL'); setIsRosterOpen(true); }}
+              className={cn(
+                "cursor-pointer transition-all border-white/5 bg-secondary/5 hover:bg-secondary/10",
+                activeFilter === 'ALL' && "ring-2 ring-primary border-primary bg-primary/5"
+              )}
+            >
+              <CardContent className="p-3">
+                <div className="flex items-center gap-1.5 mb-1">
+                    <Users className="w-3.5 h-3.5 text-primary opacity-60" />
+                    <span className="text-[8px] font-black uppercase text-muted-foreground tracking-widest">Total Staff</span>
                 </div>
+                <p className="text-xl font-black font-headline tracking-tighter">{stats.total}</p>
+              </CardContent>
             </Card>
 
-            <div className="p-4 md:p-5 rounded-2xl md:rounded-[2.5rem] bg-amber-500/10 border border-amber-500/20 flex gap-4 text-amber-600">
-                <AlertTriangle className="h-5 w-5 md:h-6 md:w-6 shrink-0" />
-                <div className="space-y-1">
-                    <p className="text-[9px] md:text-[10px] font-black uppercase tracking-widest">Security Advisory</p>
-                    <p className="text-[8px] md:text-[9px] font-bold leading-relaxed uppercase tracking-tighter opacity-80">
-                        Attendance logs for archived dates are read-only. Manual adjustments require Super Admin authorization tokens.
-                    </p>
+            <Card
+              onClick={() => { setActiveFilter('ACTIVE'); setIsRosterOpen(true); }}
+              className={cn(
+                "cursor-pointer transition-all border-white/5 bg-secondary/5 hover:bg-emerald-500/5",
+                activeFilter === 'ACTIVE' && "ring-2 ring-emerald-500 border-emerald-500 bg-emerald-500/5"
+              )}
+            >
+              <CardContent className="p-3">
+                <div className="flex items-center gap-1.5 mb-1">
+                    <Activity className="w-3.5 h-3.5 text-emerald-500 opacity-60" />
+                    <span className="text-[8px] font-black uppercase text-muted-foreground tracking-widest">Active</span>
                 </div>
+                <p className="text-xl font-black font-headline tracking-tighter text-emerald-500">{stats.active}</p>
+              </CardContent>
+            </Card>
+
+            <Card
+              onClick={() => { setActiveFilter('ABSENT'); setIsRosterOpen(true); }}
+              className={cn(
+                "cursor-pointer transition-all border-white/5 bg-secondary/5 hover:bg-rose-500/5",
+                activeFilter === 'ABSENT' && "ring-2 ring-rose-500 border-rose-500 bg-rose-500/5"
+              )}
+            >
+              <CardContent className="p-3">
+                <div className="flex items-center gap-1.5 mb-1">
+                    <UserX className="w-3.5 h-3.5 text-rose-500 opacity-60" />
+                    <span className="text-[8px] font-black uppercase text-muted-foreground tracking-widest">Absent</span>
+                </div>
+                <p className="text-xl font-black font-headline tracking-tighter text-rose-500">{stats.absent}</p>
+              </CardContent>
+            </Card>
+
+            <Card
+              onClick={() => { setActiveFilter('PENDING'); setIsRosterOpen(true); }}
+              className={cn(
+                "cursor-pointer transition-all border-white/5 bg-secondary/5 hover:bg-amber-500/5",
+                activeFilter === 'PENDING' && "ring-2 ring-amber-500 border-amber-500 bg-amber-500/5"
+              )}
+            >
+              <CardContent className="p-3">
+                <div className="flex items-center gap-1.5 mb-1">
+                    <ShieldAlert className="w-3.5 h-3.5 text-amber-500 opacity-60" />
+                    <span className="text-[8px] font-black uppercase text-amber-500 tracking-widest">Pending</span>
+                </div>
+                <p className="text-xl font-black font-headline tracking-tighter text-amber-500">{stats.pending}</p>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+
+        {/* RIGHT COLUMN: Personnel Roster & Ledger Stream */}
+        <div className="lg:col-span-8 flex flex-col gap-6 min-w-0">
+          <Card className="bg-card border border-border shadow-sm rounded-2xl overflow-hidden flex flex-col">
+            <div className="p-4 md:p-6 border-b border-white/5 bg-white/5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+              <div>
+                  <h2 className="font-black uppercase tracking-widest text-xs text-primary flex items-center gap-2">
+                      <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
+                      Personnel Telemetry ({activeFilter})
+                  </h2>
+                  <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-tighter mt-1 opacity-60">Real-time Attendance Stream</p>
+              </div>
+              <div className="flex items-center gap-3">
+                  <Button
+                      onClick={() => { setLogToEdit(null); setIsOverrideOpen(true); }}
+                      className="h-9 px-4 rounded-xl bg-primary text-white font-black uppercase text-[9px] tracking-widest shadow-lg shadow-primary/20 hover:scale-105 active:scale-95 transition-all"
+                  >
+                      <Plus className="w-3.5 h-3.5 mr-2" /> Manual Override
+                  </Button>
+                  <Badge variant="outline" className="h-9 px-4 rounded-xl border-white/10 text-[9px] font-black uppercase tracking-widest bg-background/50 flex items-center">
+                      {format(selectedDate, 'MMM dd, yyyy')}
+                  </Badge>
+              </div>
             </div>
+            <div className="p-0 overflow-x-auto w-full custom-scrollbar">
+              <table className="w-full text-sm text-left border-collapse min-w-[600px]">
+                <thead className="bg-secondary/50 text-[9px] font-black uppercase tracking-widest sticky top-0 backdrop-blur-md z-10 border-b border-white/5">
+                  <tr>
+                    <th className="px-6 py-4">Staff Member</th>
+                    <th className="px-6 py-4 text-center">Clock In</th>
+                    <th className="px-6 py-4 text-center">Clock Out</th>
+                    <th className="px-6 py-4 text-center">Total Time</th>
+                    <th className="px-6 py-4 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/5">
+                  {filteredRoster.length === 0 ? (
+                      <tr>
+                          <td colSpan={5} className="px-6 py-20 text-center text-muted-foreground uppercase font-black text-[10px] tracking-widest opacity-20">
+                              No employees detected
+                          </td>
+                      </tr>
+                  ) : (
+                      filteredRoster.map(({ staff, log, status }) => (
+                          <tr key={staff.id} className="hover:bg-white/5 transition-all group cursor-pointer">
+                              <td className="px-6 py-4">
+                                  <div className="flex items-center gap-4 min-w-[180px]">
+                                      <Avatar className="h-9 w-9 md:h-10 md:w-10 rounded-2xl border border-white/10 shadow-lg">
+                                          <AvatarFallback className="bg-secondary font-black text-[10px] md:text-xs">{staff.fullName.split(' ').map(n=>n[0]).join('')}</AvatarFallback>
+                                      </Avatar>
+                                      <div className="min-w-0">
+                                          <p className="font-black text-sm text-white truncate leading-none">{staff.fullName}</p>
+                                          <div className="flex items-center gap-2 mt-1 min-w-0">
+                                              <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest opacity-60 truncate shrink-0">{staff.jobTitle || 'Unit Staff'}</p>
+                                              {log?.branchName && (
+                                                  <Badge variant="outline" className="h-4 px-1.5 rounded-md border-primary/20 text-primary text-[7px] font-black uppercase truncate">
+                                                      {log.branchName}
+                                                  </Badge>
+                                              )}
+                                          </div>
+                                      </div>
+                                  </div>
+                              </td>
+                              <td className="px-6 py-4 text-center">
+                                  <div className="flex flex-col items-center gap-1.5">
+                                      {status === 'ON_TIME' && <Badge className="bg-emerald-500/20 text-emerald-500 border-none text-[8px] font-black uppercase">On Time</Badge>}
+                                      {status === 'LATE' && <Badge className="bg-amber-500/20 text-amber-500 border-none text-[8px] font-black uppercase">Late</Badge>}
+                                      {status === 'ABSENT' && <Badge className="bg-rose-500/20 text-rose-500 border-none text-[8px] font-black uppercase">Absent</Badge>}
+                                      {status === 'HOLIDAY' && <Badge className="bg-slate-500/20 text-slate-400 border-none text-[8px] font-black uppercase">Holiday</Badge>}
+                                      {status === 'ON_LEAVE' && <Badge className="bg-blue-500/20 text-blue-500 border-none text-[8px] font-black uppercase">On Leave</Badge>}
+                                      {status === 'WEEKEND' && <Badge className="bg-slate-500/10 text-slate-500 border-none text-[8px] font-black uppercase">Weekend</Badge>}
+
+                                      <div className="flex items-center gap-1.5 mt-0.5">
+                                          {log && <span className="font-mono text-[10px] font-bold text-white">{format(new Date(log.clockIn), 'HH:mm')}</span>}
+                                          {log?.editedByAdmin && (
+                                              <TooltipProvider>
+                                                  <Tooltip>
+                                                      <TooltipTrigger asChild>
+                                                          <LucideInfo className="h-2.5 w-2.5 text-primary cursor-help opacity-40 hover:opacity-100 transition-opacity" />
+                                                      </TooltipTrigger>
+                                                      <TooltipContent className="apple-glass-darker border-none p-3 rounded-xl max-w-[200px]">
+                                                          <p className="text-[10px] font-bold uppercase tracking-widest text-primary mb-1">Admin Override</p>
+                                                          <p className="text-[9px] font-medium leading-relaxed italic">"{log.editReason}"</p>
+                                                      </TooltipContent>
+                                                  </Tooltip>
+                                              </TooltipProvider>
+                                          )}
+                                      </div>
+                                  </div>
+                              </td>
+                              <td className="px-6 py-4 text-center font-mono text-xs">
+                                  {log?.clockOut ? (
+                                      <span className="text-white font-bold">{format(new Date(log.clockOut), 'HH:mm')}</span>
+                                  ) : log ? (
+                                      <Badge variant="outline" className="h-5 px-2 rounded-lg text-[7px] font-black uppercase bg-emerald-500/10 text-emerald-500 border-none animate-pulse">ACTIVE</Badge>
+                                  ) : '--:--'}
+                              </td>
+                              <td className="px-6 py-4 text-center font-mono font-black text-xs text-primary">
+                                  {log?.duration ? formatDuration(log.duration) : '00:00:00'}
+                              </td>
+                              <td className="px-6 py-4 text-right">
+                                  <div className="flex justify-end gap-2 sm:opacity-0 sm:group-hover:opacity-100 transition-all">
+                                      {log?.status === 'PENDING' && (
+                                          <div className="flex gap-2">
+                                              <Button
+                                                  variant="outline"
+                                                  size="sm"
+                                                  disabled={verifyingId === log.id}
+                                                  className="h-8 rounded-xl bg-amber-500/10 text-amber-500 border-amber-500/20 text-[9px] font-black uppercase hover:bg-amber-500 hover:text-white transition-all"
+                                                  onClick={(e) => {
+                                                      e.stopPropagation();
+                                                      handleVerifyPunch(log.id, 'APPROVED');
+                                                  }}
+                                              >
+                                                  {verifyingId === log.id ? <Loader2 className="h-3 w-3 animate-spin" /> : "Verify Punch"}
+                                              </Button>
+                                              <Button
+                                                  variant="ghost"
+                                                  size="sm"
+                                                  disabled={verifyingId === log.id}
+                                                  className="h-8 w-8 rounded-xl text-rose-500 hover:bg-rose-500/10"
+                                                  onClick={(e) => {
+                                                      e.stopPropagation();
+                                                      handleVerifyPunch(log.id, 'REJECTED');
+                                                  }}
+                                              >
+                                                  <XCircle className="h-4 w-4" />
+                                              </Button>
+                                          </div>
+                                      )}
+                                      <div className="flex items-center gap-1 sm:opacity-0 sm:group-hover:opacity-100 transition-all">
+                                          <Button
+                                              variant="ghost"
+                                              size="icon"
+                                              className="h-8 w-8 rounded-lg text-primary hover:bg-primary/10"
+                                              onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  setLogToEdit(log || null);
+                                                  setIsOverrideOpen(true);
+                                              }}
+                                          >
+                                              <Edit2 className="h-4 w-4" />
+                                          </Button>
+                                          <div onClick={(e) => e.stopPropagation()}>
+                                              <StaffActionMenu
+                                                  staff={{ id: staff.id, name: staff.fullName, status: staff.status, isArchived: staff.isArchived }}
+                                                  currentLog={log}
+                                              />
+                                          </div>
+                                      </div>
+                                  </div>
+                              </td>
+                          </tr>
+                      ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </Card>
+
+          {/* Right: Side Monitors */}
+          <div className="space-y-6">
+              <Card className="bg-card border border-border shadow-sm rounded-2xl overflow-hidden">
+                  <CardHeader className="p-4 md:p-6 pb-2">
+                      <CardTitle className="text-[10px] font-black uppercase tracking-widest text-primary opacity-70">Operational Calendar</CardTitle>
+                  </CardHeader>
+                  <div className="flex justify-center p-2">
+                      <Calendar
+                          mode="single"
+                          selected={selectedDate}
+                          onSelect={(date) => date && setSelectedDate(date)}
+                          className="rounded-2xl border border-white/5 bg-background shadow-xl w-full"
+                      />
+                  </div>
+              </Card>
+
+              <div className="p-4 md:p-5 rounded-2xl md:rounded-[2.5rem] bg-amber-500/10 border border-amber-500/20 flex gap-4 text-amber-600">
+                  <AlertTriangle className="h-5 w-5 md:h-6 md:w-6 shrink-0" />
+                  <div className="space-y-1">
+                      <p className="text-[9px] md:text-[10px] font-black uppercase tracking-widest">Security Advisory</p>
+                      <p className="text-[8px] md:text-[9px] font-bold leading-relaxed uppercase tracking-tighter opacity-80">
+                          Attendance logs for archived dates are read-only. Manual adjustments require Super Admin authorization tokens.
+                      </p>
+                  </div>
+              </div>
+          </div>
         </div>
       </div>
 
-      {/* 3. HISTORICAL ANALYSIS MODULE */}
+      {/* HISTORICAL ANALYSIS MODULE */}
       <Card className="bg-card border border-border shadow-sm rounded-2xl overflow-hidden">
         <div className="p-4 md:p-6 border-b border-white/5 bg-white/5 flex flex-col md:flex-row gap-6 justify-between items-start md:items-center">
           <div>

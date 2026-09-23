@@ -405,8 +405,8 @@ export function ChatPageContent({ currentUserProfile, permissions, initialChatId
       if (isMobile) setMobileView('chat');
   };
 
-    return (
-    <div className="flex-1 bg-card border border-border rounded-xl shadow-lg flex flex-col overflow-hidden m-4 md:m-6">
+  return (
+    <div className="flex-1 h-[calc(100vh-7rem)] bg-card border border-border rounded-2xl shadow-lg flex flex-col overflow-hidden m-2 md:m-4">
             <div className="grid grid-cols-1 md:grid-cols-12 overflow-hidden h-full min-h-0">
                 {/* Sidebar Pane */}
             <div className={cn(
