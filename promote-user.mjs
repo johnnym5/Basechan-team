@@ -1,9 +1,7 @@
 import { initializeApp } from 'firebase/app';
-import { getFirestore, collection, getDocs, doc, setDoc, query, where, updateDoc } from 'firebase/firestore';
+import { getAuth, signInWithEmailAndPassword } from 'firebase/auth';
+import { getFirestore, collection, getDocs, doc, query, where, updateDoc } from 'firebase/firestore';
 
-// -------------------------------------------------------------
-// 📋 TARGET FIREBASE PROJECT CONFIGURATION
-// -------------------------------------------------------------
 const TARGET_FIREBASE_CONFIG = {
   apiKey: "AIzaSyD7reBa6N1ObYdqqeyqqIiYXU4emfsPRjs",
   authDomain: "basechan-90fb9.firebaseapp.com",
@@ -13,62 +11,57 @@ const TARGET_FIREBASE_CONFIG = {
   appId: "1:400303522581:web:2b082f65e0b8c325535f1c"
 };
 
-const ORG_ID = 'basechan-international';
-
 async function run() {
-  console.log("\x1b[36m========================================================\x1b[0m");
-  console.log("\x1b[36m⚡   PROMOTING SYSTEM ADMIN TO ORG_ADMIN...             ⚡\x1b[0m");
-  console.log("\x1b[36m========================================================\x1b[0m\n");
+  const email = process.argv[2] || 'jegbase@gmail.com';
+  const role = process.argv[3] || 'SUPERADMIN';
+  const password = process.argv[4];
+
+  console.log("========================================================");
+  console.log(`⚡   PROMOTING USER '${email}' TO ROLE '${role}'...`);
+  console.log("========================================================\n");
 
   const app = initializeApp(TARGET_FIREBASE_CONFIG, "promote-app");
+  const auth = getAuth(app);
   const db = getFirestore(app);
 
-  const email = 'ithub@basechaninternational.com';
+  if (password) {
+    console.log(`Authenticating as ${email}...`);
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+      console.log("✔ Authenticated successfully!");
+    } catch (e) {
+      console.warn("Authentication warning:", e.message);
+    }
+  }
 
-  console.log(`Searching for user \x1b[33m${email}\x1b[0m in Firestore...`);
-  const q = query(collection(db, 'users'), where('email', '==', email));
+  console.log(`Searching for user ${email} in Firestore...`);
+  const q = query(collection(db, 'users'), where('email', '==', email.toLowerCase()));
   const snap = await getDocs(q);
 
   if (!snap.empty) {
-    const userDoc = snap.docs[0];
-    const userRef = doc(db, 'users', userDoc.id);
-    
-    console.log(`Found existing user with ID: \x1b[32m${userDoc.id}\x1b[0m`);
-    console.log(`Promoting to Organization Administrator (ORG_ADMIN)...`);
-    
-    await updateDoc(userRef, {
-      role: 'ORG_ADMIN',
-      position: 'Organization Administrator',
-      departmentName: 'Information Technology (IT)'
-    });
-    
-    console.log(`\x1b[32m✔ Successfully updated user roles to Admin!\x1b[0m\n`);
+    for (const userDoc of snap.docs) {
+      const userRef = doc(db, 'users', userDoc.id);
+
+      console.log(`Found existing user with ID: ${userDoc.id}`);
+      console.log(`Promoting to ${role}...`);
+
+      await updateDoc(userRef, {
+        role: role,
+        position: role === 'SUPERADMIN' ? 'Super Administrator' : 'Organization Administrator',
+        departmentName: 'Executive Oversight'
+      });
+
+      console.log(`✔ Successfully updated user document ${userDoc.id} to ${role}!\n`);
+    }
   } else {
-    console.log(`User document not found. Creating a new Administrator document for \x1b[33m${email}\x1b[0m...`);
-    
-    const newDocId = 'ithub';
-    const newDocRef = doc(db, 'users', newDocId);
-    
-    const newProfile = {
-      orgId: ORG_ID,
-      email: email,
-      username: 'ithub',
-      password: '00000000', // Safe default, will be synchronized on login or sync-auth
-      fullName: 'IT Hub Admin',
-      role: 'ORG_ADMIN',
-      position: 'Organization Administrator',
-      departmentName: 'Information Technology (IT)',
-      joinedDate: new Date().toISOString(),
-      status: 'OFFLINE'
-    };
-    
-    await setDoc(newDocRef, newProfile);
-    console.log(`\x1b[32m✔ Created new ORG_ADMIN user document in database with ID: '${newDocId}'!\x1b[0m\n`);
+    console.log(`❌ User document not found for ${email}.`);
   }
 
-  console.log("\x1b[36mDone! Next time you run 'node sync-auth.mjs', it will register this user in Auth as an administrator.\x1b[0m\n");
+  console.log("Done!\n");
+  process.exit(0);
 }
 
 run().catch(err => {
   console.error("Error running promote-user script:", err);
+  process.exit(1);
 });

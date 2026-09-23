@@ -50,8 +50,8 @@ service cloud.firestore {
     }
 
     // --- TRANSACTIONAL LEDGERS & SERVER-AUTHORITATIVE COLLECTIONS ---
-    // Direct client SDK write access is STRICTLY DISALLOWED (allow write: if false).
-    // All writes MUST originate from authenticated Cloud Functions via Firebase Admin SDK.
+    // Direct client SDK write access to accounting ledger is STRICTLY DISALLOWED.
+    // Writes MUST originate from authenticated Cloud Functions via Firebase Admin SDK.
 
     match /journal_entries/{entryId} {
       allow read: if isFinanceManager() || isSuperAdmin();
@@ -65,7 +65,12 @@ service cloud.firestore {
 
     match /attendance/{attendanceId} {
       allow read: if isAuthenticated();
-      allow write: if false;
+      allow write: if isAuthenticated() && (
+        isHRManager() ||
+        attendanceId.matches('^' + request.auth.uid + '_.*') ||
+        (resource != null && resource.data.userId == request.auth.uid) ||
+        (request.resource != null && request.resource.data.userId == request.auth.uid)
+      );
     }
 
     match /purchase_orders/{poId} {
@@ -87,7 +92,7 @@ service cloud.firestore {
     match /users/{userId} {
       allow read: if isAuthenticated();
       allow create: if isOwner(userId) || isOrgAdmin();
-      allow update: if isOwner(userId) || isHRManager();
+      allow update: if isOwner(userId) || isHRManager() || isSuperAdmin();
       allow delete: if isOrgAdmin();
 
       match /telemetry/{docId} {
@@ -185,7 +190,21 @@ service cloud.firestore {
 
     match /daily_reports/{reportId} {
       allow read: if isAuthenticated();
-      allow write: if isAuthenticated();
+      allow write: if isAuthenticated() && (
+        isHRManager() ||
+        (resource != null && resource.data.userId == request.auth.uid) ||
+        (request.resource != null && request.resource.data.userId == request.auth.uid)
+      );
+    }
+
+    match /daily_debriefs/{debriefId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && (
+        isHRManager() ||
+        debriefId.matches('^' + request.auth.uid + '_.*') ||
+        (resource != null && resource.data.userId == request.auth.uid) ||
+        (request.resource != null && request.resource.data.userId == request.auth.uid)
+      );
     }
 
     match /workbooks/{workbookId} {
