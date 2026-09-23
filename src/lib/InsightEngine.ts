@@ -88,7 +88,7 @@ export class InsightEngine {
   }
 
   /**
-   * Backward-compatible helper for personal tactical insights
+   * Helper for personal tactical insights & dynamic behavioral patterns
    */
   public static generatePersonalInsights(
     userProfile: UserProfile,
@@ -96,19 +96,21 @@ export class InsightEngine {
     tasks: Task[],
     leaveRequests: LeaveRequest[],
     pulses: PulseCheck[],
-    nominations?: Nomination[]
+    nominations?: Nomination[],
+    reports?: DailyReport[]
   ): Insight[] {
     const result = this.evaluate({
       userProfile,
       attendance,
       tasks,
-      reports: [],
+      reports: reports || [],
       leaveRequests,
       pulses,
     });
 
     const insights: Insight[] = [];
 
+    // 1. Directives (Actionable cards e.g. overdue tasks, EOD report if in 16:30+ window)
     result.directives.forEach((d, idx) => {
       const insightType: 'CRITICAL' | 'WARNING' | 'POSITIVE' | 'INFO' =
         d.severity === 'CRITICAL' ? 'CRITICAL' : d.severity === 'WARNING' ? 'WARNING' : 'INFO';
@@ -128,11 +130,33 @@ export class InsightEngine {
       });
     });
 
+    // 2. Dynamic Behavioral Patterns
+    result.behavioralPatterns.forEach((pattern, idx) => {
+      const patternType: 'CRITICAL' | 'WARNING' | 'POSITIVE' | 'INFO' =
+        pattern.classification === 'CRITICAL' ? 'CRITICAL' :
+        pattern.classification === 'WARNING' ? 'WARNING' :
+        pattern.classification === 'POSITIVE' ? 'POSITIVE' : 'INFO';
+
+      insights.push({
+        id: pattern.id || `bp-${idx}`,
+        title: pattern.title,
+        description: pattern.insightRendered,
+        message: `${pattern.title}: ${pattern.insightRendered}`,
+        type: patternType,
+        severity: pattern.classification === 'CRITICAL' ? 'CRITICAL' : pattern.classification === 'WARNING' ? 'WARNING' : 'INFO',
+        category: 'PERFORMANCE',
+        timestamp: new Date().toISOString(),
+        targetUserId: userProfile.id,
+        actionText: 'View Details',
+        actionType: 'ROUTE',
+      });
+    });
+
     return insights;
   }
 
   /**
-   * Backward-compatible helper for team insights
+   * Helper for team insights
    */
   public static generateTeamInsights(
     staffList: UserProfile[],
@@ -140,12 +164,13 @@ export class InsightEngine {
     tasks: Task[],
     leaveRequests: LeaveRequest[],
     pulses: PulseCheck[],
-    nominations?: Nomination[]
+    nominations?: Nomination[],
+    reports?: DailyReport[]
   ): Insight[] {
     const insights: Insight[] = [];
 
     staffList.forEach((staff) => {
-      const personal = this.generatePersonalInsights(staff, attendance, tasks, leaveRequests, pulses, nominations);
+      const personal = this.generatePersonalInsights(staff, attendance, tasks, leaveRequests, pulses, nominations, reports);
       insights.push(...personal);
     });
 
@@ -520,10 +545,8 @@ export class InsightEngine {
 
     // --- DYNAMIC FALLBACK LADDER (GUARANTEEING 3 TO 5 MEANINGFUL PATTERNS) ---
 
-    // Sort detected patterns by Priority Tier (Tier 1 > Tier 2 > Tier 3)
     let selectedPatterns = detectedPatterns.sort((a, b) => a.priorityTier - b.priorityTier);
 
-    // If matches < 3, synthesize affirmative baseline cadence patterns
     if (selectedPatterns.length < 3) {
       const onTimeRatio = validShifts.length > 0
         ? Math.round((validShifts.filter(s => !s.remarks?.includes('LATE')).length / validShifts.length) * 100)
@@ -569,7 +592,6 @@ export class InsightEngine {
       }
     }
 
-    // Limit output between 3 and 5 items
     return selectedPatterns.slice(0, 5);
   }
 
@@ -866,6 +888,7 @@ export class InsightEngine {
   ): ActionableDirective[] {
     const directives: ActionableDirective[] = [];
 
+    // 1. Overdue Task Directive
     const overdueTasks = tasks.filter(t => t.dueDate && new Date(t.dueDate) < new Date() && t.status !== 'ARCHIVED');
     if (overdueTasks.length > 0) {
       directives.push({
@@ -879,21 +902,30 @@ export class InsightEngine {
       });
     }
 
-    const todayStr = format(new Date(), 'yyyy-MM-dd');
+    // 2. EOD Report Directive: ONLY display from 16:30 (4:30 PM) onwards if shift is active & report not yet filed
+    const now = new Date();
+    const todayStr = format(now, 'yyyy-MM-dd');
+    const currentHour = now.getHours();
+    const currentMinute = now.getMinutes();
+
+    // EOD window opens at 16:30 (4:30 PM)
+    const isEodWindow = currentHour > 16 || (currentHour === 16 && currentMinute >= 30);
+
     const hasTodayClockIn = attendance.some(a => a.date === todayStr);
     const hasTodayReport = reports.some(r => r.reportDate === todayStr);
 
-    if (hasTodayClockIn && !hasTodayReport) {
+    if (isEodWindow && hasTodayClockIn && !hasTodayReport) {
       directives.push({
         id: 'dir-missing-debrief',
         title: 'EOD Operational Report Due',
-        description: 'Your shift is active. Submit daily debrief to log metrics and update OMI score.',
+        description: 'Shift conclusion window open (16:30+). Submit daily debrief to log metrics and update OMI score.',
         severity: 'WARNING',
         actionText: 'Draft Debrief',
         actionType: 'open-debrief-modal',
       });
     }
 
+    // 3. Pending Leave Validation Directive
     if (absenceTriage.pendingValidation.length > 0) {
       directives.push({
         id: 'dir-pending-leave',
@@ -905,6 +937,7 @@ export class InsightEngine {
       });
     }
 
+    // 4. Fatigue Strain Directive
     if (fatigue.isStrainDetected) {
       directives.push({
         id: 'dir-fatigue-strain',

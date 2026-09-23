@@ -361,7 +361,7 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
               systemConfig={config || null}
               isVertical={false}
           />
-          <main className="flex-1 overflow-y-auto overflow-x-hidden p-4 md:p-6 lg:p-8 w-full max-w-[1600px] mx-auto custom-scrollbar">
+          <main className="flex-1 min-h-0 w-full overflow-y-auto overscroll-y-contain p-4 md:p-6 lg:p-8 max-w-[1600px] mx-auto custom-scrollbar">
               <div className="flex flex-col gap-6 w-full">
                 {children}
               </div>
