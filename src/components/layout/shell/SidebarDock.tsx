@@ -72,7 +72,7 @@ export function SidebarDock({ isLoggedIn, isAuthLoading }: SidebarDockProps) {
         onMouseEnter={() => setIsExpanded(true)}
         onMouseLeave={() => setIsExpanded(false)}
         className={cn(
-            "h-full flex flex-col border-r border-border/50 bg-card transition-all duration-500 ease-spring relative z-[100]",
+            "h-full hidden md:flex flex-col border-r border-border/50 bg-card transition-all duration-500 ease-spring relative z-[100]",
             isExpanded ? "w-72 shadow-2xl" : "w-[72px]"
         )}
     >

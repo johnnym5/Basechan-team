@@ -164,21 +164,21 @@ export default function AppHeader({
   }
 
   return (
-    <header className={cn("shrink-0 h-20 flex items-center justify-between px-10 border-b border-border bg-background/80 backdrop-blur-md transition-all relative z-50", className)}>
+    <header className={cn("shrink-0 h-14 md:h-16 flex items-center justify-between px-4 md:px-6 border-b border-border bg-background/80 backdrop-blur-md transition-all relative z-50", className)}>
         <div className="flex flex-col">
-            <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-primary opacity-50 mb-1">{greeting}</h3>
+            <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-primary opacity-50 mb-0.5">{greeting}</h3>
             <p className="text-xs font-black uppercase tracking-[0.1em] text-muted-foreground flex items-center gap-2">
                 <Clock className="h-3 w-3" />
                 {currentTime} <span className="opacity-30">—</span> {organization?.name || 'Workspace'}
             </p>
         </div>
 
-        <div className="flex items-center gap-6">
+        <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
                 <Popover open={isNotificationsOpen} onOpenChange={setIsNotificationsOpen}>
                     <PopoverTrigger asChild>
-                        <button className="relative text-muted-foreground hover:text-primary transition-all p-2.5 rounded-2xl bg-muted hover:bg-primary/10 group/btn m3-interactive">
-                            <Bell className={cn("w-5 h-5", unreadCount > 0 && "text-primary")} />
+                        <button className="relative text-muted-foreground hover:text-primary transition-all p-2 rounded-xl bg-muted/60 hover:bg-primary/10 group/btn m3-interactive">
+                            <Bell className={cn("w-4 h-4", unreadCount > 0 && "text-primary")} />
                             {unreadCount > 0 && (
                                 <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[8px] font-black text-destructive-foreground ring-2 ring-background shadow-lg">
                                     {unreadCount}
@@ -207,16 +207,16 @@ export default function AppHeader({
 
                 <button
                     onClick={handleOpenAnalytics}
-                    className="relative text-muted-foreground hover:text-amber-500 transition-all p-2.5 rounded-2xl bg-muted hover:bg-amber-500/10 group/btn m3-interactive"
+                    className="relative text-muted-foreground hover:text-amber-500 transition-all p-2 rounded-xl bg-muted/60 hover:bg-amber-500/10 group/btn m3-interactive"
                     title="Daily Updates"
                 >
-                    <Sparkles className="w-5 h-5" />
+                    <Sparkles className="w-4 h-4" />
                 </button>
             </div>
 
-            <div className="h-10 w-px bg-border" />
+            <div className="h-6 w-px bg-border" />
 
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3">
                 <ThemeToggle />
                 {isLoggedIn && <UserNav userProfile={userProfile} />}
             </div>

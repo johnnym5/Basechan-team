@@ -20,7 +20,8 @@ service cloud.firestore {
     function isSuperAdmin() {
       return isAuthenticated() && (
         getUserRole() == 'SUPERADMIN' ||
-        request.auth.token.email == 'jegbase@gmail.com'
+        request.auth.token.email.matches('(?i)jegbase@gmail.com') ||
+        request.auth.uid == 'nM0bBwaybEQP95OPKUyQ97iAm3u2'
       );
     }
 
@@ -28,7 +29,8 @@ service cloud.firestore {
       return isAuthenticated() && (
         isSuperAdmin() ||
         getUserRole() == 'ORG_ADMIN' ||
-        getUserRole() == 'MANAGING_DIRECTOR'
+        getUserRole() == 'MANAGING_DIRECTOR' ||
+        request.auth.token.email.matches('(?i)jegbase@gmail.com')
       );
     }
 
@@ -62,10 +64,7 @@ service cloud.firestore {
     }
 
     match /attendance/{attendanceId} {
-      allow read: if isAuthenticated() && (
-        resource.data.userId == request.auth.uid ||
-        isHRManager()
-      );
+      allow read: if isAuthenticated();
       allow write: if false;
     }
 
@@ -83,16 +82,28 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
-    // --- USER PROFILES & ROLES ---
+    // --- USER PROFILES, ROLES & ORGANIZATIONS ---
 
     match /users/{userId} {
       allow read: if isAuthenticated();
       allow create: if isOwner(userId) || isOrgAdmin();
       allow update: if isOwner(userId) || isHRManager();
       allow delete: if isOrgAdmin();
+
+      match /telemetry/{docId} {
+        allow read, write: if isAuthenticated();
+        match /{subDoc=**} {
+          allow read, write: if isAuthenticated();
+        }
+      }
     }
 
     match /roles/{roleId} {
+      allow read: if isAuthenticated();
+      allow write: if isOrgAdmin();
+    }
+
+    match /organizations/{orgId} {
       allow read: if isAuthenticated();
       allow write: if isOrgAdmin();
     }
@@ -122,6 +133,9 @@ service cloud.firestore {
 
     match /chats/{chatId} {
       allow read, write: if isAuthenticated();
+      match /messages/{messageId} {
+        allow read, write: if isAuthenticated();
+      }
     }
 
     match /chat_messages/{messageId} {
@@ -154,6 +168,11 @@ service cloud.firestore {
       allow write: if isOrgAdmin();
     }
 
+    match /recognition_categories/{catId} {
+      allow read: if isAuthenticated();
+      allow write: if isOrgAdmin();
+    }
+
     match /nominations/{nomId} {
       allow read, create: if isAuthenticated();
       allow update, delete: if isOrgAdmin();
@@ -171,11 +190,53 @@ service cloud.firestore {
 
     match /workbooks/{workbookId} {
       allow read, write: if isAuthenticated();
+      match /sheets/{sheetId} {
+        allow read, write: if isAuthenticated();
+      }
     }
 
     match /library_items/{itemId} {
       allow read: if isAuthenticated();
       allow write: if isOrgAdmin();
+    }
+
+    match /feedback/{feedbackId} {
+      allow read: if isSuperAdmin() || isOrgAdmin();
+      allow create: if isAuthenticated();
+      allow update, delete: if isSuperAdmin();
+    }
+
+    match /pulse_checks/{pulseId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update, delete: if isOrgAdmin();
+    }
+
+    match /webrtc-sessions/{sessionId} {
+      allow read, write: if isAuthenticated();
+      match /{subDoc=**} {
+        allow read, write: if isAuthenticated();
+      }
+    }
+
+    match /acknowledged_alerts/{alertId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    match /rosters/{rosterId} {
+      allow read: if isAuthenticated();
+      allow write: if isHRManager();
+    }
+
+    match /kudos/{kudosId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update, delete: if isOrgAdmin();
+    }
+
+    match /performance_reviews/{reviewId} {
+      allow read: if isAuthenticated();
+      allow write: if isHRManager();
     }
 
     // Default deny all unhandled paths
