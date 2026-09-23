@@ -177,7 +177,7 @@ export function MyBriefingDashboard({
                     </div>
                     <div className="lg:col-span-5 flex flex-col gap-4">
                         <h4 className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.2em] mb-1 flex items-center">
-                            <Zap className="w-3.5 h-3.5 mr-2" /> Behavioral Patterns
+                            <Zap className="w-3.5 h-3.5 mr-2" /> Work Habits & Trends
                         </h4>
                         <div className="space-y-2">
                             {tacticalInsights.length > 0 ? tacticalInsights.map((insight) => (

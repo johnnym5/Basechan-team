@@ -116,15 +116,15 @@ export function CriticalAlertRotator({
                 </div>
                 <div className="min-w-0">
                     <h4 className="text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] text-rose-500 mb-0.5">
-                        Critical Alerts {visibleAlerts.length > 1 && `(${currentIndex + 1}/${visibleAlerts.length})`}
+                        Urgent Alerts {visibleAlerts.length > 1 && `(${currentIndex + 1}/${visibleAlerts.length})`}
                     </h4>
                     <p className="text-xs md:text-sm font-black tracking-tight text-white leading-tight break-words">{currentAlert.text}</p>
                 </div>
             </div>
             <div className="flex items-center gap-2 md:gap-3 w-full sm:w-auto justify-end z-10">
-                <Button variant="ghost" size="sm" onClick={handleAcknowledgeInternal} className="h-8 md:h-9 px-3 md:px-4 text-[8px] md:text-[9px] font-black uppercase tracking-widest text-rose-500/60 hover:text-rose-500 hover:bg-rose-500/10 rounded-lg md:rounded-xl">Acknowledge</Button>
+                <Button variant="ghost" size="sm" onClick={handleAcknowledgeInternal} className="h-8 md:h-9 px-3 md:px-4 text-[8px] md:text-[9px] font-black uppercase tracking-widest text-rose-500/60 hover:text-rose-500 hover:bg-rose-500/10 rounded-lg md:rounded-xl">Got It</Button>
                 <Button onClick={() => { if (currentAlert.actionType === 'ROUTE') router.push(currentAlert.actionTarget) }} className="h-9 md:h-10 px-4 md:px-6 rounded-lg md:rounded-xl bg-rose-500 text-white hover:bg-rose-600 font-black uppercase text-[8px] md:text-[9px] tracking-widest shadow-xl shadow-rose-500/30 flex items-center gap-2 group">
-                    {currentAlert.actionLabel} <ChevronRight className="w-3 h-3 md:w-3.5 md:h-3.5 group-hover:translate-x-0.5 transition-transform" />
+                    Review Task <ChevronRight className="w-3 h-3 md:w-3.5 md:h-3.5 group-hover:translate-x-0.5 transition-transform" />
                 </Button>
             </div>
         </div>
@@ -234,7 +234,7 @@ export function IntelligentSummaryCenter({
     <div className="w-full flex flex-col h-full gap-4 md:gap-6 overflow-hidden">
       <CriticalAlertRotator alerts={criticalAlerts} userProfile={userProfile || null} onAcknowledge={acknowledgeAlert} />
       <div className="flex items-center justify-between px-2">
-        <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-primary">Analytics Console</h3>
+        <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-primary">Staff Overview</h3>
       </div>
       <PersonnelIntelligenceHub staffList={staffList} attendanceLogs={attendanceLogs} tasks={tasks} leaveRequests={leaveRequests} pulseFeed={pulseFeed} isAdmin={isAdmin} currentUser={userProfile || undefined} nominations={nominations} allInsights={allInsights} />
     </div>
@@ -521,21 +521,21 @@ function PersonnelIntelligenceHub({
                                 </div>
                             ) : (
                                 <div className="space-y-4 h-full flex flex-col">
-                                    <div className="space-y-2 shrink-0"><h4 className="text-[10px] font-black text-primary uppercase tracking-[0.2em] mb-1 flex items-center justify-between"><div><Clock className="w-3.5 h-3.5 mr-2" /> Operational Memo</div>{intel.lastReportDate && (<span className="text-[8px] font-bold text-muted-foreground opacity-40">Filed: {format(parseISO(intel.lastReportDate), 'MMM dd')}</span>)}</h4><p className="text-sm font-medium text-slate-300 leading-relaxed bg-black/40 p-4 rounded-2xl border border-white/5 italic">"{intel.dailySummary}"</p></div>
-                                    <div className="space-y-2 shrink-0"><h4 className="text-[10px] font-black text-emerald-400 uppercase tracking-[0.2em] mb-1 flex items-center"><TrendingUp className="w-3.5 h-3.5 mr-2" /> Weekly Aggregate</h4><p className="text-sm font-medium text-slate-300 leading-relaxed bg-black/40 p-4 rounded-2xl border border-white/5">{intel.weeklySummary}</p></div>
+                                    <div className="space-y-2 shrink-0"><h4 className="text-[10px] font-black text-primary uppercase tracking-[0.2em] mb-1 flex items-center justify-between"><div><Clock className="w-3.5 h-3.5 mr-2" /> Daily Work Note</div>{intel.lastReportDate && (<span className="text-[8px] font-bold text-muted-foreground opacity-40">Filed: {format(parseISO(intel.lastReportDate), 'MMM dd')}</span>)}</h4><p className="text-sm font-medium text-slate-300 leading-relaxed bg-black/40 p-4 rounded-2xl border border-white/5 italic">"{intel.dailySummary}"</p></div>
+                                    <div className="space-y-2 shrink-0"><h4 className="text-[10px] font-black text-emerald-400 uppercase tracking-[0.2em] mb-1 flex items-center"><TrendingUp className="w-3.5 h-3.5 mr-2" /> This Week's Activity</h4><p className="text-sm font-medium text-slate-300 leading-relaxed bg-black/40 p-4 rounded-2xl border border-white/5">{intel.weeklySummary}</p></div>
                                     <div className="space-y-2 flex-1 overflow-y-auto custom-scrollbar">
-                                        <h4 className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.2em] mb-1 flex items-center sticky top-0 bg-secondary/80 backdrop-blur-md py-1 z-10"><Zap className="w-3.5 h-3.5 mr-2" /> Tactical Insights</h4>
+                                        <h4 className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.2em] mb-1 flex items-center sticky top-0 bg-secondary/80 backdrop-blur-md py-1 z-10"><Zap className="w-3.5 h-3.5 mr-2" /> Key Notes / Needs Attention</h4>
                                         <div className="grid grid-cols-1 gap-2">
                                             {intel.tacticalInsights.length > 0 ? intel.tacticalInsights.map((insight: any) => (
                                                 <div key={insight.id} onClick={() => setActiveCalendarStaff(intel.staff)} className={cn("flex items-center gap-2 p-2 rounded-xl border transition-all text-[11px] font-bold cursor-pointer hover:scale-[1.02] active:scale-[0.98]", insight.type === 'CRITICAL' ? "bg-rose-500/10 border-rose-500/20 text-rose-500 hover:bg-rose-500/20" : insight.type === 'WARNING' ? "bg-amber-500/10 border-amber-500/20 text-amber-500 hover:bg-amber-500/20" : insight.type === 'POSITIVE' ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-500 hover:bg-emerald-500/20" : "bg-white/5 border-white/10 text-slate-300 hover:bg-white/10")}>
                                                     {insight.type === 'POSITIVE' ? <CheckCircle className="w-3 h-3" /> : <Info className="w-3 h-3" />}<span className="line-clamp-2">{insight.message}</span><ChevronRight className="w-3 h-3 ml-auto opacity-30" />
                                                 </div>
-                                            )) : <p className="text-[10px] font-bold text-muted-foreground opacity-30 italic px-1">No behavioral patterns flagged.</p>}
+                                            )) : <p className="text-[10px] font-bold text-muted-foreground opacity-30 italic px-1">No work habits flagged.</p>}
                                         </div>
                                     </div>
                                     {!intel.isTeam && intelItems.length === 1 && (
                                         <div className="mt-auto pt-6 border-t border-white/5 flex justify-end">
-                                            <Button variant="ghost" size="sm" className="text-[9px] font-black uppercase tracking-widest text-primary hover:bg-primary/10 gap-2" onClick={() => router.push(`/staff/profile?id=${(intel.staff as any).id}`)}>Detailed 360 Insight <ChevronRight className="w-3 h-3" /></Button>
+                                            <Button variant="ghost" size="sm" className="text-[9px] font-black uppercase tracking-widest text-primary hover:bg-primary/10 gap-2" onClick={() => router.push(`/staff/profile?id=${(intel.staff as any).id}`)}>View Full Profile <ChevronRight className="w-3 h-3" /></Button>
                                         </div>
                                     )}
                                 </div>

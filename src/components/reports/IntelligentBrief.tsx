@@ -215,19 +215,19 @@ export function IntelligentBrief({ userProfile }: IntelligentBriefProps) {
             </CardContent>
           </Card>
 
-          {/* 2. BEHAVIORAL TELEMETRY & PATTERN CATALOG (16-HEURISTIC ENGINE) */}
+          {/* 2. WORK HABITS & TRENDS */}
           <Card className="border-border/50 shadow-lg bg-card/40 backdrop-blur-xl rounded-[2rem]">
             <CardHeader className="bg-primary/5 border-b border-white/5 py-4">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-xs font-black uppercase tracking-widest text-primary flex items-center gap-2">
-                  <Sparkles className="w-4 h-4" /> Behavioral Telemetry & Pattern Catalog
+                  <Sparkles className="w-4 h-4" /> Work Habits & Trends
                 </CardTitle>
                 <Badge variant="outline" className="text-[9px] font-black uppercase tracking-widest bg-primary/10 text-primary border-primary/20">
-                  {behavioralPatterns.length} Patterns Validated
+                  {behavioralPatterns.length} Patterns Active
                 </Badge>
               </div>
               <CardDescription className="text-[10px] font-bold uppercase opacity-60">
-                16-heuristic deterministic discrete pattern classification.
+                Real-time work habits, punctuality trends, and performance patterns.
               </CardDescription>
             </CardHeader>
             <CardContent className="p-6 space-y-3">
@@ -265,12 +265,12 @@ export function IntelligentBrief({ userProfile }: IntelligentBriefProps) {
             </CardContent>
           </Card>
 
-          {/* 3. SANITIZED OPERATIONAL MEMO */}
+          {/* 3. DAILY WORK NOTE */}
           <Card className="border-border/50 shadow-lg bg-card/40 backdrop-blur-xl rounded-[2rem]">
             <CardHeader className="bg-secondary/10 border-b border-white/5 py-4">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-xs font-black uppercase tracking-widest text-foreground flex items-center gap-2">
-                  <FileText className="w-4 h-4 text-primary" /> Daily Operational Memo (Sanitized)
+                  <FileText className="w-4 h-4 text-primary" /> Daily Work Note
                 </CardTitle>
                 <Badge variant={sanitizedMemo.quality === 'GOOD' ? 'default' : 'secondary'} className="text-[9px] font-black uppercase tracking-widest">
                   Quality: {sanitizedMemo.quality}

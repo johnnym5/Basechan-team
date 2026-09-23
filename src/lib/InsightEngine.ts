@@ -29,6 +29,7 @@ export interface Insight {
 /**
  * UT Basechan Pure Deterministic Insight Engine v2.0
  * High-performance, zero-LLM, multi-signal correlation engine.
+ * Human-First Enterprise Copy (Zero Academic Jargon).
  */
 export class InsightEngine {
 
@@ -143,7 +144,7 @@ export class InsightEngine {
         description: pattern.insightRendered,
         message: `${pattern.title}: ${pattern.insightRendered}`,
         type: patternType,
-        severity: pattern.classification === 'CRITICAL' ? 'CRITICAL' : pattern.classification === 'WARNING' ? 'WARNING' : 'INFO',
+        severity: pattern.classification === 'CRITICAL' ? 'CRITICAL' : 'WARNING',
         category: 'PERFORMANCE',
         timestamp: new Date().toISOString(),
         targetUserId: userProfile.id,
@@ -179,7 +180,7 @@ export class InsightEngine {
 
   /**
    * Evaluates the 16 Core Behavioral Heuristics (BP-01 to BP-16)
-   * Applies the Dynamic Fallback Ladder to guarantee 3–5 meaningful patterns.
+   * Plain English Enterprise Copy (Zero Academic Jargon).
    */
   public static evaluateBehavioralPatterns(params: {
     userProfile: UserProfile;
@@ -197,7 +198,7 @@ export class InsightEngine {
 
     // --- CATEGORY A: ARRIVAL CADENCE & PUNCTUALITY DYNAMICS ---
 
-    // BP-01: Early Bird / Buffer Creator
+    // BP-01: Arrives Early
     const earlyShifts = validShifts.filter(s => {
       const c = new Date(s.clockIn);
       const e = new Date(s.clockIn);
@@ -216,16 +217,16 @@ export class InsightEngine {
       detectedPatterns.push({
         id: 'BP-01',
         code: 'BP-01',
-        title: 'Early Bird / Buffer Creator',
+        title: 'Arrives Early',
         classification: 'POSITIVE',
-        metric: `Avg arrival +${avgEarlyMins} min early`,
-        insightRendered: `High Readiness: Consistently clocks in ${avgEarlyMins} minutes ahead of schedule, establishing a strong operational buffer.`,
+        metric: `Avg ~${avgEarlyMins}m early`,
+        insightRendered: `Consistently clocks in ~${avgEarlyMins} mins before shift start.`,
         category: 'ARRIVAL',
         priorityTier: 2,
       });
     }
 
-    // BP-02: Fringe Check-In / Wire-Cutter
+    // BP-02: Right on Time
     const fringeShifts = validShifts.filter(s => {
       const c = new Date(s.clockIn);
       const e = new Date(s.clockIn);
@@ -237,16 +238,16 @@ export class InsightEngine {
       detectedPatterns.push({
         id: 'BP-02',
         code: 'BP-02',
-        title: 'Fringe Check-In / Wire-Cutter',
+        title: 'Right on Time',
         classification: 'NEUTRAL',
-        metric: 'High boundary adherence',
-        insightRendered: 'Precision Punctuality: Clocks in within 3 minutes of shift demarcation with zero tardiness infractions.',
+        metric: 'On-time arrival',
+        insightRendered: 'Always clocks in right before the shift starts without being late.',
         category: 'ARRIVAL',
         priorityTier: 2,
       });
     }
 
-    // BP-03: Punctuality Dispersion / Volatility
+    // BP-03: Irregular Clock-In Time
     if (validShifts.length >= 4) {
       const yValues = validShifts.map(s => {
         const c = new Date(s.clockIn);
@@ -262,21 +263,18 @@ export class InsightEngine {
         detectedPatterns.push({
           id: 'BP-03',
           code: 'BP-03',
-          title: 'Punctuality Dispersion Volatility',
+          title: 'Irregular Clock-In Time',
           classification: 'WARNING',
-          metric: `High arrival variance (\u00B1${stdDev} mins)`,
-          insightRendered: `Erratic Arrival Vector: Clock-in times swing by \u00B1${stdDev} mins across rolling shifts. Cadence lacks predictability.`,
+          metric: 'High arrival variance',
+          insightRendered: 'Arrival times swing by more than an hour from day to day.',
           category: 'ARRIVAL',
           priorityTier: 1,
         });
       }
     }
 
-    // BP-04: Post-Rest Day Slump (Monday/Post-Leave Tardiness)
-    const dayOneShifts = validShifts.filter(s => {
-      const day = new Date(s.clockIn).getDay();
-      return day === 1; // Monday
-    });
+    // BP-04: Monday / Post-Leave Lateness
+    const dayOneShifts = validShifts.filter(s => new Date(s.clockIn).getDay() === 1);
     const otherShifts = validShifts.filter(s => new Date(s.clockIn).getDay() !== 1);
 
     if (dayOneShifts.length >= 2 && otherShifts.length >= 3) {
@@ -296,35 +294,34 @@ export class InsightEngine {
         detectedPatterns.push({
           id: 'BP-04',
           code: 'BP-04',
-          title: 'Post-Rest Day Slump',
+          title: 'Monday / Post-Leave Lateness',
           classification: 'WARNING',
-          metric: 'Delayed ramp-up on cycle starts',
-          insightRendered: 'First-Shift Latency: Tardiness clusters on post-rest transitions (Mondays or post-leave return).',
+          metric: 'Post-rest day delay',
+          insightRendered: 'Most late arrivals happen on the first day back from a weekend or time off.',
           category: 'ARRIVAL',
           priorityTier: 1,
         });
       }
     }
 
-    // --- CATEGORY B: SHIFT INTEGRITY & DURATION PATTERNS ---
+    // --- CATEGORY B: SHIFT DURATION & BREAKS ---
 
-    // BP-05: Sustained Over-Extension / "Hero Mode"
+    // BP-05: Overwork Warning
     const longShifts = validShifts.filter(s => ((s.duration || 0) / 3600) >= 9.5);
     if (longShifts.length >= 4) {
-      const extraHours = (longShifts.reduce((acc, s) => acc + ((s.duration || 0) / 3600 - 8), 0)).toFixed(1);
       detectedPatterns.push({
         id: 'BP-05',
         code: 'BP-05',
-        title: 'Sustained Over-Extension (Hero Mode)',
+        title: 'Overwork Warning',
         classification: 'CRITICAL',
-        metric: `Cumulative over-time +${extraHours}h`,
-        insightRendered: `Burnout Risk (Over-Extension): Logged ${longShifts.length} consecutive 10h+ shifts. Capacity strain elevated.`,
+        metric: `${longShifts.length} long shifts`,
+        insightRendered: `Worked over 10 hours for ${longShifts.length} days in a row. Risk of burnout.`,
         category: 'DURATION',
         priorityTier: 1,
       });
     }
 
-    // BP-06: Premature Evacuation / "Tapering Effect"
+    // BP-06: Left Early
     const earlyOutShifts = validShifts.filter(s => {
       if (!s.clockOut) return false;
       const cOut = new Date(s.clockOut);
@@ -337,31 +334,31 @@ export class InsightEngine {
       detectedPatterns.push({
         id: 'BP-06',
         code: 'BP-06',
-        title: 'Premature Evacuation (Tapering Effect)',
+        title: 'Left Early',
         classification: 'WARNING',
-        metric: `${earlyOutShifts.length} early shift departures`,
-        insightRendered: `Early Departure Anomaly: Logged ${earlyOutShifts.length} departures prior to scheduled shift end without matched leave authorization.`,
+        metric: `${earlyOutShifts.length} early departures`,
+        insightRendered: `Left before shift end ${earlyOutShifts.length} times without an approved leave request.`,
         category: 'DURATION',
         priorityTier: 1,
       });
     }
 
-    // BP-07: Ghost Break / Unrecorded Interval Drift
+    // BP-07: Long Inactive Period
     const highIdleShifts = validShifts.filter(s => (s.idleTime || 0) > 7200); // > 120 mins
     if (highIdleShifts.length >= 2) {
       detectedPatterns.push({
         id: 'BP-07',
         code: 'BP-07',
-        title: 'Ghost Break / Interval Drift',
+        title: 'Long Inactive Period',
         classification: 'WARNING',
-        metric: 'Telemetry idle ratio > 25%',
-        insightRendered: 'Telemetry Disconnect: Extended dormant device intervals detected during active shift window.',
+        metric: 'Inactive > 2h',
+        insightRendered: 'No device or work activity detected for over 2 hours during the shift.',
         category: 'DURATION',
         priorityTier: 1,
       });
     }
 
-    // BP-08: Weekend / Off-Hours Asynchronous Influx
+    // BP-08: Working Off-Hours
     let offHoursMutations = 0;
     for (const report of reports) {
       if (report.createdAt) {
@@ -377,18 +374,18 @@ export class InsightEngine {
       detectedPatterns.push({
         id: 'BP-08',
         code: 'BP-08',
-        title: 'Asynchronous Off-Hours Driver',
+        title: 'Working Off-Hours',
         classification: 'NEUTRAL',
-        metric: `${offHoursMutations} off-cycle mutations`,
-        insightRendered: 'Asynchronous Off-Hours Driver: Active task progression logged outside regular operating window.',
+        metric: 'Off-hours activity',
+        insightRendered: 'Logged work outside normal hours (late at night or on weekends).',
         category: 'DURATION',
         priorityTier: 3,
       });
     }
 
-    // --- CATEGORY C: OPERATIONAL MEMO & REPORTING DISCIPLINE ---
+    // --- CATEGORY C: DAILY REPORTING & UPDATES ---
 
-    // BP-09: Punctual EOD Closure / "Day Cleared"
+    // BP-09: Daily Report On Time
     if (validShifts.length >= 3 && reports.length >= validShifts.length) {
       const instantReports = reports.filter(r => {
         const matchingShift = validShifts.find(s => s.date === r.reportDate && s.clockOut);
@@ -401,17 +398,17 @@ export class InsightEngine {
         detectedPatterns.push({
           id: 'BP-09',
           code: 'BP-09',
-          title: 'Punctual EOD Closure (Day Cleared)',
+          title: 'Daily Report On Time',
           classification: 'POSITIVE',
-          metric: 'Instant closeout cadence (100%)',
-          insightRendered: 'Operational Hygiene: Daily debriefs submitted concurrently with shift end. Telemetry lag is zero.',
+          metric: 'On-time closeout',
+          insightRendered: 'Always submits daily report right at clock-out.',
           category: 'REPORTING',
           priorityTier: 2,
         });
       }
     }
 
-    // BP-10: Amnesic Reporting (Next-Morning Debriefing)
+    // BP-10: Delayed Daily Reports
     const nextDayReports = reports.filter(r => {
       if (!r.createdAt || !r.reportDate) return false;
       const createdDateStr = format(new Date(r.createdAt), 'yyyy-MM-dd');
@@ -422,16 +419,16 @@ export class InsightEngine {
       detectedPatterns.push({
         id: 'BP-10',
         code: 'BP-10',
-        title: 'Amnesic Reporting (Next-Day Debrief)',
+        title: 'Delayed Daily Reports',
         classification: 'WARNING',
-        metric: 'Retroactive reporting latency >12h',
-        insightRendered: 'Reporting Latency: Debriefs submitted retrospectively the next morning, impairing real-time day-end auditing.',
+        metric: 'Next-morning debriefs',
+        insightRendered: 'Daily reports are usually submitted the next morning instead of at shift end.',
         category: 'REPORTING',
         priorityTier: 1,
       });
     }
 
-    // BP-11: Low-Fidelity Telegram Syndrome
+    // BP-11: Brief Daily Report
     const lowFidelityReports = reports.filter(r => {
       const wordCount = (r.accomplishments || "").trim().split(/\s+/).length;
       return wordCount < 8 && wordCount > 0;
@@ -441,33 +438,33 @@ export class InsightEngine {
       detectedPatterns.push({
         id: 'BP-11',
         code: 'BP-11',
-        title: 'Low-Fidelity Documentation',
+        title: 'Brief Daily Report',
         classification: 'WARNING',
-        metric: 'Sub-standard documentation depth',
-        insightRendered: 'Low-Density Documentation: EOD summary contains minimal descriptive substance (under 8 words) despite active operational tickets.',
+        metric: 'Short report text',
+        insightRendered: 'Daily reports are very short (under 8 words). Needs more detail on completed work.',
         category: 'REPORTING',
         priorityTier: 1,
       });
     }
 
-    // --- CATEGORY D: EXECUTION VELOCITY & TASK THROUGHPUT DYNAMICS ---
+    // --- CATEGORY D: TASKS & DEADLINES ---
 
-    // BP-12: Unbroken Velocity Streak
+    // BP-12: Steady Daily Progress
     const completedTasks = tasks.filter(t => t.status === 'ARCHIVED');
     if (completedTasks.length >= 5 && validShifts.length >= 5) {
       detectedPatterns.push({
         id: 'BP-12',
         code: 'BP-12',
-        title: 'Unbroken Velocity Streak',
+        title: 'Steady Daily Progress',
         classification: 'POSITIVE',
-        metric: 'Consistent daily task completion',
-        insightRendered: 'Unbroken Turnaround: Delivered \u22651 completed deliverable every consecutive shift for recent cycle.',
+        metric: 'Daily task completions',
+        insightRendered: 'Completed at least 1 task every day for the last 5 shifts.',
         category: 'VELOCITY',
         priorityTier: 2,
       });
     }
 
-    // BP-13: Blocked-State Attrition / "The Deadlock"
+    // BP-13: Stuck Task
     const blockedTasks = tasks.filter(t => {
       if (t.status === 'ARCHIVED') return false;
       const updated = new Date(t.createdAt);
@@ -479,16 +476,16 @@ export class InsightEngine {
       detectedPatterns.push({
         id: 'BP-13',
         code: 'BP-13',
-        title: 'Blocked-State Attrition (The Deadlock)',
+        title: 'Stuck Task',
         classification: 'CRITICAL',
-        metric: 'Stalled milestone awaiting resolution',
-        insightRendered: `Bottleneck Friction: Primary task "${blockedTasks[0].title}" blocked for 72h+ without status progression.`,
+        metric: 'Task stalled > 3 days',
+        insightRendered: `Task "${blockedTasks[0].title}" has not moved or been updated in over 3 days.`,
         category: 'VELOCITY',
         priorityTier: 1,
       });
     }
 
-    // BP-14: Last-Minute Sprint / Deadline Compression
+    // BP-14: Last-Minute Rush
     const compressedTasks = tasks.filter(t => {
       if (!t.dueDate || !t.createdAt) return false;
       const due = new Date(t.dueDate);
@@ -501,18 +498,18 @@ export class InsightEngine {
       detectedPatterns.push({
         id: 'BP-14',
         code: 'BP-14',
-        title: 'Deadline Compression Sprint',
+        title: 'Last-Minute Rush',
         classification: 'NEUTRAL',
-        metric: 'Back-heavy execution curve',
-        insightRendered: 'Deadline Clustering: High burst velocity in final 4 hours prior to deadline cutoff.',
+        metric: 'Late task burst',
+        insightRendered: 'Most task work happens in the final few hours before the deadline.',
         category: 'VELOCITY',
         priorityTier: 3,
       });
     }
 
-    // --- CATEGORY E: CULTURAL & ORGANIZATIONAL SYNCHRONICITY ---
+    // --- CATEGORY E: TEAMWORK & COMMUNICATION ---
 
-    // BP-15: Active Peer Catalyst
+    // BP-15: Great Team Player
     const kudosGiven = kudos.filter(k => k.fromUserId === userProfile.id).length;
     const kudosReceived = kudos.filter(k => k.toUserId === userProfile.id).length;
 
@@ -520,31 +517,30 @@ export class InsightEngine {
       detectedPatterns.push({
         id: 'BP-15',
         code: 'BP-15',
-        title: 'Active Peer Catalyst',
+        title: 'Great Team Player',
         classification: 'POSITIVE',
-        metric: 'High cross-functional engagement',
-        insightRendered: 'Cultural Keystone: Actively acknowledges peers while maintaining high reciprocity in team recognition.',
+        metric: 'High team recognition',
+        insightRendered: 'Regularly gives and receives peer recognition and shoutouts.',
         category: 'SYNCHRONICITY',
         priorityTier: 2,
       });
     }
 
-    // BP-16: Silo Signal
+    // BP-16: Solo Worker
     if (kudosGiven === 0 && kudosReceived === 0 && validShifts.length >= 5) {
       detectedPatterns.push({
         id: 'BP-16',
         code: 'BP-16',
-        title: 'Silo Signal',
+        title: 'Solo Worker',
         classification: 'NEUTRAL',
-        metric: 'Independent execution profile',
-        insightRendered: 'Isolated Execution: Strong independent output with minimal cross-team interaction or collaborative recognition.',
+        metric: 'Independent focus',
+        insightRendered: 'Works mainly on individual tasks with little team chat or peer interaction.',
         category: 'SYNCHRONICITY',
         priorityTier: 3,
       });
     }
 
-    // --- DYNAMIC FALLBACK LADDER (GUARANTEEING 3 TO 5 MEANINGFUL PATTERNS) ---
-
+    // --- DYNAMIC FALLBACK LADDER ---
     let selectedPatterns = detectedPatterns.sort((a, b) => a.priorityTier - b.priorityTier);
 
     if (selectedPatterns.length < 3) {
@@ -556,10 +552,10 @@ export class InsightEngine {
         selectedPatterns.push({
           id: 'BP-FALLBACK-CADENCE',
           code: 'BP-CADENCE',
-          title: 'Shift Cadence Stability',
+          title: 'Steady Attendance',
           classification: 'POSITIVE',
-          metric: `Punctuality adherence ${onTimeRatio}%`,
-          insightRendered: `Operational Baseline: Maintained ${onTimeRatio}% shift adherence with stable duty progression across active operational cycle.`,
+          metric: `${onTimeRatio}% on-time`,
+          insightRendered: `Arrives on time ${onTimeRatio}% of shifts with steady work progress.`,
           category: 'ARRIVAL',
           priorityTier: 3,
         });
@@ -569,10 +565,10 @@ export class InsightEngine {
         selectedPatterns.push({
           id: 'BP-FALLBACK-TELEMETRY',
           code: 'BP-TELEMETRY',
-          title: 'Verified Telemetry Stream',
+          title: 'Verified Location',
           classification: 'POSITIVE',
-          metric: '100% verified location tracking',
-          insightRendered: 'Verified Telemetry: Location check-ins and device state logs match organization geofence criteria.',
+          metric: 'Location verified',
+          insightRendered: 'Check-in locations match office location guidelines.',
           category: 'DURATION',
           priorityTier: 3,
         });
@@ -582,10 +578,10 @@ export class InsightEngine {
         selectedPatterns.push({
           id: 'BP-FALLBACK-HYGIENE',
           code: 'BP-HYGIENE',
-          title: 'EOD Reporting Discipline',
+          title: 'Regular Reporting',
           classification: 'POSITIVE',
-          metric: 'Consistent situation reports',
-          insightRendered: 'Reporting Discipline: End-of-day operational debriefs submitted consistently for active work shifts.',
+          metric: 'Daily updates filed',
+          insightRendered: 'Files daily work notes consistently at shift end.',
           category: 'REPORTING',
           priorityTier: 3,
         });
@@ -596,8 +592,7 @@ export class InsightEngine {
   }
 
   /**
-   * Calculates Operational Momentum Index (OMI)
-   * Formula: OMI = max(0, min(100, 0.35*Sv + 0.25*Sp + 0.20*Sr + 0.20*Sc - Pf))
+   * Calculates Operational Momentum Index (OMI) / Performance Score
    */
   private static calculateOMI(
     attendance: Attendance[],
@@ -605,7 +600,6 @@ export class InsightEngine {
     reports: DailyReport[],
     absenceTriage: AbsenceTriage
   ): OperationalMomentum {
-    // 1. Task Velocity Score (Sv)
     const assignedCount = tasks.length;
     const completedCount = tasks.filter(t => t.status === 'ARCHIVED').length;
     const overdueCount = tasks.filter(t => t.dueDate && new Date(t.dueDate) < new Date() && t.status !== 'ARCHIVED').length;
@@ -613,7 +607,6 @@ export class InsightEngine {
     let baseSv = assignedCount > 0 ? (completedCount / assignedCount) * 100 : 75;
     const taskVelocityScore = Math.max(0, Math.round(baseSv - (15 * overdueCount)));
 
-    // 2. Punctuality & Shift Integrity Score (Sp)
     const validShifts = attendance.filter(a => a.clockIn);
     let lateSum = 0;
     for (const shift of validShifts) {
@@ -629,7 +622,6 @@ export class InsightEngine {
       ? Math.max(0, Math.round(100 * (1 - (lateSum / validShifts.length))))
       : 85;
 
-    // 3. Debrief & Telemetry Reliability Score (Sr)
     const workedDays = validShifts.length;
     const debriefsCount = reports.length;
     const verifiedGeofenceCount = validShifts.filter(a => a.location === 'OFFICE' || a.clockInLocation).length;
@@ -638,7 +630,6 @@ export class InsightEngine {
     const geofenceRatio = workedDays > 0 ? Math.min(1, verifiedGeofenceCount / workedDays) : 1;
     const reliabilityScore = Math.round(100 * (0.6 * debriefRatio + 0.4 * geofenceRatio));
 
-    // 4. Consistency Streak Factor (Sc)
     let consecutiveOnTimeDays = 0;
     const sortedAtt = [...validShifts].sort((a, b) => new Date(b.clockIn).getTime() - new Date(a.clockIn).getTime());
     for (const shift of sortedAtt) {
@@ -650,14 +641,12 @@ export class InsightEngine {
     }
     const streakScore = Math.min(100, Math.round(20 * Math.log(1 + consecutiveOnTimeDays)));
 
-    // 5. Friction Penalty (Pf)
     const hasUnexcused = absenceTriage.unexcused.length > 0 ? 1 : 0;
     const hasActiveBlocker = tasks.some(t => t.priority === 'LEVEL_1' && t.status !== 'ARCHIVED') ? 1 : 0;
     const hasStaleOverdue = overdueCount > 0 ? 1 : 0;
 
     const frictionPenalty = (20 * hasUnexcused) + (10 * hasActiveBlocker) + (5 * hasStaleOverdue);
 
-    // Composite OMI Calculation
     const weightedSum = (0.35 * taskVelocityScore) + (0.25 * punctualityScore) + (0.20 * reliabilityScore) + (0.20 * streakScore);
     const omi = Math.max(0, Math.min(100, Math.round(weightedSum - frictionPenalty)));
 
@@ -677,7 +666,7 @@ export class InsightEngine {
   }
 
   /**
-   * Punctuality Drift Velocity (beta slope over last 10 shifts)
+   * Punctuality Drift Velocity
    */
   private static calculatePunctualitySlope(attendance: Attendance[]): { slope: number; status: 'DEGRADING' | 'CONSOLIDATING' | 'STABLE' } {
     const validShifts = attendance
@@ -719,7 +708,6 @@ export class InsightEngine {
 
   /**
    * Differentiated Absence Triage
-   * Cross-references non-clocked dates against Leave Requests to eliminate false penalization.
    */
   private static triageAbsences(attendance: Attendance[], leaveRequests: LeaveRequest[]): AbsenceTriage {
     const approvedRest: ApprovedRestItem[] = [];
@@ -743,7 +731,7 @@ export class InsightEngine {
         );
 
         if (approvedLeave) {
-          approvedRest.push({ date: dateStr, type: approvedLeave.leaveType || 'Approved Rest' });
+          approvedRest.push({ date: dateStr, type: approvedLeave.leaveType || 'Approved Time Off' });
           continue;
         }
 
@@ -765,7 +753,7 @@ export class InsightEngine {
   }
 
   /**
-   * Fatigue & Burnout Risk Detection
+   * Fatigue & Overwork Risk Detection
    */
   private static detectFatigue(
     attendance: Attendance[],
@@ -794,9 +782,9 @@ export class InsightEngine {
 
     const isStrainDetected = avgDailyHours >= 9.5 || lateNightSubmissionsCount >= 2 || sentimentDelta >= 2;
 
-    let message = "Capacity balanced. Operational load is within sustainable limits.";
+    let message = "Normal workload. Hours and schedule are within standard limits.";
     if (isStrainDetected) {
-      message = `Sustained overload: Clocked ${avgDailyHours}h/day average with ${lateNightSubmissionsCount} late-night submissions. High fatigue probability.`;
+      message = `Overwork Warning: Worked ${avgDailyHours}h/day average with ${lateNightSubmissionsCount} late-night submissions. Risk of burnout.`;
     }
 
     return {
@@ -805,23 +793,23 @@ export class InsightEngine {
       lateNightSubmissionsCount,
       sentimentDelta,
       message,
-      ctaText: isStrainDetected ? "Request Off-Peak Rest" : undefined,
+      ctaText: isStrainDetected ? "Request Time Off" : undefined,
       ctaAction: isStrainDetected ? "open-leave-dialog" : undefined,
     };
   }
 
   /**
-   * EOD Memo Sanitization & Lexical Density Analysis
+   * EOD Daily Work Note Sanitization
    */
   private static extractMemoTelemetry(rawText: string): SanitizedMemo {
     if (!rawText || rawText.trim().length === 0) {
       return {
         rawText: "",
-        sanitizedText: "No daily operational memo submitted for this cycle.",
+        sanitizedText: "No daily work note submitted for this shift.",
         tags: [],
         issueKeys: [],
         quality: "POOR",
-        warningMessage: "Missing quantifiable metrics. Add EOD deliverables.",
+        warningMessage: "Missing completed work details. Write your daily report.",
       };
     }
 
@@ -833,10 +821,10 @@ export class InsightEngine {
 
     if (cleanText.length < 25 || wordCount <= 3) {
       quality = 'POOR';
-      warningMessage = 'Low lexical density. Specify deliverables completed.';
+      warningMessage = 'Very short note. Please add more details on completed work.';
     } else if (cleanText.length < 50) {
       quality = 'FAIR';
-      warningMessage = 'Summary brief. Consider adding task IDs or metrics.';
+      warningMessage = 'Short summary. Consider adding completed task details.';
     }
 
     const moduleKeywords = [
@@ -858,7 +846,7 @@ export class InsightEngine {
     return {
       rawText,
       sanitizedText: cleanText,
-      tags: tags.length > 0 ? tags : ['#general-operations'],
+      tags: tags.length > 0 ? tags : ['#general-work'],
       issueKeys,
       quality,
       warningMessage,
@@ -877,7 +865,7 @@ export class InsightEngine {
   }
 
   /**
-   * Generates Actionable Resolution Directives with CTAs
+   * Generates Actionable Resolution Directives with Plain English CTAs
    */
   private static generateDirectives(
     tasks: Task[],
@@ -893,22 +881,21 @@ export class InsightEngine {
     if (overdueTasks.length > 0) {
       directives.push({
         id: 'dir-overdue-task',
-        title: `${overdueTasks.length} Task(s) Overdue`,
-        description: `Task "${overdueTasks[0].title}" has exceeded its deadline. Unblock or update status.`,
+        title: `${overdueTasks.length} Overdue Task(s)`,
+        description: `Task "${overdueTasks[0].title}" is past its deadline. Please review or update.`,
         severity: 'CRITICAL',
-        actionText: 'Resolve Tasks',
+        actionText: 'Review Task',
         actionType: 'open-tasks-dialog',
         payload: { taskId: overdueTasks[0].id },
       });
     }
 
-    // 2. EOD Report Directive: ONLY display from 16:30 (4:30 PM) onwards if shift is active & report not yet filed
+    // 2. Daily Report Directive: ONLY display from 16:30 (4:30 PM) onwards if shift is active & report not yet filed
     const now = new Date();
     const todayStr = format(now, 'yyyy-MM-dd');
     const currentHour = now.getHours();
     const currentMinute = now.getMinutes();
 
-    // EOD window opens at 16:30 (4:30 PM)
     const isEodWindow = currentHour > 16 || (currentHour === 16 && currentMinute >= 30);
 
     const hasTodayClockIn = attendance.some(a => a.date === todayStr);
@@ -917,10 +904,10 @@ export class InsightEngine {
     if (isEodWindow && hasTodayClockIn && !hasTodayReport) {
       directives.push({
         id: 'dir-missing-debrief',
-        title: 'EOD Operational Report Due',
-        description: 'Shift conclusion window open (16:30+). Submit daily debrief to log metrics and update OMI score.',
+        title: 'Daily Report Due',
+        description: 'Shift conclusion window open (4:30 PM+). Write your daily report to log accomplishments.',
         severity: 'WARNING',
-        actionText: 'Draft Debrief',
+        actionText: 'Write Daily Report',
         actionType: 'open-debrief-modal',
       });
     }
@@ -930,9 +917,9 @@ export class InsightEngine {
       directives.push({
         id: 'dir-pending-leave',
         title: `${absenceTriage.pendingValidation.length} Pending Leave Request(s)`,
-        description: 'Unresolved approval latency detected. HR verification required.',
+        description: 'Leave request is awaiting HR approval.',
         severity: 'INFO',
-        actionText: 'View Leave Status',
+        actionText: 'Review Status',
         actionType: 'open-leave-dialog',
       });
     }
@@ -941,10 +928,10 @@ export class InsightEngine {
     if (fatigue.isStrainDetected) {
       directives.push({
         id: 'dir-fatigue-strain',
-        title: 'High Fatigue Probability',
+        title: 'Overwork Warning',
         description: fatigue.message,
         severity: 'WARNING',
-        actionText: 'Request Off-Peak Rest',
+        actionText: 'Request Time Off',
         actionType: 'open-leave-dialog',
       });
     }
