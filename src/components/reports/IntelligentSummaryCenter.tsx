@@ -196,7 +196,7 @@ export function IntelligentSummaryCenter({
     const teamInsights = InsightEngine.generateTeamInsights(staffList, attendanceLogs, tasks, leaveRequests, pulseFeed, nominations || [], activeReports)
     return teamInsights.map(insight => {
       const targetStaff = staffList.find(s => s.id === insight.targetUserId);
-      const prefix = targetStaff ? `${targetStaff.fullName}: ` : '';
+      const prefix = targetStaff ? `${targetStaff.fullName.toLowerCase()}: ` : '';
       return {
         id: insight.id,
         type: insight.type === 'CRITICAL' ? 'action' : insight.type === 'WARNING' ? 'warning' : insight.type === 'POSITIVE' ? 'success' : 'info',
@@ -219,7 +219,7 @@ export function IntelligentSummaryCenter({
   }
 
   return (
-    <div className="w-full flex flex-col h-full gap-4 md:gap-6 overflow-hidden">
+    <div className="w-full flex flex-col h-full gap-4 md:gap-6">
       <CriticalAlertRotator alerts={criticalAlerts} userProfile={userProfile || null} onAcknowledge={acknowledgeAlert} />
       <div className="flex items-center justify-between px-2">
         <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-primary">Staff Overview</h3>
@@ -290,12 +290,17 @@ function PersonnelIntelligenceHub({
             return;
         }
         setIsTeamMode(false);
-        setSelectedIds(prev => {
-            if (prev.includes(id)) return prev.filter(i => i !== id);
-            if (prev.length >= 5) return prev;
-            return [...prev, id];
-        });
+        setSelectedIds([id]);
     };
+
+    const selectedStaffName = useMemo(() => {
+      if (isTeamMode) return "Organizational Summary";
+      if (selectedIds.length === 1) {
+        const s = staffList.find(st => st.id === selectedIds[0]);
+        return s ? s.fullName : "Selected Staff";
+      }
+      return `Selected: ${selectedIds.length} Personnel`;
+    }, [isTeamMode, selectedIds, staffList]);
 
     const intelItems = useMemo((): any[] => {
         if (isTeamMode) {
@@ -363,6 +368,7 @@ function PersonnelIntelligenceHub({
                 tacticalInsights: []
             }];
         }
+
         return selectedIds.map(id => {
             const staff = staffList.find(s => s.id === id);
             if (!staff) return null;
@@ -389,7 +395,9 @@ function PersonnelIntelligenceHub({
                 ? `Executed ${totalOps} total operation(s) this week (${weeklyShifts} shift(s), ${weeklyHours}h logged, ${weeklyTasksDone} task(s) completed, ${weeklyReportsDone} report(s) filed).`
                 : "No operations logged yet for this week.";
 
+            // Personal Tactical Insights MUST NOT HAVE TEAM PREFIXES ("peter: ", "feridu: ")
             const tacticalInsights = InsightEngine.generatePersonalInsights(staff, attendanceLogs, tasks, leaveRequests, pulseFeed, nominations, reports);
+
             return {
                 isTeam: false,
                 staff,
@@ -406,15 +414,28 @@ function PersonnelIntelligenceHub({
 
     return (
       <>
-        <div className="bg-black/20 border border-white/5 rounded-[2rem] overflow-hidden flex flex-col h-[320px] shadow-2xl">
+        <div className="bg-black/20 border border-white/5 rounded-[2rem] flex flex-col min-h-[420px] max-h-[600px] h-auto shadow-2xl overflow-hidden">
           {isAdmin && (
-            <div className="w-full border-b border-white/5 bg-secondary/90 backdrop-blur-md z-10 p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
-                <div className="flex items-center gap-4"><div className="p-3 rounded-2xl bg-primary/10 text-primary"><Radar className="w-5 h-5" /></div><div><h3 className="text-sm font-black text-white uppercase tracking-widest">Team Overview</h3><p className="text-[9px] font-bold text-muted-foreground uppercase tracking-tighter opacity-60">{isTeamMode ? 'Organizational Health Mode' : `${selectedIds.length} Personnel Selected`}</p></div></div>
+            <div className="w-full border-b border-white/5 bg-secondary/90 backdrop-blur-md z-10 p-4 flex flex-col sm:flex-row items-center justify-between gap-4 shrink-0">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 rounded-2xl bg-primary/10 text-primary">
+                    <Radar className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-black text-white uppercase tracking-widest">
+                      {isTeamMode ? "Team Overview" : "Personnel Detail"}
+                    </h3>
+                    <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-tighter opacity-60">
+                      {isTeamMode ? 'Organizational Health Mode' : selectedStaffName}
+                    </p>
+                  </div>
+                </div>
+
                 <div className="flex items-center gap-3 w-full sm:w-[320px]">
                     <Popover>
                         <PopoverTrigger asChild>
                             <Button variant="outline" className="w-full h-12 rounded-xl bg-black/40 border-white/10 text-xs font-bold uppercase tracking-tight text-white justify-between px-4">
-                                <span>{isTeamMode ? "Organizational Summary" : `Selected: ${selectedIds.length} Personnel`}</span>
+                                <span>{selectedStaffName}</span>
                                 <ChevronDown className="w-4 h-4 opacity-50" />
                             </Button>
                         </PopoverTrigger>
@@ -429,7 +450,7 @@ function PersonnelIntelligenceHub({
                                     {displayStaff.length === 0 ? (
                                         <div className="py-10 text-center opacity-20 text-[10px] font-black uppercase">No personnel detected in roster.</div>
                                     ) : displayStaff.map(staff => (
-                                        <button key={staff.id} onClick={() => toggleStaffSelection(staff.id)} className={cn("w-full flex items-center justify-between p-3 rounded-xl transition-all group mb-1", selectedIds.includes(staff.id) ? "bg-white/10 text-primary" : "hover:bg-white/5 text-slate-400")}>
+                                        <button key={staff.id} onClick={() => toggleStaffSelection(staff.id)} className={cn("w-full flex items-center justify-between p-3 rounded-xl transition-all group mb-1", (!isTeamMode && selectedIds.includes(staff.id)) ? "bg-white/10 text-primary font-black" : "hover:bg-white/5 text-slate-400")}>
                                             <div className="flex flex-col items-start min-w-0">
                                                 <span className="text-xs font-bold uppercase tracking-tight truncate w-full">{staff.fullName}</span>
                                                 <div className="flex items-center gap-2 mt-0.5">
@@ -437,11 +458,11 @@ function PersonnelIntelligenceHub({
                                                     <span className="text-[8px] font-black uppercase opacity-40 truncate">{staff.departmentName}</span>
                                                 </div>
                                             </div>
-                                            <div className={cn("w-4 h-4 rounded border flex items-center justify-center transition-all shrink-0", selectedIds.includes(staff.id) ? "bg-primary border-primary" : "border-white/20 group-hover:border-white/40")}>{selectedIds.includes(staff.id) && <Check className="w-3 h-3 text-white" />}</div>
+                                            <div className={cn("w-4 h-4 rounded border flex items-center justify-center transition-all shrink-0", (!isTeamMode && selectedIds.includes(staff.id)) ? "bg-primary border-primary" : "border-white/20 group-hover:border-white/40")}>{(!isTeamMode && selectedIds.includes(staff.id)) && <Check className="w-3 h-3 text-white" />}</div>
                                         </button>
                                     ))}
                                 </ScrollArea>
-                                <div className="pt-2 border-t border-white/5 mt-2"><p className="text-[8px] font-black uppercase tracking-widest text-center opacity-30">Max Comparison: 5 Personnel</p></div>
+                                <div className="pt-2 border-t border-white/5 mt-2"><p className="text-[8px] font-black uppercase tracking-widest text-center opacity-30">Select personnel to view profile</p></div>
                             </div>
                         </PopoverContent>
                     </Popover>
@@ -449,7 +470,7 @@ function PersonnelIntelligenceHub({
             </div>
           )}
 
-          <div className="flex-1 overflow-x-auto overflow-y-hidden p-6 custom-scrollbar">
+          <div className="flex-1 overflow-x-auto overflow-y-auto p-6 custom-scrollbar">
             <div className="flex gap-6 h-full min-w-full">
                 {intelItems.map((intel: any, idx: number) => (
                     <div key={idx} className={cn(
@@ -491,20 +512,35 @@ function PersonnelIntelligenceHub({
                                 </div>
                             ) : (
                                 <div className="space-y-4 h-full flex flex-col">
-                                    <div className="space-y-2 shrink-0"><h4 className="text-[10px] font-black text-primary uppercase tracking-[0.2em] mb-1 flex items-center justify-between"><div><Clock className="w-3.5 h-3.5 mr-2" /> Daily Work Note</div>{intel.lastReportDate && (<span className="text-[8px] font-bold text-muted-foreground opacity-40">Filed: {format(parseISO(intel.lastReportDate), 'MMM dd')}</span>)}</h4><p className="text-sm font-medium text-slate-300 leading-relaxed bg-black/40 p-4 rounded-2xl border border-white/5 italic">"{intel.dailySummary}"</p></div>
-                                    <div className="space-y-2 shrink-0"><h4 className="text-[10px] font-black text-emerald-400 uppercase tracking-[0.2em] mb-1 flex items-center"><TrendingUp className="w-3.5 h-3.5 mr-2" /> This Week's Activity</h4><p className="text-sm font-medium text-slate-300 leading-relaxed bg-black/40 p-4 rounded-2xl border border-white/5">{intel.weeklySummary}</p></div>
-                                    <div className="space-y-2 flex-1 overflow-y-auto custom-scrollbar">
+                                    <div className="space-y-2 shrink-0">
+                                      <h4 className="text-[10px] font-black text-primary uppercase tracking-[0.2em] mb-1 flex items-center justify-between">
+                                        <div><Clock className="w-3.5 h-3.5 mr-2" /> Daily Work Note</div>
+                                        {intel.lastReportDate && (<span className="text-[8px] font-bold text-muted-foreground opacity-40">Filed: {format(parseISO(intel.lastReportDate), 'MMM dd')}</span>)}
+                                      </h4>
+                                      <p className="text-sm font-medium text-slate-300 leading-relaxed bg-black/40 p-4 rounded-2xl border border-white/5 italic">"{intel.dailySummary}"</p>
+                                    </div>
+
+                                    <div className="space-y-2 shrink-0">
+                                      <h4 className="text-[10px] font-black text-emerald-400 uppercase tracking-[0.2em] mb-1 flex items-center">
+                                        <TrendingUp className="w-3.5 h-3.5 mr-2" /> This Week's Activity
+                                      </h4>
+                                      <p className="text-sm font-medium text-slate-300 leading-relaxed bg-black/40 p-4 rounded-2xl border border-white/5">{intel.weeklySummary}</p>
+                                    </div>
+
+                                    <div className="space-y-2 flex-1 overflow-y-auto custom-scrollbar min-h-[120px]">
                                         <h4 className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.2em] mb-1 flex items-center sticky top-0 bg-secondary/80 backdrop-blur-md py-1 z-10"><Zap className="w-3.5 h-3.5 mr-2" /> Key Notes / Needs Attention</h4>
                                         <div className="grid grid-cols-1 gap-2">
                                             {intel.tacticalInsights.length > 0 ? intel.tacticalInsights.map((insight: any) => (
                                                 <div key={insight.id} onClick={() => setActiveCalendarStaff(intel.staff)} className={cn("flex items-center gap-2 p-2 rounded-xl border transition-all text-[11px] font-bold cursor-pointer hover:scale-[1.02] active:scale-[0.98]", insight.type === 'CRITICAL' ? "bg-rose-500/10 border-rose-500/20 text-rose-500 hover:bg-rose-500/20" : insight.type === 'WARNING' ? "bg-amber-500/10 border-amber-500/20 text-amber-500 hover:bg-amber-500/20" : insight.type === 'POSITIVE' ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-500 hover:bg-emerald-500/20" : "bg-white/5 border-white/10 text-slate-300 hover:bg-white/10")}>
-                                                    {insight.type === 'POSITIVE' ? <CheckCircle className="w-3 h-3" /> : <Info className="w-3 h-3" />}<span className="line-clamp-2">{insight.message}</span><ChevronRight className="w-3 h-3 ml-auto opacity-30" />
+                                                    {insight.type === 'POSITIVE' ? <CheckCircle className="w-3 h-3 text-emerald-500 shrink-0" /> : <Info className="w-3 h-3 text-amber-500 shrink-0" />}
+                                                    <span className="line-clamp-2">{insight.message}</span>
+                                                    <ChevronRight className="w-3 h-3 ml-auto opacity-30 shrink-0" />
                                                 </div>
                                             )) : <p className="text-[10px] font-bold text-muted-foreground opacity-30 italic px-1">No work habits flagged.</p>}
                                         </div>
                                     </div>
                                     {!intel.isTeam && intelItems.length === 1 && (
-                                        <div className="mt-auto pt-6 border-t border-white/5 flex justify-end">
+                                        <div className="mt-auto pt-4 border-t border-white/5 flex justify-end">
                                             <Button variant="ghost" size="sm" className="text-[9px] font-black uppercase tracking-widest text-primary hover:bg-primary/10 gap-2" onClick={() => router.push(`/staff/profile?id=${(intel.staff as any).id}`)}>View Full Profile <ChevronRight className="w-3 h-3" /></Button>
                                         </div>
                                     )}
