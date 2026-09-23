@@ -206,18 +206,22 @@ export function IntelligentSummaryCenter({
   const allInsights = useMemo(() => {
     if (!userProfile) return []
     const teamInsights = InsightEngine.generateTeamInsights(staffList, attendanceLogs, tasks, leaveRequests, pulseFeed, nominations || [])
-    return teamInsights.map(insight => ({
+    return teamInsights.map(insight => {
+      const targetStaff = staffList.find(s => s.id === insight.targetUserId);
+      const prefix = targetStaff ? `${targetStaff.fullName}: ` : '';
+      return {
         id: insight.id,
         type: insight.type === 'CRITICAL' ? 'action' : insight.type === 'WARNING' ? 'warning' : insight.type === 'POSITIVE' ? 'success' : 'info',
         severity: insight.type === 'CRITICAL' ? 'CRITICAL' : 'STANDARD',
         icon: insight.type === 'POSITIVE' ? CheckCircle : insight.type === 'CRITICAL' ? AlertTriangle : Activity,
-        title: insight.category === 'TEAM' ? "Organization Pulse" : "Personnel Alert",
-        text: insight.message,
+        title: insight.title || "Personnel Alert",
+        text: `${prefix}${insight.message}`,
         actionLabel: "Investigate",
         actionType: "ROUTE",
         actionTarget: "/staff/attendance",
         category: insight.category
-    }))
+      };
+    })
   }, [attendanceLogs, tasks, staffList, leaveRequests, userProfile, pulseFeed, nominations])
 
   const criticalAlerts = useMemo(() => allInsights.filter(i => i.severity === 'CRITICAL' && !acknowledgedAlertIds.includes(i.id)), [allInsights, acknowledgedAlertIds])
@@ -343,10 +347,63 @@ function PersonnelIntelligenceHub({
 
     const intelItems = useMemo((): PersonnelIntel[] => {
         if (isTeamMode) {
+            const orgInsights = [...allInsights];
+
+            if (orgInsights.length === 0) {
+                const totalStaff = staffList.length;
+                const todayStr = format(new Date(), 'yyyy-MM-dd');
+                const activeShifts = attendanceLogs.filter(a => a.date === todayStr && !a.clockOut).length;
+                const pendingLeaves = leaveRequests.filter(l => l.status === 'PENDING').length;
+                const overdueTasks = tasks.filter(t => t.dueDate && new Date(t.dueDate) < new Date() && t.status !== 'ARCHIVED').length;
+
+                orgInsights.push({
+                    id: 'org-health-1',
+                    type: 'success',
+                    severity: 'STANDARD',
+                    icon: CheckCircle,
+                    title: 'System Operational Status',
+                    text: `Active Operational Deployment: ${activeShifts}/${totalStaff} personnel checked in today with zero critical breaches.`,
+                    actionLabel: 'View Roster',
+                    actionType: 'ROUTE',
+                    actionTarget: '/staff/attendance',
+                    category: 'TEAM'
+                });
+
+                if (pendingLeaves > 0) {
+                    orgInsights.push({
+                        id: 'org-health-2',
+                        type: 'warning',
+                        severity: 'STANDARD',
+                        icon: AlertTriangle,
+                        title: 'Pending Action Items',
+                        text: `${pendingLeaves} leave request(s) awaiting HR manager verification.`,
+                        actionLabel: 'Review',
+                        actionType: 'ROUTE',
+                        actionTarget: '/staff/leave',
+                        category: 'TEAM'
+                    });
+                }
+
+                if (overdueTasks > 0) {
+                    orgInsights.push({
+                        id: 'org-health-3',
+                        type: 'action',
+                        severity: 'CRITICAL',
+                        icon: AlertTriangle,
+                        title: 'Overdue Workload',
+                        text: `${overdueTasks} task(s) exceeded scheduled deadline. Unblock or reassign.`,
+                        actionLabel: 'View Tasks',
+                        actionType: 'ROUTE',
+                        actionTarget: '/tasks',
+                        category: 'TEAM'
+                    });
+                }
+            }
+
             return [{
                 isTeam: true,
                 fullName: "Team Overview",
-                insights: allInsights.filter(i => i.category === 'TEAM'),
+                insights: orgInsights,
                 staff: null,
                 dailySummary: "",
                 weeklySummary: "",
