@@ -414,15 +414,15 @@ function PersonnelIntelligenceHub({
 
     return (
       <>
-        <div className="bg-black/20 border border-white/5 rounded-[2rem] flex flex-col min-h-[420px] max-h-[600px] h-auto shadow-2xl overflow-hidden">
+        <div className="bg-black/20 border border-white/5 rounded-[2rem] flex flex-col h-[380px] shadow-2xl overflow-hidden">
           {isAdmin && (
-            <div className="w-full border-b border-white/5 bg-secondary/90 backdrop-blur-md z-10 p-4 flex flex-col sm:flex-row items-center justify-between gap-4 shrink-0">
+            <div className="w-full border-b border-white/5 bg-secondary/90 backdrop-blur-md z-10 p-3 md:p-4 flex flex-col sm:flex-row items-center justify-between gap-4 shrink-0">
                 <div className="flex items-center gap-4">
-                  <div className="p-3 rounded-2xl bg-primary/10 text-primary">
+                  <div className="p-2.5 rounded-2xl bg-primary/10 text-primary">
                     <Radar className="w-5 h-5" />
                   </div>
                   <div>
-                    <h3 className="text-sm font-black text-white uppercase tracking-widest">
+                    <h3 className="text-xs md:text-sm font-black text-white uppercase tracking-widest">
                       {isTeamMode ? "Team Overview" : "Personnel Detail"}
                     </h3>
                     <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-tighter opacity-60">
@@ -434,7 +434,7 @@ function PersonnelIntelligenceHub({
                 <div className="flex items-center gap-3 w-full sm:w-[320px]">
                     <Popover>
                         <PopoverTrigger asChild>
-                            <Button variant="outline" className="w-full h-12 rounded-xl bg-black/40 border-white/10 text-xs font-bold uppercase tracking-tight text-white justify-between px-4">
+                            <Button variant="outline" className="w-full h-10 md:h-12 rounded-xl bg-black/40 border-white/10 text-xs font-bold uppercase tracking-tight text-white justify-between px-4">
                                 <span>{selectedStaffName}</span>
                                 <ChevronDown className="w-4 h-4 opacity-50" />
                             </Button>
@@ -470,19 +470,19 @@ function PersonnelIntelligenceHub({
             </div>
           )}
 
-          <div className="flex-1 overflow-x-auto overflow-y-auto p-6 custom-scrollbar">
+          <div className="flex-1 overflow-x-auto overflow-y-hidden p-4 md:p-6 custom-scrollbar">
             <div className="flex gap-6 h-full min-w-full">
                 {intelItems.map((intel: any, idx: number) => (
                     <div key={idx} className={cn(
                         "flex flex-col h-full shrink-0 animate-in fade-in zoom-in-95 duration-500",
                         intelItems.length > 1 ? "w-[400px] bg-black/20 p-4 rounded-3xl border border-white/5 shadow-inner" : "w-full"
                     )}>
-                        <div className="flex justify-between items-start mb-4 border-b border-white/5 pb-3">
+                        <div className="flex justify-between items-start mb-2 border-b border-white/5 pb-2">
                             <div>
-                                <h2 className={cn("font-black font-headline tracking-tighter uppercase text-white", intelItems.length > 1 ? "text-xl" : "text-2xl")}>{intel.fullName}</h2>
-                                <div className="flex items-center gap-3 mt-3">
+                                <h2 className={cn("font-black font-headline tracking-tighter uppercase text-white", intelItems.length > 1 ? "text-lg" : "text-xl")}>{intel.fullName}</h2>
+                                <div className="flex items-center gap-3 mt-1">
                                     {intel.isTeam && (
-                                        <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20 text-[9px] font-black uppercase tracking-widest px-3 py-1">
+                                        <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20 text-[8px] font-black uppercase tracking-widest px-2.5 py-0.5">
                                             Mode: All Units
                                         </Badge>
                                     )}
@@ -490,25 +490,30 @@ function PersonnelIntelligenceHub({
                             </div>
                             {intelItems.length === 1 && <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />}
                         </div>
-                        <div className="space-y-4 flex-grow">
+                        <div className="space-y-3 flex-grow overflow-hidden">
                             {intel.isTeam ? (
-                                <div className="grid grid-cols-1 gap-2 h-full overflow-y-auto custom-scrollbar pr-1">
-                                    <h4 className="text-[10px] font-black text-primary uppercase tracking-[0.2em] mb-1 flex items-center sticky top-0 bg-secondary/80 backdrop-blur-md py-2 z-10"><Zap className="w-3.5 h-3.5 mr-2" /> Global Organizational Insights</h4>
+                                <div className="flex flex-col h-full">
+                                    <h4 className="text-[10px] font-black text-primary uppercase tracking-[0.2em] mb-2 flex items-center shrink-0">
+                                      <Zap className="w-3.5 h-3.5 mr-2" /> Global Organizational Insights ({intel.insights.length})
+                                    </h4>
+                                    <div className="grid grid-cols-1 gap-2 max-h-[220px] overflow-y-auto custom-scrollbar pr-1">
                                     {intel.insights.length > 0 ? intel.insights.map((insight: any) => (
                                         <div
                                             key={insight.id}
                                             onClick={() => { if (insight.actionType === 'ROUTE') router.push(insight.actionTarget) }}
                                             className={cn(
-                                                "flex items-center gap-3 p-3 rounded-xl border transition-all text-[11px] font-bold cursor-pointer hover:brightness-110 active:scale-[0.99]",
+                                                "flex items-center gap-2.5 p-2.5 rounded-xl border transition-all text-[10px] font-bold cursor-pointer hover:brightness-110 active:scale-[0.99]",
                                                 insight.type === 'action' ? "bg-rose-500/10 border-rose-500/20 text-rose-500 hover:bg-rose-500/20" :
                                                 insight.type === 'warning' ? "bg-amber-500/10 border-amber-500/20 text-amber-500 hover:bg-amber-500/20" :
                                                 insight.type === 'success' ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-500 hover:bg-emerald-500/20" :
                                                 "bg-white/5 border-white/10 text-slate-300 hover:bg-white/10"
                                             )}
                                         >
-                                            <insight.icon className="w-4 h-4 shrink-0" /><span>{insight.text}</span>
+                                            <insight.icon className="w-3.5 h-3.5 shrink-0" />
+                                            <span className="truncate">{insight.text}</span>
                                         </div>
-                                    )) : <div className="py-10 text-center opacity-20"><Info className="h-10 w-10 mx-auto mb-4" /><p className="text-[10px] font-black uppercase tracking-widest">Awaiting organizational telemetry...</p></div>}
+                                    )) : <div className="py-10 text-center opacity-20"><Info className="h-8 w-8 mx-auto mb-2" /><p className="text-[10px] font-black uppercase tracking-widest">Awaiting organizational telemetry...</p></div>}
+                                    </div>
                                 </div>
                             ) : (
                                 <div className="space-y-4 h-full flex flex-col">
