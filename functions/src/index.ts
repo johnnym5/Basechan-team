@@ -3,10 +3,6 @@ import { getFirestore, FieldValue } from "firebase-admin/firestore";
 import { pubsub } from "firebase-functions/v1";
 import { differenceInSeconds } from "date-fns";
 
-if (!getApps().length) {
-  initializeApp();
-}
-
 export { createJournalEntry, postJournalEntry } from "./accounting";
 export { clockInSession, clockOutSession } from "./attendance";
 export { submitRequisition } from "./procurement";
@@ -16,6 +12,9 @@ export const autoClockOutDailyV1 = pubsub
   .schedule("30 18 * * *")
   .timeZone("Africa/Lagos")
   .onRun(async () => {
+    if (!getApps().length) {
+      initializeApp();
+    }
     const db = getFirestore();
     const now = new Date();
 
@@ -27,12 +26,10 @@ export const autoClockOutDailyV1 = pubsub
       const record = docSnap.data();
       const recordRef = docSnap.ref;
 
-      // Determine target clockOut: 17:00 (5:00 PM) on the day they clocked in
       const clockInDate = new Date(record.clockIn);
       let clockOutDate = new Date(clockInDate);
       clockOutDate.setHours(17, 0, 0, 0);
 
-      // If clock-in happened after 17:00, use the current run time
       if (clockOutDate <= clockInDate) {
         clockOutDate = now;
       }
@@ -53,7 +50,6 @@ export const autoClockOutDailyV1 = pubsub
         duration
       };
 
-      // If the user was on active break, close the break session
       if (record.onBreak && record.breaks && record.breaks.length > 0) {
         const lastBreak = record.breaks[record.breaks.length - 1];
         if (!lastBreak.end) {
@@ -66,10 +62,8 @@ export const autoClockOutDailyV1 = pubsub
         }
       }
 
-      // Update attendance record
       await recordRef.update(finalUpdate);
 
-      // Sync corresponding user status to OFFLINE
       const userRef = db.collection("users").doc(record.userId);
       await userRef.update({
         status: "OFFLINE",

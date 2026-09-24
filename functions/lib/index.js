@@ -5,9 +5,6 @@ const app_1 = require("firebase-admin/app");
 const firestore_1 = require("firebase-admin/firestore");
 const v1_1 = require("firebase-functions/v1");
 const date_fns_1 = require("date-fns");
-if (!(0, app_1.getApps)().length) {
-    (0, app_1.initializeApp)();
-}
 var accounting_1 = require("./accounting");
 Object.defineProperty(exports, "createJournalEntry", { enumerable: true, get: function () { return accounting_1.createJournalEntry; } });
 Object.defineProperty(exports, "postJournalEntry", { enumerable: true, get: function () { return accounting_1.postJournalEntry; } });
@@ -24,6 +21,9 @@ exports.autoClockOutDailyV1 = v1_1.pubsub
     .schedule("30 18 * * *")
     .timeZone("Africa/Lagos")
     .onRun(async () => {
+    if (!(0, app_1.getApps)().length) {
+        (0, app_1.initializeApp)();
+    }
     const db = (0, firestore_1.getFirestore)();
     const now = new Date();
     // Query all active attendance sessions where clockOut is null
@@ -32,11 +32,9 @@ exports.autoClockOutDailyV1 = v1_1.pubsub
     for (const docSnap of snap.docs) {
         const record = docSnap.data();
         const recordRef = docSnap.ref;
-        // Determine target clockOut: 17:00 (5:00 PM) on the day they clocked in
         const clockInDate = new Date(record.clockIn);
         let clockOutDate = new Date(clockInDate);
         clockOutDate.setHours(17, 0, 0, 0);
-        // If clock-in happened after 17:00, use the current run time
         if (clockOutDate <= clockInDate) {
             clockOutDate = now;
         }
@@ -53,7 +51,6 @@ exports.autoClockOutDailyV1 = v1_1.pubsub
             remarks,
             duration
         };
-        // If the user was on active break, close the break session
         if (record.onBreak && record.breaks && record.breaks.length > 0) {
             const lastBreak = record.breaks[record.breaks.length - 1];
             if (!lastBreak.end) {
@@ -65,9 +62,7 @@ exports.autoClockOutDailyV1 = v1_1.pubsub
                 finalUpdate.duration = Math.max(0, duration - breakSeconds);
             }
         }
-        // Update attendance record
         await recordRef.update(finalUpdate);
-        // Sync corresponding user status to OFFLINE
         const userRef = db.collection("users").doc(record.userId);
         await userRef.update({
             status: "OFFLINE",

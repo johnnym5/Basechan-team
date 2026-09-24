@@ -1,5 +1,6 @@
-import { https } from "firebase-functions/v1";
+import { initializeApp, getApps } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
+import { https } from "firebase-functions/v1";
 
 const GEOFENCE_RADIUS_METERS = 100;
 
@@ -21,7 +22,7 @@ function toRad(value: number): number {
 }
 
 function calculateHaversineDistanceMeters(lat1: number, lon1: number, lat2: number, lon2: number): number {
-  const R = 6371e3; // metres
+  const R = 6371e3;
   const φ1 = toRad(lat1);
   const φ2 = toRad(lat2);
   const Δφ = toRad(lat2 - lat1);
@@ -36,6 +37,10 @@ function calculateHaversineDistanceMeters(lat1: number, lon1: number, lat2: numb
 }
 
 export const clockInSession = https.onCall(async (data, context) => {
+  if (!getApps().length) {
+    initializeApp();
+  }
+
   if (!context.auth) {
     throw new https.HttpsError("unauthenticated", "Authentication required.");
   }
@@ -56,7 +61,6 @@ export const clockInSession = https.onCall(async (data, context) => {
   const userData = userSnap.data()!;
   const orgId = userData.orgId;
 
-  // Server-Authoritative Geofence Calculation
   let branches = DEFAULT_BRANCHES;
   if (orgId) {
     const sysConfigSnap = await db.collection("system_configs").doc(orgId).get();
@@ -83,7 +87,6 @@ export const clockInSession = https.onCall(async (data, context) => {
     }
   }
 
-  // Exempt roles
   const userRole = context.auth.token.role || userData.role;
   const isBypassRole = ["SUPERADMIN", "ORG_ADMIN", "MANAGING_DIRECTOR", "HR_MANAGER"].includes(userRole);
   const isExempt = isBypassRole || context.auth.token.canBypassGeofence === true;
@@ -125,7 +128,6 @@ export const clockInSession = https.onCall(async (data, context) => {
 
   await attRef.set(attendancePayload, { merge: true });
 
-  // Update user online status
   await db.collection("users").doc(callerUid).update({
     status: status === "APPROVED" ? "ONLINE" : "PENDING",
     lastSeen: nowIso,
@@ -141,6 +143,10 @@ export const clockInSession = https.onCall(async (data, context) => {
 });
 
 export const clockOutSession = https.onCall(async (data, context) => {
+  if (!getApps().length) {
+    initializeApp();
+  }
+
   if (!context.auth) {
     throw new https.HttpsError("unauthenticated", "Authentication required.");
   }
