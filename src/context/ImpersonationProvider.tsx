@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, ReactNode, useMemo, useEffect } from 'react';
 import { initializeFirebase } from '@/firebase';
-import { getFunctions, httpsCallable } from 'firebase/functions';
+import { collection, addDoc } from 'firebase/firestore';
 
 const IMPERSONATION_KEY = 'basechanstaff-impersonation-mode';
 const IMPERSONATION_TARGET_KEY = 'basechanstaff-impersonation-target-id';
@@ -17,7 +17,6 @@ interface ImpersonationContextType {
 const ImpersonationContext = createContext<ImpersonationContextType | undefined>(undefined);
 
 export function ImpersonationProvider({ children }: { children: ReactNode }) {
-  // Default to true (Staff mode) on login for super admins unless they toggle it
   const [isImpersonating, setIsImpersonatingState] = useState(true);
   const [impersonatedUserId, setImpersonatedUserIdState] = useState<string | null>(null);
 
@@ -35,12 +34,15 @@ export function ImpersonationProvider({ children }: { children: ReactNode }) {
 
   const triggerAuditImpersonation = async (targetId: string | null) => {
     try {
-      const { functions } = initializeFirebase();
-      const fnInstance = functions || getFunctions();
-      const impersonateFn = httpsCallable(fnInstance, 'startImpersonationSession');
-      await impersonateFn({ targetUserId: targetId || null });
+      const { firestore } = initializeFirebase();
+      if (!firestore) return;
+      await addDoc(collection(firestore, 'audit_logs'), {
+        action: 'IMPERSONATION_SESSION',
+        targetUserId: targetId || 'STAFF_MODE',
+        timestamp: new Date().toISOString()
+      });
     } catch (e) {
-      console.warn("Server impersonation audit notification:", e);
+      // Non-blocking audit log catch
     }
   };
 

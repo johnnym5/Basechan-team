@@ -1,7 +1,6 @@
 'use client';
-import { Firestore, doc, arrayUnion, collection, query, where, getDocs } from 'firebase/firestore';
-import { updateDocumentNonBlocking, addDocumentNonBlocking, initializeFirebase } from '@/firebase';
-import { getFunctions, httpsCallable } from 'firebase/functions';
+import { Firestore, doc, arrayUnion, collection, query, where, getDocs, runTransaction } from 'firebase/firestore';
+import { updateDocumentNonBlocking, addDocumentNonBlocking } from '@/firebase';
 import type { Requisition, UserProfile, ActivityEntry, RequisitionStatus, PurchaseOrder, Notification } from '@/lib/types';
 import { sanitizeInput } from '@/lib/utils';
 import { activityService } from './activity-service';
@@ -16,35 +15,68 @@ export const PROCUREMENT_WORKFLOW: Record<RequisitionStatus, { next: Requisition
 };
 
 /**
- * Service to handle procurement lifecycle.
- * Server-Authoritative requisition submission with idempotency protection.
+ * Pure Client-Side Procurement Service (Zero Cloud Functions)
  */
 export const procurementService = {
     async createRequisition(db: Firestore, user: UserProfile, values: any, attachmentUrl?: string) {
-        const idempotencyKey = values.idempotencyKey || `REQ_${user.id}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        const idempotencyKey = values.idempotencyKey || `REQ_${user.id}_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+        const idempotencyRef = doc(db, 'idempotency_keys', String(idempotencyKey));
 
-        const { functions } = initializeFirebase();
-        const fnInstance = functions || getFunctions();
-        const submitFn = httpsCallable(fnInstance, 'submitRequisition');
+        const result = await runTransaction(db, async (transaction) => {
+            const keySnap = await transaction.get(idempotencyRef);
+            if (keySnap.exists()) {
+                return { requisitionId: keySnap.data().requisitionId };
+            }
 
-        const response = await submitFn({
-            idempotencyKey,
-            title: sanitizeInput(values.title),
-            amount: Number(values.amount),
-            vendorId: values.vendorId || null,
-            vendorName: values.vendorName || 'Unknown Vendor',
-            description: sanitizeInput(values.description),
-            attachmentName: values.attachment ? values.attachment.name : null,
-            attachmentUrl: attachmentUrl || null,
+            const reqsQuery = query(collection(db, 'requisitions'), where('orgId', '==', user.orgId));
+            const reqsSnap = await getDocs(reqsQuery);
+            const serialNo = `REQ-${String(reqsSnap.size + 1).padStart(4, '0')}`;
+
+            const now = new Date().toISOString();
+            const reqRef = doc(collection(db, 'requisitions'));
+
+            const initialActivity: ActivityEntry = {
+                type: 'LOG',
+                actorId: user.id,
+                actorName: user.fullName || 'Staff Member',
+                timestamp: now,
+                text: 'created the requisition and sent for HR approval.',
+                fromStatus: 'N/A',
+                toStatus: 'PENDING_HR',
+            };
+
+            const newRequisition = {
+                id: reqRef.id,
+                serialNo,
+                orgId: user.orgId,
+                createdBy: user.id,
+                creatorName: user.fullName || 'Staff Member',
+                title: sanitizeInput(values.title),
+                amount: Number(values.amount),
+                vendorId: values.vendorId || null,
+                vendorName: values.vendorName || 'Unknown Vendor',
+                description: sanitizeInput(values.description || ''),
+                status: 'PENDING_HR',
+                createdAt: now,
+                activity: [initialActivity],
+                attachmentUrl: attachmentUrl || null,
+                attachmentName: values.attachment ? values.attachment.name : null,
+            };
+
+            transaction.set(reqRef, newRequisition);
+            transaction.set(idempotencyRef, {
+                idempotencyKey,
+                requisitionId: reqRef.id,
+                createdAt: now,
+                createdBy: user.id,
+            });
+
+            return { requisitionId: reqRef.id };
         });
 
-        const data = response.data as any;
-        const reqId = data?.requisitionId;
-
-        // Activity points: +3 for initiating requisition
         activityService.logActivity(db, user, 3);
 
-        return reqId ? doc(db, 'requisitions', reqId) : null;
+        return result?.requisitionId ? doc(db, 'requisitions', result.requisitionId) : null;
     },
 
     async advanceRequisition(
@@ -85,7 +117,6 @@ export const procurementService = {
             activity: arrayUnion(activityEntry)
         });
 
-        // Activity points: +3 for handling/advancing procurement
         activityService.logActivity(db, actor, 3);
 
         if (nextStatus === 'APPROVED' && requisition.vendorId) {
@@ -130,5 +161,4 @@ export const procurementService = {
     }
 };
 
-// Maintain export for backward compatibility
 export const advanceRequisition = procurementService.advanceRequisition.bind(procurementService);

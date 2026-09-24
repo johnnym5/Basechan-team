@@ -13,13 +13,18 @@ service cloud.firestore {
       return isAuthenticated() && request.auth.uid == userId;
     }
 
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
     function getUserRole() {
-      return request.auth.token.role;
+      return request.auth.token.role != null ? request.auth.token.role : getUserData().role;
     }
 
     function isSuperAdmin() {
       return isAuthenticated() && (
         getUserRole() == 'SUPERADMIN' ||
+        getUserRole() == 'SUPER_ADMIN' ||
         request.auth.token.email.matches('(?i)jegbase@gmail.com') ||
         request.auth.uid == 'nM0bBwaybEQP95OPKUyQ97iAm3u2'
       );
@@ -49,18 +54,18 @@ service cloud.firestore {
       );
     }
 
-    // --- TRANSACTIONAL LEDGERS & SERVER-AUTHORITATIVE COLLECTIONS ---
-    // Direct client SDK write access to accounting ledger is STRICTLY DISALLOWED.
-    // Writes MUST originate from authenticated Cloud Functions via Firebase Admin SDK.
+    // --- FINANCIAL LEDGER & ACCOUNTS (PURE CLIENT-SIDE TRANSACTIONS) ---
 
     match /journal_entries/{entryId} {
-      allow read: if isFinanceManager() || isSuperAdmin();
-      allow write: if false;
+      allow read: if isAuthenticated();
+      allow create, update: if isFinanceManager() || isSuperAdmin();
+      allow delete: if isSuperAdmin();
     }
 
     match /accounts/{accountId} {
-      allow read: if isFinanceManager() || isSuperAdmin();
-      allow write: if false;
+      allow read: if isAuthenticated();
+      allow create, update: if isFinanceManager() || isSuperAdmin();
+      allow delete: if isSuperAdmin();
     }
 
     match /attendance/{attendanceId} {
@@ -74,17 +79,18 @@ service cloud.firestore {
     }
 
     match /purchase_orders/{poId} {
-      allow read: if isFinanceManager();
-      allow write: if false;
+      allow read: if isAuthenticated();
+      allow create, update: if isFinanceManager() || isSuperAdmin();
+      allow delete: if isOrgAdmin();
     }
 
     match /audit_logs/{logId} {
-      allow read: if isOrgAdmin();
-      allow write: if false;
+      allow read, create: if isAuthenticated();
+      allow update, delete: if isSuperAdmin();
     }
 
     match /idempotency_keys/{keyId} {
-      allow read, write: if false;
+      allow read, write: if isAuthenticated();
     }
 
     // --- USER PROFILES, ROLES & ORGANIZATIONS ---

@@ -1,19 +1,18 @@
 'use client';
 
-import { Firestore, doc, getDoc, updateDoc } from 'firebase/firestore';
-import { updateDocumentNonBlocking, initializeFirebase } from '@/firebase';
-import { getFunctions, httpsCallable } from 'firebase/functions';
+import { Firestore, doc, setDoc, updateDoc, getDoc } from 'firebase/firestore';
 import type { UserProfile, Attendance, AttendanceLocation, SystemConfig, AttendanceRemark } from '@/lib/types';
-import { differenceInSeconds } from 'date-fns';
+import { differenceInSeconds, format } from 'date-fns';
+import { validateGeofence } from '@/lib/geofence';
 import { uiEmitter } from '@/lib/ui-emitter';
 
 /**
- * Server-Authoritative Attendance Service
- * Handles shift clock-in, clock-out, and break management via Cloud Functions.
+ * Pure Client-Side Attendance Service (Zero Cloud Functions)
+ * Executes shift clock-in, clock-out, break toggles, and debrief submissions directly via Firebase Web SDK.
  */
 export const attendanceService = {
   /**
-   * Initiates a new work session via Server-Authoritative Geofence Cloud Function.
+   * Initiates a new work session directly in Firestore.
    */
   async clockIn(
     db: Firestore,
@@ -27,26 +26,65 @@ export const attendanceService = {
   ) {
     if (!user?.id) throw new Error("Personnel identity verification failed. Command aborted.");
 
-    try {
-      const { functions } = initializeFirebase();
-      const fnInstance = functions || getFunctions();
-      const clockInFn = httpsCallable(fnInstance, 'clockInSession');
+    const now = new Date();
+    const nowIso = now.toISOString();
+    const deterministicId = `${user.id}_${today}`;
 
-      const response = await clockInFn({
-        lat: locationData?.lat ?? null,
-        lng: locationData?.lng ?? null,
-        today,
-        lateReason: lateReason || null,
-        branchName: branchName || null,
-      });
+    let isWithinGeofence = false;
+    let distanceMeters = 0;
+    let nearestBranchName: string | null = branchName || null;
 
-      const data = response.data as any;
-      const recordId = data?.recordId || `${user.id}_${today}`;
-      return doc(db, 'attendance', recordId);
-    } catch (err: any) {
-      console.error('[ATTENDANCE] Clock-in failed:', err);
-      throw new Error(err.message || 'Unable to clock in. Please check your network connection or contact support.');
+    if (locationData?.lat != null && locationData?.lng != null) {
+      const branches = systemConfig?.branches || [];
+      const geofenceRes = validateGeofence(locationData.lat, locationData.lng, branches);
+      isWithinGeofence = geofenceRes.isWithinRange;
+      distanceMeters = Math.round(geofenceRes.distance);
+      nearestBranchName = geofenceRes.nearestBranch || branchName || null;
     }
+
+    const isExempt = ['SUPERADMIN', 'ORG_ADMIN', 'MANAGING_DIRECTOR', 'HR_MANAGER'].includes(user.role) || (user as any).canBypassGeofence === true;
+    const status = isWithinGeofence || isExempt ? 'APPROVED' : 'PENDING';
+    const remarks: AttendanceRemark[] = [];
+
+    if (!isWithinGeofence && !isExempt) {
+      remarks.push('GEOFENCE_BYPASS_ATTEMPT' as AttendanceRemark);
+    }
+    if (lateReason) {
+      remarks.push('LATE' as AttendanceRemark);
+    }
+
+    const attRef = doc(db, 'attendance', deterministicId);
+    await setDoc(attRef, {
+      id: deterministicId,
+      userId: user.id,
+      userName: user.fullName || "Staff Member",
+      orgId: user.orgId || "basechan-international",
+      date: today,
+      clockIn: nowIso,
+      clockOut: null,
+      status,
+      location: location || (isWithinGeofence ? 'OFFICE' : 'REMOTE'),
+      remarks,
+      idleTime: 0,
+      totalBreak: 0,
+      onBreak: false,
+      breaks: [],
+      lateReason: lateReason || null,
+      branchName: nearestBranchName,
+      branchLocation: nearestBranchName,
+      clockInLocation: locationData?.lat != null && locationData?.lng != null ? { lat: locationData.lat, lng: locationData.lng } : null,
+      serverCalculatedDistanceMeters: distanceMeters,
+      createdAt: nowIso,
+      updatedAt: nowIso
+    }, { merge: true });
+
+    const userRef = doc(db, 'users', user.id);
+    await updateDoc(userRef, {
+      status: status === 'APPROVED' ? 'ONLINE' : 'PENDING',
+      lastSeen: nowIso
+    });
+
+    return attRef;
   },
 
   /**
@@ -57,9 +95,9 @@ export const attendanceService = {
     const attendanceRef = doc(db, 'attendance', record.id);
 
     if (!record.onBreak) {
-      updateDocumentNonBlocking(attendanceRef, {
+      await updateDoc(attendanceRef, {
         onBreak: true,
-        breaks: [{ start: now }]
+        breaks: [...(record.breaks || []), { start: now }]
       });
     } else {
       const lastBreak = record.breaks?.[record.breaks.length - 1];
@@ -68,16 +106,17 @@ export const attendanceService = {
         const updatedBreaks = [...(record.breaks || [])];
         updatedBreaks[updatedBreaks.length - 1].end = now;
 
-        updateDocumentNonBlocking(attendanceRef, {
+        await updateDoc(attendanceRef, {
           onBreak: false,
           breaks: updatedBreaks,
+          totalBreak: (record.totalBreak || 0) + breakSeconds
         });
       }
     }
   },
 
   /**
-   * Terminates the work session via Server-Authoritative Cloud Function.
+   * Terminates the work session directly in Firestore.
    */
   async clockOut(
     db: Firestore,
@@ -86,22 +125,53 @@ export const attendanceService = {
     systemConfig: SystemConfig | null,
     debriefData?: { manualReport: string; attachedTaskId?: string }
   ) {
-    try {
-      const { functions } = initializeFirebase();
-      const fnInstance = functions || getFunctions();
-      const clockOutFn = httpsCallable(fnInstance, 'clockOutSession');
+    const now = new Date();
+    const nowIso = now.toISOString();
 
-      await clockOutFn({
-        recordId: record.id,
-        debriefReport: debriefData?.manualReport || null,
-        attachedTaskId: debriefData?.attachedTaskId || null,
+    const clockInTime = new Date(record.clockIn);
+    const totalDurationSec = Math.max(0, Math.floor((now.getTime() - clockInTime.getTime()) / 1000));
+    const duration = Math.max(0, totalDurationSec - (record.totalBreak || 0) - (record.idleTime || 0));
+
+    // A. Update Attendance Document directly
+    const attendanceRef = doc(db, 'attendance', record.id);
+    await updateDoc(attendanceRef, {
+      clockOut: nowIso,
+      status: 'APPROVED',
+      onBreak: false,
+      duration,
+      eodReport: debriefData?.manualReport || null,
+      linkedTaskIds: debriefData?.attachedTaskId ? [debriefData.attachedTaskId] : [],
+      updatedAt: nowIso
+    });
+
+    // B. Update User Profile Status directly
+    if (user?.id) {
+      const userRef = doc(db, 'users', user.id);
+      await updateDoc(userRef, {
+        status: 'OFFLINE',
+        lastSeen: nowIso
       });
-
-      uiEmitter.emit('open-pulse-check' as any);
-    } catch (err: any) {
-      console.error('[ATTENDANCE] Clock-out failed:', err);
-      throw new Error(err.message || 'Unable to clock out. Please check your network connection or contact support.');
     }
+
+    // C. Create Daily Report Document directly if debrief provided
+    if (debriefData?.manualReport) {
+      const reportDate = record.date || format(now, 'yyyy-MM-dd');
+      const reportId = `${user.id}_${reportDate}`;
+      const reportRef = doc(db, 'daily_reports', reportId);
+      await setDoc(reportRef, {
+        id: reportId,
+        orgId: user.orgId || "basechan-international",
+        userId: user.id,
+        userName: user.fullName,
+        reportDate,
+        accomplishments: debriefData.manualReport,
+        attachedTaskId: debriefData.attachedTaskId || null,
+        createdAt: nowIso,
+        updatedAt: nowIso
+      }, { merge: true });
+    }
+
+    uiEmitter.emit('open-pulse-check' as any);
   },
 
   /**
