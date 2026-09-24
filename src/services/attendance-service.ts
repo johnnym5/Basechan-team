@@ -1,19 +1,19 @@
 'use client';
 
-import { Firestore, collection, doc, query, where, getDocs, increment, arrayUnion, getDoc, updateDoc, setDoc } from 'firebase/firestore';
+import { Firestore, doc, getDoc, updateDoc } from 'firebase/firestore';
 import { updateDocumentNonBlocking, initializeFirebase } from '@/firebase';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import type { UserProfile, Attendance, AttendanceLocation, SystemConfig, AttendanceRemark } from '@/lib/types';
-import { differenceInSeconds, format } from 'date-fns';
+import { differenceInSeconds } from 'date-fns';
 import { uiEmitter } from '@/lib/ui-emitter';
 
 /**
- * Service to manage personnel shift lifecycle and automated reporting triggers.
- * Dual-Mode: Server-Authoritative Cloud Functions with Resilient Client-SDK Fallback.
+ * Server-Authoritative Attendance Service
+ * Handles shift clock-in, clock-out, and break management via Cloud Functions.
  */
 export const attendanceService = {
   /**
-   * Initiates a new work session via Server-Authoritative Geofence & Attendance Cloud Function or Fallback.
+   * Initiates a new work session via Server-Authoritative Geofence Cloud Function.
    */
   async clockIn(
     db: Firestore,
@@ -27,10 +27,6 @@ export const attendanceService = {
   ) {
     if (!user?.id) throw new Error("Personnel identity verification failed. Command aborted.");
 
-    const nowIso = new Date().toISOString();
-    const deterministicId = `${user.id}_${today}`;
-
-    // 1. Try Server-Authoritative Callable Cloud Function
     try {
       const { functions } = initializeFirebase();
       const fnInstance = functions || getFunctions();
@@ -45,41 +41,12 @@ export const attendanceService = {
       });
 
       const data = response.data as any;
-      const recordId = data?.recordId || deterministicId;
+      const recordId = data?.recordId || `${user.id}_${today}`;
       return doc(db, 'attendance', recordId);
-    } catch (e: any) {
-      console.warn("[ATTENDANCE] Cloud Function clockInSession failed or unreachable. Executing fallback direct SDK write:", e?.message);
+    } catch (err: any) {
+      console.error('[ATTENDANCE] Clock-in failed:', err);
+      throw new Error(err.message || 'Unable to clock in. Please check your network connection or contact support.');
     }
-
-    // 2. Resilient Client Fallback: Direct Firestore Write
-    const attRef = doc(db, 'attendance', deterministicId);
-    await setDoc(attRef, {
-      id: deterministicId,
-      userId: user.id,
-      userName: user.fullName || "Staff Member",
-      orgId: user.orgId || "basechan-international",
-      date: today,
-      clockIn: nowIso,
-      clockOut: null,
-      status: 'APPROVED',
-      location: location || 'OFFICE',
-      remarks: lateReason ? ['LATE_REASON_PROVIDED'] : [],
-      idleTime: 0,
-      totalBreak: 0,
-      onBreak: false,
-      breaks: [],
-      lateReason: lateReason || null,
-      branchName: branchName || null,
-      createdAt: nowIso
-    }, { merge: true });
-
-    const userRef = doc(db, 'users', user.id);
-    await updateDoc(userRef, {
-      status: 'ONLINE',
-      lastSeen: nowIso
-    });
-
-    return attRef;
   },
 
   /**
@@ -92,7 +59,7 @@ export const attendanceService = {
     if (!record.onBreak) {
       updateDocumentNonBlocking(attendanceRef, {
         onBreak: true,
-        breaks: arrayUnion({ start: now })
+        breaks: [{ start: now }]
       });
     } else {
       const lastBreak = record.breaks?.[record.breaks.length - 1];
@@ -104,14 +71,13 @@ export const attendanceService = {
         updateDocumentNonBlocking(attendanceRef, {
           onBreak: false,
           breaks: updatedBreaks,
-          totalBreak: increment(breakSeconds)
         });
       }
     }
   },
 
   /**
-   * Terminates the work session via Server-Authoritative Cloud Function or Resilient Client Fallback.
+   * Terminates the work session via Server-Authoritative Cloud Function.
    */
   async clockOut(
     db: Firestore,
@@ -120,10 +86,6 @@ export const attendanceService = {
     systemConfig: SystemConfig | null,
     debriefData?: { manualReport: string; attachedTaskId?: string }
   ) {
-    const now = new Date();
-    const nowIso = now.toISOString();
-
-    // 1. Try Server-Authoritative Callable Cloud Function first
     try {
       const { functions } = initializeFirebase();
       const fnInstance = functions || getFunctions();
@@ -136,56 +98,10 @@ export const attendanceService = {
       });
 
       uiEmitter.emit('open-pulse-check' as any);
-      return;
-    } catch (e: any) {
-      console.warn("[ATTENDANCE] Cloud Function clockOutSession failed or unreachable. Executing fallback direct SDK write:", e?.message);
+    } catch (err: any) {
+      console.error('[ATTENDANCE] Clock-out failed:', err);
+      throw new Error(err.message || 'Unable to clock out. Please check your network connection or contact support.');
     }
-
-    // 2. Resilient Client Fallback: Execute direct Firestore updates
-    const clockInTime = new Date(record.clockIn);
-    const totalDurationSec = Math.max(0, Math.floor((now.getTime() - clockInTime.getTime()) / 1000));
-    const duration = Math.max(0, totalDurationSec - (record.totalBreak || 0) - (record.idleTime || 0));
-
-    // A. Update Attendance Document
-    const attendanceRef = doc(db, 'attendance', record.id);
-    await updateDoc(attendanceRef, {
-      clockOut: nowIso,
-      status: 'APPROVED',
-      onBreak: false,
-      duration,
-      eodReport: debriefData?.manualReport || null,
-      linkedTaskIds: debriefData?.attachedTaskId ? [debriefData.attachedTaskId] : [],
-      updatedAt: nowIso
-    });
-
-    // B. Update User Profile Status
-    if (user?.id) {
-      const userRef = doc(db, 'users', user.id);
-      await updateDoc(userRef, {
-        status: 'OFFLINE',
-        lastSeen: nowIso
-      });
-    }
-
-    // C. Save Daily Report Document if Debrief Provided
-    if (debriefData?.manualReport) {
-      const reportDate = record.date || format(now, 'yyyy-MM-dd');
-      const reportId = `${user.id}_${reportDate}`;
-      const reportRef = doc(db, 'daily_reports', reportId);
-      await setDoc(reportRef, {
-        id: reportId,
-        orgId: user.orgId || "basechan-international",
-        userId: user.id,
-        userName: user.fullName,
-        reportDate,
-        accomplishments: debriefData.manualReport,
-        attachedTaskId: debriefData.attachedTaskId || null,
-        createdAt: nowIso,
-        updatedAt: nowIso
-      }, { merge: true });
-    }
-
-    uiEmitter.emit('open-pulse-check' as any);
   },
 
   /**
