@@ -23,7 +23,12 @@ import {
   PlusCircle,
   Users,
   Search,
-  CheckCircle2
+  CheckCircle2,
+  Calendar,
+  FileText,
+  Palmtree,
+  Sparkles,
+  Trophy
 } from "lucide-react"
 import { useUser, useFirestore, useCollection, useMemoFirebase, useDoc } from "@/firebase"
 import { collection, query, where, doc } from "firebase/firestore"
@@ -32,9 +37,11 @@ import { usePermissions } from "@/hooks/usePermissions"
 import { useTheme } from "next-themes"
 import { uiEmitter } from "@/lib/ui-emitter"
 import { sanitizeSearchQuery } from "@/lib/security"
+import { NIGERIAN_PUBLIC_HOLIDAYS } from "@/lib/holidays"
 
 export function GlobalCommandPalette() {
   const [open, setOpen] = useState(false)
+  const [search, setSearch] = useState("")
   const router = useRouter()
   const { user } = useUser()
   const firestore = useFirestore()
@@ -89,15 +96,49 @@ export function GlobalCommandPalette() {
 
   const runCommand = (command: () => void) => {
     setOpen(false)
+    setSearch("")
     command()
   }
+
+  // Live Predictive Auto-Recommendations as user types
+  const recommendations = useMemo(() => {
+    const clean = search.trim().toLowerCase();
+    if (!clean) return [];
+
+    const recs: { title: string; subtitle: string; icon: any; action: () => void }[] = [];
+
+    if (clean.includes("leave") || clean.includes("pto") || clean.includes("vacation")) {
+      recs.push({ title: "Request Leave", subtitle: "Submit new time-off application", icon: Palmtree, action: () => uiEmitter.emit('open-request-leave-dialog') });
+      recs.push({ title: "My Leave Balance", subtitle: "Check annual leave entitlement", icon: Calendar, action: () => router.push('/staff/leave') });
+      if (permissions.canManageStaff) {
+        recs.push({ title: "Pending HR Leave Approvals", subtitle: "Review team leave requests", icon: CalendarCheck2, action: () => router.push('/staff/leave') });
+      }
+    }
+
+    if (clean.includes("report") || clean.includes("debrief") || clean.includes("eod")) {
+      recs.push({ title: "Write Daily Report", subtitle: "Submit EOD accomplishments and blockers", icon: FileText, action: () => uiEmitter.emit('open-debrief-modal' as any) });
+      recs.push({ title: "View My Reports", subtitle: "Inspect daily report history", icon: BarChart3, action: () => router.push('/staff/reports') });
+    }
+
+    if (clean.includes("task") || clean.includes("assign") || clean.includes("work")) {
+      recs.push({ title: "Assign New Task", subtitle: "Create operational task ticket", icon: PlusCircle, action: () => uiEmitter.emit('open-assign-task-dialog') });
+      recs.push({ title: "My Active Tasks", subtitle: "View assigned deliverable queue", icon: ListTodo, action: () => router.push('/tasks') });
+    }
+
+    if (clean.includes("holiday") || clean.includes("calendar") || clean.includes("date")) {
+      recs.push({ title: "View Operational Calendar", subtitle: "Interactive shifts, leave & holiday hub", icon: Calendar, action: () => router.push('/dashboard?tab=calendar') });
+      recs.push({ title: "Upcoming Nigerian Holidays", subtitle: "Check official public holiday dates", icon: Sparkles, action: () => router.push('/dashboard?tab=calendar') });
+    }
+
+    return recs;
+  }, [search, permissions.canManageStaff, router]);
 
   return (
     <CommandDialog
       open={open}
       onOpenChange={setOpen}
-      filter={(value: string, search: string) => {
-        const cleanSearch = sanitizeSearchQuery(search);
+      filter={(value: string, searchInput: string) => {
+        const cleanSearch = sanitizeSearchQuery(searchInput);
         if (!cleanSearch) return 1;
 
         const normalizedValue = value.toLowerCase();
@@ -105,7 +146,6 @@ export function GlobalCommandPalette() {
 
         if (normalizedValue.includes(normalizedSearch)) return 1;
 
-        // Fuzzy match logic
         let searchIndex = 0;
         for (let i = 0; i < normalizedValue.length; i++) {
           if (normalizedValue[i] === normalizedSearch[searchIndex]) {
@@ -116,14 +156,39 @@ export function GlobalCommandPalette() {
         return 0;
       }}
     >
-      <CommandInput placeholder="Search tasks, pages, or commands..." />
+      <CommandInput
+        placeholder="Type a command, page, staff name, or keyword (e.g. leave, report, task)..."
+        value={search}
+        onValueChange={setSearch}
+      />
       <CommandList className="custom-scrollbar">
-        <CommandEmpty>No results found.</CommandEmpty>
+        <CommandEmpty>No matching results found.</CommandEmpty>
+
+        {recommendations.length > 0 && (
+          <CommandGroup heading="Live Predictive Recommendations">
+            {recommendations.map((rec, idx) => {
+              const Icon = rec.icon;
+              return (
+                <CommandItem key={`rec-${idx}`} onSelect={() => runCommand(rec.action)}>
+                  <Icon className="mr-2 h-4 w-4 text-primary shrink-0" />
+                  <div className="flex flex-col">
+                    <span className="font-bold text-xs">{rec.title}</span>
+                    <span className="text-[9px] text-muted-foreground">{rec.subtitle}</span>
+                  </div>
+                </CommandItem>
+              );
+            })}
+          </CommandGroup>
+        )}
 
         <CommandGroup heading="Navigation">
           <CommandItem onSelect={() => runCommand(() => router.push('/dashboard'))}>
             <LayoutDashboard className="mr-2 h-4 w-4" />
-            <span>Dashboard</span>
+            <span>Dashboard Overview</span>
+          </CommandItem>
+          <CommandItem onSelect={() => runCommand(() => router.push('/dashboard?tab=calendar'))}>
+            <Calendar className="mr-2 h-4 w-4 text-purple-400" />
+            <span>Operational Calendar & Attendance</span>
           </CommandItem>
           <CommandItem onSelect={() => runCommand(() => router.push('/staff/profile'))}>
             <User className="mr-2 h-4 w-4" />
@@ -155,13 +220,36 @@ export function GlobalCommandPalette() {
             <span>Toggle Theme</span>
           </CommandItem>
           <CommandItem onSelect={() => runCommand(() => uiEmitter.emit('open-attendance-dialog'))}>
-            <Clock className="mr-2 h-4 w-4" />
+            <Clock className="mr-2 h-4 w-4 text-emerald-400" />
             <span>Clock In / Out</span>
           </CommandItem>
-          <CommandItem onSelect={() => runCommand(() => uiEmitter.emit('open-assign-task-dialog'))}>
-            <PlusCircle className="mr-2 h-4 w-4" />
-            <span>Create New Task</span>
+
+          <CommandItem onSelect={() => runCommand(() => uiEmitter.emit('open-debrief-modal' as any))}>
+            <FileText className="mr-2 h-4 w-4 text-blue-400" />
+            <span>Write Daily Report</span>
           </CommandItem>
+
+          <CommandItem onSelect={() => runCommand(() => uiEmitter.emit('open-request-leave-dialog'))}>
+            <Palmtree className="mr-2 h-4 w-4 text-orange-400" />
+            <span>Request Time Off</span>
+          </CommandItem>
+
+          <CommandItem onSelect={() => runCommand(() => uiEmitter.emit('open-assign-task-dialog'))}>
+            <PlusCircle className="mr-2 h-4 w-4 text-primary" />
+            <span>Assign New Task</span>
+          </CommandItem>
+        </CommandGroup>
+
+        <CommandSeparator />
+
+        <CommandGroup heading="Nigerian Public Holidays">
+          {NIGERIAN_PUBLIC_HOLIDAYS.slice(0, 4).map((h, idx) => (
+            <CommandItem key={`holiday-${idx}`} onSelect={() => runCommand(() => router.push('/dashboard?tab=calendar'))}>
+              <Sparkles className="mr-2 h-4 w-4 text-purple-400 shrink-0" />
+              <span>{h.name}</span>
+              <span className="ml-auto text-[9px] font-mono text-purple-300 font-bold">{h.date}</span>
+            </CommandItem>
+          ))}
         </CommandGroup>
 
         {myTasks && myTasks.length > 0 && (
