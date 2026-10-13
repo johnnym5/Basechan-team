@@ -154,7 +154,7 @@ function ChatMessages({ chat, currentUserProfile, onConvertTask }: { chat: Chat,
                                         </div>
                                     </DropdownMenuTrigger>
                                     <DropdownMenuContent align={isCurrentUser ? 'end' : 'start'} className="apple-glass-darker border-none">
-                                        <DropdownMenuItem className="text-[10px] font-black uppercase tracking-widest" onSelect={() => onConvertTask(message)}>
+                                        <DropdownMenuItem className="text-[10px] font-black uppercase tracking-widest" onSelect={() => onConvertTask(message)} aria-label="Convert message to task">
                                             <ListTodo className="mr-2 h-3.5 w-3.5 text-primary" /> Convert to Task
                                         </DropdownMenuItem>
                                     </DropdownMenuContent>
@@ -433,6 +433,7 @@ export function ChatPageContent({ currentUserProfile, permissions, initialChatId
                                         e.stopPropagation();
                                         uiEmitter.emit('open-create-channel-dialog');
                                     }}
+                                    aria-label="Create channel"
                                 >
                                     <PlusCircle className="h-3.5 w-3.5" />
                                 </Button>
@@ -463,7 +464,7 @@ export function ChatPageContent({ currentUserProfile, permissions, initialChatId
                                         {(permissions.canManageAnnouncements || chat.createdBy === currentUserProfile.id) && (
                                             <DropdownMenu>
                                                 <DropdownMenuTrigger asChild>
-                                                    <Button variant="ghost" size="icon" className="h-7 w-7 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity" onClick={e => e.stopPropagation()}>
+                                                    <Button variant="ghost" size="icon" className="h-7 w-7 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity" onClick={e => e.stopPropagation()} aria-label="More options">
                                                         <MoreVertical className="h-3.5 w-3.5"/>
                                                     </Button>
                                                 </DropdownMenuTrigger>
@@ -523,7 +524,7 @@ export function ChatPageContent({ currentUserProfile, permissions, initialChatId
                         <div className="p-6 border-b border-white/5 bg-background/40 backdrop-blur-xl flex items-center justify-between sticky top-0 z-20 flex-shrink-0">
                             <div className="flex items-center gap-4">
                                 {isMobile && (
-                                    <Button variant="ghost" size="icon" className="mr-1 -ml-2 rounded-xl" onClick={() => setMobileView('list')}>
+                                    <Button variant="ghost" size="icon" className="mr-1 -ml-2 rounded-xl" onClick={() => setMobileView('list')} aria-label="Back to chat list">
                                         <ChevronLeft className="h-6 w-6" />
                                     </Button>
                                 )}
@@ -560,13 +561,13 @@ export function ChatPageContent({ currentUserProfile, permissions, initialChatId
                                             <Paperclip className="h-3 w-3 text-primary" />
                                             <span className="text-[10px] font-bold truncate">Linked: {selectedAsset.title}</span>
                                         </div>
-                                        <Button variant="ghost" size="icon" className="h-5 w-5" onClick={() => setSelectedAsset(null)}><Trash2 className="h-3 w-3" /></Button>
+                                        <Button variant="ghost" size="icon" className="h-5 w-5" onClick={() => setSelectedAsset(null)} aria-label="Remove attached file"><Trash2 className="h-3 w-3" /></Button>
                                     </div>
                                 )}
                                 <div className="flex items-center gap-3 bg-secondary/30 rounded-[2rem] p-2 pr-3 border border-white/5 shadow-inner focus-within:ring-2 focus-within:ring-primary/20 transition-all">
                                     <Popover>
                                         <PopoverTrigger asChild>
-                                            <Button variant="ghost" size="icon" className="h-10 w-10 rounded-full bg-background/40 hover:bg-primary/10">
+                                            <Button variant="ghost" size="icon" className="h-10 w-10 rounded-full bg-background/40 hover:bg-primary/10" aria-label="Attach file">
                                                 <Paperclip className="h-4 w-4" />
                                             </Button>
                                         </PopoverTrigger>
@@ -591,7 +592,7 @@ export function ChatPageContent({ currentUserProfile, permissions, initialChatId
                                         }}
                                         disabled={isSending || !permissions.canSendChatMessage}
                                     />
-                                    <Button size="icon" onClick={handleSendMessage} disabled={isSending || (!message.trim() && !selectedAsset) || !permissions.canSendChatMessage} className="rounded-2xl h-10 w-10 shrink-0">
+                                    <Button size="icon" onClick={handleSendMessage} disabled={isSending || (!message.trim() && !selectedAsset) || !permissions.canSendChatMessage} className="rounded-2xl h-10 w-10 shrink-0" aria-label="Send message">
                                         {isSending ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5" />}
                                     </Button>
                                 </div>

@@ -70,7 +70,8 @@ export function JournalEntries({ userProfile, permissions }: JournalEntriesProps
         )}
       </CardHeader>
       <CardContent>
-        <Table>
+        <div className="relative overflow-x-auto scrollbar-thin after:absolute after:right-0 after:top-0 after:bottom-0 after:w-4 after:bg-gradient-to-l after:from-card/80 after:to-transparent after:pointer-events-none">
+          <Table>
           <TableHeader>
             <TableRow>
               <TableHead>Date</TableHead>
@@ -123,6 +124,7 @@ export function JournalEntries({ userProfile, permissions }: JournalEntriesProps
             })}
           </TableBody>
         </Table>
+        </div>
       </CardContent>
     </Card>
 

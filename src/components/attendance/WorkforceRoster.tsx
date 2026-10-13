@@ -167,7 +167,8 @@ export function WorkforceRoster({ userProfile, permissions }: WorkforceRosterPro
                     </div>
                 </CardHeader>
                 <CardContent className="p-0 flex-1 pt-6">
-                    <ScrollArea className="h-96">
+                    <div className="relative overflow-x-auto scrollbar-thin after:absolute after:right-0 after:top-0 after:bottom-0 after:w-4 after:bg-gradient-to-l after:from-card/80 after:to-transparent after:pointer-events-none">
+                        <ScrollArea className="h-96">
                         {rostersForDay.length === 0 ? (
                             <div className="flex flex-col items-center justify-center py-20 opacity-30 text-center">
                                 <ShieldAlert className="h-12 w-12 mb-4" />
@@ -203,7 +204,8 @@ export function WorkforceRoster({ userProfile, permissions }: WorkforceRosterPro
                                 })}
                             </div>
                         )}
-                    </ScrollArea>
+                        </ScrollArea>
+                    </div>
                 </CardContent>
             </Card>
         </div>
