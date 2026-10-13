@@ -86,21 +86,25 @@ export function RequestLeaveDialog({ open, onOpenChange, userProfile }: RequestL
     return combined.filter(t => t.isActive);
   }, [dynamicLeaveTypes]);
 
-  const approvedLeavesQuery = useMemoFirebase(() => {
+  const leaveRequestsQuery = useMemoFirebase(() => {
     if (!firestore || !userProfile) return null;
     return query(
         collection(firestore, 'leave_requests'),
-        where('orgId', '==', userProfile.orgId),
-        where('status', '==', 'APPROVED')
+        where('orgId', '==', userProfile.orgId)
     );
   }, [firestore, userProfile]);
 
-  const { data: approvedLeaves } = useCollection<LeaveRequest>(approvedLeavesQuery);
+  const { data: allLeaveRequests } = useCollection<LeaveRequest>(leaveRequestsQuery);
+
+  const activeLeaves = useMemo(() => {
+    if (!allLeaveRequests) return [];
+    return allLeaveRequests.filter(r => r.status === 'APPROVED' || r.status === 'PENDING');
+  }, [allLeaveRequests]);
 
   const occupiedDates = useMemo(() => {
     const dates: Date[] = [];
-    if (!approvedLeaves) return dates;
-    approvedLeaves.forEach(req => {
+    if (!allLeaveRequests) return dates;
+    allLeaveRequests.filter(r => r.status === 'APPROVED').forEach(req => {
         try {
             const interval = eachDayOfInterval({
                 start: new Date(req.startDate),
@@ -110,7 +114,7 @@ export function RequestLeaveDialog({ open, onOpenChange, userProfile }: RequestL
         } catch (e) {}
     });
     return dates;
-  }, [approvedLeaves]);
+  }, [allLeaveRequests]);
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -121,6 +125,31 @@ export function RequestLeaveDialog({ open, onOpenChange, userProfile }: RequestL
 
   const startDate = form.watch('startDate');
   const endDate = form.watch('endDate');
+
+  const hasDateOverlap = useMemo(() => {
+    if (!startDate || !endDate || startDate > endDate || !activeLeaves.length) return false;
+    try {
+      const selectedDays = eachDayOfInterval({ start: startDate, end: endDate });
+      return activeLeaves.some(req => {
+        const reqStart = new Date(req.startDate);
+        const reqEnd = new Date(req.endDate);
+        return selectedDays.some(day => isWithinInterval(day, { start: reqStart, end: reqEnd }));
+      });
+    } catch (e) {
+      return false;
+    }
+  }, [startDate, endDate, activeLeaves]);
+
+  useEffect(() => {
+    if (hasDateOverlap) {
+      form.setError("endDate", {
+        type: "manual",
+        message: "Selected dates overlap with an existing leave request",
+      });
+    } else if (form.formState.errors.endDate?.message === "Selected dates overlap with an existing leave request") {
+      form.clearErrors("endDate");
+    }
+  }, [hasDateOverlap, form]);
 
   const requestedDays = useMemo(() => {
     if (!startDate || !endDate) return 0;
@@ -135,16 +164,15 @@ export function RequestLeaveDialog({ open, onOpenChange, userProfile }: RequestL
   async function onSubmit(values: FormData) {
     if (!firestore || !userProfile) return;
     
-    // Final check for overlap in case local state was out of sync
-    const isRangeOccupied = occupiedDates.some(date => 
-        isWithinInterval(date, { start: values.startDate, end: values.endDate })
-    );
-
-    if (isRangeOccupied) {
+    if (hasDateOverlap) {
+        form.setError("endDate", {
+            type: "manual",
+            message: "Selected dates overlap with an existing leave request",
+        });
         toast({
             variant: "destructive",
-            title: "Dates Occupied",
-            description: "One or more dates in your selection are already occupied by another staff member."
+            title: "Leave Overlap",
+            description: "Selected dates overlap with an existing leave request."
         });
         return;
     }

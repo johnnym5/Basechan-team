@@ -64,6 +64,7 @@ function ChatMessages({ chat, currentUserProfile, onConvertTask }: { chat: Chat,
     const firestore = useFirestore();
     const scrollAreaRef = useRef<HTMLDivElement>(null);
     const [showAll, setShowAll] = useState(false);
+    const isInitialLoadRef = useRef(true);
 
     const messagesQuery = useMemoFirebase(() =>
         query(collection(firestore!, 'chats', chat.id, 'messages'), orderBy('timestamp', 'asc'), limit(50))
@@ -71,16 +72,27 @@ function ChatMessages({ chat, currentUserProfile, onConvertTask }: { chat: Chat,
     const { data: messages, isLoading } = useCollection<ChatMessage>(messagesQuery);
 
     useEffect(() => {
+        isInitialLoadRef.current = true;
+    }, [chat.id]);
+
+    useEffect(() => {
         if (scrollAreaRef.current) {
-            const scrollContainer = scrollAreaRef.current.querySelector('[data-radix-scroll-area-viewport]');
-            if (scrollContainer) {
-                scrollContainer.scrollTo({
-                    top: scrollContainer.scrollHeight,
-                    behavior: 'smooth',
-                });
+            const viewport = scrollAreaRef.current.querySelector('[data-radix-scroll-area-viewport]');
+            if (viewport) {
+                const isNearBottom = viewport.scrollHeight - viewport.scrollTop - viewport.clientHeight < 150;
+                const lastMessage = messages && messages.length > 0 ? messages[messages.length - 1] : null;
+                const isSentByCurrentUser = lastMessage?.senderId === currentUserProfile.id;
+
+                if (isInitialLoadRef.current || isSentByCurrentUser || isNearBottom) {
+                    viewport.scrollTo({
+                        top: viewport.scrollHeight,
+                        behavior: 'smooth',
+                    });
+                    isInitialLoadRef.current = false;
+                }
             }
         }
-    }, [messages, showAll]);
+    }, [messages, showAll, currentUserProfile.id]);
 
     if (isLoading) {
         return <div className="flex-1 flex items-center justify-center"><Loader2 className="animate-spin text-primary" /></div>

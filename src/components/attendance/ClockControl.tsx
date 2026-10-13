@@ -199,12 +199,18 @@ export function ClockControl({ userProfile, permissions, systemConfig, className
         // Geofence Enforcement
         if ('geolocation' in navigator) {
             try {
-                const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
+                const gpsPromise = new Promise<GeolocationPosition>((resolve, reject) => {
                     navigator.geolocation.getCurrentPosition(resolve, reject, {
                         enableHighAccuracy: true,
-                        timeout: 10000
+                        timeout: 7000
                     });
                 });
+
+                const timeoutPromise = new Promise<never>((_, reject) => {
+                    setTimeout(() => reject(new Error('GPS_TIMEOUT')), 7000);
+                });
+
+                const pos = await Promise.race([gpsPromise, timeoutPromise]);
 
                 const { latitude, longitude } = pos.coords;
                 locationData = { lat: latitude, lng: longitude };
@@ -227,9 +233,12 @@ export function ClockControl({ userProfile, permissions, systemConfig, className
                     activeBranchName = activeBranch.name;
                 }
             } catch (err: any) {
-                // Only block if strict enforcement is active.
-                // If not strict, we proceed with null location data.
-                if (systemConfig?.attendance_strict && !isExempt && location === 'OFFICE') {
+                if (err.message === 'GPS_TIMEOUT') {
+                    toast({
+                        title: "GPS Timeout",
+                        description: "GPS signal weak — falling back to estimated check-in"
+                    });
+                } else if (systemConfig?.attendance_strict && !isExempt && location === 'OFFICE') {
                     let msg = "Unable to verify your location. Please ensure GPS is enabled and you have granted permission.";
                     if (err.code === 1) msg = "Location Access Denied. You must allow location access in your browser settings to clock in.";
 
@@ -237,7 +246,7 @@ export function ClockControl({ userProfile, permissions, systemConfig, className
                     setIsSubmitting(false);
                     return;
                 }
-                console.warn("Location capture failed, but continuing as strict enforcement is inactive:", err);
+                console.warn("Location capture failed, but continuing as strict enforcement is inactive or fallback enabled:", err);
             }
         }
 
