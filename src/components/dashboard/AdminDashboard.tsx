@@ -32,6 +32,7 @@ import { DashboardTaskList } from "./DashboardTaskList"
 import { DashboardRecentChats } from "./DashboardRecentChats"
 import { Announcements } from "./Announcements"
 import { LiveTeamRadar } from "./LiveTeamRadar"
+import { StaffPerformanceScore } from "./StaffPerformanceScore"
 import { OperationalCalendarHub } from "./OperationalCalendarHub"
 import { useScrubbedData } from "@/hooks/useScrubbedData"
 import { uiEmitter } from "@/lib/ui-emitter"
@@ -228,13 +229,32 @@ export function AdminDashboard({ userProfile, permissions, systemConfig }: Admin
                   />
               </div>
 
-              {/* Live Team Tracker (Span 4) */}
+              {/* Right Column: Performance Standing & Live Team Tracker (Span 4) */}
               <div className="lg:col-span-4 h-full">
-                  <LiveTeamRadar
+                <Tabs defaultValue="standing" className="h-full flex flex-col">
+                  <div className="bg-black/40 border border-white/10 p-1 rounded-2xl mb-2 shrink-0">
+                    <TabsList className="bg-transparent p-0 w-full grid grid-cols-2">
+                      <TabsTrigger value="standing" className="data-[state=active]:bg-primary data-[state=active]:text-white rounded-xl text-[10px] font-black uppercase tracking-wider py-1.5">
+                        Performance Standing
+                      </TabsTrigger>
+                      <TabsTrigger value="radar" className="data-[state=active]:bg-primary data-[state=active]:text-white rounded-xl text-[10px] font-black uppercase tracking-wider py-1.5">
+                        Live Tracker
+                      </TabsTrigger>
+                    </TabsList>
+                  </div>
+
+                  <TabsContent value="standing" className="mt-0 h-full">
+                    <StaffPerformanceScore userProfile={userProfile} isAdmin={true} />
+                  </TabsContent>
+
+                  <TabsContent value="radar" className="mt-0 h-full">
+                    <LiveTeamRadar
                       staffList={activeStaff}
                       attendanceLogs={activeAttendance}
                       leaveRequests={activeLeaveRequests}
-                  />
+                    />
+                  </TabsContent>
+                </Tabs>
               </div>
           </div>
 

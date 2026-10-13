@@ -245,9 +245,9 @@ export function GlobalCommandPalette() {
         <CommandGroup heading="Nigerian Public Holidays">
           {NIGERIAN_PUBLIC_HOLIDAYS.slice(0, 4).map((h, idx) => (
             <CommandItem key={`holiday-${idx}`} onSelect={() => runCommand(() => router.push('/dashboard?tab=calendar'))}>
-              <Sparkles className="mr-2 h-4 w-4 text-purple-400 shrink-0" />
+              <Calendar className="mr-2 h-4 w-4 text-white shrink-0" />
               <span>{h.name}</span>
-              <span className="ml-auto text-[9px] font-mono text-purple-300 font-bold">{h.date}</span>
+              <span className="ml-auto text-[9px] font-mono text-slate-300 font-bold">{h.date}</span>
             </CommandItem>
           ))}
         </CommandGroup>

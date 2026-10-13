@@ -212,7 +212,7 @@ export function OperationalCalendarHub({
       {/* HEADER CONTROLS & HOLIDAY BANNER */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-6 bg-card/40 border border-white/5 rounded-[2.5rem] backdrop-blur-xl shadow-2xl">
         <div className="flex items-center gap-4">
-          <div className="p-3.5 rounded-2xl bg-purple-500/10 text-purple-400 border border-purple-500/20">
+          <div className="p-3.5 rounded-2xl bg-black/40 text-white border border-white/10">
             <CalendarIcon className="w-6 h-6" />
           </div>
           <div>
@@ -220,7 +220,7 @@ export function OperationalCalendarHub({
               <h2 className="text-xl md:text-2xl font-black uppercase tracking-wider text-foreground font-headline">
                 {format(currentDate, 'MMMM yyyy')}
               </h2>
-              <Badge variant="outline" className="bg-purple-500/10 text-purple-300 border-purple-500/20 text-[9px] font-black uppercase tracking-widest px-2.5 py-0.5">
+              <Badge variant="outline" className="bg-black/40 text-white border-white/10 text-[9px] font-black uppercase tracking-widest px-2.5 py-0.5">
                 {isAdmin ? "Admin Team Audit Mode" : "Personal Shift Ledger"}
               </Badge>
             </div>
@@ -263,19 +263,19 @@ export function OperationalCalendarHub({
 
       {/* UPCOMING HOLIDAY ALERT BANNER */}
       {upcomingHoliday && (
-        <div className="p-4 px-6 rounded-2xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-between gap-4 animate-in fade-in duration-300">
+        <div className="p-4 px-6 rounded-2xl bg-black/60 border border-white/10 flex items-center justify-between gap-4 animate-in fade-in duration-300">
           <div className="flex items-center gap-3">
-            <Sparkles className="w-5 h-5 text-purple-400 shrink-0" />
+            <CalendarIcon className="w-5 h-5 text-white shrink-0" />
             <div>
-              <p className="text-xs font-black uppercase text-purple-200 tracking-wider">
+              <p className="text-xs font-black uppercase text-white tracking-wider">
                 Upcoming Public Holiday: {upcomingHoliday.name}
               </p>
-              <p className="text-[10px] text-purple-300/80 font-bold uppercase tracking-widest">
+              <p className="text-[10px] text-slate-300 font-bold uppercase tracking-widest">
                 {format(parseISO(upcomingHoliday.date), 'EEEE, MMMM dd, yyyy')} ({upcomingHoliday.daysAway} day{upcomingHoliday.daysAway !== 1 ? 's' : ''} away)
               </p>
             </div>
           </div>
-          <Badge className="bg-purple-500/20 text-purple-300 border-none text-[9px] font-black uppercase tracking-widest px-3 py-1">
+          <Badge className="bg-black/80 text-white border border-white/20 text-[9px] font-black uppercase tracking-widest px-3 py-1">
             Official Nigerian Holiday
           </Badge>
         </div>
@@ -285,7 +285,7 @@ export function OperationalCalendarHub({
       <div className="flex flex-wrap items-center justify-between gap-3 p-4 bg-black/20 border border-white/5 rounded-2xl text-[9px] font-black uppercase tracking-widest text-slate-300">
         <span className="text-muted-foreground opacity-60">Status Legend:</span>
         <div className="flex flex-wrap items-center gap-4">
-          <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-purple-400" /><span>Nigerian Holiday</span></div>
+          <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-slate-100" /><span>Nigerian Holiday</span></div>
           <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-emerald-400" /><span>On-Time Shift</span></div>
           <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-amber-400" /><span>Late Arrival</span></div>
           <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-cyan-400" /><span>Remote Shift</span></div>
@@ -337,7 +337,7 @@ export function OperationalCalendarHub({
                   {/* Status Badge */}
                   <div className="space-y-1">
                     {cell.statusType === 'HOLIDAY' && (
-                      <div className="p-1 px-2 rounded-lg bg-purple-500/20 text-purple-300 border border-purple-500/30 text-[8px] font-black uppercase tracking-tight truncate">
+                      <div className="p-1 px-2 rounded-lg bg-black/80 text-white border border-white/20 text-[8px] font-black uppercase tracking-tight truncate">
                         {cell.holiday?.name}
                       </div>
                     )}
@@ -396,7 +396,7 @@ export function OperationalCalendarHub({
                   </DialogDescription>
                 </div>
                 {selectedDayAuditData.holiday && (
-                  <Badge className="bg-purple-500/20 text-purple-300 border border-purple-500/30 text-[9px] font-black uppercase px-3 py-1">
+                  <Badge className="bg-black/80 text-white border border-white/20 text-[9px] font-black uppercase px-3 py-1">
                     🎉 {selectedDayAuditData.holiday.name}
                   </Badge>
                 )}
