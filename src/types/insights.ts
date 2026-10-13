@@ -1,5 +1,5 @@
 /**
- * Type definitions for the Pure Deterministic Insight Engine v2.0.
+ * Type definitions for the Pure Deterministic Insight Engine v3.0.
  */
 
 export interface OperationalMomentum {
@@ -69,6 +69,36 @@ export interface BehavioralPattern {
   priorityTier: 1 | 2 | 3;
 }
 
+export interface WeeklyWinHighlight {
+  id: string;
+  title: string;
+  description: string;
+  category: 'KUDOS' | 'VELOCITY' | 'PUNCTUALITY' | 'STREAK';
+  iconType: 'trophy' | 'zap' | 'check' | 'clock';
+}
+
+export interface PersonalInsightSummary {
+  score: number; // 0 - 100 Performance Score (OMI)
+  trend: 'UPWARD' | 'STABLE' | 'DOWNWARD';
+  reportStreakDays: number;
+  punctualityStreakDays: number;
+  totalOperationsThisWeek: number;
+  weeklyWins: WeeklyWinHighlight[];
+  dailyWorkNote: {
+    text: string;
+    reportDate?: string;
+    quality: 'GOOD' | 'FAIR' | 'POOR';
+    warningMessage?: string;
+  };
+  needsAttentionQueue: ActionableDirective[];
+  attendanceAudit: AbsenceTriage;
+  healthMetrics: {
+    punctualityScore: number;
+    taskVelocityScore: number;
+    debriefCadenceScore: number;
+  };
+}
+
 export interface InsightEngineResult {
   momentum: OperationalMomentum;
   punctualitySlope: number; // beta (drift in mins/day)
@@ -79,4 +109,5 @@ export interface InsightEngineResult {
   directives: ActionableDirective[];
   behavioralPatterns: BehavioralPattern[];
   totalOperations: number;
+  personalSummary?: PersonalInsightSummary;
 }
