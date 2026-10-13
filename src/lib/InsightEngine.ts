@@ -29,7 +29,7 @@ export interface Insight {
 }
 
 /**
- * UT Basechan Pure Deterministic Insight Engine v3.0
+ * UT Basechan Pure Deterministic Insight Engine v4.0
  * High-performance, zero-LLM, multi-signal correlation engine.
  * Human-First Enterprise Copy (Zero Academic Jargon).
  */
@@ -88,6 +88,116 @@ export class InsightEngine {
       behavioralPatterns,
       totalOperations,
     };
+  }
+
+  /**
+   * Computes Macro Organizational Telemetry Cards for Team Overview Mode.
+   * Returns 5 aggregated cards with zero individual staff clutter.
+   */
+  public static evaluateTeamMacroTelemetry(params: {
+    staffList: UserProfile[];
+    attendance: Attendance[];
+    tasks: Task[];
+    reports: DailyReport[];
+    leaveRequests: LeaveRequest[];
+    kudos?: Kudos[];
+  }): any[] {
+    const { staffList = [], attendance = [], tasks = [], reports = [], leaveRequests = [], kudos = [] } = params;
+
+    const todayStr = format(new Date(), 'yyyy-MM-dd');
+    const weekStart = startOfWeek(new Date(), { weekStartsOn: 1 });
+
+    const activeStaff = staffList.filter(u => u.status !== 'DISABLED' && u.status !== 'TERMINATED');
+    const totalStaffCount = activeStaff.length || 1;
+
+    // 1. Shift Deployment Status
+    const todayLogs = attendance.filter(a => a.date === todayStr);
+    const checkedInCount = todayLogs.filter(a => a.clockIn).length;
+    const lateCount = todayLogs.filter(a => a.remarks?.includes('LATE' as any)).length;
+
+    // 2. Work Note Coverage
+    const reportsTodayCount = reports.filter(r => r.reportDate === todayStr || (r.createdAt && format(parseISO(r.createdAt), 'yyyy-MM-dd') === todayStr)).length;
+
+    // 3. Team Deliverable Velocity
+    const completedThisWeekCount = tasks.filter(t => t.status === 'ARCHIVED' && isAfter(parseISO(t.createdAt || t.dueDate || ''), weekStart)).length;
+    const overdueCount = tasks.filter(t => t.dueDate && new Date(t.dueDate) < new Date() && t.status !== 'ARCHIVED').length;
+
+    // 4. HR Time-Off Queue
+    const pendingLeaveCount = leaveRequests.filter(l => l.status === 'PENDING').length;
+
+    // 5. Cultural Engagement
+    const kudosThisWeekCount = kudos.filter(k => isAfter(parseISO(k.timestamp || (k as any).createdAt || ''), weekStart)).length;
+
+    const cards: any[] = [];
+
+    // Card 1: Shift Deployment Status
+    cards.push({
+      id: 'macro-deployment',
+      type: lateCount > 0 ? 'warning' : 'success',
+      severity: 'STANDARD',
+      title: 'Shift Deployment Status',
+      text: `Active Deployment: ${checkedInCount}/${totalStaffCount} personnel checked in today${lateCount > 0 ? ` (${lateCount} late arrival${lateCount > 1 ? 's' : ''})` : ' with 100% on-time adherence'}.`,
+      actionLabel: 'View Roster',
+      actionType: 'ROUTE',
+      actionTarget: '/staff/attendance',
+      category: 'TEAM'
+    });
+
+    // Card 2: Work Note Coverage
+    cards.push({
+      id: 'macro-work-notes',
+      type: reportsTodayCount >= checkedInCount && checkedInCount > 0 ? 'success' : 'info',
+      severity: 'STANDARD',
+      title: 'Daily Work Note Coverage',
+      text: `Reporting Hygiene: ${reportsTodayCount} daily work note(s) filed today for ${checkedInCount} active duty shift(s).`,
+      actionLabel: 'View Reports',
+      actionType: 'ROUTE',
+      actionTarget: '/staff/reports',
+      category: 'TEAM'
+    });
+
+    // Card 3: Team Deliverable Velocity
+    cards.push({
+      id: 'macro-velocity',
+      type: overdueCount > 0 ? 'action' : 'success',
+      severity: overdueCount > 0 ? 'CRITICAL' : 'STANDARD',
+      title: 'Team Workload Velocity',
+      text: `Operational Output: ${completedThisWeekCount} task(s) completed this week${overdueCount > 0 ? `, ${overdueCount} overdue task(s) seeking resolution` : ' with zero overdue bottlenecks'}.`,
+      actionLabel: 'View Tasks',
+      actionType: 'ROUTE',
+      actionTarget: '/tasks',
+      category: 'TEAM'
+    });
+
+    // Card 4: HR Time-Off Queue
+    cards.push({
+      id: 'macro-leave-queue',
+      type: pendingLeaveCount > 0 ? 'warning' : 'info',
+      severity: 'STANDARD',
+      title: 'HR Approval Queue',
+      text: pendingLeaveCount > 0
+        ? `HR Approval Queue: ${pendingLeaveCount} pending leave request(s) awaiting management review.`
+        : 'HR Approval Queue: Zero pending time-off requests.',
+      actionLabel: 'Review Leave',
+      actionType: 'ROUTE',
+      actionTarget: '/staff/leave',
+      category: 'TEAM'
+    });
+
+    // Card 5: Cultural Engagement
+    cards.push({
+      id: 'macro-culture',
+      type: 'success',
+      severity: 'STANDARD',
+      title: 'Cultural Engagement',
+      text: `Team Recognition: ${kudosThisWeekCount} peer Kudos shoutout(s) awarded across departments this week.`,
+      actionLabel: 'Recognition Hub',
+      actionType: 'ROUTE',
+      actionTarget: '/staff/reports',
+      category: 'TEAM'
+    });
+
+    return cards;
   }
 
   /**
