@@ -198,7 +198,7 @@
   /* Light mode overrides for hardcoded dark-theme classes */
   html:not(.dark) {
     .border-white\/5 {
-      border-color: rgba(0, 0, 0, 0.05) !important;
+      border-color: rgba(0, 0, 0, 0.12) !important;
     }
 
     .bg-white\/5 {
@@ -206,11 +206,25 @@
     }
 
     .border-white\/10 {
-      border-color: rgba(0, 0, 0, 0.1) !important;
+      border-color: rgba(0, 0, 0, 0.12) !important;
     }
 
     .bg-white\/10 {
       background-color: rgba(0, 0, 0, 0.1) !important;
     }
+
+    .m3-surface-low,
+    .m3-surface-high {
+      @apply border-slate-200/80;
+    }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }

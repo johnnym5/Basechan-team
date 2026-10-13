@@ -6,6 +6,7 @@ import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine, CartesianGrid } from "recharts"
 import { IntelligentSummaryCenter } from "./IntelligentSummaryCenter"
+import { PersonalInsightHub } from "./PersonalInsightHub"
 import type { UserProfile, Attendance, Task, LeaveRequest, Nomination, DailyReport } from "@/lib/types"
 import { startOfWeek, endOfWeek, format, eachDayOfInterval, parseISO } from "date-fns"
 import { cn } from "@/lib/utils"
@@ -164,42 +165,8 @@ export function MyBriefingDashboard({
                     </div>
                 </div>
             </AccordionTrigger>
-            <AccordionContent className="p-0 border-t border-white/5 bg-black/10">
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 p-6">
-                    <div className="lg:col-span-7">
-                        <IntelligentSummaryCenter
-                            staffList={staffList}
-                            attendanceLogs={attendanceLogs}
-                            tasks={tasks}
-                            leaveRequests={leaveRequests}
-                            nominations={nominations}
-                        />
-                    </div>
-                    <div className="lg:col-span-5 flex flex-col gap-4">
-                        <h4 className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.2em] mb-1 flex items-center">
-                            <Zap className="w-3.5 h-3.5 mr-2" /> Work Habits & Trends
-                        </h4>
-                        <div className="space-y-2">
-                            {tacticalInsights.length > 0 ? tacticalInsights.map((insight) => (
-                                <div key={insight.id} className={cn(
-                                    "flex items-start gap-3 p-4 rounded-2xl border transition-all text-xs font-bold leading-relaxed",
-                                    insight.type === 'CRITICAL' ? "bg-rose-500/10 border-rose-500/20 text-rose-500" :
-                                    insight.type === 'WARNING' ? "bg-amber-500/10 border-amber-500/20 text-amber-500" :
-                                    insight.type === 'POSITIVE' ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-500" :
-                                    "bg-white/5 border-white/10 text-slate-300"
-                                )}>
-                                    {insight.type === 'POSITIVE' ? <CheckCircle2 className="w-4 h-4 mt-0.5" /> :
-                                     insight.type === 'CRITICAL' ? <ShieldAlert className="w-4 h-4 mt-0.5" /> : <Info className="w-4 h-4 mt-0.5" />}
-                                    <span>{insight.message}</span>
-                                </div>
-                            )) : (
-                                <div className="py-10 text-center border border-dashed border-white/5 rounded-3xl opacity-20">
-                                    <p className="text-[10px] font-black uppercase tracking-widest">Steady Posture: No anomalies detected.</p>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                </div>
+            <AccordionContent className="p-6 border-t border-white/5 bg-black/10">
+                <PersonalInsightHub userProfile={userProfile} />
             </AccordionContent>
           </Card>
         </AccordionItem>
