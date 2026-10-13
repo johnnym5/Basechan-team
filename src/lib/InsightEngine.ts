@@ -693,10 +693,22 @@ export class InsightEngine {
     // --- DYNAMIC FALLBACK LADDER ---
     let selectedPatterns = detectedPatterns.sort((a, b) => a.priorityTier - b.priorityTier);
 
+    // Inactive / Zero-Log Guard: Never generate fake attendance claims for staff with 0 shift logs
+    if (validShifts.length === 0) {
+      return [{
+        id: 'BP-INACTIVE',
+        code: 'BP-NONE',
+        title: 'Operational Readiness',
+        classification: 'NEUTRAL',
+        metric: '0 shift logs',
+        insightRendered: 'No shift logs recorded for this personnel.',
+        category: 'ARRIVAL',
+        priorityTier: 3,
+      }];
+    }
+
     if (selectedPatterns.length < 3) {
-      const onTimeRatio = validShifts.length > 0
-        ? Math.round((validShifts.filter(s => !s.remarks?.includes('LATE')).length / validShifts.length) * 100)
-        : 100;
+      const onTimeRatio = Math.round((validShifts.filter(s => !s.remarks?.includes('LATE')).length / validShifts.length) * 100);
 
       if (!selectedPatterns.some(p => p.id === 'BP-FALLBACK-CADENCE')) {
         selectedPatterns.push({
