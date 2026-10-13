@@ -121,7 +121,7 @@ export function SidebarDock({ isLoggedIn, isAuthLoading }: SidebarDockProps) {
                                         key={item.label}
                                         onClick={() => handleNavClick(item)}
                                         className={cn(
-                                            "w-full flex items-center rounded-2xl transition-all duration-300 h-12 group relative",
+                                            "w-full flex items-center rounded-2xl transition-all duration-300 min-h-[44px] h-12 group relative",
                                             isExpanded ? "px-4" : "justify-center",
                                             isActive
                                                 ? "bg-primary text-primary-foreground shadow-lg shadow-primary/10"
@@ -163,13 +163,13 @@ export function SidebarDock({ isLoggedIn, isAuthLoading }: SidebarDockProps) {
                       <Skeleton className="h-10 w-10 rounded-full" />
                     ) : userProfile ? (
                       <Avatar
-                        className="h-10 w-10 rounded-2xl border border-border/50 hover:border-primary transition-all cursor-pointer shadow-lg"
+                        className="h-11 w-11 min-h-[44px] min-w-[44px] rounded-2xl border border-border/50 hover:border-primary transition-all cursor-pointer shadow-lg"
                         onClick={() => handleNavClick({ dialog: 'profile' })}
                       >
                           <AvatarFallback className="text-[10px] font-black bg-secondary">{userProfile?.fullName?.split(' ').map(n => n[0]).join('')}</AvatarFallback>
                       </Avatar>
                     ) : (
-                        <div className="h-10 w-10 rounded-2xl bg-muted flex items-center justify-center text-muted-foreground">
+                        <div className="h-11 w-11 min-h-[44px] min-w-[44px] rounded-2xl bg-muted flex items-center justify-center text-muted-foreground">
                              <User className="h-5 w-5" />
                         </div>
                     )}
@@ -180,7 +180,7 @@ export function SidebarDock({ isLoggedIn, isAuthLoading }: SidebarDockProps) {
                         </div>
                     )}
                     {isExpanded && (
-                         <button onClick={handleLogout} className="p-2 rounded-xl text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10 transition-all">
+                         <button onClick={handleLogout} className="p-2.5 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10 transition-all">
                             <LogOut className="h-4 w-4" />
                          </button>
                     )}

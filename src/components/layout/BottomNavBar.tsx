@@ -84,7 +84,7 @@ export function BottomNavBar() {
         {/* Assistant */}
         <button 
             onClick={() => handleNav({ dialog: 'assistant' })} 
-            className={cn("flex-1 flex flex-col items-center gap-1.5 transition-all duration-300", isActive('assistant') ? "mobile-tab-active" : "text-muted-foreground opacity-60")}
+            className={cn("flex-1 flex flex-col items-center justify-center min-h-[44px] min-w-[44px] gap-1.5 transition-all duration-300", isActive('assistant') ? "mobile-tab-active" : "text-muted-foreground opacity-60")}
         >
             <Sparkles className="h-5 w-5" />
             <span className="text-[8px] font-black uppercase tracking-widest text-center leading-none">Assistant</span>
@@ -93,7 +93,7 @@ export function BottomNavBar() {
         {/* Attendance */}
         <button 
             onClick={() => handleNav({ dialog: 'attendance' })} 
-            className={cn("flex-1 flex flex-col items-center gap-1.5 transition-all duration-300", isActive('attendance') ? "mobile-tab-active" : "text-muted-foreground opacity-60")}
+            className={cn("flex-1 flex flex-col items-center justify-center min-h-[44px] min-w-[44px] gap-1.5 transition-all duration-300", isActive('attendance') ? "mobile-tab-active" : "text-muted-foreground opacity-60")}
         >
             <Fingerprint className="h-5 w-5" />
             <span className="text-[8px] font-black uppercase tracking-widest text-center leading-none">Attendance</span>
@@ -103,11 +103,11 @@ export function BottomNavBar() {
         <div className="relative -top-6 px-2">
             <Sheet open={isMenuOpen} onOpenChange={setIsMenuOpen}>
                 <SheetTrigger asChild>
-                    <button className="size-16 rounded-full bg-primary flex items-center justify-center text-primary-foreground shadow-2xl shadow-primary/40 ring-4 ring-background transition-all active:scale-90">
+                    <button className="size-16 min-h-[44px] min-w-[44px] rounded-full bg-primary flex items-center justify-center text-primary-foreground shadow-2xl shadow-primary/40 ring-4 ring-background transition-all active:scale-90">
                         <LayoutGrid className={cn("h-8 w-8 transition-transform duration-500", isMenuOpen && "rotate-90")} />
                     </button>
                 </SheetTrigger>
-                <SheetContent side="bottom" className="h-[75dvh] rounded-t-[3rem] apple-glass-darker border-none p-0 overflow-hidden flex flex-col">
+                <SheetContent side="bottom" className="h-[75dvh] rounded-t-[3rem] apple-glass-darker border-none p-0 overflow-hidden flex flex-col z-[500] pb-[calc(1.5rem+env(safe-area-inset-bottom))]">
                     <div className="absolute top-4 left-1/2 -translate-x-1/2 w-12 h-1.5 bg-muted/30 rounded-full z-10" />
                     
                     <div className="flex flex-col h-full pt-10">
@@ -130,7 +130,7 @@ export function BottomNavBar() {
                                             key={idx}
                                             onClick={() => handleNav(item)}
                                             className={cn(
-                                                "flex flex-col items-center gap-3 p-4 rounded-3xl border transition-all active:scale-95 group",
+                                                "flex flex-col items-center justify-center min-h-[44px] min-w-[44px] gap-3 p-4 rounded-3xl border transition-all active:scale-95 group",
                                                 isItemActive 
                                                     ? "bg-primary border-primary text-primary-foreground shadow-xl shadow-primary/20"
                                                     : "bg-background/40 border-border text-muted-foreground hover:bg-muted"
@@ -146,11 +146,11 @@ export function BottomNavBar() {
                             </div>
                         </ScrollArea>
                         
-                        <div className="p-6 shrink-0 border-t border-border bg-background/50">
+                        <div className="p-6 shrink-0 border-t border-border bg-background/50 pb-[calc(1.5rem+env(safe-area-inset-bottom))]">
                             <Button 
                                 variant="ghost" 
                                 onClick={handleLogout}
-                                className="w-full h-14 rounded-2xl bg-destructive/10 text-destructive hover:bg-destructive hover:text-white transition-all interactive-element"
+                                className="w-full h-14 min-h-[44px] rounded-2xl bg-destructive/10 text-destructive hover:bg-destructive hover:text-white transition-all interactive-element"
                             >
                                 <LogOut className="mr-2 h-5 w-5" />
                                 <span className="font-black uppercase tracking-widest text-xs">Sign Out</span>
@@ -164,7 +164,7 @@ export function BottomNavBar() {
         {/* Alerts */}
         <button 
             onClick={() => handleNav({ dialog: 'notifications' })} 
-            className={cn("flex-1 flex flex-col items-center gap-1.5 transition-all duration-300 relative", isActive('notifications') ? "mobile-tab-active" : "text-muted-foreground opacity-60")}
+            className={cn("flex-1 flex flex-col items-center justify-center min-h-[44px] min-w-[44px] gap-1.5 transition-all duration-300 relative", isActive('notifications') ? "mobile-tab-active" : "text-muted-foreground opacity-60")}
         >
             <Bell className="h-5 w-5" />
             {hasUnread && (
@@ -176,7 +176,7 @@ export function BottomNavBar() {
         {/* Profile */}
         <button 
             onClick={() => handleNav({ dialog: 'profile' })} 
-            className={cn("flex-1 flex flex-col items-center gap-1.5 transition-all duration-300", isActive('profile') ? "mobile-tab-active" : "text-muted-foreground opacity-60")}
+            className={cn("flex-1 flex flex-col items-center justify-center min-h-[44px] min-w-[44px] gap-1.5 transition-all duration-300", isActive('profile') ? "mobile-tab-active" : "text-muted-foreground opacity-60")}
         >
              <div className="h-5 w-5 rounded-full border border-current flex items-center justify-center overflow-hidden">
                 <span className="text-[8px] font-black">{userProfile.fullName.charAt(0)}</span>

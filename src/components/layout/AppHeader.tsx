@@ -118,7 +118,7 @@ export default function AppHeader({
                   {/* Daily Updates Button */}
                   <button 
                     onClick={handleOpenAnalytics}
-                    className="relative text-muted-foreground hover:text-amber-500 transition-all p-2 rounded-2xl hover:bg-amber-500/10 group/btn m3-interactive"
+                    className="relative text-muted-foreground hover:text-amber-500 transition-all p-2 rounded-2xl hover:bg-amber-500/10 group/btn m3-interactive min-h-[44px] min-w-[44px] flex items-center justify-center"
                     title="Daily Updates"
                   >
                       <Sparkles className="w-6 h-6" />
@@ -129,7 +129,7 @@ export default function AppHeader({
 
                    <Popover open={isNotificationsOpen} onOpenChange={setIsNotificationsOpen}>
                       <PopoverTrigger asChild>
-                          <button className="relative text-muted-foreground hover:text-primary transition-all p-2 rounded-2xl hover:bg-primary/10 group/btn m3-interactive">
+                          <button className="relative text-muted-foreground hover:text-primary transition-all p-2 rounded-2xl hover:bg-primary/10 group/btn m3-interactive min-h-[44px] min-w-[44px] flex items-center justify-center">
                               <Bell className={cn("w-6 h-6", unreadCount > 0 && "text-primary")} />
                               {unreadCount > 0 && (
                                   <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[8px] font-black text-destructive-foreground ring-2 ring-background shadow-sm">
@@ -177,7 +177,7 @@ export default function AppHeader({
             <div className="flex items-center gap-2">
                 <Popover open={isNotificationsOpen} onOpenChange={setIsNotificationsOpen}>
                     <PopoverTrigger asChild>
-                        <button className="relative text-muted-foreground hover:text-primary transition-all p-2 rounded-xl bg-muted/60 hover:bg-primary/10 group/btn m3-interactive">
+                        <button className="relative text-muted-foreground hover:text-primary transition-all p-2 rounded-xl bg-muted/60 hover:bg-primary/10 group/btn m3-interactive min-h-[44px] min-w-[44px] flex items-center justify-center">
                             <Bell className={cn("w-4 h-4", unreadCount > 0 && "text-primary")} />
                             {unreadCount > 0 && (
                                 <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[8px] font-black text-destructive-foreground ring-2 ring-background shadow-lg">
@@ -207,7 +207,7 @@ export default function AppHeader({
 
                 <button
                     onClick={handleOpenAnalytics}
-                    className="relative text-muted-foreground hover:text-amber-500 transition-all p-2 rounded-xl bg-muted/60 hover:bg-amber-500/10 group/btn m3-interactive"
+                    className="relative text-muted-foreground hover:text-amber-500 transition-all p-2 rounded-xl bg-muted/60 hover:bg-amber-500/10 group/btn m3-interactive min-h-[44px] min-w-[44px] flex items-center justify-center"
                     title="Daily Updates"
                 >
                     <Sparkles className="w-4 h-4" />

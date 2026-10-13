@@ -60,7 +60,7 @@ export function UserNav({ userProfile }: { userProfile: UserProfile | null }) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" className="relative h-10 w-10 rounded-full interactive-element focus-visible:ring-0 focus-visible:ring-offset-0">
+        <Button variant="ghost" className="relative min-h-[44px] min-w-[44px] size-11 flex items-center justify-center rounded-full interactive-element focus-visible:ring-0 focus-visible:ring-offset-0">
           <Avatar className={cn("h-10 w-10 border-2 transition-colors", isImpersonating ? "border-amber-500" : "border-primary/20")}>
             <AvatarImage src={userProfile?.avatarUrl || user.photoURL || ''} alt={user.displayName || ''} />
             <AvatarFallback className="font-bold bg-secondary">{userInitials}</AvatarFallback>

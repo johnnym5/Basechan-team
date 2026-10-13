@@ -18,11 +18,11 @@ export function ThemeToggle() {
   React.useEffect(() => setMounted(true), []);
 
   if (!mounted) {
-    return <Button variant="ghost" size="icon" className="rounded-full w-10 h-10" disabled />;
+    return <Button variant="ghost" size="icon" className="rounded-full min-h-[44px] min-w-[44px] size-11 flex items-center justify-center" disabled />;
   }
 
   return (
-    <Button variant="ghost" size="icon" className="rounded-full w-10 h-10" onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}>
+    <Button variant="ghost" size="icon" className="rounded-full min-h-[44px] min-w-[44px] size-11 flex items-center justify-center" onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}>
       {theme === 'dark' ? <Sun className="h-[1.2rem] w-[1.2rem] text-amber-500" /> : <Moon className="h-[1.2rem] w-[1.2rem] text-primary" />}
       <span className="sr-only">Toggle theme</span>
     </Button>
