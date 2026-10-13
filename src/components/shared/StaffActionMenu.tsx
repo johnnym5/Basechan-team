@@ -95,6 +95,11 @@ export function StaffActionMenu({ staff, currentLog, orgId: propOrgId }: StaffAc
   [firestore, user])
   const { data: currentUserProfile } = useDoc<UserProfile>(userProfileRef)
 
+  const targetStaffRef = useMemoFirebase(() =>
+    firestore && staff?.id ? doc(firestore, 'users', staff.id) : null,
+  [firestore, staff?.id])
+  const { data: targetStaffProfile } = useDoc<UserProfile>(targetStaffRef)
+
   const orgId = propOrgId || currentUserProfile?.orgId
 
   const [activeModal, setActiveModal] = useState<ModalType | null>(null)
@@ -267,30 +272,80 @@ export function StaffActionMenu({ staff, currentLog, orgId: propOrgId }: StaffAc
             </DialogFooter>
           </>
         )
-      case 'POINTS':
+      case 'POINTS': {
+        const currentScore = targetStaffProfile?.performanceScore ?? 50
+        const currentRating = targetStaffProfile?.performanceRating ?? 'C'
+        const currentStatus = targetStaffProfile?.performanceStatus ?? 'STABLE'
+
+        const calculateRating = (s: number): 'S' | 'A' | 'B' | 'C' | 'D' | 'E' | 'F' => {
+          if (s >= 90) return 'S'
+          if (s >= 80) return 'A'
+          if (s >= 70) return 'B'
+          if (s >= 50) return 'C'
+          if (s >= 40) return 'D'
+          if (s >= 30) return 'E'
+          return 'F'
+        }
+
+        const handleScoreChange = async (delta: number) => {
+          if (!firestore || !staff?.id) return
+          setIsUpdating(true)
+          const newScore = Math.max(0, Math.min(100, currentScore + delta))
+          const newRating = calculateRating(newScore)
+          try {
+            await updateDoc(doc(firestore, 'users', staff.id), {
+              performanceScore: newScore,
+              performanceRating: newRating
+            })
+            toast({ title: "Score Updated", description: `${staff.name}'s performance standing updated to ${newScore} points (${newRating}-Tier).` })
+          } catch (e: any) {
+            toast({ variant: "destructive", title: "Update Failed", description: e.message })
+          } finally {
+            setIsUpdating(false)
+          }
+        }
+
         return (
           <>
             <DialogHeader>
-              <DialogTitle className="flex items-center gap-2 font-black uppercase tracking-tighter">
+              <DialogTitle className="flex items-center gap-2 font-black uppercase tracking-tighter text-foreground">
                 <Target className="w-5 h-5 text-amber-500" /> Performance Standing
               </DialogTitle>
-              <DialogDescription className="text-[10px] font-bold uppercase tracking-widest opacity-60">Manual adjustment for {staff?.name}.</DialogDescription>
+              <DialogDescription className="text-[10px] font-bold uppercase tracking-widest opacity-60">Direct point & rating adjustment for {staff?.name}.</DialogDescription>
             </DialogHeader>
+
             <div className="p-6 bg-amber-500/5 rounded-2xl border border-amber-500/10 mt-4 space-y-4">
                 <div className="flex justify-between items-center">
-                    <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Current Standing</span>
-                    <span className="text-2xl font-black font-headline text-amber-500">748 <span className="text-[10px] opacity-40">PTS</span></span>
+                    <div>
+                      <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground block">Current Score</span>
+                      <span className="text-3xl font-black font-headline text-amber-500">{currentScore} <span className="text-[10px] opacity-40 text-muted-foreground">/ 100 PTS</span></span>
+                    </div>
+                    <div className="h-12 w-12 rounded-2xl bg-amber-500/10 border-2 border-amber-500 flex items-center justify-center">
+                      <span className="font-black text-xl text-amber-500">{currentRating}</span>
+                    </div>
                 </div>
+
                 <div className="h-px bg-white/5" />
-                <p className="text-[9px] font-medium leading-relaxed italic text-muted-foreground opacity-60">Points are automatically calculated via operational telemetry. Manual overrides should only be performed for sanctioned awards or disciplinary deductions.</p>
+
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[9px] font-black uppercase text-muted-foreground">Adjust Points:</span>
+                  <div className="flex items-center gap-1.5">
+                    <Button size="sm" variant="outline" className="h-8 px-2.5 text-[10px] font-black uppercase text-rose-500 border-rose-500/20 hover:bg-rose-500/20" onClick={() => handleScoreChange(-5)} disabled={isUpdating || currentScore <= 0}>-5</Button>
+                    <Button size="sm" variant="outline" className="h-8 px-2.5 text-[10px] font-black uppercase text-rose-400 border-white/10 hover:bg-rose-500/20" onClick={() => handleScoreChange(-1)} disabled={isUpdating || currentScore <= 0}>-1</Button>
+                    <Button size="sm" variant="outline" className="h-8 px-2.5 text-[10px] font-black uppercase text-emerald-400 border-white/10 hover:bg-emerald-500/20" onClick={() => handleScoreChange(1)} disabled={isUpdating || currentScore >= 100}>+1</Button>
+                    <Button size="sm" variant="outline" className="h-8 px-2.5 text-[10px] font-black uppercase text-emerald-500 border-emerald-500/20 hover:bg-emerald-500/20" onClick={() => handleScoreChange(5)} disabled={isUpdating || currentScore >= 100}>+5</Button>
+                  </div>
+                </div>
             </div>
-            <DialogFooter className="mt-8">
-               <Button onClick={() => router.push(`/reports?tab=team-performance&userId=${staff?.id}`)} className="w-full rounded-xl h-11 font-black uppercase text-[10px] tracking-widest bg-amber-500 text-black hover:bg-amber-600">
-                  Open Performance Manager
+
+            <DialogFooter className="mt-6">
+               <Button onClick={() => { setActiveModal(null); router.push('/staff/reports'); }} className="w-full rounded-xl h-11 font-black uppercase text-[10px] tracking-widest bg-amber-500 text-black hover:bg-amber-600">
+                  Open All Performance Standings
                </Button>
             </DialogFooter>
           </>
         )
+      }
       case 'LEAVE':
         return (
           <>
