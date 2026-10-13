@@ -1,21 +1,96 @@
 "use client"
 
-import React from "react"
+import React, { useState, useEffect, useMemo } from "react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
-import { Star, TrendingUp, ShieldCheck, ShieldAlert, Award } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Star, TrendingUp, ShieldCheck, ShieldAlert, Award, Plus, Minus, Save, Loader2, User } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type { UserProfile } from "@/lib/types"
+import { useFirestore } from "@/firebase"
+import { doc, updateDoc } from "firebase/firestore"
+import { useToast } from "@/hooks/use-toast"
 
 interface StaffPerformanceScoreProps {
     userProfile: UserProfile;
+    staffList?: UserProfile[];
     isAdmin?: boolean;
 }
 
-export function StaffPerformanceScore({ userProfile, isAdmin = false }: StaffPerformanceScoreProps) {
-    const score = userProfile.performanceScore ?? 50
-    const rating = userProfile.performanceRating ?? 'C'
-    const status = userProfile.performanceStatus ?? 'STABLE'
+export function StaffPerformanceScore({ userProfile, staffList = [], isAdmin = false }: StaffPerformanceScoreProps) {
+    const firestore = useFirestore()
+    const { toast } = useToast()
+
+    const [selectedStaffId, setSelectedStaffId] = useState<string>(userProfile?.id || "")
+
+    const activeStaffOptions = useMemo(() => {
+        if (staffList.length > 0) return staffList.filter(s => s.status !== 'DISABLED' && s.status !== 'TERMINATED');
+        return [userProfile];
+    }, [staffList, userProfile])
+
+    const targetStaff = useMemo(() => {
+        return activeStaffOptions.find(s => s.id === selectedStaffId) || activeStaffOptions[0] || userProfile;
+    }, [activeStaffOptions, selectedStaffId, userProfile])
+
+    const [score, setScore] = useState<number>(targetStaff.performanceScore ?? 50)
+    const [rating, setRating] = useState<string>(targetStaff.performanceRating ?? 'C')
+    const [status, setStatus] = useState<string>(targetStaff.performanceStatus ?? 'STABLE')
+    const [isSaving, setIsSaving] = useState(false)
+
+    useEffect(() => {
+        if (targetStaff) {
+            setScore(targetStaff.performanceScore ?? 50)
+            setRating(targetStaff.performanceRating ?? 'C')
+            setStatus(targetStaff.performanceStatus ?? 'STABLE')
+        }
+    }, [targetStaff])
+
+    const handleScoreChange = (delta: number) => {
+        setScore(prev => {
+            const next = Math.max(0, Math.min(100, prev + delta))
+            if (next >= 90) setRating('S')
+            else if (next >= 80) setRating('A')
+            else if (next >= 65) setRating('B')
+            else if (next >= 50) setRating('C')
+            else if (next >= 35) setRating('D')
+            else setRating('F')
+            return next
+        })
+    }
+
+    const handleRatingSelect = (newRating: string) => {
+        setRating(newRating)
+        if (newRating === 'S') setScore(95)
+        else if (newRating === 'A') setScore(85)
+        else if (newRating === 'B') setScore(70)
+        else if (newRating === 'C') setScore(55)
+        else if (newRating === 'D') setScore(40)
+        else setScore(20)
+    }
+
+    const handleSaveRating = async () => {
+        if (!firestore || !targetStaff?.id) return
+        setIsSaving(true)
+        try {
+            const userRef = doc(firestore, 'users', targetStaff.id)
+            await updateDoc(userRef, {
+                performanceScore: score,
+                performanceRating: rating,
+                performanceStatus: status,
+                updatedAt: new Date().toISOString()
+            })
+            toast({
+                title: "Rating Updated Successfully",
+                description: `Updated ${targetStaff.fullName}'s score to ${score}/100 (Tier ${rating}).`
+            })
+        } catch (e: any) {
+            toast({ variant: "destructive", title: "Update Failed", description: e.message })
+        } finally {
+            setIsSaving(false)
+        }
+    }
 
     const getHRFeedback = (currentScore: number) => {
         if (currentScore >= 95) return "Absolute top tier. Flawless execution and operational excellence!"
@@ -42,56 +117,113 @@ export function StaffPerformanceScore({ userProfile, isAdmin = false }: StaffPer
 
     return (
         <Card className="apple-glass border-none shadow-2xl flex flex-col h-full overflow-hidden m3-interactive">
-            <CardHeader className="border-b border-white/5 pb-4 bg-white/5 shrink-0 px-6 pt-5">
+            <CardHeader className="border-b border-white/5 pb-3 bg-white/5 shrink-0 px-6 pt-4 flex flex-row items-center justify-between gap-4">
                 <CardTitle className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground flex items-center gap-2">
                     <Star className="w-4 h-4 text-amber-500" /> Performance Standing
                 </CardTitle>
+
+                {/* Admin Staff Selector */}
+                {isAdmin && activeStaffOptions.length > 0 && (
+                    <Select value={selectedStaffId || targetStaff?.id} onValueChange={setSelectedStaffId}>
+                        <SelectTrigger className="w-[180px] h-8 bg-black/40 border-white/10 text-[10px] font-black uppercase text-white rounded-xl">
+                            <SelectValue placeholder="Select Staff..." />
+                        </SelectTrigger>
+                        <SelectContent className="bg-slate-900 border-white/10 text-white rounded-xl">
+                            {activeStaffOptions.map(staff => (
+                                <SelectItem key={staff.id} value={staff.id} className="text-xs font-bold uppercase">
+                                    {staff.fullName}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                )}
             </CardHeader>
-            <CardContent className="p-6 flex-1 flex flex-col justify-center bg-black/10">
+
+            <CardContent className="p-5 flex-1 flex flex-col justify-between bg-black/10">
                 {isAdmin ? (
-                    <>
-                        <div className="flex items-center justify-between mb-6">
-                            <div className="space-y-1">
-                                <p className="text-4xl font-black font-headline tracking-tighter text-white">{score}<span className="text-lg opacity-30">/100</span></p>
-                                <p className="text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground">Current Standing</p>
+                    <div className="space-y-4">
+                        {/* Score Gauge & Tier Badge */}
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-3xl md:text-4xl font-black font-headline tracking-tighter text-white">
+                                    {score}<span className="text-sm opacity-40">/100</span>
+                                </p>
+                                <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mt-0.5">
+                                    Target: <span className="text-white">{targetStaff?.fullName}</span>
+                                </p>
                             </div>
-                            <div className={cn(
-                                "h-16 w-16 rounded-[1.5rem] flex items-center justify-center border-4 shadow-2xl transition-all duration-700",
-                                rating === 'S' ? "bg-amber-500/10 border-amber-500 text-amber-500 shadow-amber-500/20 rotate-3" :
-                                rating === 'A' ? "bg-emerald-500/10 border-emerald-500 text-emerald-500 shadow-emerald-500/20" :
-                                rating === 'F' ? "bg-rose-500/10 border-rose-500 text-rose-500 shadow-rose-500/20 -rotate-3" :
-                                "bg-white/5 border-white/10 text-white"
-                            )}>
-                                <span className="font-black text-3xl font-headline">{rating}</span>
+
+                            {/* Rating Tier Selector Buttons */}
+                            <div className="flex items-center gap-1 bg-black/40 border border-white/10 p-1 rounded-2xl">
+                                {['S', 'A', 'B', 'C', 'D', 'F'].map(tier => (
+                                    <button
+                                        key={tier}
+                                        onClick={() => handleRatingSelect(tier)}
+                                        className={cn(
+                                            "w-7 h-7 rounded-xl text-xs font-black font-headline transition-all",
+                                            rating === tier ? "bg-amber-500 text-black shadow-lg scale-105" : "text-slate-400 hover:text-white"
+                                        )}
+                                    >
+                                        {tier}
+                                    </button>
+                                ))}
                             </div>
                         </div>
 
-                        <div className="space-y-4">
-                            <div className="space-y-2">
-                                <div className="flex justify-between items-center text-[8px] font-black uppercase tracking-widest">
-                                    <span className="text-muted-foreground">Progress to Tier {rating === 'S' ? 'S' : 'Up'}</span>
-                                    <span className="text-primary">{score % 10}0%</span>
-                                </div>
-                                <Progress value={score} className="h-2 bg-white/5" />
+                        {/* Interactive Score Adjustment Buttons */}
+                        <div className="space-y-2">
+                            <div className="flex justify-between items-center text-[8px] font-black uppercase tracking-widest text-muted-foreground">
+                                <span>Adjust Rating Score</span>
+                                <span className="text-primary font-mono">{score}%</span>
                             </div>
-
-                            <div className={cn(
-                                "p-3 rounded-2xl border flex items-center gap-3 transition-colors",
-                                status === 'EXCELLING' ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-500" :
-                                status === 'FLAGGED' ? "bg-rose-500/10 border-rose-500/20 text-rose-500" :
-                                "bg-white/5 border-white/10 text-muted-foreground"
-                            )}>
-                                {status === 'EXCELLING' ? <TrendingUp className="w-4 h-4" /> :
-                                 status === 'FLAGGED' ? <ShieldAlert className="w-4 h-4" /> : <ShieldCheck className="w-4 h-4" />}
-                                <span className="text-[10px] font-black uppercase tracking-widest">{status}</span>
-                            </div>
-
-                            <div className="mt-2 p-3 rounded-xl border border-white/5 bg-background/50">
-                                <p className="text-[9px] text-muted-foreground font-medium italic">Staff sees: "{getHRFeedback(score)}"</p>
+                            <div className="flex items-center gap-2">
+                                <Button size="sm" variant="outline" onClick={() => handleScoreChange(-10)} className="h-8 px-2.5 rounded-xl border-white/10 bg-black/40 text-xs font-black text-rose-400 hover:bg-rose-500/20">-10</Button>
+                                <Button size="sm" variant="outline" onClick={() => handleScoreChange(-5)} className="h-8 px-2.5 rounded-xl border-white/10 bg-black/40 text-xs font-black text-amber-400 hover:bg-amber-500/20">-5</Button>
+                                <Progress value={score} className="h-2 flex-1 bg-white/5" />
+                                <Button size="sm" variant="outline" onClick={() => handleScoreChange(5)} className="h-8 px-2.5 rounded-xl border-white/10 bg-black/40 text-xs font-black text-emerald-400 hover:bg-emerald-500/20">+5</Button>
+                                <Button size="sm" variant="outline" onClick={() => handleScoreChange(10)} className="h-8 px-2.5 rounded-xl border-white/10 bg-black/40 text-xs font-black text-primary hover:bg-primary/20">+10</Button>
                             </div>
                         </div>
-                    </>
+
+                        {/* Status Toggle & Save CTA */}
+                        <div className="flex items-center justify-between gap-3 pt-1">
+                            <div className="flex items-center gap-1 bg-black/40 border border-white/10 p-1 rounded-xl">
+                                {(['EXCELLING', 'STABLE', 'FLAGGED'] as const).map(st => (
+                                    <button
+                                        key={st}
+                                        onClick={() => setStatus(st)}
+                                        className={cn(
+                                            "px-2.5 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest transition-all",
+                                            status === st && st === 'EXCELLING' && "bg-emerald-500 text-black",
+                                            status === st && st === 'STABLE' && "bg-blue-500 text-white",
+                                            status === st && st === 'FLAGGED' && "bg-rose-500 text-white",
+                                            status !== st && "text-slate-400 hover:text-white"
+                                        )}
+                                    >
+                                        {st}
+                                    </button>
+                                ))}
+                            </div>
+
+                            <Button
+                                size="sm"
+                                disabled={isSaving}
+                                onClick={handleSaveRating}
+                                className="h-9 px-4 rounded-xl bg-primary text-white hover:bg-primary/90 text-[9px] font-black uppercase tracking-widest gap-1.5 shadow-lg shadow-primary/20"
+                            >
+                                {isSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+                                Save Rating
+                            </Button>
+                        </div>
+
+                        {/* Live HR Feedback Preview */}
+                        <div className="p-2.5 rounded-xl border border-white/5 bg-black/30">
+                            <p className="text-[8px] text-muted-foreground font-bold uppercase tracking-wider">Staff Feedback Output:</p>
+                            <p className="text-[10px] text-slate-200 font-medium italic mt-0.5">"{getHRFeedback(score)}"</p>
+                        </div>
+                    </div>
                 ) : (
+                    /* STAFF VIEW */
                     <div className="flex flex-col items-center justify-center text-center space-y-6 h-full py-4">
                         <div className={cn(
                             "p-5 rounded-full shadow-2xl animate-in zoom-in duration-700",

@@ -244,7 +244,7 @@ export function AdminDashboard({ userProfile, permissions, systemConfig }: Admin
                   </div>
 
                   <TabsContent value="standing" className="mt-0 h-full">
-                    <StaffPerformanceScore userProfile={userProfile} isAdmin={true} />
+                    <StaffPerformanceScore userProfile={userProfile} staffList={activeStaff} isAdmin={true} />
                   </TabsContent>
 
                   <TabsContent value="radar" className="mt-0 h-full">
