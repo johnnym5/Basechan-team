@@ -9,3 +9,5 @@
 ## Progress Log
 - Task 1: complete (commits 4c80ccd2, review clean)
 - Task 2: complete (commits d315cd2a, review clean)
+- Task 3: complete (commits c85b5d4b, review clean)
+- Task 4: complete (commit fce740a4, review clean)
