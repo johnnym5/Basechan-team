@@ -4,8 +4,9 @@ import React from "react"
 import { PerformanceReviewBuilder } from "../performance/PerformanceReviewBuilder"
 import { PerformanceReviewList } from "../performance/PerformanceReviewList"
 import { PerformanceAnalyticsView } from "./PerformanceAnalyticsView"
+import { PerformanceScoreManager } from "../PerformanceScoreManager"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Archive, Zap, BarChart3 } from "lucide-react"
+import { Archive, Zap, BarChart3, Star } from "lucide-react"
 import type { UserProfile, PerformanceReview, ReviewTemplate } from "@/lib/types"
 import { useFirestore, useCollection, useMemoFirebase } from "@/firebase"
 import { collection, query, where, orderBy } from "firebase/firestore"
@@ -38,8 +39,11 @@ export function ManagementTools({ currentUser, staffList }: { currentUser: UserP
 
   return (
     <div className="space-y-6">
-      <Tabs defaultValue="builder" className="w-full">
+      <Tabs defaultValue="standings" className="w-full">
         <TabsList className="bg-secondary/20 rounded-2xl p-1 w-fit border border-white/5 flex gap-1 mb-8">
+          <TabsTrigger value="standings" className="rounded-xl px-6 font-black uppercase text-[10px] tracking-widest data-[state=active]:bg-background transition-all flex items-center gap-2">
+            <Star className="w-4 h-4 text-amber-500" /> Performance Standings
+          </TabsTrigger>
           <TabsTrigger value="builder" className="rounded-xl px-6 font-black uppercase text-[10px] tracking-widest data-[state=active]:bg-background transition-all flex items-center gap-2">
             <Zap className="w-4 h-4" /> Review Builder
           </TabsTrigger>
@@ -50,6 +54,10 @@ export function ManagementTools({ currentUser, staffList }: { currentUser: UserP
             <Archive className="w-4 h-4" /> Archives
           </TabsTrigger>
         </TabsList>
+
+        <TabsContent value="standings" className="m-0 animate-in fade-in duration-500 outline-none">
+            <PerformanceScoreManager staffList={staffList} isAdmin={true} />
+        </TabsContent>
 
         <TabsContent value="builder" className="m-0 animate-in fade-in duration-500 outline-none">
             <div className="bg-black/20 rounded-[2.5rem] border border-white/5 p-8 shadow-2xl">

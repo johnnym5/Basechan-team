@@ -1,13 +1,11 @@
 "use client"
 
-import React, { useState, useEffect, useMemo, useCallback } from "react"
+import React, { useState, useEffect, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import { useUser, useDoc, useMemoFirebase, useFirestore, useCollection } from "@/firebase"
 import { doc, addDoc, collection, serverTimestamp, query, where, getDocs, limit } from "firebase/firestore"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
+import { Button } from "@/components/ui/button"
 import {
   AlertTriangle,
   CheckCircle,
@@ -16,37 +14,26 @@ import {
   Users,
   Zap,
   Activity,
-  ShieldAlert,
   TrendingUp,
-  MessageSquare,
-  ShieldCheck,
-  ChevronRight,
-  Trophy,
   Radar,
   Calendar as CalendarIcon,
   Check,
-  ChevronDown
+  ChevronDown,
+  FileText,
+  Trophy,
+  ChevronRight
 } from "lucide-react"
 import { cn } from "@/lib/utils"
-import type { UserProfile, Attendance, Task, LeaveRequest, Nomination, PulseCheck, DailyReport } from "@/lib/types"
+import type { UserProfile, Attendance, Task, LeaveRequest, Nomination, PulseCheck, DailyReport, Kudos } from "@/lib/types"
 import {
-    isWithinInterval,
-    subDays,
-    startOfDay,
-    endOfDay,
     parseISO,
-    isWeekend,
-    eachDayOfInterval,
     isAfter,
-    startOfToday,
     format,
-    startOfWeek,
-    isSameWeek
+    startOfWeek
 } from "date-fns"
-import { Button } from "@/components/ui/button"
 import { usePermissions } from "@/hooks/usePermissions"
 import { type ViewScope } from "../shared/DateScopePicker"
-import { InsightEngine, type Insight } from "@/lib/InsightEngine"
+import { InsightEngine } from "@/lib/InsightEngine"
 import { Badge } from "@/components/ui/badge"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { ScrollArea } from "@/components/ui/scroll-area"
@@ -60,6 +47,7 @@ interface IntelligentSummaryCenterProps {
   pulseFeed?: PulseCheck[];
   nominations?: Nomination[];
   reports?: DailyReport[];
+  kudos?: Kudos[];
   isAdminOverride?: boolean;
   timeFilter?: { mode: ViewScope, referenceDate: Date };
   variant?: 'default' | 'compact';
@@ -135,6 +123,7 @@ export function IntelligentSummaryCenter({
   pulseFeed = [],
   nominations = [],
   reports,
+  kudos = [],
   isAdminOverride,
   timeFilter,
   variant = 'default'
@@ -231,6 +220,7 @@ export function IntelligentSummaryCenter({
         leaveRequests={leaveRequests}
         pulseFeed={pulseFeed}
         reports={activeReports}
+        kudos={kudos}
         isAdmin={isAdmin}
         currentUser={userProfile || undefined}
         nominations={nominations}
@@ -247,6 +237,7 @@ function PersonnelIntelligenceHub({
     leaveRequests = [],
     pulseFeed = [],
     reports = [],
+    kudos = [],
     isAdmin,
     currentUser,
     nominations = [],
@@ -258,6 +249,7 @@ function PersonnelIntelligenceHub({
     leaveRequests?: LeaveRequest[],
     pulseFeed?: PulseCheck[],
     reports?: DailyReport[],
+    kudos?: Kudos[],
     isAdmin: boolean,
     currentUser?: UserProfile,
     nominations?: Nomination[],
@@ -304,63 +296,25 @@ function PersonnelIntelligenceHub({
 
     const intelItems = useMemo((): any[] => {
         if (isTeamMode) {
-            const orgInsights = [...allInsights];
+            // Pure Macro Organizational Telemetry Cards (Zero individual staff clutter)
+            const macroCards = InsightEngine.evaluateTeamMacroTelemetry({
+              staffList,
+              attendance: attendanceLogs,
+              tasks,
+              reports,
+              leaveRequests,
+              kudos,
+            });
 
-            if (orgInsights.length === 0) {
-                const totalStaff = staffList.length;
-                const todayStr = format(new Date(), 'yyyy-MM-dd');
-                const activeShifts = attendanceLogs.filter(a => a.date === todayStr && !a.clockOut).length;
-                const pendingLeaves = leaveRequests.filter(l => l.status === 'PENDING').length;
-                const overdueTasks = tasks.filter(t => t.dueDate && new Date(t.dueDate) < new Date() && t.status !== 'ARCHIVED').length;
-
-                orgInsights.push({
-                    id: 'org-health-1',
-                    type: 'success',
-                    severity: 'STANDARD',
-                    icon: CheckCircle,
-                    title: 'System Operational Status',
-                    text: `Active Operational Deployment: ${activeShifts}/${totalStaff} personnel checked in today with zero critical breaches.`,
-                    actionLabel: 'View Roster',
-                    actionType: 'ROUTE',
-                    actionTarget: '/staff/attendance',
-                    category: 'TEAM'
-                });
-
-                if (pendingLeaves > 0) {
-                    orgInsights.push({
-                        id: 'org-health-2',
-                        type: 'warning',
-                        severity: 'STANDARD',
-                        icon: AlertTriangle,
-                        title: 'Pending Action Items',
-                        text: `${pendingLeaves} leave request(s) awaiting HR manager verification.`,
-                        actionLabel: 'Review',
-                        actionType: 'ROUTE',
-                        actionTarget: '/staff/leave',
-                        category: 'TEAM'
-                    });
-                }
-
-                if (overdueTasks > 0) {
-                    orgInsights.push({
-                        id: 'org-health-3',
-                        type: 'action',
-                        severity: 'CRITICAL',
-                        icon: AlertTriangle,
-                        title: 'Overdue Workload',
-                        text: `${overdueTasks} task(s) exceeded scheduled deadline. Unblock or reassign.`,
-                        actionLabel: 'View Tasks',
-                        actionType: 'ROUTE',
-                        actionTarget: '/tasks',
-                        category: 'TEAM'
-                    });
-                }
-            }
+            const formattedMacroInsights = macroCards.map(c => ({
+              ...c,
+              icon: c.id === 'macro-deployment' ? Users : c.id === 'macro-work-notes' ? Clock : c.id === 'macro-velocity' ? Zap : c.id === 'macro-leave-queue' ? CalendarIcon : Trophy
+            }));
 
             return [{
                 isTeam: true,
                 fullName: "Team Overview",
-                insights: orgInsights,
+                insights: formattedMacroInsights,
                 staff: null,
                 dailySummary: "",
                 weeklySummary: "",
@@ -395,7 +349,7 @@ function PersonnelIntelligenceHub({
                 ? `Executed ${totalOps} total operation(s) this week (${weeklyShifts} shift(s), ${weeklyHours}h logged, ${weeklyTasksDone} task(s) completed, ${weeklyReportsDone} report(s) filed).`
                 : "No operations logged yet for this week.";
 
-            // Personal Tactical Insights MUST NOT HAVE TEAM PREFIXES ("peter: ", "feridu: ")
+            // Personal Tactical Insights
             const tacticalInsights = InsightEngine.generatePersonalInsights(staff, attendanceLogs, tasks, leaveRequests, pulseFeed, nominations, reports);
 
             return {
@@ -410,7 +364,7 @@ function PersonnelIntelligenceHub({
                 insights: []
             };
         }).filter(Boolean);
-    }, [selectedIds, isTeamMode, staffList, attendanceLogs, tasks, leaveRequests, pulseFeed, nominations, reports, allInsights]);
+    }, [selectedIds, isTeamMode, staffList, attendanceLogs, tasks, leaveRequests, pulseFeed, nominations, reports, kudos]);
 
     return (
       <>
