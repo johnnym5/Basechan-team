@@ -1,58 +1,74 @@
-import { isSameDay, isWeekend, addDays, startOfDay } from 'date-fns';
-
 /**
- * NIGERIAN PUBLIC HOLIDAYS 2026
- * Grouped for organizational oversight.
+ * Official Nigerian Public Holidays Utility
  */
-export const PUBLIC_HOLIDAYS = [
-    // 2026 Data
-    { name: "New Year's Day", date: '2026-01-01' },
-    { name: "Eid el-Fitr", date: '2026-03-20' }, // Estimated
-    { name: "Eid el-Fitr (Day 2)", date: '2026-03-21' }, // Estimated
-    { name: "Good Friday", date: '2026-04-03' },
-    { name: "Easter Monday", date: '2026-04-06' },
-    { name: "Workers' Day", date: '2025-05-01' }, // User specifically mentioned 2026, but the list should be consistent
-    { name: "Workers' Day", date: '2026-05-01' },
-    { name: "Eid el-Kabir", date: '2026-05-27' }, // Estimated
-    { name: "Eid el-Kabir (Day 2)", date: '2026-05-28' }, // Estimated
-    { name: "Democracy Day", date: '2026-06-12' },
-    { name: "Eid el-Maulud", date: '2026-08-25' }, // Estimated
-    { name: "Independence Day", date: '2026-10-01' },
-    { name: "Christmas Day", date: '2026-12-25' },
-    { name: "Boxing Day", date: '2026-12-26' },
+
+import { isWeekend, eachDayOfInterval, format, startOfDay } from 'date-fns';
+
+export interface PublicHoliday {
+  date: string; // YYYY-MM-DD
+  name: string;
+  country: 'NG';
+  isRecurring: boolean;
+}
+
+export const NIGERIAN_PUBLIC_HOLIDAYS: PublicHoliday[] = [
+  { date: '2026-01-01', name: "New Year's Day", country: 'NG', isRecurring: true },
+  { date: '2026-04-03', name: 'Good Friday', country: 'NG', isRecurring: false },
+  { date: '2026-04-06', name: 'Easter Monday', country: 'NG', isRecurring: false },
+  { date: '2026-05-01', name: "Workers' Day", country: 'NG', isRecurring: true },
+  { date: '2026-06-12', name: 'Democracy Day', country: 'NG', isRecurring: true },
+  { date: '2026-10-01', name: 'Independence Day', country: 'NG', isRecurring: true },
+  { date: '2026-12-25', name: 'Christmas Day', country: 'NG', isRecurring: true },
+  { date: '2026-12-26', name: 'Boxing Day', country: 'NG', isRecurring: true },
 ];
 
+export const PUBLIC_HOLIDAYS = NIGERIAN_PUBLIC_HOLIDAYS;
+
 /**
- * Returns holiday object if a date matches an official holiday.
+ * Helper to check if a specific YYYY-MM-DD string is an official Nigerian public holiday.
  */
-export function getHolidayOnDate(date: Date) {
-    const day = startOfDay(date);
-    return PUBLIC_HOLIDAYS.find(h => isSameDay(new Date(h.date + 'T00:00:00'), day));
+export function getNigerianHoliday(dateStr: string): PublicHoliday | undefined {
+  if (!dateStr) return undefined;
+
+  const exact = NIGERIAN_PUBLIC_HOLIDAYS.find(h => h.date === dateStr);
+  if (exact) return exact;
+
+  const monthDay = dateStr.slice(5); // "MM-DD"
+  return NIGERIAN_PUBLIC_HOLIDAYS.find(h => h.isRecurring && h.date.slice(5) === monthDay);
 }
 
 /**
- * Boolean check for holiday state.
+ * Checks if a given Date instance falls on an official public holiday.
  */
 export function isHoliday(date: Date): boolean {
-    return !!getHolidayOnDate(date);
+  if (!date) return false;
+  const dateStr = format(startOfDay(date), 'yyyy-MM-dd');
+  return !!getNigerianHoliday(dateStr);
 }
 
 /**
- * SMART DATE MATH:
- * Calculates the total number of working days between two dates.
- * Excludes Saturdays, Sundays, and Nigerian Public Holidays.
+ * Gets the PublicHoliday object for a given Date, if any.
+ */
+export function getHolidayOnDate(date: Date): PublicHoliday | undefined {
+  if (!date) return undefined;
+  const dateStr = format(startOfDay(date), 'yyyy-MM-dd');
+  return getNigerianHoliday(dateStr);
+}
+
+/**
+ * Calculates working days between two dates excluding weekends and official public holidays.
  */
 export function calculateWorkingDays(startDate: Date, endDate: Date): number {
-    let count = 0;
-    let current = startOfDay(startDate);
-    const end = startOfDay(endDate);
+  if (!startDate || !endDate || startDate > endDate) return 0;
 
-    while (current <= end) {
-        if (!isWeekend(current) && !isHoliday(current)) {
-            count++;
-        }
-        current = addDays(current, 1);
+  const days = eachDayOfInterval({ start: startDate, end: endDate });
+  let workingDays = 0;
+
+  for (const day of days) {
+    if (!isWeekend(day) && !isHoliday(day)) {
+      workingDays++;
     }
+  }
 
-    return count;
+  return workingDays;
 }
