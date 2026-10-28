@@ -82,8 +82,12 @@ export function StaffDashboard({ userProfile, permissions, systemConfig }: Staff
 
   // DATA FETCHING
   const attQuery = useMemoFirebase(() =>
-    firestore ? query(collection(firestore, 'attendance'), where('orgId', '==', userProfile.orgId)) : null
-  , [firestore, userProfile.orgId]);
+    firestore ? query(
+      collection(firestore, 'attendance'),
+      where('orgId', '==', userProfile.orgId),
+      where('userId', '==', userProfile.id),
+    ) : null
+  , [firestore, userProfile.orgId, userProfile.id]);
   const { data: attendanceLogs } = useCollection<Attendance>(attQuery);
 
   const tasksQuery = useMemoFirebase(() =>
@@ -92,8 +96,12 @@ export function StaffDashboard({ userProfile, permissions, systemConfig }: Staff
   const { data: allTasks } = useCollection<Task>(tasksQuery);
 
   const leaveQuery = useMemoFirebase(() =>
-    query(collection(firestore!, 'leave_requests'), where('orgId', '==', userProfile.orgId))
-  , [firestore, userProfile.orgId]);
+    firestore ? query(
+      collection(firestore, 'leave_requests'),
+      where('orgId', '==', userProfile.orgId),
+      where('userId', '==', userProfile.id),
+    ) : null
+  , [firestore, userProfile.orgId, userProfile.id]);
   const { data: leaveRequests } = useCollection<LeaveRequest>(leaveQuery);
 
   const usersQuery = useMemoFirebase(() =>
@@ -102,8 +110,12 @@ export function StaffDashboard({ userProfile, permissions, systemConfig }: Staff
   const { data: allStaff } = useCollection<UserProfile>(usersQuery);
 
   const reportsQuery = useMemoFirebase(() =>
-    query(collection(firestore!, 'daily_reports'), where('orgId', '==', userProfile.orgId))
-  , [firestore, userProfile.orgId]);
+    firestore ? query(
+      collection(firestore, 'daily_reports'),
+      where('orgId', '==', userProfile.orgId),
+      where('userId', '==', userProfile.id),
+    ) : null
+  , [firestore, userProfile.orgId, userProfile.id]);
   const { data: allReports } = useCollection<DailyReport>(reportsQuery);
 
   const nominationsQuery = useMemoFirebase(() =>

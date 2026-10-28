@@ -155,12 +155,26 @@ export function OperationalCalendarHub({
     const dateStr = format(selectedDate, 'yyyy-MM-dd');
     const holiday = getNigerianHoliday(dateStr);
 
-    // Shift logs for selected date
-    const dayAttendance = attendanceLogs.filter(a => a.date === dateStr);
-    const dayReports = reportsData.filter(r => r.reportDate === dateStr || (r.createdAt && format(parseISO(r.createdAt), 'yyyy-MM-dd') === dateStr));
-    const dayTasksDone = tasks.filter(t => t.status === 'ARCHIVED' && t.createdAt && format(parseISO(t.createdAt), 'yyyy-MM-dd') === dateStr);
+    // Staff calendars are a personal ledger. Admins retain the organization-wide audit view.
+    const visibleAttendance = isAdmin
+      ? attendanceLogs
+      : attendanceLogs.filter(a => a.userId === userProfile.id);
+    const visibleReports = isAdmin
+      ? reportsData
+      : reportsData.filter(r => r.userId === userProfile.id);
+    const visibleTasks = isAdmin
+      ? tasks
+      : tasks.filter(t => t.assignedTo === userProfile.id);
+    const visibleLeaves = isAdmin
+      ? leaveRequests
+      : leaveRequests.filter(l => l.userId === userProfile.id);
 
-    const dayLeaves = leaveRequests.filter(l =>
+    // Shift logs for selected date
+    const dayAttendance = visibleAttendance.filter(a => a.date === dateStr);
+    const dayReports = visibleReports.filter(r => r.reportDate === dateStr || (r.createdAt && format(parseISO(r.createdAt), 'yyyy-MM-dd') === dateStr));
+    const dayTasksDone = visibleTasks.filter(t => t.status === 'ARCHIVED' && t.createdAt && format(parseISO(t.createdAt), 'yyyy-MM-dd') === dateStr);
+
+    const dayLeaves = visibleLeaves.filter(l =>
       l.status === 'APPROVED' &&
       isWithinInterval(selectedDate, { start: parseISO(l.startDate), end: parseISO(l.endDate) })
     );
@@ -204,7 +218,7 @@ export function OperationalCalendarHub({
       leaveStaff,
       missedStaff,
     };
-  }, [selectedDate, attendanceLogs, reportsData, tasks, leaveRequests, staffList]);
+  }, [selectedDate, attendanceLogs, reportsData, tasks, leaveRequests, staffList, isAdmin, userProfile.id]);
 
   return (
     <div className="space-y-6 animate-in fade-in zoom-in-95 duration-500">
