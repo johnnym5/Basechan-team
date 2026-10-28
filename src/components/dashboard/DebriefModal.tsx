@@ -7,7 +7,7 @@ import { query, collection, where, orderBy, limit, doc, deleteDoc, updateDoc } f
 import type { UserProfile, Chat, Task, Announcement, Attendance, LeaveRequest } from '@/lib/types';
 import { ResponsiveDialog } from '@/components/shared/ResponsiveDialog';
 import { Button } from '@/components/ui/button';
-import { MessageSquare, ListTodo, AlertCircle, Sparkles, Clock, ArrowRight, Megaphone, ChevronRight, LayoutDashboard, Edit2, Trash2, Loader2, Users, FileWarning, Activity } from 'lucide-react';
+import { MessageSquare, ListTodo, AlertCircle, Sparkles, Clock, ArrowRight, Megaphone, ChevronRight, LayoutDashboard, Edit2, Trash2, Loader2, Users, FileWarning, Activity, LogIn, LogOut } from 'lucide-react';
 import { format, isToday, isTomorrow, parseISO, isWithinInterval, startOfDay, endOfDay } from 'date-fns';
 import { uiEmitter } from '@/lib/ui-emitter';
 import { cn } from '@/lib/utils';
@@ -17,13 +17,18 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
+import { attendanceService } from '@/services/attendance-service';
+import { useSystemConfig } from '@/hooks/useSystemConfig';
 
 export function DebriefModal({ userProfile }: { userProfile: UserProfile }) {
     const firestore = useFirestore();
     const { toast } = useToast();
     const permissions = usePermissions(userProfile);
+    const { config: systemConfig } = useSystemConfig(userProfile.orgId);
     const [isOpen, setIsOpen] = useState(false);
     const [greeting, setGreeting] = useState('Morning');
+    const [isAttendanceSubmitting, setIsAttendanceSubmitting] = useState(false);
+    const [attendanceTransition, setAttendanceTransition] = useState<'clocking-in' | 'clocking-out' | null>(null);
 
     // Admin Actions State
     const [isDeleting, setIsDeleting] = useState(false);
@@ -86,6 +91,21 @@ export function DebriefModal({ userProfile }: { userProfile: UserProfile }) {
     , [firestore, userProfile.orgId]);
     const { data: announcements } = useCollection<Announcement>(announcementQuery);
     const latestAnnouncement = announcements?.[0];
+
+    const today = format(new Date(), 'yyyy-MM-dd');
+    const attendanceQuery = useMemoFirebase(() =>
+        firestore ? query(
+            collection(firestore, 'attendance'),
+            where('orgId', '==', userProfile.orgId),
+            where('userId', '==', userProfile.id),
+            where('date', '==', today),
+            orderBy('clockIn', 'desc'),
+            limit(1)
+        ) : null
+    , [firestore, userProfile.id, userProfile.orgId, today]);
+    const { data: attendance } = useCollection<Attendance>(attendanceQuery);
+    const activeAttendance = attendance?.[0];
+    const isClockedIn = !!activeAttendance && !activeAttendance.clockOut;
 
     const isAdmin = permissions.canManageStaff || permissions.canManageCompany;
 
@@ -151,6 +171,48 @@ export function DebriefModal({ userProfile }: { userProfile: UserProfile }) {
     const handleRemindLater = () => {
         localStorage.setItem(`debrief-remind-later-${userProfile.id}`, new Date().toISOString());
         setIsOpen(false);
+    };
+
+    const handleClockIn = async () => {
+        if (!firestore || !permissions.canClockIn) return;
+        setIsAttendanceSubmitting(true);
+        setAttendanceTransition('clocking-in');
+        try {
+            const position = await new Promise<GeolocationPosition | null>((resolve) => {
+                if (!('geolocation' in navigator)) return resolve(null);
+                navigator.geolocation.getCurrentPosition(resolve, () => resolve(null), { enableHighAccuracy: true, timeout: 7000 });
+            });
+            await attendanceService.clockIn(
+                firestore,
+                userProfile,
+                position ? 'OFFICE' : 'REMOTE',
+                today,
+                systemConfig,
+                undefined,
+                position ? { lat: position.coords.latitude, lng: position.coords.longitude } : undefined
+            );
+            toast({ title: 'Clocked In', description: 'Your attendance has been recorded.' });
+        } catch (error: any) {
+            toast({ variant: 'destructive', title: 'Clock-in failed', description: error.message || 'Please try again.' });
+        } finally {
+            setIsAttendanceSubmitting(false);
+            setAttendanceTransition(null);
+        }
+    };
+
+    const handleClockOut = async () => {
+        if (!firestore || !activeAttendance) return;
+        setIsAttendanceSubmitting(true);
+        setAttendanceTransition('clocking-out');
+        try {
+            await attendanceService.clockOut(firestore, userProfile, activeAttendance, systemConfig);
+            toast({ title: 'Clocked Out', description: 'Your attendance has been updated.' });
+        } catch (error: any) {
+            toast({ variant: 'destructive', title: 'Clock-out failed', description: error.message || 'Please try again.' });
+        } finally {
+            setIsAttendanceSubmitting(false);
+            setAttendanceTransition(null);
+        }
     };
 
     // ADMIN ACTIONS
@@ -253,6 +315,35 @@ export function DebriefModal({ userProfile }: { userProfile: UserProfile }) {
                             {taskIntel.urgent > 0 && ` Attention: ${taskIntel.urgent} deadlines require your attention.`}
                         </p>
                     </div>
+                </div>
+
+                <div className="space-y-2">
+                    <button
+                        type="button"
+                        onClick={isClockedIn ? handleClockOut : handleClockIn}
+                        disabled={isAttendanceSubmitting || (!isClockedIn && !permissions.canClockIn)}
+                        aria-label={isClockedIn ? 'Clock out' : 'Clock in'}
+                        className="relative flex h-14 w-full items-center rounded-2xl border border-border bg-secondary/30 p-1 text-[10px] font-black uppercase tracking-widest transition-all duration-300 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                        <span className={cn(
+                            'absolute inset-y-1 w-[calc(50%-0.25rem)] rounded-xl shadow-lg transition-all duration-500 ease-out',
+                            isClockedIn ? 'translate-x-[calc(100%+0.25rem)] bg-rose-500/20 border border-rose-500/40' : 'translate-x-0 bg-primary text-primary-foreground'
+                        )} />
+                        <span className="relative z-10 flex w-1/2 items-center justify-center gap-2">
+                            {attendanceTransition === 'clocking-in' ? <Loader2 className="h-4 w-4 animate-spin" /> : <LogIn className="h-4 w-4" />}
+                            Clock In
+                        </span>
+                        <span className="relative z-10 flex w-1/2 items-center justify-center gap-2">
+                            {attendanceTransition === 'clocking-out' ? <Loader2 className="h-4 w-4 animate-spin" /> : <LogOut className="h-4 w-4" />}
+                            Clock Out
+                        </span>
+                    </button>
+                    <p className={cn(
+                        'text-center text-[10px] font-black uppercase tracking-[0.2em] transition-all duration-300',
+                        isClockedIn ? 'text-emerald-500' : 'text-muted-foreground'
+                    )}>
+                        {attendanceTransition === 'clocking-in' ? 'Clocking In…' : attendanceTransition === 'clocking-out' ? 'Clocking Out…' : isClockedIn ? 'Clocked In' : 'Clocked Out'}
+                    </p>
                 </div>
 
                 {/* Stats Summary */}
