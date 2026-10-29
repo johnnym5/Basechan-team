@@ -128,7 +128,8 @@ export function MainAppLayout({ children }: { children: React.ReactNode }) {
 
   const stableProfile = useMemo(() => {
     if (!user) return null;
-    const targetId = (isImpersonating && impersonatedUserId) ? impersonatedUserId : user.uid;
+    const effectiveUserId = userProfile?.mergedInto || user.uid;
+    const targetId = (isImpersonating && impersonatedUserId) ? impersonatedUserId : effectiveUserId;
     return {
         id: targetId,
         orgId: userProfile?.orgId || 'basechan-international',

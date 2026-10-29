@@ -45,30 +45,93 @@ export const authService = {
       let userData: UserProfile;
 
       if (directSnap.exists()) {
-        userData = { id: authUid, ...directSnap.data() } as UserProfile;
+        const rawData = directSnap.data() as UserProfile;
+        
+        // If this account was merged into a primary account, resolve the primary profile
+        if (rawData.mergedInto) {
+          const primarySnap = await getDoc(doc(db, 'users', rawData.mergedInto));
+          if (primarySnap.exists()) {
+            userData = { id: rawData.mergedInto, ...primarySnap.data() } as UserProfile;
+            await updateDoc(doc(db, 'users', rawData.mergedInto), {
+              status: 'ONLINE',
+              lastSeen: new Date().toISOString(),
+              lastHeartbeat: new Date().toISOString()
+            });
+            await updateDoc(directDocRef, {
+              status: 'ONLINE',
+              lastSeen: new Date().toISOString(),
+              lastHeartbeat: new Date().toISOString()
+            });
+            await authService.syncUserPermissions(db, rawData.mergedInto);
+            return { user, profile: userData };
+          }
+        }
+
+        userData = { id: authUid, ...rawData } as UserProfile;
         await updateDoc(directDocRef, {
           status: 'ONLINE',
           lastSeen: new Date().toISOString(),
           lastHeartbeat: new Date().toISOString()
         });
       } else {
-        // 2. Case-insensitive email lookup across user documents
+        // 2. Case-insensitive email or linkedEmails lookup across user documents
         const usersRef = collection(db, 'users');
         const querySnapshot = await getDocs(usersRef);
-        const matchedDoc = querySnapshot.docs.find(d => d.data().email?.toLowerCase() === userEmail);
+        const matchedDoc = querySnapshot.docs.find(d => {
+          const data = d.data();
+          if (data.email?.toLowerCase() === userEmail) return true;
+          if (Array.isArray(data.linkedEmails) && data.linkedEmails.map((e: string) => e?.toLowerCase()).includes(userEmail)) return true;
+          return false;
+        });
 
         if (matchedDoc) {
-          const oldData = matchedDoc.data() as UserProfile;
+          const rawDocData = matchedDoc.data() as UserProfile;
+          const targetPrimaryId = rawDocData.mergedInto || matchedDoc.id;
+          
+          let targetData = rawDocData;
+          if (rawDocData.mergedInto) {
+            const pSnap = await getDoc(doc(db, 'users', rawDocData.mergedInto));
+            if (pSnap.exists()) targetData = pSnap.data() as UserProfile;
+          }
+
           userData = {
-            ...oldData,
-            id: authUid,
-            email: userEmail,
+            ...targetData,
+            id: targetPrimaryId,
             status: 'ONLINE',
             lastSeen: new Date().toISOString(),
             lastHeartbeat: new Date().toISOString()
           };
 
-          await setDoc(doc(db, 'users', authUid), userData, { merge: true });
+          // Link this Google Auth UID to the primary account so future logins find it instantly
+          await setDoc(doc(db, 'users', authUid), {
+            id: authUid,
+            email: userEmail,
+            fullName: user.displayName || targetData.fullName,
+            mergedInto: targetPrimaryId,
+            isMerged: true,
+            isArchived: true,
+            orgId: targetData.orgId || ORG_ID,
+            status: 'ONLINE',
+            lastSeen: new Date().toISOString(),
+            lastHeartbeat: new Date().toISOString()
+          }, { merge: true });
+
+          // Update primary user doc's linked lists
+          const existingLinkedUids = new Set(targetData.linkedUids || []);
+          existingLinkedUids.add(authUid);
+          const existingLinkedEmails = new Set(targetData.linkedEmails || []);
+          existingLinkedEmails.add(userEmail);
+
+          await updateDoc(doc(db, 'users', targetPrimaryId), {
+            linkedUids: Array.from(existingLinkedUids),
+            linkedEmails: Array.from(existingLinkedEmails),
+            status: 'ONLINE',
+            lastSeen: new Date().toISOString(),
+            lastHeartbeat: new Date().toISOString()
+          });
+
+          await authService.syncUserPermissions(db, targetPrimaryId);
+          return { user, profile: userData };
         } else {
           // 3. Auto-provision staff profile if brand new Google account
           userData = {

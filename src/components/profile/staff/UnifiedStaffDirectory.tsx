@@ -37,6 +37,8 @@ import type { UserProfile, Attendance } from '@/lib/types';
 import { InviteUserDialog } from '@/components/settings/InviteUserDialog';
 import { StaffQuickViewSheet } from './StaffQuickViewSheet';
 import { StaffActionMenu } from '@/components/shared/StaffActionMenu';
+import { MergeStaffAccountsDialog } from './MergeStaffAccountsDialog';
+import { GitMerge } from 'lucide-react';
 
 interface UnifiedStaffDirectoryProps {
   orgId: string;
@@ -59,6 +61,8 @@ export function UnifiedStaffDirectory({ orgId, currentUserProfile, canManageStaf
   const [roleFilter, setRoleFilter] = useState<string>('ALL');
   const [deptFilter, setDepartmentFilter] = useState<string>('ALL');
   const [isInviteOpen, setIsInviteOpen] = useState(false);
+  const [isMergeOpen, setIsMergeOpen] = useState(false);
+  const [isMergeMenuOpen, setIsMergeMenuOpen] = useState(false);
   const [selectedStaffId, setSelectedStaffId] = useState<string | null>(null);
   const [isQuickViewOpen, setIsQuickViewOpen] = useState(false);
 
@@ -109,10 +113,47 @@ export function UnifiedStaffDirectory({ orgId, currentUserProfile, canManageStaf
 
         <div className="flex gap-3 w-full md:w-auto">
           {canManageStaff && (
-              <Button onClick={() => setIsInviteOpen(true)} className="rounded-xl h-12 px-6 font-black uppercase text-[10px] tracking-widest shadow-xl shadow-primary/20 m3-interactive">
+            <DropdownMenu open={isMergeMenuOpen} onOpenChange={setIsMergeMenuOpen}>
+              <DropdownMenuTrigger asChild>
+                <Button 
+                  onClick={() => setIsInviteOpen(true)}
+                  onContextMenu={(e) => {
+                    e.preventDefault();
+                    setIsMergeMenuOpen(true);
+                  }}
+                  onTouchStart={() => {
+                    const timer = setTimeout(() => {
+                      setIsMergeMenuOpen(true);
+                    }, 650);
+                    const cancel = () => {
+                      clearTimeout(timer);
+                      window.removeEventListener('touchend', cancel);
+                    };
+                    window.addEventListener('touchend', cancel);
+                  }}
+                  className="rounded-xl h-12 px-6 font-black uppercase text-[10px] tracking-widest shadow-xl shadow-primary/20 m3-interactive relative select-none"
+                >
                   <PlusCircle className="mr-2 h-4 w-4" />
                   Add Staff
-              </Button>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56 bg-zinc-950 border-white/10 text-white rounded-xl shadow-2xl p-1.5 backdrop-blur-xl">
+                <DropdownMenuItem 
+                  onClick={() => setIsInviteOpen(true)}
+                  className="text-xs font-semibold py-2 rounded-lg cursor-pointer flex items-center gap-2 focus:bg-white/10 focus:text-white"
+                >
+                  <PlusCircle className="h-4 w-4 text-primary" />
+                  Add New Staff Member
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  onClick={() => setIsMergeOpen(true)}
+                  className="text-xs font-semibold py-2 rounded-lg cursor-pointer flex items-center gap-2 text-amber-400 focus:bg-amber-500/10 focus:text-amber-300"
+                >
+                  <GitMerge className="h-4 w-4 text-amber-400" />
+                  Merge Duplicate Accounts
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           )}
 
           <Select value={roleFilter} onValueChange={setRoleFilter}>
@@ -260,6 +301,15 @@ export function UnifiedStaffDirectory({ orgId, currentUserProfile, canManageStaf
         orgId={orgId}
         onViewFullProfile={onViewEmployee360}
       />
+
+      {staff && (
+        <MergeStaffAccountsDialog
+          isOpen={isMergeOpen}
+          onOpenChange={setIsMergeOpen}
+          staffList={staff}
+          onMergeComplete={() => refetch()}
+        />
+      )}
     </div>
   );
 }

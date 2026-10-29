@@ -162,6 +162,12 @@ export interface UserProfile {
   archivedAt?: string;
   accessRevokedAt?: string;
 
+  // Account Linking & Identity Merging
+  mergedInto?: string; // UID of primary profile if this account was merged
+  isMerged?: boolean;
+  linkedUids?: string[]; // Array of secondary UIDs merged into this primary account
+  linkedEmails?: string[]; // Array of alternative emails recognized for this user
+
   leaveEntitlements?: {
     ANNUAL: number;
     SICK: number;

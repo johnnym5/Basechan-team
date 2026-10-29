@@ -157,7 +157,17 @@ export function LoginForm() {
       let userData: UserProfile;
 
       if (userSnap.exists()) {
-        userData = { id: authUid, ...userSnap.data() } as UserProfile;
+        const rawData = userSnap.data() as UserProfile;
+        const targetPrimaryId = rawData.mergedInto || authUid;
+        
+        let targetDocRef = userRef;
+        if (rawData.mergedInto) {
+          targetDocRef = doc(firestore, 'users', rawData.mergedInto);
+          const pSnap = await getDoc(targetDocRef);
+          userData = pSnap.exists() ? ({ id: rawData.mergedInto, ...pSnap.data() } as UserProfile) : ({ id: authUid, ...rawData } as UserProfile);
+        } else {
+          userData = { id: authUid, ...rawData } as UserProfile;
+        }
 
         // Check active session conflict
         if (userData.activeSessionId && userData.lastHeartbeat && !values.forceLogin) {
@@ -170,33 +180,85 @@ export function LoginForm() {
           }
         }
 
-        await updateDoc(userRef, {
+        await updateDoc(targetDocRef, {
           activeSessionId: sessionId,
           deviceType: deviceType,
           lastHeartbeat: new Date().toISOString(),
           status: 'ONLINE'
         });
+
+        if (rawData.mergedInto) {
+          await updateDoc(userRef, {
+            activeSessionId: sessionId,
+            deviceType: deviceType,
+            lastHeartbeat: new Date().toISOString(),
+            status: 'ONLINE'
+          });
+        }
       } else {
-        // Search for existing staff profile by email or username to preserve all details
+        // Search for existing staff profile by email, username, or linked identifiers
         const usersRef = collection(firestore, 'users');
         const querySnapshot = await getDocs(usersRef);
-        const matchedDoc = querySnapshot.docs.find(d =>
-          d.data().email?.toLowerCase() === userEmail.toLowerCase() ||
-          d.data().username?.toLowerCase() === identity.toLowerCase()
-        );
+        const matchedDoc = querySnapshot.docs.find(d => {
+          const data = d.data();
+          if (data.email?.toLowerCase() === userEmail.toLowerCase()) return true;
+          if (data.username?.toLowerCase() === identity.toLowerCase()) return true;
+          if (Array.isArray(data.linkedEmails) && data.linkedEmails.map((e: string) => e?.toLowerCase()).includes(userEmail.toLowerCase())) return true;
+          return false;
+        });
 
         if (matchedDoc) {
-          const oldData = matchedDoc.data() as UserProfile;
+          const rawDocData = matchedDoc.data() as UserProfile;
+          const targetPrimaryId = rawDocData.mergedInto || matchedDoc.id;
+
+          let targetData = rawDocData;
+          if (rawDocData.mergedInto) {
+            const pSnap = await getDoc(doc(firestore, 'users', rawDocData.mergedInto));
+            if (pSnap.exists()) targetData = pSnap.data() as UserProfile;
+          }
+
           userData = {
-            ...oldData,
-            id: authUid,
-            email: userEmail,
+            ...targetData,
+            id: targetPrimaryId,
             activeSessionId: sessionId,
             deviceType: deviceType,
             lastHeartbeat: new Date().toISOString(),
             status: 'ONLINE'
           };
-          await setDoc(userRef, userData, { merge: true });
+
+          // If this is a secondary account document being created for this authUid
+          if (authUid !== targetPrimaryId) {
+            await setDoc(userRef, {
+              id: authUid,
+              email: userEmail,
+              username: identity,
+              fullName: targetData.fullName,
+              mergedInto: targetPrimaryId,
+              isMerged: true,
+              isArchived: true,
+              orgId: targetData.orgId || ORG_ID,
+              activeSessionId: sessionId,
+              deviceType: deviceType,
+              lastHeartbeat: new Date().toISOString(),
+              status: 'ONLINE'
+            }, { merge: true });
+
+            const existingLinkedUids = new Set(targetData.linkedUids || []);
+            existingLinkedUids.add(authUid);
+            const existingLinkedEmails = new Set(targetData.linkedEmails || []);
+            existingLinkedEmails.add(userEmail);
+
+            await updateDoc(doc(firestore, 'users', targetPrimaryId), {
+              linkedUids: Array.from(existingLinkedUids),
+              linkedEmails: Array.from(existingLinkedEmails),
+              activeSessionId: sessionId,
+              deviceType: deviceType,
+              lastHeartbeat: new Date().toISOString(),
+              status: 'ONLINE'
+            });
+          } else {
+            await setDoc(userRef, userData, { merge: true });
+          }
         } else {
           // Create default staff profile if brand new
           userData = {
