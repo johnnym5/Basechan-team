@@ -193,7 +193,7 @@ export const useUser = (): UserHookResult => { // Renamed from useAuthUser
     return {
       user: {
         uid: 'nM0bBwaybEQP95OPKUyQ97iAm3u2',
-        email: 'jegbase@gmail.com',
+        email: 'johnmary.basechaninternational@gmail.com',
         displayName: 'Super Admin',
         emailVerified: true,
         isAnonymous: false,

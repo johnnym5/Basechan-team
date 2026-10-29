@@ -174,7 +174,7 @@ export function LiveStaffMonitor({ userProfile, variant = 'carousel', selectedDa
         }
     };
 
-    const handleRowClick = (e: React.MouseEvent, record: any) => {
+    
         if ((e.target as HTMLElement).closest('button')) return;
         if (e.button === 2 || e.ctrlKey) return;
         setPopoverState({ top: e.clientY, left: e.clientX, record: record });

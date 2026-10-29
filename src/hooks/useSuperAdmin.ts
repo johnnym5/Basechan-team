@@ -4,7 +4,7 @@ import { useUser } from '@/firebase';
 import { useState, useEffect } from 'react';
 
 // Master admin email reference for root recovery
-const SUPER_ADMIN_EMAIL = 'jegbase@gmail.com';
+const SUPER_ADMIN_EMAIL = 'johnmary.basechaninternational@gmail.com';
 
 export function useSuperAdmin() {
   const { user, isUserLoading: isLoading } = useUser();
