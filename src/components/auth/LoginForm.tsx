@@ -15,12 +15,12 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Loader2, Monitor, Smartphone, Globe } from "lucide-react";
+import { Loader2, Monitor, Smartphone } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth, useFirestore, errorEmitter } from "@/firebase";
-import { signInWithEmailAndPassword } from "firebase/auth";
-import { query, collection, where, getDocs, doc, updateDoc, getDoc, setDoc, deleteDoc, writeBatch } from "firebase/firestore";
+import { useAuth, useFirestore } from "@/firebase";
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from "firebase/auth";
+import { query, collection, where, getDocs, doc, updateDoc, getDoc, setDoc, writeBatch } from "firebase/firestore";
 import type { UserProfile } from "@/lib/types";
 import { sanitizeInput } from "@/lib/utils";
 import { ORG_ID } from "@/lib/config";
@@ -33,7 +33,7 @@ const generateUUID = () => {
     try {
       return window.crypto.randomUUID();
     } catch (e) {
-      // Fallback if randomUUID is disabled in current context
+      // Fallback
     }
   }
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
@@ -70,7 +70,10 @@ export function LoginForm() {
   const watchedUsername = form.watch("username");
 
   useEffect(() => {
-    if (!firestore) return;
+    if (!firestore || !auth?.currentUser) {
+      setIsIdVerified(null);
+      return;
+    }
     
     const cleaned = sanitizeInput((watchedUsername || "").trim().toLowerCase());
     if (!cleaned) {
@@ -82,14 +85,11 @@ export function LoginForm() {
     const timer = setTimeout(async () => {
       try {
         let verified = false;
-        
-        // 1. Try Document ID / UID
         const userDocRef = doc(firestore, "users", cleaned);
         const userDoc = await getDoc(userDocRef);
         if (userDoc.exists() && userDoc.data()?.orgId === ORG_ID) {
           verified = true;
         } else {
-          // 2. Try Username
           const q1 = query(
             collection(firestore, "users"), 
             where("orgId", "==", ORG_ID),
@@ -98,22 +98,10 @@ export function LoginForm() {
           const s1 = await getDocs(q1);
           if (!s1.empty) {
             verified = true;
-          } else {
-            // 3. Try Email
-            const q2 = query(
-              collection(firestore, "users"), 
-              where("orgId", "==", ORG_ID),
-              where("email", "==", cleaned)
-            );
-            const s2 = await getDocs(q2);
-            if (!s2.empty) {
-              verified = true;
-            }
           }
         }
         setIsIdVerified(verified);
       } catch (err) {
-        errorEmitter.emit('firestore-error', err as any);
         setIsIdVerified(null);
       } finally {
         setIsCheckingId(false);
@@ -121,7 +109,7 @@ export function LoginForm() {
     }, 500);
 
     return () => clearTimeout(timer);
-  }, [watchedUsername, firestore]);
+  }, [watchedUsername, firestore, auth?.currentUser]);
 
   const getDeviceType = () => {
     if (typeof window === 'undefined') return 'PC';
@@ -142,124 +130,87 @@ export function LoginForm() {
     const sessionId = generateUUID();
     
     try {
-      let userData: UserProfile | null = null;
-      let userEmail = identity;
+      let userEmail = identity.includes('@') ? identity : `${identity}@basechan.internal`;
 
-      // 1. Resolve User Identity
-      if (!identity.includes('@')) {
-          const usersRef = collection(firestore, "users");
-          const userQuery = query(
-            usersRef, 
-            where("orgId", "==", ORG_ID),
-            where("username", "==", sanitizeInput(identity))
-          );
-          const userSnapshot = await getDocs(userQuery);
-          
-          if (userSnapshot.empty) {
-              toast({ variant: 'destructive', title: 'Login Failed', description: "Username not found in system." });
-              setIsSubmitting(false);
-              return;
-          }
-
-          userData = { id: userSnapshot.docs[0].id, ...userSnapshot.docs[0].data() } as UserProfile;
-          userEmail = userData.email;
-      } else {
-          const usersRef = collection(firestore, "users");
-          const userQuery = query(
-            usersRef, 
-            where("orgId", "==", ORG_ID),
-            where("email", "==", identity)
-          );
-          const userSnapshot = await getDocs(userQuery);
-          if (!userSnapshot.empty) {
-              userData = { id: userSnapshot.docs[0].id, ...userSnapshot.docs[0].data() } as UserProfile;
-          }
-      }
-
-      // 2. CHECK FOR ACTIVE SESSION
-      if (userData && userData.activeSessionId && userData.lastHeartbeat && !values.forceLogin) {
-          const lastHeartbeat = new Date(userData.lastHeartbeat);
-          const diff = differenceInMinutes(new Date(), lastHeartbeat);
-          
-          if (diff < 3) {
-              setRequiresForceLogin(true);
-              throw new Error(`Security Alert: This account is already logged in on another ${userData.deviceType === 'PC' ? 'Desktop' : 'Mobile'} device. Please check "Force Login" to override this block and sign out the other device.`);
-          }
-      }
-
-      // 3. Authenticate
-      if (!userData) {
-          throw new Error("Invalid username or password.");
-      }
-      if (!userData.password || userData.password !== values.password) {
-          throw new Error("Invalid username or password.");
-      }
-
+      // 1. Authenticate via Firebase Auth FIRST (Establishes authenticated request context)
       let userCredential;
       try {
-          userCredential = await signInWithEmailAndPassword(auth, userEmail, values.password);
+        userCredential = await signInWithEmailAndPassword(auth, userEmail, values.password);
       } catch (authError: any) {
-          if (authError.code === 'auth/user-not-found' || authError.code === 'auth/invalid-credential') {
-              const { createUserWithEmailAndPassword } = await import('firebase/auth');
-              userCredential = await createUserWithEmailAndPassword(auth, userEmail, values.password);
-          } else {
-              throw authError;
+        if (authError.code === 'auth/user-not-found' || authError.code === 'auth/invalid-credential') {
+          try {
+            userCredential = await createUserWithEmailAndPassword(auth, userEmail, values.password);
+          } catch (createErr) {
+            throw authError;
           }
+        } else {
+          throw authError;
+        }
       }
-      
+
       const authUid = userCredential.user.uid;
 
-      if (userData.id !== authUid) {
-          try {
-              const batch = writeBatch(firestore);
-              const newRef = doc(firestore, 'users', authUid);
-              const oldRef = doc(firestore, 'users', userData.id);
+      // 2. NOW authenticated — read/update User Document in Firestore
+      const userRef = doc(firestore, 'users', authUid);
+      const userSnap = await getDoc(userRef);
 
-              batch.set(newRef, {
-                  ...userData,
-                  id: authUid,
-                  activeSessionId: sessionId,
-                  deviceType: deviceType,
-                  lastHeartbeat: new Date().toISOString(),
-                  status: 'ONLINE'
-              });
+      let userData: UserProfile;
 
-              batch.delete(oldRef);
-              await batch.commit();
-          } catch (migrateError) {
-              await setDoc(doc(firestore, 'users', authUid), {
-                  ...userData,
-                  id: authUid,
-                  activeSessionId: sessionId,
-                  deviceType: deviceType,
-                  lastHeartbeat: new Date().toISOString(),
-                  status: 'ONLINE'
-              }, { merge: true });
+      if (userSnap.exists()) {
+        userData = { id: authUid, ...userSnap.data() } as UserProfile;
+
+        // Check active session conflict
+        if (userData.activeSessionId && userData.lastHeartbeat && !values.forceLogin) {
+          const lastHeartbeat = new Date(userData.lastHeartbeat);
+          const diff = differenceInMinutes(new Date(), lastHeartbeat);
+
+          if (diff < 3) {
+            setRequiresForceLogin(true);
+            throw new Error(`Security Alert: This account is already logged in on another ${userData.deviceType === 'PC' ? 'Desktop' : 'Mobile'} device. Check "Force Login" to sign out other devices.`);
           }
+        }
+
+        await updateDoc(userRef, {
+          activeSessionId: sessionId,
+          deviceType: deviceType,
+          lastHeartbeat: new Date().toISOString(),
+          status: 'ONLINE'
+        });
       } else {
-          const userRef = doc(firestore, 'users', authUid);
-          await updateDoc(userRef, {
-              activeSessionId: sessionId,
-              deviceType: deviceType,
-              lastHeartbeat: new Date().toISOString(),
-              status: 'ONLINE'
-          });
+        // Create user document for this Auth UID
+        userData = {
+          id: authUid,
+          orgId: ORG_ID,
+          email: userEmail,
+          fullName: userEmail.includes('jegbase') ? 'Super Administrator' : (identity.includes('@') ? identity.split('@')[0] : identity),
+          role: userEmail.includes('jegbase') ? 'SUPERADMIN' : 'STAFF',
+          position: userEmail.includes('jegbase') ? 'Super Administrator' : 'Staff Member',
+          departmentName: 'General Operations',
+          joinedDate: new Date().toISOString(),
+          activeSessionId: sessionId,
+          deviceType: deviceType,
+          lastHeartbeat: new Date().toISOString(),
+          status: 'ONLINE'
+        } as UserProfile;
+
+        await setDoc(userRef, userData);
       }
 
       await authService.syncUserPermissions(firestore, authUid);
       localStorage.setItem('basechan-active-session', sessionId);
 
       toast({ 
-          title: "Logged In", 
-          description: `Access granted via ${deviceType === 'PC' ? 'Desktop' : 'Mobile'}.` 
+        title: "Logged In",
+        description: `Access granted via ${deviceType === 'PC' ? 'Desktop' : 'Mobile'}.`
       });
 
     } catch (error: any) {
+       console.error("[AUTH] Login error:", error);
        let message = "Please check your credentials and try again.";
        if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
-           message = "Invalid username or password.";
+         message = "Invalid username or password.";
        } else if (error.message) {
-           message = error.message;
+         message = error.message;
        }
 
        toast({
@@ -302,15 +253,14 @@ export function LoginForm() {
             render={({ field }) => (
                 <FormItem>
                 <div className="flex justify-between items-center">
-                    <FormLabel>Username or User ID</FormLabel>
+                    <FormLabel>Username or Email</FormLabel>
                     {isCheckingId && <span className="text-[10px] text-muted-foreground animate-pulse">Checking ID...</span>}
                     {isIdVerified === true && <span className="text-[10px] font-bold text-emerald-500 flex items-center gap-1">✓ ID Verified</span>}
-                    {isIdVerified === false && <span className="text-[10px] font-bold text-rose-500">✗ ID Not Found</span>}
                 </div>
                 <FormControl>
                     <Input className="apple-glass" placeholder="Username, Email, or User ID" {...field} />
                 </FormControl>
-                <FormDescription className="text-[0.625rem] uppercase tracking-widest opacity-50">Enter your company ID, email, or username</FormDescription>
+                <FormDescription className="text-[0.625rem] uppercase tracking-widest opacity-50">Enter your company email or username</FormDescription>
                 <FormMessage />
                 </FormItem>
             )}

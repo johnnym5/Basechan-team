@@ -350,7 +350,8 @@ function PersonnelIntelligenceHub({
                 : "No operations logged yet for this week.";
 
             // Personal Tactical Insights
-            const tacticalInsights = InsightEngine.generatePersonalInsights(staff, attendanceLogs, tasks, leaveRequests, pulseFeed, nominations, reports);
+            const tacticalInsights = InsightEngine.generatePersonalInsights(staff, attendanceLogs, tasks, leaveRequests, pulseFeed, nominations, reports)
+                .filter(insight => (insight as any).code !== 'BP-07' && insight.title !== 'Long Inactive Period');
 
             return {
                 isTeam: false,

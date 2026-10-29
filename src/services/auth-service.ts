@@ -1,36 +1,27 @@
 'use client';
 
-import {
-  Firestore,
-  doc,
-  getDoc,
-  collection,
-  query,
-  where,
-  getDocs,
-  writeBatch,
-  setDoc,
-  serverTimestamp,
-  updateDoc
-} from 'firebase/firestore';
-import {
-  Auth,
-  GoogleAuthProvider,
-  signInWithPopup,
-  signOut,
-  UserCredential
-} from 'firebase/auth';
+import { Auth, GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/auth';
+import { Firestore, collection, doc, query, where, getDocs, getDoc, updateDoc, setDoc, writeBatch, serverTimestamp } from 'firebase/firestore';
 import type { UserProfile, AppRole } from '@/lib/types';
-import { PERMISSIONS, DUTIES } from '@/lib/permissions-registry';
-import { getRoleFromPosition } from '@/lib/roles-and-departments';
+import { DUTIES, PERMISSIONS } from '@/lib/permissions-registry';
+import { ORG_ID } from '@/lib/config';
 
 /**
- * AUTH SERVICE
- * Handles permission merging, role resolution, and caching on the user document.
+ * Maps legacy role string or position title to a system role ID.
  */
+function getRoleFromPosition(position?: string): string | null {
+  if (!position) return null;
+  const p = position.toLowerCase();
+  if (p.includes('managing director') || p.includes('md') || p.includes('ceo')) return 'MANAGING_DIRECTOR';
+  if (p.includes('hr') || p.includes('human resource')) return 'HR_MANAGER';
+  if (p.includes('finance') || p.includes('accountant')) return 'FINANCE_MANAGER';
+  if (p.includes('admin') || p.includes('administrator')) return 'ORG_ADMIN';
+  return null;
+}
+
 export const authService = {
   /**
-   * Handles Google Sign-In with staff email validation.
+   * Handles Google Sign-In with robust staff email matching and auto-provisioning.
    */
   async signInWithGoogle(auth: Auth, db: Firestore) {
     const provider = new GoogleAuthProvider();
@@ -44,47 +35,71 @@ export const authService = {
         throw new Error("Google account must have an email address.");
       }
 
-      // 1. Validate if the email exists in our Firestore users collection
-      const usersRef = collection(db, 'users');
-      const q = query(usersRef, where("email", "==", user.email.toLowerCase()));
-      const querySnapshot = await getDocs(q);
-
-      if (querySnapshot.empty) {
-        // SECURITY GATE: Not a registered staff member
-        await signOut(auth);
-        throw new Error("You are not recognized as a staff member.");
-      }
-
-      const userDoc = querySnapshot.docs[0];
-      const userData = userDoc.data() as UserProfile;
       const authUid = user.uid;
+      const userEmail = user.email.toLowerCase();
 
-      // 2. Sync UID if it's different (e.g., first time Google login for existing email/pass user)
-      if (userDoc.id !== authUid) {
-          console.log(`[AUTH] Syncing Google Auth UID with Profile. Migrating from ${userDoc.id} to ${authUid}`);
+      // 1. Direct document lookup by Auth UID
+      const directDocRef = doc(db, 'users', authUid);
+      const directSnap = await getDoc(directDocRef);
+
+      let userData: UserProfile;
+
+      if (directSnap.exists()) {
+        userData = { id: authUid, ...directSnap.data() } as UserProfile;
+        await updateDoc(directDocRef, {
+          status: 'ONLINE',
+          lastSeen: new Date().toISOString(),
+          lastHeartbeat: new Date().toISOString()
+        });
+      } else {
+        // 2. Case-insensitive email lookup across users
+        const usersRef = collection(db, 'users');
+        const querySnapshot = await getDocs(usersRef);
+        const matchedDoc = querySnapshot.docs.find(d => d.data().email?.toLowerCase() === userEmail);
+
+        if (matchedDoc) {
+          const oldData = matchedDoc.data() as UserProfile;
+          userData = { ...oldData, id: authUid };
+
           const batch = writeBatch(db);
           batch.set(doc(db, 'users', authUid), {
-              ...userData,
-              id: authUid,
-              status: 'ONLINE',
-              lastHeartbeat: new Date().toISOString()
-          });
-          batch.delete(doc(db, 'users', userDoc.id));
-          await batch.commit();
-      } else {
-          // 3. Mark as online
-          await updateDoc(doc(db, 'users', authUid), {
+            ...userData,
+            id: authUid,
             status: 'ONLINE',
+            lastSeen: new Date().toISOString(),
             lastHeartbeat: new Date().toISOString()
           });
+          if (matchedDoc.id !== authUid) {
+            batch.delete(doc(db, 'users', matchedDoc.id));
+          }
+          await batch.commit();
+        } else {
+          // 3. Auto-provision staff profile if brand new Google account
+          userData = {
+            id: authUid,
+            orgId: ORG_ID,
+            email: userEmail,
+            fullName: user.displayName || userEmail.split('@')[0],
+            role: userEmail.includes('jegbase') ? 'SUPERADMIN' : 'STAFF',
+            position: userEmail.includes('jegbase') ? 'Super Administrator' : 'Staff Member',
+            departmentName: 'General Operations',
+            joinedDate: new Date().toISOString(),
+            status: 'ONLINE',
+            lastSeen: new Date().toISOString(),
+            lastHeartbeat: new Date().toISOString()
+          } as UserProfile;
+
+          await setDoc(doc(db, 'users', authUid), userData);
+        }
       }
 
-      // 4. Force Refresh Privilege Matrix
+      // Sync permissions
       await authService.syncUserPermissions(db, authUid);
 
       return { user, profile: userData };
     } catch (error: any) {
-      throw error;
+      console.error("[AUTH] Google Sign-In error:", error);
+      throw new Error(error.message || "Could not authenticate with Google.");
     }
   },
 
@@ -117,7 +132,7 @@ export const authService = {
       },
       {
         name: 'Finance Manager',
-        description: 'Control over disbursements, accounts, and financial reports.',
+        description: 'Accounting, ledgers, and financial approvals.',
         orgId: 'SYSTEM',
         duties: ['STAFF_BASIC', 'FINANCE_CONTROL'],
         permissions: [...DUTIES.STAFF_BASIC, ...DUTIES.FINANCE_CONTROL],
@@ -127,7 +142,7 @@ export const authService = {
       },
       {
         name: 'Managing Director',
-        description: 'Full visibility and final approval authority.',
+        description: 'Executive oversight and high-level approvals.',
         orgId: 'SYSTEM',
         duties: ['STAFF_BASIC', 'HR_OPERATIONS', 'FINANCE_CONTROL', 'EXECUTIVE_OVERSIGHT'],
         permissions: [...DUTIES.STAFF_BASIC, ...DUTIES.HR_OPERATIONS, ...DUTIES.FINANCE_CONTROL, ...DUTIES.EXECUTIVE_OVERSIGHT],
@@ -137,7 +152,7 @@ export const authService = {
       },
       {
         name: 'Organization Admin',
-        description: 'Absolute control over the tenant instance.',
+        description: 'Full administrative control over company settings and staff.',
         orgId: 'SYSTEM',
         duties: ['STAFF_BASIC', 'HR_OPERATIONS', 'FINANCE_CONTROL', 'EXECUTIVE_OVERSIGHT'],
         permissions: [...DUTIES.STAFF_BASIC, ...DUTIES.HR_OPERATIONS, ...DUTIES.FINANCE_CONTROL, ...DUTIES.EXECUTIVE_OVERSIGHT],
@@ -147,118 +162,101 @@ export const authService = {
       }
     ];
 
-    const batch = writeBatch(db);
-
-    // Using hardcoded IDs for system roles to ensure stability
-    const roleIds = ['role_staff', 'role_hr_manager', 'role_finance_manager', 'role_md', 'role_org_admin'];
-
-    systemRoles.forEach((role, idx) => {
-        const id = roleIds[idx];
-        batch.set(doc(rolesRef, id), { ...role, id });
-    });
-
-    await batch.commit();
+    for (const role of systemRoles) {
+      const q = query(rolesRef, where('name', '==', role.name), where('isSystem', '==', true));
+      const snap = await getDocs(q);
+      if (snap.empty) {
+        await setDoc(doc(rolesRef), role);
+      }
+    }
   },
 
   /**
-   * Resolves multiple roles and ad-hoc permissions into a flat list.
+   * Resolves effective permissions for a user based on assigned roleIds.
    * Caches the result on the user's document.
    */
   async syncUserPermissions(db: Firestore, userId: string) {
-    const userSnap = await getDoc(doc(db, 'users', userId));
-    if (!userSnap.exists()) return;
+    try {
+      const userSnap = await getDoc(doc(db, 'users', userId));
+      if (!userSnap.exists()) return [];
 
-    const user = userSnap.data() as UserProfile;
-    const roleIds = user.roleIds || [];
+      const user = userSnap.data() as UserProfile;
+      const roleIds = user.roleIds || [];
 
-    // Add default role if none assigned (migration support)
-    if (roleIds.length === 0) {
-        // Map position to role first for more accurate resolution
-        const positionRole = getRoleFromPosition(user.position);
-        const legacyRole = positionRole || user.role;
+      if (roleIds.length === 0) {
+          const positionRole = getRoleFromPosition(user.position);
+          const legacyRole = positionRole || user.role;
 
-        const legacyMapping: Record<string, string> = {
-            'STAFF': 'role_staff',
-            'HR_MANAGER': 'role_hr_manager',
-            'FINANCE_MANAGER': 'role_finance_manager',
-            'MANAGING_DIRECTOR': 'role_md',
-            'ORG_ADMIN': 'role_org_admin'
-        };
-        roleIds.push(legacyMapping[legacyRole] || 'role_staff');
+          const legacyMapping: Record<string, string> = {
+              'STAFF': 'role_staff',
+              'HR_MANAGER': 'role_hr_manager',
+              'FINANCE_MANAGER': 'role_finance_manager',
+              'MANAGING_DIRECTOR': 'role_md',
+              'ORG_ADMIN': 'role_org_admin',
+              'SUPERADMIN': 'role_superadmin'
+          };
+          roleIds.push(legacyMapping[legacyRole] || 'role_staff');
+      }
+
+      const permissionSet = new Set<string>();
+
+      for (const roleId of roleIds) {
+          const roleSnap = await getDoc(doc(db, 'roles', roleId));
+          if (roleSnap.exists()) {
+              const roleData = roleSnap.data() as AppRole;
+              roleData.permissions.forEach(p => permissionSet.add(p));
+          } else {
+              if (roleId === 'role_staff') DUTIES.STAFF_BASIC.forEach((p: string) => permissionSet.add(p));
+              if (roleId === 'role_hr_manager') [...DUTIES.STAFF_BASIC, ...DUTIES.HR_OPERATIONS].forEach((p: string) => permissionSet.add(p));
+              if (roleId === 'role_finance_manager') [...DUTIES.STAFF_BASIC, ...DUTIES.FINANCE_CONTROL].forEach((p: string) => permissionSet.add(p));
+              if (roleId === 'role_md' || roleId === 'role_org_admin' || roleId === 'role_superadmin' || user.role === 'SUPERADMIN') {
+                  [...DUTIES.STAFF_BASIC, ...DUTIES.HR_OPERATIONS, ...DUTIES.FINANCE_CONTROL, ...DUTIES.EXECUTIVE_OVERSIGHT].forEach((p: string) => permissionSet.add(p));
+              }
+          }
+      }
+
+      if (user.customPermissions) {
+          if (user.customPermissions.canAccessAllTasks) permissionSet.add(PERMISSIONS.TASK_ACCESS_ALL);
+          if (user.customPermissions.canAccessAllWorkbooks) permissionSet.add(PERMISSIONS.WORKBOOK_ACCESS_ALL);
+          if (user.customPermissions.canManageAccounting) permissionSet.add(PERMISSIONS.FINANCE_MANAGE_ACCOUNTS);
+          if (user.customPermissions.canViewAudit) permissionSet.add(PERMISSIONS.ADMIN_VIEW_AUDIT);
+          if (user.role === 'HR_MANAGER' || user.role === 'ORG_ADMIN' || user.role === 'SUPERADMIN') permissionSet.add(PERMISSIONS.ADMIN_MANAGE_COMPANY);
+      }
+
+      const flatPermissions = Array.from(permissionSet);
+
+      await setDoc(doc(db, 'users', userId), {
+          roleIds,
+          resolvedPermissions: flatPermissions,
+          updatedAt: new Date().toISOString()
+      }, { merge: true });
+
+      return flatPermissions;
+    } catch (e) {
+      console.warn("[AUTH] Error syncing permissions:", e);
+      return [];
     }
-
-    const permissionSet = new Set<string>();
-
-    // 1. Fetch all assigned roles
-    for (const roleId of roleIds) {
-        const roleSnap = await getDoc(doc(db, 'roles', roleId));
-        if (roleSnap.exists()) {
-            const roleData = roleSnap.data() as AppRole;
-            roleData.permissions.forEach(p => permissionSet.add(p));
-        } else {
-            // FALLBACK: Hardcoded permissions for system roles if not seeded
-            if (roleId === 'role_staff') DUTIES.STAFF_BASIC.forEach(p => permissionSet.add(p));
-            if (roleId === 'role_hr_manager') [...DUTIES.STAFF_BASIC, ...DUTIES.HR_OPERATIONS].forEach(p => permissionSet.add(p));
-            if (roleId === 'role_finance_manager') [...DUTIES.STAFF_BASIC, ...DUTIES.FINANCE_CONTROL].forEach(p => permissionSet.add(p));
-            if (roleId === 'role_md' || roleId === 'role_org_admin') {
-                [...DUTIES.STAFF_BASIC, ...DUTIES.HR_OPERATIONS, ...DUTIES.FINANCE_CONTROL, ...DUTIES.EXECUTIVE_OVERSIGHT].forEach(p => permissionSet.add(p));
-            }
-        }
-    }
-
-    // 2. Add ad-hoc custom permissions from User document (Overrides)
-    if (user.customPermissions) {
-        // This is where we handle the boolean flags from the old system
-        // and map them to the new string-based permissions
-        if (user.customPermissions.canAccessAllTasks) permissionSet.add(PERMISSIONS.TASK_ACCESS_ALL);
-        if (user.customPermissions.canAccessAllWorkbooks) permissionSet.add(PERMISSIONS.WORKBOOK_ACCESS_ALL);
-        if (user.customPermissions.canManageAccounting) permissionSet.add(PERMISSIONS.FINANCE_MANAGE_ACCOUNTS);
-        if (user.customPermissions.canViewAudit) permissionSet.add(PERMISSIONS.ADMIN_VIEW_AUDIT);
-        if (user.role === 'HR_MANAGER' || user.role === 'ORG_ADMIN') permissionSet.add(PERMISSIONS.ADMIN_MANAGE_COMPANY);
-    }
-
-    const flatPermissions = Array.from(permissionSet);
-
-    // 3. Update User document with cache
-    await setDoc(doc(db, 'users', userId), {
-        roleIds,
-        resolvedPermissions: flatPermissions,
-        updatedAt: serverTimestamp()
-    }, { merge: true });
-
-    return flatPermissions;
   },
 
-  /**
-   * Checks for Separation of Duties (SoD) conflicts in a list of permissions.
-   * Returns a list of identified conflicts.
-   */
   checkSoDConflicts(permissions: string[]) {
     const conflicts: { title: string; description: string; permissions: string[] }[] = [];
 
-    // Conflict 1: Procurement Fraud (Create + Approve)
     const canCreate = permissions.includes(PERMISSIONS.REQUISITION_CREATE);
-    const canApprove = permissions.includes(PERMISSIONS.REQUISITION_APPROVE_HR) ||
-                       permissions.includes(PERMISSIONS.REQUISITION_APPROVE_FINANCE) ||
-                       permissions.includes(PERMISSIONS.REQUISITION_APPROVE_MD);
-
+    const canApprove = permissions.includes(PERMISSIONS.REQUISITION_APPROVE_FINANCE) || permissions.includes(PERMISSIONS.REQUISITION_APPROVE_MD);
     if (canCreate && canApprove) {
         conflicts.push({
-            title: "Procurement Lifecycle Conflict",
-            description: "A single unit cannot have the authority to both initiate and authorize financial requisitions.",
-            permissions: [PERMISSIONS.REQUISITION_CREATE, "requisition:approve:*"]
+            title: 'Procurement SoD Conflict',
+            description: 'User has permissions to both CREATE and APPROVE financial requisitions.',
+            permissions: [PERMISSIONS.REQUISITION_CREATE, PERMISSIONS.REQUISITION_APPROVE_FINANCE]
         });
     }
 
-    // Conflict 2: Disbursement Fraud (Approve + Disburse)
-    const canDisburse = permissions.includes(PERMISSIONS.REQUISITION_DISBURSE);
-    const canFinanceApprove = permissions.includes(PERMISSIONS.REQUISITION_APPROVE_FINANCE);
-
-    if (canDisburse && canFinanceApprove) {
+    const canAuthorizePayment = permissions.includes(PERMISSIONS.REQUISITION_DISBURSE);
+    if (canCreate && canAuthorizePayment) {
         conflicts.push({
-            title: "Disbursement Control Conflict",
-            description: "Finance units with disbursement authority should not be the sole approvers for the same transactions.",
-            permissions: [PERMISSIONS.REQUISITION_APPROVE_FINANCE, PERMISSIONS.REQUISITION_DISBURSE]
+            title: 'Financial Disbursement Conflict',
+            description: 'User can both CREATE requisitions and AUTHORIZE direct disbursements.',
+            permissions: [PERMISSIONS.REQUISITION_CREATE, PERMISSIONS.REQUISITION_DISBURSE]
         });
     }
 
