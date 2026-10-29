@@ -20,7 +20,7 @@ import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth, useFirestore } from "@/firebase";
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from "firebase/auth";
-import { query, collection, where, getDocs, doc, updateDoc, getDoc, setDoc, writeBatch } from "firebase/firestore";
+import { query, collection, where, getDocs, doc, updateDoc, getDoc, setDoc } from "firebase/firestore";
 import type { UserProfile } from "@/lib/types";
 import { sanitizeInput } from "@/lib/utils";
 import { ORG_ID } from "@/lib/config";
@@ -150,7 +150,7 @@ export function LoginForm() {
 
       const authUid = userCredential.user.uid;
 
-      // 2. NOW authenticated — read/update User Document in Firestore
+      // 2. Read/Update User Document in Firestore with Full Detail Preservation
       const userRef = doc(firestore, 'users', authUid);
       const userSnap = await getDoc(userRef);
 
@@ -166,7 +166,7 @@ export function LoginForm() {
 
           if (diff < 3) {
             setRequiresForceLogin(true);
-            throw new Error(`Security Alert: This account is already logged in on another ${userData.deviceType === 'PC' ? 'Desktop' : 'Mobile'} device. Check "Force Login" to sign out other devices.`);
+            throw new Error(`Security Alert: Account active on another device. Check "Force Login" to override.`);
           }
         }
 
@@ -177,23 +177,45 @@ export function LoginForm() {
           status: 'ONLINE'
         });
       } else {
-        // Create user document for this Auth UID
-        userData = {
-          id: authUid,
-          orgId: ORG_ID,
-          email: userEmail,
-          fullName: userEmail.includes('jegbase') ? 'Super Administrator' : (identity.includes('@') ? identity.split('@')[0] : identity),
-          role: userEmail.includes('jegbase') ? 'SUPERADMIN' : 'STAFF',
-          position: userEmail.includes('jegbase') ? 'Super Administrator' : 'Staff Member',
-          departmentName: 'General Operations',
-          joinedDate: new Date().toISOString(),
-          activeSessionId: sessionId,
-          deviceType: deviceType,
-          lastHeartbeat: new Date().toISOString(),
-          status: 'ONLINE'
-        } as UserProfile;
+        // Search for existing staff profile by email or username to preserve all details
+        const usersRef = collection(firestore, 'users');
+        const querySnapshot = await getDocs(usersRef);
+        const matchedDoc = querySnapshot.docs.find(d =>
+          d.data().email?.toLowerCase() === userEmail.toLowerCase() ||
+          d.data().username?.toLowerCase() === identity.toLowerCase()
+        );
 
-        await setDoc(userRef, userData);
+        if (matchedDoc) {
+          const oldData = matchedDoc.data() as UserProfile;
+          userData = {
+            ...oldData,
+            id: authUid,
+            email: userEmail,
+            activeSessionId: sessionId,
+            deviceType: deviceType,
+            lastHeartbeat: new Date().toISOString(),
+            status: 'ONLINE'
+          };
+          await setDoc(userRef, userData, { merge: true });
+        } else {
+          // Create default staff profile if brand new
+          userData = {
+            id: authUid,
+            orgId: ORG_ID,
+            email: userEmail,
+            fullName: userEmail.includes('jegbase') ? 'Super Administrator' : identity.split('@')[0],
+            role: userEmail.includes('jegbase') ? 'SUPERADMIN' : 'STAFF',
+            position: userEmail.includes('jegbase') ? 'Super Administrator' : 'Staff Member',
+            departmentName: 'General Operations',
+            joinedDate: new Date().toISOString(),
+            activeSessionId: sessionId,
+            deviceType: deviceType,
+            lastHeartbeat: new Date().toISOString(),
+            status: 'ONLINE'
+          } as UserProfile;
+
+          await setDoc(userRef, userData, { merge: true });
+        }
       }
 
       await authService.syncUserPermissions(firestore, authUid);

@@ -1,7 +1,7 @@
 'use client';
 
 import { Auth, GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/auth';
-import { Firestore, collection, doc, query, where, getDocs, getDoc, updateDoc, setDoc, writeBatch, serverTimestamp } from 'firebase/firestore';
+import { Firestore, collection, doc, query, where, getDocs, getDoc, updateDoc, setDoc } from 'firebase/firestore';
 import type { UserProfile, AppRole } from '@/lib/types';
 import { DUTIES, PERMISSIONS } from '@/lib/permissions-registry';
 import { ORG_ID } from '@/lib/config';
@@ -21,7 +21,7 @@ function getRoleFromPosition(position?: string): string | null {
 
 export const authService = {
   /**
-   * Handles Google Sign-In with robust staff email matching and auto-provisioning.
+   * Handles Google Sign-In with robust staff email matching, detail preservation, and auto-provisioning.
    */
   async signInWithGoogle(auth: Auth, db: Firestore) {
     const provider = new GoogleAuthProvider();
@@ -52,27 +52,23 @@ export const authService = {
           lastHeartbeat: new Date().toISOString()
         });
       } else {
-        // 2. Case-insensitive email lookup across users
+        // 2. Case-insensitive email lookup across user documents
         const usersRef = collection(db, 'users');
         const querySnapshot = await getDocs(usersRef);
         const matchedDoc = querySnapshot.docs.find(d => d.data().email?.toLowerCase() === userEmail);
 
         if (matchedDoc) {
           const oldData = matchedDoc.data() as UserProfile;
-          userData = { ...oldData, id: authUid };
-
-          const batch = writeBatch(db);
-          batch.set(doc(db, 'users', authUid), {
-            ...userData,
+          userData = {
+            ...oldData,
             id: authUid,
+            email: userEmail,
             status: 'ONLINE',
             lastSeen: new Date().toISOString(),
             lastHeartbeat: new Date().toISOString()
-          });
-          if (matchedDoc.id !== authUid) {
-            batch.delete(doc(db, 'users', matchedDoc.id));
-          }
-          await batch.commit();
+          };
+
+          await setDoc(doc(db, 'users', authUid), userData, { merge: true });
         } else {
           // 3. Auto-provision staff profile if brand new Google account
           userData = {
@@ -89,7 +85,7 @@ export const authService = {
             lastHeartbeat: new Date().toISOString()
           } as UserProfile;
 
-          await setDoc(doc(db, 'users', authUid), userData);
+          await setDoc(doc(db, 'users', authUid), userData, { merge: true });
         }
       }
 
@@ -99,6 +95,9 @@ export const authService = {
       return { user, profile: userData };
     } catch (error: any) {
       console.error("[AUTH] Google Sign-In error:", error);
+      if (error.code === 'auth/unauthorized-domain') {
+        throw new Error("Domain unauthorized. Please add 'basechan-team.web.app' to Authorized Domains in Firebase Auth Console.");
+      }
       throw new Error(error.message || "Could not authenticate with Google.");
     }
   },
@@ -204,7 +203,7 @@ export const authService = {
           const roleSnap = await getDoc(doc(db, 'roles', roleId));
           if (roleSnap.exists()) {
               const roleData = roleSnap.data() as AppRole;
-              roleData.permissions.forEach(p => permissionSet.add(p));
+              roleData.permissions.forEach((p: string) => permissionSet.add(p));
           } else {
               if (roleId === 'role_staff') DUTIES.STAFF_BASIC.forEach((p: string) => permissionSet.add(p));
               if (roleId === 'role_hr_manager') [...DUTIES.STAFF_BASIC, ...DUTIES.HR_OPERATIONS].forEach((p: string) => permissionSet.add(p));
