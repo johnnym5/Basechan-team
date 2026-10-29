@@ -33,6 +33,7 @@ import { DashboardRecentChats } from "./DashboardRecentChats"
 import { StaffPerformanceScore } from "./StaffPerformanceScore"
 import { Announcements } from "./Announcements"
 import { OperationalCalendarHub } from "./OperationalCalendarHub"
+import { useScrubbedData } from "@/hooks/useScrubbedData"
 import { startOfWeek, endOfWeek, format, eachDayOfInterval } from "date-fns"
 import { uiEmitter } from "@/lib/ui-emitter"
 
@@ -90,6 +91,11 @@ export function StaffDashboard({ userProfile, permissions, systemConfig }: Staff
   , [firestore, userProfile.orgId, userProfile.id]);
   const { data: attendanceLogs } = useCollection<Attendance>(attQuery);
 
+  const orgAttendanceQuery = useMemoFirebase(() =>
+    firestore ? query(collection(firestore, 'attendance'), where('orgId', '==', userProfile.orgId)) : null
+  , [firestore, userProfile.orgId]);
+  const { data: allOrgAttendance } = useCollection<Attendance>(orgAttendanceQuery);
+
   const tasksQuery = useMemoFirebase(() =>
     firestore ? query(collection(firestore, 'tasks'), where('orgId', '==', userProfile.orgId)) : null
   , [firestore, userProfile.orgId]);
@@ -108,13 +114,10 @@ export function StaffDashboard({ userProfile, permissions, systemConfig }: Staff
     query(collection(firestore!, 'users'), where('orgId', '==', userProfile.orgId))
   , [firestore, userProfile.orgId]);
   const { data: allStaffRaw } = useCollection<UserProfile>(usersQuery);
-  // Keep the staff dashboard roster consistent with the admin active-staff count.
-  const allStaff = allStaffRaw?.filter(u =>
-    !u.mergedInto &&
-    u.isArchived !== true &&
-    u.status !== 'DISABLED' &&
-    u.status !== 'TERMINATED'
-  );
+  const { activeStaff: allStaff, activeAttendance: activeOrgAttendance } = useScrubbedData({
+    staffList: allStaffRaw || [],
+    attendanceLogs: allOrgAttendance || []
+  });
 
   const reportsQuery = useMemoFirebase(() =>
     firestore ? query(
@@ -162,7 +165,7 @@ export function StaffDashboard({ userProfile, permissions, systemConfig }: Staff
           {/* HERO KPI STRIP */}
           <HeroKpiStrip
             staffList={allStaff || []}
-            attendanceLogs={attendanceLogs || []}
+            attendanceLogs={activeOrgAttendance}
             tasks={allTasks || []}
             leaveRequests={leaveRequests || []}
           />
