@@ -6,13 +6,12 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Loader2, User, Calendar as CalendarIcon, Clock, ShieldAlert } from "lucide-react"
+import { Loader2, User, Calendar as CalendarIcon, Clock, ShieldAlert, X } from "lucide-react"
 import { useFirestore } from "@/firebase"
-import { doc, setDoc, serverTimestamp } from "firebase/firestore"
+import { doc, setDoc, updateDoc, serverTimestamp } from "firebase/firestore"
 import { useToast } from "@/hooks/use-toast"
 import type { UserProfile, Attendance, AttendanceStatus, AttendanceRemark } from "@/lib/types"
-import { format, parseISO, startOfDay } from "date-fns"
-import { cn } from "@/lib/utils"
+import { format } from "date-fns"
 
 interface EditAttendanceRecordDialogProps {
   isOpen: boolean;
@@ -38,7 +37,7 @@ export function EditAttendanceRecordDialog({
   // Form State
   const [userId, setUserId] = useState<string>("");
   const [date, setDate] = useState<string>(format(new Date(), 'yyyy-MM-dd'));
-  const [clockInTime, setClockInTime] = useState<string>("09:00");
+  const [clockInTime, setClockInTime] = useState<string>("");
   const [clockOutTime, setClockOutTime] = useState<string>("");
   const [status, setStatus] = useState<AttendanceStatus>("APPROVED");
   const [isLate, setIsLate] = useState<boolean>(false);
@@ -49,14 +48,14 @@ export function EditAttendanceRecordDialog({
       if (existingLog) {
         setUserId(existingLog.userId);
         setDate(existingLog.date);
-        setClockInTime(format(new Date(existingLog.clockIn), 'HH:mm'));
+        setClockInTime(existingLog.clockIn ? format(new Date(existingLog.clockIn), 'HH:mm') : "");
         setClockOutTime(existingLog.clockOut ? format(new Date(existingLog.clockOut), 'HH:mm') : "");
         setStatus(existingLog.status);
         setIsLate(existingLog.remarks?.includes('LATE') || false);
       } else {
         setUserId("");
         setDate(selectedDate ? format(selectedDate, 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd'));
-        setClockInTime("09:00");
+        setClockInTime("");
         setClockOutTime("");
         setStatus("APPROVED");
         setIsLate(false);
@@ -66,8 +65,8 @@ export function EditAttendanceRecordDialog({
   }, [isOpen, existingLog, selectedDate]);
 
   const handleSubmit = async () => {
-    if (!firestore || !userId || !date || !clockInTime || !editReason) {
-        toast({ variant: "destructive", title: "Missing Information", description: "Please fill in all required fields and provide a reason." });
+    if (!firestore || !userId || !date || (!clockInTime && !clockOutTime) || !editReason) {
+        toast({ variant: "destructive", title: "Missing Information", description: "Select personnel, a date, at least one clock time, and provide a reason." });
         return;
     }
 
@@ -77,8 +76,15 @@ export function EditAttendanceRecordDialog({
       const logRef = doc(firestore, 'attendance', docId);
 
       const staff = staffList.find(s => s.id === userId);
-      const clockInIso = new Date(`${date}T${clockInTime}:00`).toISOString();
+      const clockInIso = clockInTime ? new Date(`${date}T${clockInTime}:00`).toISOString() : null;
       const clockOutIso = clockOutTime ? new Date(`${date}T${clockOutTime}:00`).toISOString() : null;
+      const effectiveClockIn = clockInIso || existingLog?.clockIn || null;
+
+      if (clockOutIso && !effectiveClockIn) {
+        toast({ variant: "destructive", title: "Clock-in Required", description: "A clock-out needs an existing clock-in or a clock-in time in this override." });
+        setIsSubmitting(false);
+        return;
+      }
 
       const remarks: AttendanceRemark[] = [];
       if (isLate) remarks.push('LATE');
@@ -88,8 +94,8 @@ export function EditAttendanceRecordDialog({
         userName: staff?.fullName || "Unknown",
         orgId: currentUser.orgId,
         date,
-        clockIn: clockInIso,
-        clockOut: clockOutIso,
+        ...(clockInIso ? { clockIn: clockInIso } : {}),
+        ...(clockOutIso ? { clockOut: clockOutIso } : {}),
         status,
         remarks,
         location: 'OFFICE',
@@ -99,14 +105,32 @@ export function EditAttendanceRecordDialog({
         lastUpdatedAt: serverTimestamp(),
       };
 
-      if (clockOutIso) {
-          const duration = Math.floor((new Date(clockOutIso).getTime() - new Date(clockInIso).getTime()) / 1000);
+      if (clockOutIso && effectiveClockIn) {
+          const duration = Math.floor((new Date(clockOutIso).getTime() - new Date(effectiveClockIn).getTime()) / 1000);
           payload.duration = Math.max(0, duration);
+      } else if (clockInIso) {
+          payload.duration = 0;
       }
 
       await setDoc(logRef, payload, { merge: true });
 
-      toast({ title: "Record Synchronized", description: "Attendance data has been manually updated and audited." });
+      // If departure time is left blank and status is APPROVED, mark user status as ONLINE so staff is active to clock out
+      if (clockInIso && !clockOutIso && status === 'APPROVED') {
+        const userRef = doc(firestore, 'users', userId);
+        await updateDoc(userRef, {
+          status: 'ONLINE',
+          lastSeen: new Date().toISOString()
+        });
+      }
+
+      toast({
+        title: "Record Synchronized",
+        description: clockInIso && clockOutIso
+          ? "Arrival and departure telemetry updated successfully."
+          : clockOutIso
+            ? "Departure time recorded successfully."
+            : "Active arrival logged. Personnel can clock out later."
+      });
       onClose();
     } catch (error: any) {
       console.error("Override failed", error);
@@ -184,18 +208,35 @@ export function EditAttendanceRecordDialog({
                 className="h-12 bg-black/20 border-white/10 rounded-xl font-mono text-xs"
               />
             </div>
+
             {/* CLOCK OUT */}
             <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase tracking-widest opacity-40 ml-1">Departure Time</label>
+              <div className="flex items-center justify-between">
+                <label className="text-[10px] font-black uppercase tracking-widest opacity-40 ml-1">Departure Time</label>
+                {clockOutTime && (
+                  <button
+                    type="button"
+                    onClick={() => setClockOutTime("")}
+                    className="text-[8px] font-black uppercase text-amber-500 hover:text-amber-400 flex items-center gap-0.5 transition-colors"
+                    title="Clear departure time to keep shift active"
+                  >
+                    <X className="w-2.5 h-2.5" /> Keep Active
+                  </button>
+                )}
+              </div>
               <Input
                 type="time"
                 value={clockOutTime}
                 onChange={(e) => setClockOutTime(e.target.value)}
-                placeholder="Optional"
+                placeholder="--:-- (Active)"
                 className="h-12 bg-black/20 border-white/10 rounded-xl font-mono text-xs"
               />
             </div>
           </div>
+
+          <p className="text-[8px] font-bold text-muted-foreground uppercase opacity-60 ml-1 -mt-2">
+            Enter either time, or both. A departure-only override requires an existing clock-in.
+          </p>
 
           {/* LATE TOGGLE */}
           <div className="flex items-center justify-between p-4 rounded-xl bg-amber-500/5 border border-amber-500/10">

@@ -107,7 +107,14 @@ export function StaffDashboard({ userProfile, permissions, systemConfig }: Staff
   const usersQuery = useMemoFirebase(() =>
     query(collection(firestore!, 'users'), where('orgId', '==', userProfile.orgId))
   , [firestore, userProfile.orgId]);
-  const { data: allStaff } = useCollection<UserProfile>(usersQuery);
+  const { data: allStaffRaw } = useCollection<UserProfile>(usersQuery);
+  // Keep the staff dashboard roster consistent with the admin active-staff count.
+  const allStaff = allStaffRaw?.filter(u =>
+    !u.mergedInto &&
+    u.isArchived !== true &&
+    u.status !== 'DISABLED' &&
+    u.status !== 'TERMINATED'
+  );
 
   const reportsQuery = useMemoFirebase(() =>
     firestore ? query(

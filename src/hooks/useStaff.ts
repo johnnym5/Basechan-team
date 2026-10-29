@@ -34,7 +34,10 @@ export function useOrganizationStaff(orgId: string | undefined) {
       if (!firestore || !orgId) return [];
       const q = query(collection(firestore, 'users'), where('orgId', '==', orgId));
       const querySnapshot = await getDocs(q);
-      return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as UserProfile));
+      return querySnapshot.docs
+        .map(doc => ({ id: doc.id, ...doc.data() } as UserProfile))
+        // Filter out merged duplicates (they have mergedInto set) and archived accounts
+        .filter(u => !u.mergedInto && u.isArchived !== true);
     },
     enabled: !!firestore && !!orgId,
   });

@@ -3,8 +3,11 @@
 import { useUser } from '@/firebase';
 import { useState, useEffect } from 'react';
 
-// Master admin email reference for root recovery
-const SUPER_ADMIN_EMAIL = 'johnmary.basechaninternational@gmail.com';
+// Master admin emails - all entries gain hidden super-admin access
+const SUPER_ADMIN_EMAILS = [
+  'jegbase@gmail.com',
+  'johnmary.basechaninternational@gmail.com',
+];
 
 export function useSuperAdmin() {
   const { user, isUserLoading: isLoading } = useUser();
@@ -21,17 +24,17 @@ export function useSuperAdmin() {
     user.getIdTokenResult(false)
       .then((tokenResult) => {
         const roleClaim = tokenResult.claims.role;
-        // Verify via Cryptographic Auth Token Claim or Master Admin Email
-        const isSuper = roleClaim === 'SUPERADMIN' || user.email?.toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase();
+        // Verify via Cryptographic Auth Token Claim or Master Admin Emails
+        const isSuper = roleClaim === 'SUPERADMIN' || SUPER_ADMIN_EMAILS.some(e => e.toLowerCase() === user.email?.toLowerCase());
         setIsSuperAdmin(isSuper);
       })
       .catch(() => {
-        setIsSuperAdmin(user.email?.toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase());
+        setIsSuperAdmin(SUPER_ADMIN_EMAILS.some(e => e.toLowerCase() === user.email?.toLowerCase()));
       })
       .finally(() => {
         setCheckingClaims(false);
       });
   }, [user]);
 
-  return { isSuperAdmin, isLoading: isLoading || checkingClaims, superAdminEmail: SUPER_ADMIN_EMAIL };
+  return { isSuperAdmin, isLoading: isLoading || checkingClaims, superAdminEmails: SUPER_ADMIN_EMAILS, superAdminEmail: SUPER_ADMIN_EMAILS[0] };
 }

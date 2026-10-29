@@ -110,7 +110,130 @@ export function MergeStaffAccountsDialog({
         });
       });
 
-      // 5. Update Primary User Profile (preserve all emails and UIDs)
+      // 5. Move direct conversations and channel membership to the primary identity.
+      // If both accounts already have a DM with the same person, combine messages
+      // into one conversation so the merged account only appears once in chat.
+      const chatsQuery = query(collection(firestore, 'chats'), where('orgId', '==', primaryUser.orgId));
+      const chatsSnap = await getDocs(chatsQuery);
+      const orgChats = chatsSnap.docs.map(chatDoc => ({ ref: chatDoc.ref, id: chatDoc.id, data: chatDoc.data() as any }));
+      const duplicateChats = orgChats.filter(chat => chat.data.participants?.includes(duplicateUser.id));
+      let chatBatch = writeBatch(firestore);
+      let chatOperationCount = 0;
+      const commitChatBatch = async () => {
+        if (chatOperationCount === 0) return;
+        await chatBatch.commit();
+        chatBatch = writeBatch(firestore);
+        chatOperationCount = 0;
+      };
+      const queueChatWrites = async (writes: Array<(currentBatch: ReturnType<typeof writeBatch>) => void>) => {
+        if (chatOperationCount + writes.length > 400) await commitChatBatch();
+        writes.forEach(write => write(chatBatch));
+        chatOperationCount += writes.length;
+      };
+
+      for (const sourceChat of duplicateChats) {
+        const sourceParticipants: string[] = sourceChat.data.participants || [];
+        const otherParticipants = sourceParticipants.filter(id => id !== duplicateUser.id && id !== primaryUser.id);
+        const isDirect = sourceChat.data.type === 'DIRECT';
+        const matchingTarget = isDirect && otherParticipants.length === 1
+          ? orgChats.find(chat =>
+              chat.id !== sourceChat.id &&
+              chat.data.type === 'DIRECT' &&
+              chat.data.participants?.includes(primaryUser.id) &&
+              chat.data.participants?.includes(otherParticipants[0]) &&
+              !chat.data.participants?.includes(duplicateUser.id)
+            )
+          : undefined;
+
+        if (matchingTarget) {
+          const messagesSnap = await getDocs(collection(firestore, 'chats', sourceChat.id, 'messages'));
+          for (const messageDoc of messagesSnap.docs) {
+            const messageData = messageDoc.data();
+            await queueChatWrites([currentBatch => {
+              currentBatch.set(doc(firestore, 'chats', matchingTarget.id, 'messages', messageDoc.id), {
+                ...messageData,
+                chatId: matchingTarget.id,
+                ...(messageData.senderId === duplicateUser.id
+                  ? { senderId: primaryUser.id, senderName: primaryUser.fullName }
+                  : {})
+              });
+            }, currentBatch => currentBatch.delete(messageDoc.ref)]);
+          }
+
+          const sourceUpdatedAt = sourceChat.data.updatedAt || '';
+          const targetUpdatedAt = matchingTarget.data.updatedAt || '';
+          const latestChat = sourceUpdatedAt > targetUpdatedAt ? sourceChat.data : matchingTarget.data;
+          const participants = Array.from(new Set([
+            ...(matchingTarget.data.participants || []),
+            ...otherParticipants,
+            primaryUser.id
+          ]));
+          const participantProfiles = {
+            ...(matchingTarget.data.participantProfiles || {}),
+            [primaryUser.id]: { fullName: primaryUser.fullName }
+          };
+          const readReceipts = { ...(matchingTarget.data.readReceipts || {}) };
+          if (readReceipts[duplicateUser.id]) {
+            readReceipts[primaryUser.id] = [readReceipts[primaryUser.id], readReceipts[duplicateUser.id]].filter(Boolean).sort().pop();
+          }
+          delete participantProfiles[duplicateUser.id];
+          delete readReceipts[duplicateUser.id];
+          const lastMessage = latestChat.lastMessage
+            ? {
+                ...latestChat.lastMessage,
+                ...(latestChat.lastMessage.senderId === duplicateUser.id
+                  ? { senderId: primaryUser.id, senderName: primaryUser.fullName }
+                  : {})
+              }
+            : undefined;
+
+          await queueChatWrites([currentBatch => currentBatch.update(matchingTarget.ref, {
+            participants,
+            participantProfiles,
+            readReceipts,
+            ...(lastMessage ? { lastMessage } : {}),
+            updatedAt: latestChat.updatedAt || new Date().toISOString()
+          })]);
+          await queueChatWrites([currentBatch => currentBatch.delete(sourceChat.ref)]);
+        } else {
+          const participants = Array.from(new Set(sourceParticipants.map(id => id === duplicateUser.id ? primaryUser.id : id)));
+          const participantProfiles = { ...(sourceChat.data.participantProfiles || {}) };
+          delete participantProfiles[duplicateUser.id];
+          participantProfiles[primaryUser.id] = { fullName: primaryUser.fullName };
+          const readReceipts = { ...(sourceChat.data.readReceipts || {}) };
+          if (readReceipts[duplicateUser.id]) {
+            readReceipts[primaryUser.id] = [readReceipts[primaryUser.id], readReceipts[duplicateUser.id]].filter(Boolean).sort().pop();
+          }
+          delete readReceipts[duplicateUser.id];
+          const lastMessage = sourceChat.data.lastMessage
+            ? {
+                ...sourceChat.data.lastMessage,
+                ...(sourceChat.data.lastMessage.senderId === duplicateUser.id
+                  ? { senderId: primaryUser.id, senderName: primaryUser.fullName }
+                  : {})
+              }
+            : undefined;
+
+          await queueChatWrites([currentBatch => currentBatch.update(sourceChat.ref, {
+            participants,
+            participantProfiles,
+            readReceipts,
+            ...(lastMessage ? { lastMessage } : {})
+          })]);
+
+          const messagesSnap = await getDocs(collection(firestore, 'chats', sourceChat.id, 'messages'));
+          for (const messageDoc of messagesSnap.docs) {
+            if (messageDoc.data().senderId !== duplicateUser.id) continue;
+            await queueChatWrites([currentBatch => currentBatch.update(messageDoc.ref, {
+              senderId: primaryUser.id,
+              senderName: primaryUser.fullName
+            })]);
+          }
+        }
+      }
+      await commitChatBatch();
+
+      // 6. Update Primary User Profile (preserve all emails and UIDs)
       const linkedUids = new Set(primaryUser.linkedUids || []);
       linkedUids.add(duplicateUser.id);
       if (duplicateUser.linkedUids) {
@@ -129,7 +252,7 @@ export function MergeStaffAccountsDialog({
         linkedEmails: Array.from(linkedEmails)
       });
 
-      // 6. Update Duplicate User Profile to redirect and archive
+      // 7. Update Duplicate User Profile to redirect and archive
       const duplicateRef = doc(firestore, 'users', duplicateUser.id);
       batch.update(duplicateRef, {
         mergedInto: primaryUser.id,

@@ -25,11 +25,12 @@ export function useScrubbedData({
 }) {
   return useMemo(() => {
     // 1. Define the Active Roster whitelist
-    // We exclude DISABLED, TERMINATED, and explicit archived flags
+    // We exclude DISABLED, TERMINATED, explicit archived flags, AND merged duplicates
     const activeStaff = staffList.filter(user =>
         user.status !== 'DISABLED' &&
         user.status !== 'TERMINATED' &&
-        !(user as any).isArchived
+        !(user as any).isArchived &&
+        !(user as any).mergedInto
     );
 
     const activeStaffIds = new Set(activeStaff.map(user => user.id));

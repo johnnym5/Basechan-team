@@ -78,7 +78,9 @@ export function AdminDashboard({ userProfile, permissions, systemConfig }: Admin
   const usersQuery = useMemoFirebase(() =>
     query(collection(firestore!, 'users'), where('orgId', '==', userProfile.orgId))
   , [firestore, userProfile.orgId]);
-  const { data: allStaff } = useCollection<UserProfile>(usersQuery);
+  const { data: allStaffRaw } = useCollection<UserProfile>(usersQuery);
+  // Filter out merged/archived duplicate accounts before scrubbing
+  const allStaff = allStaffRaw?.filter(u => !u.mergedInto && u.isArchived !== true);
 
   const reportsQuery = useMemoFirebase(() =>
     query(collection(firestore!, 'daily_reports'), where('orgId', '==', userProfile.orgId))

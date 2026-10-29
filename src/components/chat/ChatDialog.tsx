@@ -262,7 +262,7 @@ export function ChatDialog({ open, onOpenChange, currentUserProfile, permissions
 
     if (!allUsers) return { channels: ch, personnelTransmissions: dms };
 
-    const otherUsers = allUsers.filter(u => u.id !== currentUserProfile.id);
+    const otherUsers = allUsers.filter(u => u.id !== currentUserProfile.id && !u.mergedInto && u.isArchived !== true);
     
     const dmMap = new Map<string, Chat>();
     dms.forEach(dm => {
